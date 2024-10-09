@@ -9,7 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 void loadValues() async {
   globalDATA = await loadGlobalData();
   previusConnections = await loadDeviceList();
-  starConnections = await loadStarList();
   topicsToSub = await loadTopicList();
   nicknamesMap = await loadNicknamesMap();
   tokensOfDevices = await loadToken();
@@ -17,6 +16,10 @@ void loadValues() async {
   notificationMap = await loadNotificationMap();
   deviceImages = await loadDeviceImages();
   soundOfNotification = await loadSounds();
+  detectorOff = await loadDetectorOff();
+  devicesToTrack = await loadDeviceListToTrack();
+  entryToTrack = await loadEntryListToTrack();
+  msgFlag = await loadmsgFlag();
 
   for (var device in previusConnections) {
     await queryItems(service, command(device), extractSerialNumber(device));
@@ -34,16 +37,6 @@ Future<void> saveDeviceList(List<String> listaDispositivos) async {
 Future<List<String>> loadDeviceList() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   return prefs.getStringList('connectedDevices') ?? [];
-}
-
-Future<void> saveStarList(List<String> listaDispositivos) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setStringList('starDevices', listaDispositivos);
-}
-
-Future<List<String>> loadStarList() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList('starDevices') ?? [];
 }
 //*-Dispositivos conectados-*\\
 
@@ -300,3 +293,61 @@ Future<void> removeDeviceImage(String deviceId) async {
   final jsonString = jsonEncode(deviceImages);
   await prefs.setString('deviceImages', jsonString);
 }
+//*-Imagenes Scan-*\\
+
+//*-Equipos que detectores apagan-*\\
+Future<void> saveDetectorOff(Map<String, List<String>> lista) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String jsonString = jsonEncode(lista);
+  await prefs.setString('detectorOff', jsonString);
+}
+
+Future<Map<String, List<String>>> loadDetectorOff() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? jsonString = prefs.getString('detectorOff');
+  if (jsonString != null) {
+    Map<String, dynamic> jsonMap = jsonDecode(jsonString);
+    return jsonMap.map((key, value) => MapEntry(key, List<String>.from(value)));
+  } else {
+    return {};
+  }
+}
+//*-Equipos que detectores apagan-*\\
+
+//*-Omnipresencia-*\\
+Future<void> saveDeviceListToTrack(List<String> listaDispositivos) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setStringList('devicesToTrack', listaDispositivos);
+}
+
+Future<List<String>> loadDeviceListToTrack() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getStringList('devicesToTrack') ?? [];
+}
+
+Future<void> saveEntryListToTrack(List<String> listaEntradas) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setStringList('EntryToTrack', listaEntradas);
+}
+
+Future<List<String>> loadEntryListToTrack() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getStringList('EntryToTrack') ?? [];
+}
+
+Future<void> saveMsgFlag(Map<String, bool> msgFlag) async {
+  final prefs = await SharedPreferences.getInstance();
+  String taskMapString = json.encode(msgFlag);
+  await prefs.setString('msgFlag', taskMapString);
+}
+
+Future<Map<String, bool>> loadmsgFlag() async {
+  final prefs = await SharedPreferences.getInstance();
+  String? msgFlagString = prefs.getString('msgFlag');
+  if (msgFlagString != null) {
+    return Map<String, bool>.from(json.decode(msgFlagString));
+  }
+  return {}; // Devuelve un mapa vacío si no hay nada almacenado
+}
+
+//*-Omnipresencia-*\\

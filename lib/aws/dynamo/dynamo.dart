@@ -93,6 +93,11 @@ Future<void> queryItems(DynamoDB service, String pc, String sn) async {
                       .addAll({key: secAdm});
                 }
                 break;
+              case 'isNC':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.boolValue ?? false});
+                break;
             }
           }
           printLog("$key: $displayValue");
@@ -332,3 +337,20 @@ Future<void> saveATData(DynamoDB service, String pc, String sn, bool activate,
   }
 }
 //*-Guarda la data del alquiler temporario (airbnb) de un equipo-*\\
+
+//*-Guardar si un equipo es NA o NC-*\\
+Future<void> saveNC(DynamoDB service, String pc, String sn, bool data) async {
+  try {
+    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+      'product_code': AttributeValue(s: pc),
+      'device_id': AttributeValue(s: sn),
+    }, attributeUpdates: {
+      'isNC': AttributeValueUpdate(value: AttributeValue(boolValue: data)),
+    });
+
+    printLog('Item escrito perfectamente $response');
+  } catch (e) {
+    printLog('Error inserting item: $e');
+  }
+}
+//*-Guardar si un equipo es NA o NC-*\\

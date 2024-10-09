@@ -13,6 +13,8 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -36,6 +38,7 @@ const Color color2 = Color(0xFFBAB6AE);
 const Color color3 = Color(0xFF302b36);
 const Color color4 = Color(0xFF91262B);
 const Color color5 = Color(0xFFE53030);
+const Color color6 = Color(0xFFE77272);
 //*-Colores-*\\
 
 //*-Datos de la app-*\\
@@ -64,6 +67,9 @@ int lastUser = 0;
 bool userConnected = false;
 String myDeviceid = '';
 bool connectionFlag = false;
+bool turnOn = false;
+double distOnValue = 0.0;
+double distOffValue = 0.0;
 //*-Datos del dispositivo al que te conectaste-*\\
 
 //*-Relacionado al wifi-*\\
@@ -101,7 +107,6 @@ List<String> topicsToSub = [];
 
 //*-Equipos registrados-*\\
 List<String> previusConnections = [];
-List<String> starConnections = [];
 List<String> adminDevices = [];
 //*-Equipos registrados-*\\
 
@@ -145,7 +150,8 @@ String currentUserEmail = '';
 //*-Cognito user flow-*\\
 
 //*-Background functions-*\\
-Timer? backTimer;
+Timer? backTimerDS;
+Timer? backTimerCH;
 //*-Background functions-*\\
 
 //*-Imagenes Scan-*\\
@@ -156,20 +162,36 @@ Map<String, String> deviceImages = {};
 typedef LetIndexPage = bool Function(int value);
 //*-CurvedNavigationBar-*\\
 
-//// !------------------------------VERSION NUMBER---------------------------------------
+//*-AnimSearchBar*-\\
+int toggle = 0;
+String textFieldValue = '';
+//*-AnimSearchBar*-\\
 
-String appVersionNumber = '24091200';
-bool biocalden = true;
+//*-Escenas-*\\
+List<String> registeredScenes = [];
+List<Map<String, dynamic>> timeScenes = [];
+Map<String, List<String>> detectorOff = {};
+//*-Escenas-*\\
+
+//*-Omnipresencia-*\\
+List<String> devicesToTrack = [];
+Map<String, DateTime> lastSeenDevices = {};
+List<String> entryToTrack = [];
+Map<String, bool> msgFlag = {};
+//*-Omnipresencia-*\\
+
+// !------------------------------VERSION NUMBER---------------------------------------
 //ACORDATE: Cambia el número de versión en el pubspec.yaml antes de publicar
-//ACORDATE: En caso de Silema, cambiar bool a false...
-
-//!------------------------------VERSION NUMBER---------------------------------------
+String appVersionNumber = '24100800';
+//ACORDATE: 0 = Caldén Smart / 1 = Silema
+int app = 0;
+// !------------------------------VERSION NUMBER---------------------------------------
 
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
 //! FUNCIONES !\\
 
-//*-Permite hacer prints seguros, solo en modo debug-*\\
+///*-Permite hacer prints seguros, solo en modo debug-*\\\
 void printLog(var text) {
   if (xDebugMode) {
     // ignore: avoid_print
@@ -178,20 +200,23 @@ void printLog(var text) {
 }
 //*-Permite hacer prints seguros, solo en modo debug-*\\
 
-//*-Extrae parametros del equipo-*\\
+///*-Extrae parametros del equipo-*\\
 String command(String device) {
-  if (device.contains('Eléctrico')) {
-    return '022000_IOT';
-  } else if (device.contains('Gas')) {
-    return '027000_IOT';
-  } else if (device.contains('Detector')) {
-    return '015773_IOT';
-  } else if (device.contains('Radiador')) {
-    return '041220_IOT';
-  } else if (device.contains('Domótica')) {
-    return '020010_IOT';
-  } else {
-    return '';
+  switch (true) {
+    case true when device.contains('Eléctrico'):
+      return '022000_IOT';
+    case true when device.contains('Gas'):
+      return '027000_IOT';
+    case true when device.contains('Detector'):
+      return '015773_IOT';
+    case true when device.contains('Radiador'):
+      return '041220_IOT';
+    case true when device.contains('Domótica'):
+      return '020010_IOT';
+    case true when device.contains('Relé'):
+      return '027313_IOT';
+    default:
+      return '';
   }
 }
 
@@ -203,6 +228,689 @@ String extractSerialNumber(String productName) {
   return match?.group(0) ?? '';
 }
 //*-Extrae parametros del equipo-*\\
+
+//*-Tipo de Aplicación y parametros-*\\
+String nameOfApp(int type) {
+  switch (type) {
+    case 0:
+      return 'Caldén Smart';
+    case 1:
+      return 'Silema';
+    default:
+      return 'Caldén Smart';
+  }
+}
+
+Widget contactInfo(int type) {
+  switch (type) {
+    case 0:
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Contacto comercial
+          Container(
+            decoration: BoxDecoration(
+              color: color3,
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(color: color0),
+            ),
+            padding: const EdgeInsets.all(16.0),
+            margin: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Contacto comercial:',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: color0,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    sendWhatsAppMessage(
+                      '5491162234181',
+                      '¡Hola! Tengo una duda comercial sobre los productos $appName: \n',
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        HugeIcons.strokeRoundedCall02,
+                        size: 20,
+                        color: color0,
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Text(
+                        '+54 9 11 6223-4181',
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          color: color0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    launchEmail(
+                      'comercial@caldensmart.com',
+                      'Consulta comercial acerca de la línea $appName',
+                      '¡Hola! Tengo la siguiente duda sobre la línea IoT:\n',
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        HugeIcons.strokeRoundedMail01,
+                        size: 20,
+                        color: color0,
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Text(
+                            'comercial@caldensmart.com',
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              color: color0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Contacto técnico
+          Container(
+            decoration: BoxDecoration(
+              color: color3,
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(color: color0),
+            ),
+            padding: const EdgeInsets.all(16.0),
+            margin: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Consulta técnica:',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: color0,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    launchEmail(
+                      'serviciotecnico@caldensmart.com',
+                      'Consulta ref. $appName',
+                      '¡Hola! Tengo una consulta referida al área de ingeniería sobre mis equipos.\n',
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        HugeIcons.strokeRoundedMail01,
+                        size: 20,
+                        color: color0,
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Text(
+                            'serviciotecnico@caldensmart.com',
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              color: color0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Customer service
+          Container(
+            decoration: BoxDecoration(
+              color: color3,
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(color: color0),
+            ),
+            padding: const EdgeInsets.all(16.0),
+            margin: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Customer service:',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: color0,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    sendWhatsAppMessage(
+                      '5491162232619',
+                      '¡Hola! Me comunico en relación a uno de mis equipos: \n',
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        HugeIcons.strokeRoundedCall02,
+                        size: 20,
+                        color: color0,
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Text(
+                        '+54 9 11 6223-2619',
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          color: color0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    launchEmail(
+                      'service@caldensmart.com',
+                      'Consulta sobre línea Smart',
+                      '¡Hola! Me comunico en relación a uno de mis equipos: \n',
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        HugeIcons.strokeRoundedMail01,
+                        size: 20,
+                        color: color0,
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Text(
+                            'service@caldensmart.com',
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              color: color0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    case 1:
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Contacto comercial
+          Container(
+            decoration: BoxDecoration(
+              color: color3,
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(color: color0),
+            ),
+            padding: const EdgeInsets.all(16.0),
+            margin: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Consulta comercial:',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: color0,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    launchEmail(
+                      'silemacalefaccion@gmail.com',
+                      'Consulta comercial acerca de la linea IOT',
+                      '¡Hola! Tengo una consulta sobre mis equipos.\n',
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        HugeIcons.strokeRoundedMail01,
+                        size: 20,
+                        color: color0,
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Text(
+                            'silemacalefaccion@gmail.com',
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              color: color0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Servicio técnico
+          Container(
+            decoration: BoxDecoration(
+              color: color3,
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(color: color0),
+            ),
+            padding: const EdgeInsets.all(16.0),
+            margin: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Servicio técnico:',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: color0,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    sendWhatsAppMessage(
+                      '5491122845561',
+                      '¡Hola! Tengo una duda comercial sobre los productos $appName: \n',
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        HugeIcons.strokeRoundedCall02,
+                        size: 20,
+                        color: color0,
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Text(
+                        '+54 9 11 2284-5561',
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          color: color0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Customer service
+          Container(
+            decoration: BoxDecoration(
+              color: color3,
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(color: color0),
+            ),
+            padding: const EdgeInsets.all(16.0),
+            margin: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Página web:',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: color0,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    launchWebURL('http://www.silema.com.ar/');
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        HugeIcons.strokeRoundedEarth,
+                        size: 20,
+                        color: color0,
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Text(
+                        'silema.com.ar',
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          color: color0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    default:
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Contacto comercial
+          Container(
+            decoration: BoxDecoration(
+              color: color3,
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(color: color0),
+            ),
+            padding: const EdgeInsets.all(16.0),
+            margin: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Contacto comercial:',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: color0,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    sendWhatsAppMessage(
+                      '5491162234181',
+                      '¡Hola! Tengo una duda comercial sobre los productos $appName: \n',
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        HugeIcons.strokeRoundedCall02,
+                        size: 20,
+                        color: color0,
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Text(
+                        '+54 9 11 6223-4181',
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          color: color0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    launchEmail(
+                      'comercial@caldensmart.com',
+                      'Consulta comercial acerca de la línea $appName',
+                      '¡Hola! Tengo la siguiente duda sobre la línea IoT:\n',
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        HugeIcons.strokeRoundedMail01,
+                        size: 20,
+                        color: color0,
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Text(
+                            'comercial@caldensmart.com',
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              color: color0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Contacto técnico
+          Container(
+            decoration: BoxDecoration(
+              color: color3,
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(color: color0),
+            ),
+            padding: const EdgeInsets.all(16.0),
+            margin: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Consulta técnica:',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: color0,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    launchEmail(
+                      'serviciotecnico@caldensmart.com',
+                      'Consulta ref. $appName',
+                      '¡Hola! Tengo una consulta referida al área de ingeniería sobre mis equipos.\n',
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        HugeIcons.strokeRoundedMail01,
+                        size: 20,
+                        color: color0,
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Text(
+                            'serviciotecnico@caldensmart.com',
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              color: color0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Customer service
+          Container(
+            decoration: BoxDecoration(
+              color: color3,
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(color: color0),
+            ),
+            padding: const EdgeInsets.all(16.0),
+            margin: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Customer service:',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: color0,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    sendWhatsAppMessage(
+                      '5491162232619',
+                      '¡Hola! Me comunico en relación a uno de mis equipos: \n',
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        HugeIcons.strokeRoundedCall02,
+                        size: 20,
+                        color: color0,
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Text(
+                        '+54 9 11 6223-2619',
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          color: color0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    launchEmail(
+                      'service@caldensmart.com',
+                      'Consulta sobre línea Smart',
+                      '¡Hola! Me comunico en relación a uno de mis equipos: \n',
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        HugeIcons.strokeRoundedMail01,
+                        size: 20,
+                        color: color0,
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Text(
+                            'service@caldensmart.com',
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              color: color0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+  }
+}
+
+String linksOfApp(int type, String link) {
+  switch (link) {
+    case 'Privacidad':
+      switch (type) {
+        case 0:
+          return 'https://caldensmart.com/ayuda/privacidad/';
+        case 1:
+          return 'https://silema.com.ar/privacidad';
+        default:
+          return 'https://caldensmart.com/ayuda/privacidad/';
+      }
+    case 'Instagram':
+      switch (type) {
+        case 0:
+          return 'https://www.instagram.com/calefactores.calden/';
+        case 1:
+          return 'https://www.instagram.com/silemacalefaccion/';
+        default:
+          return 'https://www.instagram.com/gonzaa_trillo/';
+      }
+    case 'Facebook':
+      switch (type) {
+        case 0:
+          return 'https://www.facebook.com/CalefactoresCalden';
+        case 1:
+          return 'https://www.facebook.com/SilemaCalefaccionOK/';
+        default:
+          return 'https://www.facebook.com/CalefactoresCalden';
+      }
+    case 'Web':
+      switch (type) {
+        case 0:
+          return 'https://caldensmart.com';
+        case 1:
+          return 'https://silema.com.ar';
+        default:
+          return 'https://caldensmart.com';
+      }
+    default:
+      switch (type) {
+        case 0:
+          return 'https://caldensmart.com';
+        case 1:
+          return 'https://silema.com.ar';
+        default:
+          return 'https://caldensmart.com';
+      }
+  }
+}
+//*-Tipo de Aplicación y parametros-*\\
 
 //*-Funciones diversas-*\\
 void showToast(String message) {
@@ -233,111 +941,50 @@ void showPrivacyDialogIfNeeded() async {
   bool hasShownDialog = prefs.getBool('hasShownDialog') ?? false;
 
   if (!hasShownDialog) {
-    await showDialog(
-      context: navigatorKey.currentContext!,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF252223),
-          title: const Text(
-            'Política de Privacidad',
-            style: TextStyle(color: Color(0xFFFFFFFF)),
-          ),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text(
-                  'En $appName,  valoramos tu privacidad y seguridad. Queremos asegurarte que nuestra aplicación está diseñada con el respeto a tu privacidad personal. Aquí hay algunos puntos clave que debes conocer:\nNo Recopilamos Información Personal: Nuestra aplicación no recopila ni almacena ningún tipo de información personal de nuestros usuarios. Puedes usar nuestra aplicación con la tranquilidad de que tu privacidad está protegida.\nUso de Permisos: Aunque nuestra aplicación solicita ciertos permisos, como el acceso a la cámara, estos se utilizan exclusivamente para el funcionamiento de la aplicación y no para recopilar datos personales.\nPolítica de Privacidad Detallada: Si deseas obtener más información sobre nuestra política de privacidad, te invitamos a visitar nuestra página web. Allí encontrarás una explicación detallada de nuestras prácticas de privacidad.\nPara continuar y disfrutar de todas las funcionalidades de $appName, por favor, acepta nuestra política de privacidad.',
-                  style: const TextStyle(color: Color(0xFFFFFFFF)),
-                ),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              style: const ButtonStyle(
-                  foregroundColor: WidgetStatePropertyAll(Color(0xFFFFFFFF))),
-              child: const Text('Leer nuestra politica de privacidad'),
-              onPressed: () async {
-                Uri uri = Uri.parse(biocalden
-                    ? 'https://caldensmart.com/ayuda/privacidad/'
-                    : 'https://silema.com.ar/privacidad/');
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri);
-                } else {
-                  showToast('No se pudo abrir el sitio web');
-                }
-              },
-            ),
-            TextButton(
-              style: const ButtonStyle(
-                  foregroundColor: WidgetStatePropertyAll(Color(0xFFFFFFFF))),
-              child: const Text('Aceptar'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+    showAlertDialog(
+      navigatorKey.currentContext!,
+      const Text(
+        'Política de Privacidad',
+        style: TextStyle(color: Color(0xFFFFFFFF)),
+      ),
+      SingleChildScrollView(
+        scrollDirection: Axis.vertical,
+        child: ListBody(
+          children: <Widget>[
+            Text(
+              'En $appName,  valoramos tu privacidad y seguridad. Queremos asegurarte que nuestra aplicación está diseñada con el respeto a tu privacidad personal. Aquí hay algunos puntos clave que debes conocer:\nNo Recopilamos Información Personal: Nuestra aplicación no recopila ni almacena ningún tipo de información personal de nuestros usuarios. Puedes usar nuestra aplicación con la tranquilidad de que tu privacidad está protegida.\nUso de Permisos: Aunque nuestra aplicación solicita ciertos permisos, como el acceso a la cámara, estos se utilizan exclusivamente para el funcionamiento de la aplicación y no para recopilar datos personales.\nPolítica de Privacidad Detallada: Si deseas obtener más información sobre nuestra política de privacidad, te invitamos a visitar nuestra página web. Allí encontrarás una explicación detallada de nuestras prácticas de privacidad.\nPara continuar y disfrutar de todas las funcionalidades de $appName, por favor, acepta nuestra política de privacidad.',
+              style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 10),
             ),
           ],
-        );
-      },
-    );
-    await prefs.setBool('hasShownDialog', true);
-  }
-}
-
-void showCupertinoPrivacyDialogIfNeeded() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool hasShownDialog = prefs.getBool('hasShownDialog') ?? false;
-
-  if (!hasShownDialog) {
-    await showCupertinoDialog(
-      context: navigatorKey.currentContext!,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return CupertinoAlertDialog(
-          title: const Text(
-            'Política de Privacidad',
-            style: TextStyle(color: CupertinoColors.label),
-          ),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text(
-                  'En $appName,  valoramos tu privacidad y seguridad. Queremos asegurarte que nuestra aplicación está diseñada con el respeto a tu privacidad personal. Aquí hay algunos puntos clave que debes conocer:\nNo Recopilamos Información Personal: Nuestra aplicación no recopila ni almacena ningún tipo de información personal de nuestros usuarios. Puedes usar nuestra aplicación con la tranquilidad de que tu privacidad está protegida.\nUso de Permisos: Aunque nuestra aplicación solicita ciertos permisos, como el acceso a la cámara, estos se utilizan exclusivamente para el funcionamiento de la aplicación y no para recopilar datos personales.\nPolítica de Privacidad Detallada: Si deseas obtener más información sobre nuestra política de privacidad, te invitamos a visitar nuestra página web. Allí encontrarás una explicación detallada de nuestras prácticas de privacidad.\nPara continuar y disfrutar de todas las funcionalidades de $appName, por favor, acepta nuestra política de privacidad.',
-                  style: const TextStyle(color: CupertinoColors.label),
-                ),
-              ],
+        ),
+      ),
+      <Widget>[
+        TextButton(
+          style: const ButtonStyle(
+            foregroundColor: WidgetStatePropertyAll(
+              Color(0xFFFFFFFF),
             ),
           ),
-          actions: <Widget>[
-            TextButton(
-              style: const ButtonStyle(
-                  foregroundColor:
-                      WidgetStatePropertyAll(CupertinoColors.label)),
-              child: const Text('Leer nuestra politica de privacidad'),
-              onPressed: () async {
-                Uri uri = Uri.parse(biocalden
-                    ? 'https://caldensmart.com/ayuda/privacidad/'
-                    : 'https://silema.com.ar/privacidad/');
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri);
-                } else {
-                  showToast('No se pudo abrir el sitio web');
-                }
-              },
+          child: const Text(
+            'Leer nuestra\npolitica de privacidad',
+            textAlign: TextAlign.start,
+          ),
+          onPressed: () {
+            launchWebURL(linksOfApp(app, 'Privacidad'));
+          },
+        ),
+        TextButton(
+          style: const ButtonStyle(
+            foregroundColor: WidgetStatePropertyAll(
+              Color(0xFFFFFFFF),
             ),
-            TextButton(
-              style: const ButtonStyle(
-                  foregroundColor:
-                      WidgetStatePropertyAll(CupertinoColors.label)),
-              child: const Text('Aceptar'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
+          ),
+          child: const Text('Aceptar'),
+          onPressed: () {
+            Navigator.of(navigatorKey.currentContext!).pop();
+          },
+        ),
+      ],
     );
     await prefs.setBool('hasShownDialog', true);
   }
@@ -377,402 +1024,6 @@ String encodeQueryParameters(Map<String, String> params) {
       .join('&');
 }
 
-void showContactInfo(BuildContext context) {
-  showDialog(
-    barrierDismissible: true,
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('Contacto comercial:',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                    onPressed: () => sendWhatsAppMessage('5491162234181',
-                        '¡Hola! Tengo una duda comercial sobre los productos $appName: \n'),
-                    icon: Icon(
-                      android ? Icons.phone : CupertinoIcons.phone,
-                      size: 20,
-                    )),
-                const Text('+54 9 11 6223-4181', style: TextStyle(fontSize: 20))
-              ],
-            ),
-            SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      onPressed: () => launchEmail(
-                          'ceat@ibsanitarios.com.ar',
-                          'Consulta comercial acerca de la linea $appName',
-                          '¡Hola! mi equipo es el $deviceName y tengo la siguiente duda:\n'),
-                      icon: const Icon(
-                        Icons.mail,
-                        size: 20,
-                      ),
-                    ),
-                    const Text('ceat@ibsanitarios.com.ar',
-                        style: TextStyle(fontSize: 20))
-                  ],
-                )),
-            const SizedBox(height: 20),
-            const Text('Consulta técnica:',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    onPressed: () => launchEmail(
-                        'pablo@intelligentgas.com.ar',
-                        'Consulta ref. $deviceName',
-                        '¡Hola! Tengo una consulta referida al área de ingenieria sobre mi equipo.\n Información del mismo:\nModelo: ${command(deviceName)}\nVersión de software: $softwareVersion \nVersión de hardware: $hardwareVersion \nMi duda es la siguiente:\n'),
-                    icon: const Icon(
-                      Icons.mail,
-                      size: 20,
-                    ),
-                  ),
-                  const Text(
-                    'pablo@intelligentgas.com.ar',
-                    style: TextStyle(fontSize: 20),
-                    overflow: TextOverflow.ellipsis,
-                  )
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text('Customer service:',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                    onPressed: () => sendWhatsAppMessage('5491162232619',
-                        '¡Hola! Te hablo por una duda sobre mi equipo $deviceName: \n'),
-                    icon: const Icon(
-                      Icons.phone,
-                      size: 20,
-                    )),
-                const Text('+54 9 11 6223-2619', style: TextStyle(fontSize: 20))
-              ],
-            ),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    onPressed: () => launchEmail(
-                        'service@calefactorescalden.com.ar',
-                        'Consulta ${command(deviceName)}',
-                        'Tengo una consulta referida a mi equipo $deviceName: \n'),
-                    icon: const Icon(
-                      Icons.mail,
-                      size: 20,
-                    ),
-                  ),
-                  const Text(
-                    'service@calefactorescalden.com.ar',
-                    style: TextStyle(color: Color(0xFF000000), fontSize: 20),
-                    overflow: TextOverflow.ellipsis,
-                  )
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
-
-void showSilemaContactInfo(BuildContext context) {
-  showDialog(
-    barrierDismissible: true,
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('Servicio técnico:',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                    onPressed: () => sendWhatsAppMessage('5491122845561',
-                        '¡Hola! Tengo una duda comercial sobre los productos $appName: \n'),
-                    icon: const Icon(
-                      Icons.phone,
-                      size: 20,
-                    )),
-                const Text('+54 9 11 2284-5561', style: TextStyle(fontSize: 20))
-              ],
-            ),
-            SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      onPressed: () => launchEmail(
-                          'silemacalefaccion@gmail.com',
-                          'Consulta comercial acerca de la linea IOT',
-                          '¡Hola! mi equipo es el $deviceName y tengo la siguiente duda:\n'),
-                      icon: const Icon(
-                        Icons.mail,
-                        size: 20,
-                      ),
-                    ),
-                    const Text('silemacalefaccion@gmail.com',
-                        style: TextStyle(fontSize: 20))
-                  ],
-                )),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                IconButton(
-                  onPressed: () async {
-                    String url = 'http://www.silema.com.ar/';
-                    var uri = Uri.parse(url);
-                    try {
-                      if (await canLaunchUrl(uri)) {
-                        await launchUrl(uri);
-                      } else {
-                        printLog('No se pudo abrir la URL: $url');
-                      }
-                    } catch (e, s) {
-                      printLog('Error url $e Stacktrace: $s');
-                    }
-                  },
-                  icon: const Icon(
-                    Icons.language,
-                    size: 20,
-                  ),
-                ),
-                const Text('silema.com.ar', style: TextStyle(fontSize: 20))
-              ],
-            )
-          ],
-        ),
-      );
-    },
-  );
-}
-
-void showCupertinoContactInfo(BuildContext context) {
-  showCupertinoDialog(
-    barrierDismissible: true,
-    context: context,
-    builder: (BuildContext context) {
-      return CupertinoAlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('Contacto comercial:',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CupertinoButton(
-                      onPressed: () => sendWhatsAppMessage('5491162234181',
-                          '¡Hola! Tengo una duda comercial sobre los productos $appName: \n'),
-                      child: const Icon(
-                        CupertinoIcons.phone,
-                        size: 20,
-                      )),
-                  const Text('+54 9 11 6223-4181',
-                      style: TextStyle(fontSize: 20))
-                ],
-              ),
-            ),
-            SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CupertinoButton(
-                      onPressed: () => launchEmail(
-                          'ceat@ibsanitarios.com.ar',
-                          'Consulta comercial acerca de la linea $appName',
-                          '¡Hola! mi equipo es el $deviceName y tengo la siguiente duda:\n'),
-                      child: const Icon(
-                        CupertinoIcons.mail,
-                        size: 20,
-                      ),
-                    ),
-                    const Text('ceat@ibsanitarios.com.ar',
-                        style: TextStyle(fontSize: 20))
-                  ],
-                )),
-            const SizedBox(height: 20),
-            const Text('Consulta técnica:',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CupertinoButton(
-                    onPressed: () => launchEmail(
-                        'pablo@intelligentgas.com.ar',
-                        'Consulta ref. $deviceName',
-                        '¡Hola! Tengo una consulta referida al área de ingenieria sobre mi equipo.\n Información del mismo:\nModelo: ${command(deviceName)}\nVersión de software: $softwareVersion \nVersión de hardware: $hardwareVersion \nMi duda es la siguiente:\n'),
-                    child: const Icon(
-                      CupertinoIcons.mail,
-                      size: 20,
-                    ),
-                  ),
-                  const Text(
-                    'pablo@intelligentgas.com.ar',
-                    style: TextStyle(fontSize: 20),
-                    overflow: TextOverflow.ellipsis,
-                  )
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text('Customer service:',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CupertinoButton(
-                      onPressed: () => sendWhatsAppMessage('5491162232619',
-                          '¡Hola! Te hablo por una duda sobre mi equipo $deviceName: \n'),
-                      child: const Icon(
-                        CupertinoIcons.phone,
-                        size: 20,
-                      )),
-                  const Text('+54 9 11 6223-2619',
-                      style: TextStyle(fontSize: 20))
-                ],
-              ),
-            ),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CupertinoButton(
-                    onPressed: () => launchEmail(
-                        'service@calefactorescalden.com.ar',
-                        'Consulta ${command(deviceName)}',
-                        'Tengo una consulta referida a mi equipo $deviceName: \n'),
-                    child: const Icon(
-                      CupertinoIcons.mail,
-                      size: 20,
-                    ),
-                  ),
-                  const Text(
-                    'service@calefactorescalden.com.ar',
-                    style: TextStyle(color: Color(0xFF000000), fontSize: 20),
-                    overflow: TextOverflow.ellipsis,
-                  )
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
-
-void showCupertinoSilemaContactInfo(BuildContext context) {
-  showCupertinoDialog(
-    barrierDismissible: true,
-    context: context,
-    builder: (BuildContext context) {
-      return CupertinoAlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('Servicio técnico:',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                      onPressed: () => sendWhatsAppMessage('5491122845561',
-                          '¡Hola! Tengo una duda comercial sobre los productos $appName: \n'),
-                      icon: const Icon(
-                        CupertinoIcons.phone,
-                        size: 20,
-                      )),
-                  const Text('+54 9 11 2284-5561',
-                      style: TextStyle(fontSize: 20))
-                ],
-              ),
-            ),
-            SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      onPressed: () => launchEmail(
-                          'silemacalefaccion@gmail.com',
-                          'Consulta comercial acerca de la linea IOT',
-                          '¡Hola! mi equipo es el $deviceName y tengo la siguiente duda:\n'),
-                      icon: const Icon(
-                        CupertinoIcons.mail,
-                        size: 20,
-                      ),
-                    ),
-                    const Text('silemacalefaccion@gmail.com',
-                        style: TextStyle(fontSize: 20))
-                  ],
-                )),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                IconButton(
-                  onPressed: () async {
-                    String url = 'http://www.silema.com.ar/';
-                    var uri = Uri.parse(url);
-                    try {
-                      if (await canLaunchUrl(uri)) {
-                        await launchUrl(uri);
-                      } else {
-                        printLog('No se pudo abrir la URL: $url');
-                      }
-                    } catch (e, s) {
-                      printLog('Error url $e Stacktrace: $s');
-                    }
-                  },
-                  icon: const Icon(
-                    Icons.language,
-                    size: 20,
-                  ),
-                ),
-                const Text('silema.com.ar', style: TextStyle(fontSize: 20))
-              ],
-            )
-          ],
-        ),
-      );
-    },
-  );
-}
-
 String recoverDeviceName(String pc, String sn) {
   String code = '';
   switch (pc) {
@@ -796,7 +1047,7 @@ String recoverDeviceName(String pc, String sn) {
   return '$code$sn';
 }
 
-void launchURL(String url) async {
+void launchWebURL(String url) async {
   var uri = Uri.parse(url);
   if (await canLaunchUrl(uri)) {
     await launchUrl(uri);
@@ -804,15 +1055,25 @@ void launchURL(String url) async {
     throw 'No se pudo abrir $url';
   }
 }
+
+String mqttCommand(String pc, bool turnOn) {
+  late Map<String, dynamic> msg;
+
+  if (pc == '020010_IOT') {
+    msg = {'': turnOn};
+  } else {
+    msg = {'w_status': turnOn};
+  }
+
+  return jsonEncode(msg);
+}
 //*-Funciones diversas-*\\
 
 //*-Gestión de errores en app-*\\
 String generateErrorReport(FlutterErrorDetails details) {
-  return '''
-Error: ${details.exception}
-Stacktrace: ${details.stack}
-Contexto: ${details.context}
-  ''';
+  String error =
+      'Error: ${details.exception}\nStacktrace: ${details.stack}\nContexto: ${details.context}';
+  return error;
 }
 
 void sendReportError(String cuerpo) async {
@@ -1310,7 +1571,6 @@ String getWifiErrorSintax(int errorCode) {
       return "Error Desconocido";
   }
 }
-
 //*-Wifi, menú y scanner-*\\
 
 //*-Qr scanner-*\\
@@ -1382,6 +1642,21 @@ Future<void> handleNotifications(RemoteMessage message) async {
       String displayTitle = '¡ALERTA EN ${nicknamesMap[device] ?? device}!';
       String displayMessage = 'El detector disparó una alarma';
       showNotification(displayTitle.toUpperCase(), displayMessage, sound);
+      printLog('Esta el cortito ${detectorOff.keys.contains(device)}');
+      if (detectorOff.keys.contains(device)) {
+        List<String> equipos = detectorOff[device] ?? [];
+
+        for (String equipo in equipos) {
+          printLog('Apago $equipo');
+          String deviceSerialNumber = extractSerialNumber(equipo);
+          String productCode = command(equipo);
+          String topic = 'devices_rx/$productCode/$deviceSerialNumber';
+          String topic2 = 'devices_tx/$productCode/$deviceSerialNumber';
+          String message = jsonEncode({"w_status": false});
+          sendMessagemqtt(topic, message);
+          sendMessagemqtt(topic2, message);
+        }
+      }
     } else if (product == '020010_IOT') {
       String entry = subNicknamesMap['$device/-/${message.data['entry']!}'] ??
           'Entrada${message.data['entry']!}';
@@ -1391,7 +1666,7 @@ Future<void> handleNotifications(RemoteMessage message) async {
           int.parse(message.data['entry']!)]) {
         printLog(
             'En la lista: ${notificationMap['$product/$number']!} en la posición ${int.parse(message.data['entry']!)} hay un true');
-        showNotification(displayTitle, displayMessage, sound);
+        showNotification(displayTitle.toUpperCase(), displayMessage, sound);
       }
     }
   } catch (e, s) {
@@ -1405,20 +1680,22 @@ void showNotification(String title, String body, String sonido) async {
   printLog('Body: $body');
   printLog('Sonido: $sonido');
   try {
+    int notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     await flutterLocalNotificationsPlugin.show(
-      888,
+      notificationId,
       title,
       body,
       NotificationDetails(
-          android: AndroidNotificationDetails(
-            'CaldénSmart${generateRandomNumbers(15)}',
-            'Eventos',
-            icon: '@mipmap/ic_launcher',
-            sound: RawResourceAndroidNotificationSound(sonido),
-            enableVibration: true,
-            importance: Importance.max,
-          ),
-          iOS: const DarwinNotificationDetails()),
+        android: AndroidNotificationDetails(
+          'CaldénSmart_$sonido',
+          'Eventos',
+          icon: '@mipmap/ic_launcher',
+          sound: RawResourceAndroidNotificationSound(sonido),
+          enableVibration: true,
+          importance: Importance.max,
+        ),
+        iOS: const DarwinNotificationDetails(),
+      ),
     );
   } catch (e, s) {
     printLog('Error enviando notif: $e');
@@ -1472,152 +1749,6 @@ void setupToken(String pc, String sn, String device) async {
 }
 //*-Notificaciones-*\\
 
-//*-Nicknames-*\\
-Future<void> showEditNicknameDialog(BuildContext context) async {
-  TextEditingController nicknameController =
-      TextEditingController(text: nickname);
-
-  return showDialog<void>(
-    context: context,
-    barrierDismissible: false,
-    builder: (BuildContext dialogContext) {
-      return AlertDialog(
-        backgroundColor: const Color(0xff1f1d20),
-        title: const Text(
-          'Editar identificación del dispositivo',
-          style: TextStyle(
-            color: Color(0xffa79986),
-          ),
-        ),
-        content: TextField(
-          style: const TextStyle(
-            color: Color(0xffa79986),
-          ),
-          cursorColor: const Color(0xffa79986),
-          controller: nicknameController,
-          decoration: const InputDecoration(
-            hintText: "Introduce tu nueva identificación del dispositivo",
-            hintStyle: TextStyle(
-              color: Color(0xffa79986),
-            ),
-            enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(
-                color: Color(0xffa79986),
-              ),
-            ),
-            focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(
-                color: Color(0xffa79986),
-              ),
-            ),
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            style: const ButtonStyle(
-              foregroundColor: WidgetStatePropertyAll(
-                Color(0xffa79986),
-              ),
-            ),
-            child: const Text('Cancelar'),
-            onPressed: () {
-              Navigator.of(dialogContext).pop(); // Cierra el AlertDialog
-            },
-          ),
-          TextButton(
-            style: const ButtonStyle(
-              foregroundColor: WidgetStatePropertyAll(
-                Color(0xffa79986),
-              ),
-            ),
-            child: const Text('Guardar'),
-            onPressed: () {
-              String newNickname = nicknameController.text;
-              nickname = newNickname;
-              nicknamesMap.addAll({deviceName: newNickname});
-              saveNicknamesMap(nicknamesMap);
-              printLog('$nicknamesMap');
-              Navigator.of(dialogContext).pop(); // Cierra el AlertDialog
-            },
-          ),
-        ],
-      );
-    },
-  );
-}
-
-Future<void> showEditSubNicknameDialog(BuildContext context, int index) async {
-  TextEditingController subNicknameController = TextEditingController();
-
-  return showDialog<void>(
-    context: context,
-    barrierDismissible: false,
-    builder: (BuildContext dialogContext) {
-      return AlertDialog(
-        backgroundColor: const Color(0xff1f1d20),
-        title: const Text(
-          'Editar identificación del sub Módulo',
-          style: TextStyle(
-            color: Color(0xffa79986),
-          ),
-        ),
-        content: TextField(
-          style: const TextStyle(
-            color: Color(0xffa79986),
-          ),
-          cursorColor: const Color(0xffa79986),
-          controller: subNicknameController,
-          decoration: const InputDecoration(
-            hintText: "Introduce el apodo",
-            hintStyle: TextStyle(
-              color: Color(0xffa79986),
-            ),
-            enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(
-                color: Color(0xffa79986),
-              ),
-            ),
-            focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(
-                color: Color(0xffa79986),
-              ),
-            ),
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            style: const ButtonStyle(
-              foregroundColor: WidgetStatePropertyAll(
-                Color(0xffa79986),
-              ),
-            ),
-            child: const Text('Cancelar'),
-            onPressed: () {
-              Navigator.of(dialogContext).pop(); // Cierra el AlertDialog
-            },
-          ),
-          TextButton(
-            style: const ButtonStyle(
-              foregroundColor: WidgetStatePropertyAll(
-                Color(0xffa79986),
-              ),
-            ),
-            child: const Text('Guardar'),
-            onPressed: () {
-              String newNickname = subNicknameController.text;
-              subNicknamesMap.addAll({'$deviceName/-/$index': newNickname});
-              saveSubNicknamesMap(subNicknamesMap);
-              printLog('$subNicknamesMap');
-              Navigator.of(dialogContext).pop();
-            },
-          ),
-        ],
-      );
-    },
-  );
-}
-//*-Nickname-*\\
-
 //*-Monitoreo Localizacion y Bluetooth*-\\
 void startLocationMonitoring() {
   locationTimer = Timer.periodic(
@@ -1636,7 +1767,6 @@ void startBluetoothMonitoring() {
 void bluetoothStatus() async {
   await NativeService.isBluetoothServiceEnabled();
 }
-
 //*-Monitoreo Localizacion y Bluetooth*-\\
 
 //*-Admin secundarios y alquiler temporario-*\\
@@ -1843,6 +1973,7 @@ void showATText() {
       });
 }
 
+//TODO: Cuando este hecho calefactores hay que cambiar todo esto
 Future<void> configAT() async {
   showDialog(
       context: navigatorKey.currentContext!,
@@ -2223,7 +2354,7 @@ void asking() async {
     navigatorKey.currentState?.pushReplacementNamed('/login');
   } else {
     printLog('Usuario logueado');
-    navigatorKey.currentState?.pushReplacementNamed('/scan');
+    navigatorKey.currentState?.pushReplacementNamed('/menu');
   }
 }
 
@@ -2256,8 +2387,6 @@ Future<void> initializeService() async {
   try {
     final backService = FlutterBackgroundService();
 
-    initNotifications();
-
     await backService.configure(
       iosConfiguration: IosConfiguration(
           onBackground: onStart, autoStart: true, onForeground: onStart),
@@ -2270,9 +2399,20 @@ Future<void> initializeService() async {
         onStart: onStart,
         autoStart: true,
         isForegroundMode: true,
+        foregroundServiceTypes: [
+          AndroidForegroundType.location,
+          AndroidForegroundType.dataSync
+        ],
       ),
     );
+
+    initNotifications();
+
+    await backService.isRunning() ? null : await backService.startService();
+
     printLog('Se inició piola');
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasShownDialog', true);
   } catch (e, s) {
     printLog('Error al inicializar servicio $e');
     printLog('$s');
@@ -2293,15 +2433,114 @@ bool onStart(ServiceInstance service) {
   service.on('distanceControl').listen((event) {
     showNotification('Se inició el control por distancia',
         'Recuerde tener la ubicación del telefono encendida', 'noti');
-    backTimer = Timer.periodic(const Duration(minutes: 2), (timer) async {
-      await backFunction();
+    backTimerDS = Timer.periodic(const Duration(minutes: 2), (timer) async {
+      await backFunctionDS();
     });
   });
+
+  service.on('escenas/controlHorario').listen(
+    (event) {
+      showNotification('Se inició el control horario',
+          'Se configuro un control por horario', 'noti');
+      backTimerCH = Timer.periodic(
+        const Duration(minutes: 1),
+        (timer) async {
+          //TODO: Agregar control horario
+        },
+      );
+    },
+  );
+
+  service.on('trackLocation').listen(
+    (event) async {
+      showNotification(
+          'Se inició el trackeo',
+          'Recuerde tener la ubicación y bluetooth del telefono encendida',
+          'noti');
+
+      List<String> devicesTrack = await loadDeviceListToTrack();
+      FlutterBluePlus.startScan(
+        withNames: devicesTrack,
+        androidUsesFineLocation: true,
+        continuousUpdates: true,
+        removeIfGone: const Duration(seconds: 6),
+      );
+
+      FlutterBluePlus.scanResults.listen(
+        (results) async {
+          List<BluetoothDevice> equipos = [];
+          for (ScanResult device in results) {
+            equipos.add(device.device);
+          }
+          // Lista de nombres de plataformas de dispositivos encontrados en el escaneo.
+          List<String> foundDeviceNames = equipos
+              .map((device) => device.platformName.toLowerCase())
+              .toList();
+          List<String> devicesTrack = await loadDeviceListToTrack();
+          Map<String, Map<String, dynamic>> globalDATA = await loadGlobalData();
+          // Verificar si cada dispositivo en devicesToTrack está presente en los resultados del escaneo.
+          for (String trackedDevice in devicesTrack) {
+            if (foundDeviceNames.contains(trackedDevice.toLowerCase())) {
+              bool flag = msgFlag[trackedDevice] ?? false;
+              if (!flag) {
+                printLog(
+                    'Dispositivo $trackedDevice encontrado en el escaneo.');
+                globalDATA
+                    .putIfAbsent(
+                        '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
+                        () => {})
+                    .addAll({'w_status': true});
+                saveGlobalData(globalDATA);
+                try {
+                  String topic =
+                      'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                  String topic2 =
+                      'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                  String message = jsonEncode({'w_status': true});
+                  sendMessagemqtt(topic, message);
+                  sendMessagemqtt(topic2, message);
+                } catch (e, s) {
+                  printLog('Error al enviar valor $e $s');
+                }
+              }
+              msgFlag[trackedDevice] = true;
+              saveMsgFlag(msgFlag);
+            } else {
+              bool flag = msgFlag[trackedDevice] ?? false;
+              if (flag) {
+                printLog(
+                    'Dispositivo $trackedDevice NO encontrado en el escaneo.');
+                globalDATA
+                    .putIfAbsent(
+                        '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
+                        () => {})
+                    .addAll({'w_status': false});
+                saveGlobalData(globalDATA);
+                try {
+                  String topic =
+                      'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                  String topic2 =
+                      'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                  String message = jsonEncode({'w_status': false});
+                  sendMessagemqtt(topic, message);
+                  sendMessagemqtt(topic2, message);
+                } catch (e, s) {
+                  printLog('Error al enviar valor $e $s');
+                }
+              }
+              msgFlag[trackedDevice] = false;
+              saveMsgFlag(msgFlag);
+            }
+          }
+        },
+      );
+    },
+  );
 
   return true;
 }
 
-Future<bool> backFunction() async {
+Future<bool> backFunctionDS() async {
   printLog('Entre a hacer locuritas. ${DateTime.now()}');
   // showNotification('Entre a la función', '${DateTime.now()}');
   try {
@@ -2451,6 +2690,150 @@ String rutaDeImagen(String device) {
 }
 //*-Imagenes Scan-*\\
 
+//*-show dialog generico-*\\
+void showAlertDialog(BuildContext context, Widget? title, Widget? content,
+    List<Widget>? actions) {
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    barrierColor: Colors.black.withOpacity(0.5),
+    transitionDuration: const Duration(milliseconds: 300),
+    pageBuilder: (BuildContext context, Animation<double> animation,
+        Animation<double> secondaryAnimation) {
+      double screenWidth = MediaQuery.of(context).size.width;
+      return Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: 300.0,
+            maxWidth: screenWidth - 20,
+          ),
+          child: IntrinsicWidth(
+            child: Container(
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.5),
+                    spreadRadius: 1,
+                    blurRadius: 20,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Card(
+                color: color3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30.0),
+                ),
+                elevation: 24,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.topCenter,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 70, 20, 20),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Center(
+                            child: DefaultTextStyle(
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              child: title ??
+                                  const SizedBox(
+                                    height: 0,
+                                    width: 0,
+                                  ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Center(
+                            child: DefaultTextStyle(
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                                fontSize: 16,
+                              ),
+                              child: content ??
+                                  const SizedBox(
+                                    height: 0,
+                                    width: 0,
+                                  ),
+                            ),
+                          ),
+                          const SizedBox(height: 30),
+                          if (actions != null)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: actions.map((widget) {
+                                if (widget is TextButton) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 5.0),
+                                    child: TextButton(
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: color0,
+                                        backgroundColor: color3,
+                                      ),
+                                      onPressed: widget.onPressed,
+                                      child: widget.child!,
+                                    ),
+                                  );
+                                } else {
+                                  return widget;
+                                }
+                              }).toList(),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      top: -50,
+                      child: Material(
+                        elevation: 10,
+                        shape: const CircleBorder(),
+                        shadowColor: Colors.black.withOpacity(0.4),
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundColor: color3,
+                          child: Image.asset(
+                            'assets/dragon.png',
+                            width: 60,
+                            height: 60,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+    transitionBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeInOut,
+        ),
+        child: ScaleTransition(
+          scale: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          ),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+//*-show dialog generico-*\\
+
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
 //! CLASES !\\
@@ -2553,6 +2936,15 @@ class MyDevice {
               (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
           ioUuid = service.characteristics.firstWhere(
               (c) => c.uuid == Guid('03b1c5d9-534a-4980-aed3-f59615205216'));
+          break;
+        case '027313':
+          BluetoothService espService = services.firstWhere(
+              (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
+
+          varsUuid = espService.characteristics.firstWhere((c) =>
+              c.uuid ==
+              Guid(
+                  '52a2f121-a8e3-468c-a5de-45dca9a2a207')); //DistanceControl:W_Status:EnergyTimer:AwsINIT
           break;
         case '030710':
           break;
@@ -3136,7 +3528,6 @@ class NavCustomClipper extends CustomClipper<Rect> {
 
 //*-AnimSearchBar*-\\
 class AnimSearchBar extends StatefulWidget {
-
   final double width;
   final TextEditingController textController;
   final Icon? suffixIcon;
@@ -3210,13 +3601,6 @@ class AnimSearchBar extends StatefulWidget {
   @override
   AnimSearchBarState createState() => AnimSearchBarState();
 }
-
-///toggle - 0 => false or closed
-///toggle 1 => true or open
-int toggle = 0;
-
-/// * use this variable to check current text from OnChange
-String textFieldValue = '';
 
 class AnimSearchBarState extends State<AnimSearchBar>
     with SingleTickerProviderStateMixin {
@@ -3478,3 +3862,4 @@ class AnimSearchBarState extends State<AnimSearchBar>
     );
   }
 }
+//*-AnimSearchBar*-\\

@@ -8,6 +8,7 @@ import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
 import '../stored_data.dart';
 import 'calefactores.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 // CLASES \\
 
@@ -133,11 +134,14 @@ class RadiadorPageState extends State<RadiadorPage> {
     int fun = on ? 1 : 0;
     String data = '${command(deviceName)}[11]($fun)';
     myDevice.toolsUuid.write(data.codeUnits);
-    globalDATA['${command(deviceName)}/${extractSerialNumber(deviceName)}']!['w_status'] = on;
+    globalDATA['${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+        'w_status'] = on;
     saveGlobalData(globalDATA);
     try {
-      String topic = 'devices_rx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
-      String topic2 = 'devices_tx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
+      String topic =
+          'devices_rx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
+      String topic2 =
+          'devices_tx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
       String message = jsonEncode({'w_status': on});
       sendMessagemqtt(topic, message);
       sendMessagemqtt(topic2, message);
@@ -157,8 +161,6 @@ class RadiadorPageState extends State<RadiadorPage> {
     // Cuando los permisos están OK, obtenemos la ubicación actual
     return await Geolocator.getCurrentPosition();
   }
-
-
 
   void controlTask(bool value, String device) async {
     setState(() {
@@ -213,7 +215,7 @@ class RadiadorPageState extends State<RadiadorPage> {
       if (deviceControl.isEmpty) {
         final backService = FlutterBackgroundService();
         backService.invoke("stopService");
-        backTimer?.cancel();
+        backTimerDS?.cancel();
         printLog('Servicio apagado');
       }
     }
@@ -249,7 +251,8 @@ class RadiadorPageState extends State<RadiadorPage> {
                   }
                   permissionStatus4 = await Permission.locationAlways.status;
 
-                  Navigator.of(navigatorKey.currentContext ?? context).pop(); // Cierra el AlertDialog
+                  Navigator.of(navigatorKey.currentContext ?? context)
+                      .pop(); // Cierra el AlertDialog
                 },
               ),
             ],
@@ -269,6 +272,55 @@ class RadiadorPageState extends State<RadiadorPage> {
 
   @override
   Widget build(BuildContext context) {
-    return const CircularProgressIndicator();
-    }
+    return Scaffold(
+      backgroundColor: color1,
+      appBar: AppBar(
+        backgroundColor: color3,
+        title: const Text(
+          'Hola',
+          style: TextStyle(
+            color: color0,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
+          color: color0,
+          onPressed: () {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) {
+                return AlertDialog(
+                  backgroundColor: const Color(0xFF252223),
+                  content: Row(
+                    children: [
+                      Image.asset('assets/dragon.gif', width: 100, height: 100),
+                      Container(
+                        margin: const EdgeInsets.only(left: 15),
+                        child: const Text(
+                          "Desconectando...",
+                          style: TextStyle(color: Color(0xFFFFFFFF)),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+            Future.delayed(const Duration(seconds: 2), () async {
+              await myDevice.device.disconnect();
+              if (context.mounted) {
+                Navigator.pop(context);
+                Navigator.pushReplacementNamed(context, '/menu');
+              }
+            });
+            return;
+          },
+        ),
+      ),
+      body: const Center(
+        child: Text(''),
+      ),
+    );
+  }
 }

@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hugeicons/hugeicons.dart';
+import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
+import '../stored_data.dart';
 
 class ScanPage extends StatefulWidget {
   const ScanPage({super.key});
@@ -54,7 +56,7 @@ class ScanPageState extends State<ScanPage>
   @override
   void dispose() {
     _animationController.dispose();
-    FlutterBluePlus.stopScan();
+    FlutterBluePlus.isScanningNow ? FlutterBluePlus.stopScan() : null;
     super.dispose();
   }
 
@@ -64,34 +66,118 @@ class ScanPageState extends State<ScanPage>
       printLog('Entre a escanear');
       toastFlag = false;
       try {
+        FlutterBluePlus.isScanningNow ? FlutterBluePlus.stopScan() : null;
         FlutterBluePlus.startScan(
-            withKeywords: [
-              'Eléctrico',
-              'Gas',
-              'Detector',
-              'Radiador',
-              'Módulo',
-              'Domótica'
-            ],
-            timeout: const Duration(seconds: 30),
-            androidUsesFineLocation: true,
-            continuousUpdates: true);
-        FlutterBluePlus.scanResults.listen((results) {
-          for (ScanResult result in results) {
-            if (!devices
-                .any((device) => device.remoteId == result.device.remoteId)) {
-              setState(() {
-                devices.add(result.device);
-                devices
-                    .sort((a, b) => a.platformName.compareTo(b.platformName));
-                sortedDevices = devices;
-              });
+          withKeywords: [
+            'Eléctrico',
+            'Gas',
+            'Detector',
+            'Radiador',
+            'Domótica',
+            'Relé',
+          ],
+          androidUsesFineLocation: true,
+          continuousUpdates: true,
+          removeIfGone: const Duration(seconds: 6),
+        );
+
+        FlutterBluePlus.scanResults.listen(
+          (results) {
+            for (ScanResult result in results) {
+              if (!devices
+                  .any((device) => device.remoteId == result.device.remoteId)) {
+                if (navigatorKey.currentContext?.mounted ?? context.mounted) {
+                  devices.add(result.device);
+                  devices
+                      .sort((a, b) => a.platformName.compareTo(b.platformName));
+                  sortedDevices = devices;
+                  context.mounted ? setState(() {}) : null;
+                }
+              }
+              lastSeenDevices[result.device.remoteId.toString()] =
+                  DateTime.now();
             }
-          }
-        });
+            _removeLostDevices();
+            checkTrackedDevices();
+          },
+        );
       } catch (e, stackTrace) {
         printLog('Error al escanear $e $stackTrace');
         showToast('Error al escanear, intentelo nuevamente');
+      }
+    }
+  }
+
+  void _removeLostDevices() {
+    DateTime now = DateTime.now();
+    if (context.mounted) {
+      setState(() {
+        devices.removeWhere((device) {
+          final lastSeen = lastSeenDevices[device.remoteId.toString()];
+          if (lastSeen != null && now.difference(lastSeen).inSeconds > 6) {
+            printLog('Borre ${device.platformName}');
+            lastSeenDevices.remove(device.remoteId.toString());
+            return true;
+          }
+          return false;
+        });
+        sortedDevices = devices;
+      });
+    }
+  }
+
+  void checkTrackedDevices() {
+    // Lista de nombres de plataformas de dispositivos encontrados en el escaneo.
+    List<String> foundDeviceNames = sortedDevices
+        .map((device) => device.platformName.toLowerCase())
+        .toList();
+
+    // Verificar si cada dispositivo en devicesToTrack está presente en los resultados del escaneo.
+    for (String trackedDevice in devicesToTrack) {
+      if (foundDeviceNames.contains(trackedDevice.toLowerCase())) {
+        bool flag = msgFlag[trackedDevice] ?? false;
+        if (!flag) {
+          printLog('Dispositivo $trackedDevice encontrado en el escaneo.');
+          globalDATA[
+                  '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}']![
+              'w_status'] = true;
+          saveGlobalData(globalDATA);
+          try {
+            String topic =
+                'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+            String topic2 =
+                'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+            String message = mqttCommand(command(trackedDevice), true);
+            sendMessagemqtt(topic, message);
+            sendMessagemqtt(topic2, message);
+          } catch (e, s) {
+            printLog('Error al enviar valor $e $s');
+          }
+        }
+        msgFlag[trackedDevice] = true;
+        saveMsgFlag(msgFlag);
+      } else {
+        bool flag = msgFlag[trackedDevice] ?? false;
+        if (flag) {
+          printLog('Dispositivo $trackedDevice NO encontrado en el escaneo.');
+          globalDATA[
+                  '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}']![
+              'w_status'] = false;
+          saveGlobalData(globalDATA);
+          try {
+            String topic =
+                'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+            String topic2 =
+                'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+            String message = mqttCommand(command(trackedDevice), false);
+            sendMessagemqtt(topic, message);
+            sendMessagemqtt(topic2, message);
+          } catch (e, s) {
+            printLog('Error al enviar valor $e $s');
+          }
+        }
+        msgFlag[trackedDevice] = false;
+        saveMsgFlag(msgFlag);
       }
     }
   }
@@ -126,7 +212,9 @@ class ScanPageState extends State<ScanPage>
             {
               if (!connectionFlag) {
                 connectionFlag = true;
-                FlutterBluePlus.stopScan();
+                FlutterBluePlus.isScanningNow
+                    ? FlutterBluePlus.stopScan()
+                    : null;
                 myDevice.setup(device).then((valor) {
                   printLog('RETORNASHE $valor');
                   connectionTry = 0;
@@ -164,6 +252,18 @@ class ScanPageState extends State<ScanPage>
         }
       }
     }
+  }
+
+  void reescan() async {
+    FlutterBluePlus.isScanningNow ? await FlutterBluePlus.stopScan() : null;
+    await Future.delayed(const Duration(seconds: 2));
+    context.mounted
+        ? setState(() {
+            devices.clear();
+          })
+        : null;
+    scan();
+    _controller.finishRefresh();
   }
 
   @override
@@ -252,13 +352,7 @@ class ScanPageState extends State<ScanPage>
           iconTheme: IconThemeData(color: color3),
         ),
         onRefresh: () async {
-          await FlutterBluePlus.stopScan();
-          await Future.delayed(const Duration(seconds: 2));
-          setState(() {
-            devices.clear();
-          });
-          scan();
-          _controller.finishRefresh();
+          reescan();
         },
         child: filteredDevices.isEmpty
             ? ListView(
@@ -300,7 +394,10 @@ class ScanPageState extends State<ScanPage>
                             ),
                             elevation: 8,
                             child: InkWell(
-                              onTap: () => connectToDevice(device),
+                              onTap: () {
+                                showToast('Intentando conectarse al equipo');
+                                connectToDevice(device);
+                              },
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(15.0),
                                 child: Stack(

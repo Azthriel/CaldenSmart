@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../master.dart';
 import '../stored_data.dart';
@@ -140,136 +140,6 @@ class DetectorPageState extends State<DetectorPage> {
     myDevice.device.cancelWhenDisconnected(workSub);
   }
 
-  Future<void> _showEditNicknameDialog(BuildContext context) async {
-    TextEditingController nicknameController =
-        TextEditingController(text: nickname);
-
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          backgroundColor: color3,
-          title: const Text(
-            'Editar identificación del dispositivo',
-            style: TextStyle(color: color0),
-          ),
-          content: TextField(
-            style: const TextStyle(color: color0),
-            cursorColor: const Color(0xFFFFFFFF),
-            controller: nicknameController,
-            decoration: const InputDecoration(
-              hintText: "Introduce tu nueva identificación del dispositivo",
-              hintStyle: TextStyle(color: color0),
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: color0),
-              ),
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: color0),
-              ),
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              style: const ButtonStyle(
-                foregroundColor: WidgetStatePropertyAll(
-                  color0,
-                ),
-              ),
-              child: const Text('Cancelar'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop(); // Cierra el AlertDialog
-              },
-            ),
-            TextButton(
-              style: const ButtonStyle(
-                foregroundColor: WidgetStatePropertyAll(
-                  color0,
-                ),
-              ),
-              child: const Text('Guardar'),
-              onPressed: () {
-                setState(() {
-                  String newNickname = nicknameController.text;
-                  nickname = newNickname;
-                  nicknamesMap[deviceName] = newNickname; // Actualizar el mapa
-                  saveNicknamesMap(nicknamesMap);
-                  printLog('$nicknamesMap');
-                });
-                Navigator.of(dialogContext).pop(); // Cierra el AlertDialog
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _showCupertinoEditNicknameDialog(BuildContext context) async {
-    TextEditingController nicknameController =
-        TextEditingController(text: nickname);
-
-    return showCupertinoDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return CupertinoAlertDialog(
-          title: const Text('Editar identificación del dispositivo',
-              style: TextStyle(
-                color: CupertinoColors.label,
-              )),
-          content: CupertinoTextField(
-            style: const TextStyle(
-              color: CupertinoColors.label,
-            ),
-            cursorColor: CupertinoColors.label,
-            controller: nicknameController,
-            placeholder: "Introduce tu nueva identificación del dispositivo",
-            placeholderStyle: const TextStyle(
-              color: CupertinoColors.label,
-            ),
-            decoration: const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: CupertinoColors.label,
-                ),
-              ),
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              style: const ButtonStyle(
-                  foregroundColor: WidgetStatePropertyAll(
-                CupertinoColors.label,
-              )),
-              child: const Text('Cancelar'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop(); // Cierra el AlertDialog
-              },
-            ),
-            TextButton(
-              style: const ButtonStyle(
-                  foregroundColor: WidgetStatePropertyAll(
-                CupertinoColors.label,
-              )),
-              child: const Text('Guardar'),
-              onPressed: () {
-                setState(() {
-                  String newNickname = nicknameController.text;
-                  nickname = newNickname;
-                  nicknamesMap[deviceName] = newNickname; // Actualizar el mapa
-                  saveNicknamesMap(nicknamesMap);
-                  printLog('$nicknamesMap');
-                });
-                Navigator.of(dialogContext).pop(); // Cierra el AlertDialog
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   //*-Funciones de deslizamiento entre pantallas-*\\
   int _selectedIndex = 0; // Índice del ícono seleccionado
   final PageController _pageController = PageController();
@@ -288,6 +158,7 @@ class DetectorPageState extends State<DetectorPage> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
+      canPop: false,
       onPopInvokedWithResult: (didPop, A) {
         showDialog(
           context: context,
@@ -297,7 +168,7 @@ class DetectorPageState extends State<DetectorPage> {
               backgroundColor: const Color(0xFF252223),
               content: Row(
                 children: [
-                  const CircularProgressIndicator(color: Color(0xFFFFFFFF)),
+                  Image.asset('assets/dragon.gif', width: 100, height: 100),
                   Container(
                     margin: const EdgeInsets.only(left: 15),
                     child: const Text(
@@ -312,8 +183,10 @@ class DetectorPageState extends State<DetectorPage> {
         );
         Future.delayed(const Duration(seconds: 2), () async {
           await myDevice.device.disconnect();
-          navigatorKey.currentState?.pop();
-          navigatorKey.currentState?.pushReplacementNamed('/menu');
+          if(context.mounted){
+            Navigator.pop(context);
+            Navigator.pushReplacementNamed(context, '/menu');
+          }
         });
         return;
       },
@@ -322,9 +195,62 @@ class DetectorPageState extends State<DetectorPage> {
           backgroundColor: color3,
           title: GestureDetector(
             onTap: () async {
-              android
-                  ? await _showEditNicknameDialog(context)
-                  : await _showCupertinoEditNicknameDialog(context);
+              TextEditingController nicknameController =
+                  TextEditingController(text: nickname);
+              showAlertDialog(
+                context,
+                const Text(
+                  'Editar identificación del dispositivo',
+                  style: TextStyle(color: color0),
+                ),
+                TextField(
+                  style: const TextStyle(color: color0),
+                  cursorColor: const Color(0xFFFFFFFF),
+                  controller: nicknameController,
+                  decoration: const InputDecoration(
+                    hintText:
+                        "Introduce tu nueva identificación del dispositivo",
+                    hintStyle: TextStyle(color: color0),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: color0),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: color0),
+                    ),
+                  ),
+                ),
+                <Widget>[
+                  TextButton(
+                    style: const ButtonStyle(
+                      foregroundColor: WidgetStatePropertyAll(
+                        color0,
+                      ),
+                    ),
+                    child: const Text('Cancelar'),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                  TextButton(
+                    style: const ButtonStyle(
+                      foregroundColor: WidgetStatePropertyAll(
+                        color0,
+                      ),
+                    ),
+                    child: const Text('Guardar'),
+                    onPressed: () {
+                      setState(() {
+                        String newNickname = nicknameController.text;
+                        nickname = newNickname;
+                        nicknamesMap[deviceName] = newNickname;
+                        saveNicknamesMap(nicknamesMap);
+                        printLog('$nicknamesMap');
+                      });
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ],
+              );
               setupToken(command(deviceName), extractSerialNumber(deviceName),
                   deviceName);
             },
@@ -340,7 +266,7 @@ class DetectorPageState extends State<DetectorPage> {
             ),
           ),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(Icons.arrow_back_ios_new),
             color: color0,
             onPressed: () {
               showDialog(
@@ -367,9 +293,12 @@ class DetectorPageState extends State<DetectorPage> {
               );
               Future.delayed(const Duration(seconds: 2), () async {
                 await myDevice.device.disconnect();
-                navigatorKey.currentState?.pop();
-                navigatorKey.currentState?.pushReplacementNamed('/menu');
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  Navigator.pushReplacementNamed(context, '/menu');
+                }
               });
+              return;
             },
           ),
           actions: [
@@ -566,7 +495,22 @@ class DetectorPageState extends State<DetectorPage> {
               ],
             ),
             // Nueva Página 2
-            const Center(child: Text('Página 2')),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () async {
+                      await initializeService();
+                      final backService = FlutterBackgroundService();
+
+                      backService.invoke('trackLocation');
+                    },
+                    child: const Text('Test'),
+                  ),
+                ],
+              ),
+            ),
             // Nueva Página 3
             const Center(child: Text('Página 3')),
             // Nueva Página 4

@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
 import '../stored_data.dart';
@@ -12,6 +14,7 @@ List<String> estado = [];
 List<bool> alertIO = [];
 List<String> common = [];
 List<String> valores = [];
+late bool tracking;
 
 // FUNCIONES \\
 
@@ -347,6 +350,8 @@ class DomoticaPageState extends State<DomoticaPage> {
   initState() {
     super.initState();
 
+    tracking = devicesToTrack.contains(deviceName);
+
     if (deviceOwner) {
       if (vencimientoAdmSec < 10 && vencimientoAdmSec > 0) {
         showPaymentTest(true, vencimientoAdmSec, navigatorKey.currentContext!);
@@ -476,6 +481,215 @@ class DomoticaPageState extends State<DomoticaPage> {
 //!Visual
   @override
   Widget build(BuildContext context) {
-    return const CircularProgressIndicator();
+    double width = MediaQuery.of(context).size.width;
+    return Scaffold(
+      backgroundColor: color1,
+      appBar: AppBar(
+        backgroundColor: color3,
+        title: const Text(
+          'Hola',
+          style: TextStyle(
+            color: color0,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
+          color: color0,
+          onPressed: () {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) {
+                return AlertDialog(
+                  backgroundColor: const Color(0xFF252223),
+                  content: Row(
+                    children: [
+                      Image.asset('assets/dragon.gif', width: 100, height: 100),
+                      Container(
+                        margin: const EdgeInsets.only(left: 15),
+                        child: const Text(
+                          "Desconectando...",
+                          style: TextStyle(color: Color(0xFFFFFFFF)),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+            Future.delayed(const Duration(seconds: 2), () async {
+              await myDevice.device.disconnect();
+              if (context.mounted) {
+                Navigator.pop(context);
+                Navigator.pushReplacementNamed(context, '/menu');
+              }
+            });
+            return;
+          },
+        ),
+      ),
+      body: deviceOwner || secondaryAdmin
+          ? ListView.builder(
+              itemCount: parts.length,
+              itemBuilder: (context, int index) {
+                // bool entrada = tipo[index] == 'Entrada';
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      height: 10,
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xffa79986),
+                        borderRadius: BorderRadius.circular(20),
+                        border: const Border(
+                          bottom:
+                              BorderSide(color: Color(0xff4b2427), width: 5),
+                          right: BorderSide(color: Color(0xff4b2427), width: 5),
+                          left: BorderSide(color: Color(0xff4b2427), width: 5),
+                          top: BorderSide(color: Color(0xff4b2427), width: 5),
+                        ),
+                      ),
+                      width: width - 50,
+                      height: 220,
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              const SizedBox(
+                                width: 20,
+                              ),
+                              GestureDetector(
+                                  onTap: () {},
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        subNicknamesMap[
+                                                '$deviceName/-/$index'] ??
+                                            '${tipo[index]} $index',
+                                        style: const TextStyle(
+                                            color: Color(0xff3e3d38),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 30),
+                                        textAlign: TextAlign.start,
+                                      ),
+                                      const SizedBox(
+                                        width: 3,
+                                      ),
+                                      const Icon(
+                                        Icons.edit,
+                                        size: 20,
+                                        color: Color(0xff3e3d38),
+                                      )
+                                    ],
+                                  )),
+                              const Spacer(),
+                              Text(
+                                'Tipo: ${tipo[index]}',
+                                style: const TextStyle(
+                                    color: Color(0xff3e3d38),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(
+                                width: 20,
+                              ),
+                            ],
+                          ),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(
+                                height: 50,
+                              ),
+                              Transform.scale(
+                                scale: 2.5,
+                                child: Switch(
+                                  trackOutlineColor:
+                                      const WidgetStatePropertyAll(
+                                          Color(0xff4b2427)),
+                                  activeColor: const Color(0xff803e2f),
+                                  activeTrackColor: const Color(0xff4b2427),
+                                  inactiveThumbColor: const Color(0xff4b2427),
+                                  inactiveTrackColor: const Color(0xff803e2f),
+                                  value: estado[index] == '1',
+                                  onChanged: (value) {
+                                    controlOut(value, index);
+                                  },
+                                ),
+                              ),
+                              Switch(
+                                value: tracking,
+                                onChanged: (valor) {
+                                  setState(() {
+                                    tracking = valor;
+                                  });
+
+                                  if (tracking) {
+                                    devicesToTrack.add(deviceName);
+                                  } else {
+                                    devicesToTrack.remove(deviceName);
+                                  }
+
+                                  entryToTrack.add('$deviceName/$index');
+
+                                  saveDeviceListToTrack(devicesToTrack);
+                                  saveEntryListToTrack(entryToTrack);
+                                },
+                              )
+                            ],
+                          ),
+                          const SizedBox(
+                            height: 10,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 10,
+                    ),
+                  ],
+                );
+              },
+            )
+          : Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'No sos el dueño del equipo.\nNo puedes modificar los parámetros',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 25, color: Color(0xffa79986)),
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  style: const ButtonStyle(
+                    backgroundColor: WidgetStatePropertyAll(
+                      Color(0xff4b2427),
+                    ),
+                    foregroundColor: WidgetStatePropertyAll(
+                      Color(0xffa79986),
+                    ),
+                  ),
+                  onPressed: () async {
+                    var phoneNumber = '5491162232619';
+                    var message =
+                        'Hola, te hablo en relación a mi equipo $deviceName.\nEste mismo me dice que no soy administrador.\n*Datos del equipo:*\nCódigo de producto: ${command(deviceName)}\nNúmero de serie: ${extractSerialNumber(deviceName)}\nAdministrador actúal: ${utf8.decode(infoValues).split(':')[4]}';
+                    var whatsappUrl =
+                        "whatsapp://send?phone=$phoneNumber&text=${Uri.encodeFull(message)}";
+                    Uri uri = Uri.parse(whatsappUrl);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri);
+                    } else {
+                      showToast('No se pudo abrir WhatsApp');
+                    }
+                  },
+                  child: const Text('Servicio técnico'),
+                ),
+              ],
+            ),
+    );
   }
 }

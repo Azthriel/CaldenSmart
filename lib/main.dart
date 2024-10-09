@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
+import 'package:caldensmart/Devices/relay.dart';
 import 'package:caldensmart/Global/profile.dart';
 import 'Devices/domotica.dart';
 import 'Devices/radiador.dart';
 import 'Devices/detectores.dart';
+import 'Global/escenas.dart';
 import 'easterEgg/easter_egg.dart';
 import 'Global/loading.dart';
 import 'Global/menu.dart';
@@ -22,7 +24,7 @@ import 'stored_data.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  appName = biocalden ? 'Caldén Smart' : 'Silema Calefacción';
+  appName = nameOfApp(app);
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -87,7 +89,7 @@ class MyAppState extends State<MyApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
-      title: biocalden ? 'Caldén Smart' : 'Silema Calefacción',
+      title: nameOfApp(app),
       theme: ThemeData(
         primaryColor: const Color(0xFF302b36),
         primaryColorLight: const Color(0xFFCFC8BD),
@@ -112,6 +114,8 @@ class MyAppState extends State<MyApp> {
         '/radiador': (context) => const RadiadorPage(),
         '/domotica': (context) => const DomoticaPage(),
         '/profile': (context) => const ProfilePage(),
+        '/escenas': (context) => const EscenasPage(),
+        '/relay': (context) => const RelayPage(),
       },
     );
   }

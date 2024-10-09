@@ -1,6 +1,10 @@
+import 'package:caldensmart/stored_data.dart';
 import 'package:flutter/material.dart';
 import 'package:caldensmart/master.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:caldensmart/aws/mqtt/mqtt.dart';
+import 'package:amplify_flutter/amplify_flutter.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -18,15 +22,12 @@ class ProfilePageState extends State<ProfilePage> {
     "Sonido 5",
   ];
 
-  // Estado de los elementos desplegables
   bool isAccountOpen = false;
   bool isDevicesOpen = false;
   bool isDomoticaOpen = false;
   bool isDetectorOpen = false;
   bool isContactOpen = false;
   bool isSocialOpen = false;
-
-  // Estado de los sonidos seleccionados en Domótica y Detector
 
   @override
   Widget build(BuildContext context) {
@@ -40,9 +41,10 @@ class ProfilePageState extends State<ProfilePage> {
             Navigator.pop(context);
           },
         ),
-        title: const Text(
+        title: Text(
           'Configuraciones del perfil',
-          style: TextStyle(color: color0),
+          style: GoogleFonts.poppins(
+              color: color0, fontWeight: FontWeight.bold, fontSize: 20),
         ),
       ),
       body: Container(
@@ -53,18 +55,21 @@ class ProfilePageState extends State<ProfilePage> {
             Expanded(
               child: ListView(
                 children: [
-                  // Sección Cuenta conectada
                   ListTile(
                     leading:
                         const Icon(HugeIcons.strokeRoundedUser, color: color3),
-                    title: const Text(
-                      "Cuenta conectada",
-                      style:
-                          TextStyle(color: color3, fontWeight: FontWeight.bold),
+                    title: Text(
+                      "Cuenta",
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    subtitle: const Text(
+                    subtitle: Text(
                       "Ver cuenta conectada",
-                      style: TextStyle(color: color3),
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                      ),
                     ),
                     onTap: () {
                       setState(() {
@@ -94,7 +99,9 @@ class ProfilePageState extends State<ProfilePage> {
                             padding: const EdgeInsets.all(16.0),
                             child: Text(
                               currentUserEmail,
-                              style: const TextStyle(color: color0),
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                              ),
                             ),
                           ),
                           const Divider(color: Colors.transparent),
@@ -110,14 +117,18 @@ class ProfilePageState extends State<ProfilePage> {
                     leading: const Icon(
                         HugeIcons.strokeRoundedComputerPhoneSync,
                         color: color3),
-                    title: const Text(
-                      "Dispositivos conectados",
-                      style:
-                          TextStyle(color: color3, fontWeight: FontWeight.bold),
+                    title: Text(
+                      "Dispositivos",
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    subtitle: const Text(
-                      "Ver dispositivos conectados",
-                      style: TextStyle(color: color3),
+                    subtitle: Text(
+                      "Ver dispositivos registrados",
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                      ),
                     ),
                     onTap: () {
                       setState(() {
@@ -139,10 +150,12 @@ class ProfilePageState extends State<ProfilePage> {
                       child: Column(
                         children: previusConnections.isEmpty
                             ? [
-                                const Center(
+                                Center(
                                   child: Text(
-                                    "No hay dispositivos conectados",
-                                    style: TextStyle(color: color3),
+                                    "No hay dispositivos registrados",
+                                    style: GoogleFonts.poppins(
+                                      color: color3,
+                                    ),
                                   ),
                                 )
                               ]
@@ -161,8 +174,9 @@ class ProfilePageState extends State<ProfilePage> {
                                           padding: const EdgeInsets.all(16.0),
                                           child: Text(
                                             device,
-                                            style:
-                                                const TextStyle(color: color0),
+                                            style: GoogleFonts.poppins(
+                                              color: color0,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -178,14 +192,18 @@ class ProfilePageState extends State<ProfilePage> {
                   ListTile(
                     leading: const Icon(HugeIcons.strokeRoundedHome11,
                         color: color3),
-                    title: const Text(
+                    title: Text(
                       "Domótica",
-                      style:
-                          TextStyle(color: color3, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    subtitle: const Text(
+                    subtitle: Text(
                       "alarma para domótica",
-                      style: TextStyle(color: color3),
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                      ),
                     ),
                     onTap: () {
                       setState(() {
@@ -211,12 +229,12 @@ class ProfilePageState extends State<ProfilePage> {
                               children: [
                                 const Icon(HugeIcons.strokeRoundedVolumeHigh,
                                     color: color3),
-                                const SizedBox(
-                                    width:
-                                        10), // Espacio entre el ícono y el texto
+                                const SizedBox(width: 10),
                                 Text(
                                   alarmSounds[index],
-                                  style: const TextStyle(color: color3),
+                                  style: GoogleFonts.poppins(
+                                    color: color3,
+                                  ),
                                 ),
                               ],
                             ),
@@ -247,14 +265,18 @@ class ProfilePageState extends State<ProfilePage> {
                   ListTile(
                     leading: const Icon(HugeIcons.strokeRoundedHotspot,
                         color: color3),
-                    title: const Text(
+                    title: Text(
                       "Detector",
-                      style:
-                          TextStyle(color: color3, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    subtitle: const Text(
+                    subtitle: Text(
                       "alarma para detectores",
-                      style: TextStyle(color: color3),
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                      ),
                     ),
                     onTap: () {
                       setState(() {
@@ -280,12 +302,12 @@ class ProfilePageState extends State<ProfilePage> {
                               children: [
                                 const Icon(HugeIcons.strokeRoundedVolumeHigh,
                                     color: color3),
-                                const SizedBox(
-                                    width:
-                                        10), // Espacio entre el ícono y el texto
+                                const SizedBox(width: 10),
                                 Text(
                                   alarmSounds[index],
-                                  style: const TextStyle(color: color3),
+                                  style: GoogleFonts.poppins(
+                                    color: color3,
+                                  ),
                                 ),
                               ],
                             ),
@@ -316,14 +338,18 @@ class ProfilePageState extends State<ProfilePage> {
                   ListTile(
                     leading: const Icon(HugeIcons.strokeRoundedContactBook,
                         color: color3),
-                    title: const Text(
+                    title: Text(
                       "Contáctanos",
-                      style:
-                          TextStyle(color: color3, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    subtitle: const Text(
+                    subtitle: Text(
                       "Ver información de contacto",
-                      style: TextStyle(color: color3),
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                      ),
                     ),
                     onTap: () {
                       setState(() {
@@ -342,240 +368,28 @@ class ProfilePageState extends State<ProfilePage> {
                     firstChild: const SizedBox.shrink(),
                     secondChild: Padding(
                       padding: const EdgeInsets.only(left: 16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Contacto comercial
-                          Container(
-                            decoration: BoxDecoration(
-                              color: color3,
-                              borderRadius: BorderRadius.circular(8.0),
-                              border: Border.all(color: color0),
-                            ),
-                            padding: const EdgeInsets.all(16.0),
-                            margin: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Contacto comercial:',
-                                  style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: color0),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    sendWhatsAppMessage(
-                                      '5491162234181',
-                                      '¡Hola! Tengo una duda comercial sobre los productos $appName: \n',
-                                    );
-                                  },
-                                  child: const Row(
-                                    children: [
-                                      Icon(
-                                        HugeIcons.strokeRoundedCall02,
-                                        size: 20,
-                                        color: color0,
-                                      ),
-                                      SizedBox(
-                                        width: 10,
-                                      ),
-                                      Text(
-                                        '+54 9 11 6223-4181',
-                                        style: TextStyle(
-                                            fontSize: 20, color: color0),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    launchEmail(
-                                      'ceat@ibsanitarios.com.ar',
-                                      'Consulta comercial acerca de la línea $appName',
-                                      '¡Hola! Tengo la siguiente duda sobre la línea IoT:\n',
-                                    );
-                                  },
-                                  child: const Row(
-                                    children: [
-                                      Icon(
-                                        HugeIcons.strokeRoundedMail01,
-                                        size: 20,
-                                        color: color0,
-                                      ),
-                                      SizedBox(
-                                        width: 10,
-                                      ),
-                                      Expanded(
-                                        child: SingleChildScrollView(
-                                          scrollDirection: Axis.horizontal,
-                                          child: Text(
-                                            'ceat@ibsanitarios.com.ar',
-                                            style: TextStyle(
-                                                fontSize: 20, color: color0),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Contacto técnico
-                          Container(
-                            decoration: BoxDecoration(
-                              color: color3,
-                              borderRadius: BorderRadius.circular(8.0),
-                              border: Border.all(color: color0),
-                            ),
-                            padding: const EdgeInsets.all(16.0),
-                            margin: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Consulta técnica:',
-                                  style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: color0),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    launchEmail(
-                                      'pablo@intelligentgas.com.ar',
-                                      'Consulta ref. $appName',
-                                      '¡Hola! Tengo una consulta referida al área de ingeniería sobre mis equipos.\n',
-                                    );
-                                  },
-                                  child: const Row(
-                                    children: [
-                                      Icon(
-                                        HugeIcons.strokeRoundedMail01,
-                                        size: 20,
-                                        color: color0,
-                                      ),
-                                      SizedBox(
-                                        width: 10,
-                                      ),
-                                      Expanded(
-                                        child: SingleChildScrollView(
-                                          scrollDirection: Axis.horizontal,
-                                          child: Text(
-                                            'pablo@intelligentgas.com.ar',
-                                            style: TextStyle(
-                                                fontSize: 20, color: color0),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Customer service
-                          Container(
-                            decoration: BoxDecoration(
-                              color: color3,
-                              borderRadius: BorderRadius.circular(8.0),
-                              border: Border.all(color: color0),
-                            ),
-                            padding: const EdgeInsets.all(16.0),
-                            margin: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Customer service:',
-                                  style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: color0),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    sendWhatsAppMessage(
-                                      '5491162232619',
-                                      '¡Hola! Me comunico en relación a uno de mis equipos: \n',
-                                    );
-                                  },
-                                  child: const Row(
-                                    children: [
-                                      Icon(
-                                        HugeIcons.strokeRoundedCall02,
-                                        size: 20,
-                                        color: color0,
-                                      ),
-                                      SizedBox(
-                                        width: 10,
-                                      ),
-                                      Text(
-                                        '+54 9 11 6223-2619',
-                                        style: TextStyle(
-                                            fontSize: 20, color: color0),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    launchEmail(
-                                      'service@calefactorescalden.com.ar',
-                                      'Consulta sobre línea Smart',
-                                      '¡Hola! Me comunico en relación a uno de mis equipos: \n',
-                                    );
-                                  },
-                                  child: const Row(
-                                    children: [
-                                      Icon(
-                                        HugeIcons.strokeRoundedMail01,
-                                        size: 20,
-                                        color: color0,
-                                      ),
-                                      SizedBox(
-                                        width: 10,
-                                      ),
-                                      Expanded(
-                                        child: SingleChildScrollView(
-                                          scrollDirection: Axis.horizontal,
-                                          child: Text(
-                                            'service@calefactorescalden.com.ar',
-                                            style: TextStyle(
-                                                fontSize: 20, color: color0),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                      child: contactInfo(app),
                     ),
                     crossFadeState: isContactOpen
                         ? CrossFadeState.showSecond
                         : CrossFadeState.showFirst,
                   ),
-
                   const Divider(color: color3),
-                  // Sección Nuestras redes
                   ListTile(
                     leading: const Icon(HugeIcons.strokeRoundedShare01,
                         color: color3),
-                    title: const Text(
+                    title: Text(
                       "Nuestras redes",
-                      style:
-                          TextStyle(color: color3, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    subtitle: const Text(
+                    subtitle: Text(
                       "Ver nuestras redes sociales",
-                      style: TextStyle(color: color3),
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                      ),
                     ),
                     onTap: () {
                       setState(() {
@@ -601,25 +415,28 @@ class ProfilePageState extends State<ProfilePage> {
                             leading: const Icon(
                                 HugeIcons.strokeRoundedInstagram,
                                 color: color3),
-                            title: const Text(
+                            title: Text(
                               'Instagram',
-                              style: TextStyle(color: color3),
+                              style: GoogleFonts.poppins(
+                                color: color3,
+                              ),
                             ),
                             onTap: () {
-                              launchURL(
-                                  'https://www.instagram.com/calefactores.calden/?hl=en');
+                              launchWebURL(linksOfApp(app, 'Instagram'));
                             },
                           ),
                           ListTile(
                             leading: const Icon(
                                 HugeIcons.strokeRoundedFacebook01,
                                 color: color3),
-                            title: const Text(
+                            title: Text(
                               'Facebook',
-                              style: TextStyle(color: color3),
+                              style: GoogleFonts.poppins(
+                                color: color3,
+                              ),
                             ),
                             onTap: () {
-                              launchURL('https://www.facebook.com/tu_facebook');
+                              launchWebURL(linksOfApp(app, 'Facebook'));
                             },
                           ),
                         ],
@@ -633,8 +450,6 @@ class ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             ),
-
-            // Botón Cerrar sesión al final
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
@@ -644,11 +459,20 @@ class ProfilePageState extends State<ProfilePage> {
                   padding: const EdgeInsets.symmetric(vertical: 15.0),
                 ),
                 onPressed: () {
-                  // Acción para cerrar sesión
+                  Amplify.Auth.signOut();
+                  asking();
+                  previusConnections.clear();
+                  saveDeviceList(previusConnections);
+                  for (int i = 0; i < topicsToSub.length; i++) {
+                    unSubToTopicMQTT(topicsToSub[i]);
+                  }
+                  topicsToSub.clear();
+                  saveTopicList(topicsToSub);
+                  backTimerDS?.cancel();
                 },
-                child: const Text(
+                child: Text(
                   "Cerrar sesión",
-                  style: TextStyle(
+                  style: GoogleFonts.poppins(
                     color: color0,
                     fontSize: 18.0,
                     fontWeight: FontWeight.bold,

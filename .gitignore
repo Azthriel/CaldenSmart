@@ -14,7 +14,7 @@ lib/aws/dynamo/dynamo_certificates.dart
 lib/firebase_options.dart
 lib/amplify_options.dart
 lib/easterEgg
-android/app/google-services.json
+
 
 
 # IntelliJ related
@@ -49,6 +49,7 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 android/app/build/
+android/app/google-services.json
 
 #amplify-do-not-edit-begin
 amplify/\#current-cloud-backend
