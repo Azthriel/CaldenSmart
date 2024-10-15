@@ -18,10 +18,9 @@ void loadValues() async {
   soundOfNotification = await loadSounds();
   detectorOff = await loadDetectorOff();
   devicesToTrack = await loadDeviceListToTrack();
-  entryToTrack = await loadEntryListToTrack();
   msgFlag = await loadmsgFlag();
 
-  for (var device in previusConnections) {
+  for (String device in previusConnections) {
     await queryItems(service, command(device), extractSerialNumber(device));
   }
 }
@@ -325,14 +324,14 @@ Future<List<String>> loadDeviceListToTrack() async {
   return prefs.getStringList('devicesToTrack') ?? [];
 }
 
-Future<void> saveEntryListToTrack(List<String> listaEntradas) async {
+Future<void> savePinToTrack(List<String> listaPines, String device) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setStringList('EntryToTrack', listaEntradas);
+  await prefs.setStringList('pinsToTrack$device', listaPines);
 }
 
-Future<List<String>> loadEntryListToTrack() async {
+Future<List<String>> loadPinToTrack(String device) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList('EntryToTrack') ?? [];
+  return prefs.getStringList('pinsToTrack$device') ?? [];
 }
 
 Future<void> saveMsgFlag(Map<String, bool> msgFlag) async {

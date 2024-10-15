@@ -16,7 +16,7 @@ dependencies:
   flutter_blue_plus: ^1.32.11
   easy_refresh: ^3.4.0
   geolocator: ^10.1.0
-  shared_preferences: ^2.2.2
+  shared_preferences: ^2.3.2
   url_launcher: ^6.2.3
   flutter_email_sender: ^6.0.2
   amplify_flutter: ^1.7.0
@@ -25,7 +25,6 @@ dependencies:
   provider: ^6.1.2
   firebase_messaging: ^14.7.20
   firebase_core: ^2.27.1
-  shared_aws_api: ^2.0.1
   aws_dynamodb_api: ^2.0.0
   dio: ^5.4.3+1
   flutter_background_service: ^5.0.10

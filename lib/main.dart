@@ -87,7 +87,7 @@ class MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: true,
       navigatorKey: navigatorKey,
       title: nameOfApp(app),
       theme: ThemeData(

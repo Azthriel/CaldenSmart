@@ -16,13 +16,6 @@ class MenuPageState extends State<MenuPage> {
   int _selectedIndex = 0;
   int counter = 0;
 
-  @override
-  void initState() {
-    //TODO: Esto va en login después
-    super.initState();
-    showPrivacyDialogIfNeeded();
-  }
-
   void _onPageChanged(int index) {
     setState(() {
       _selectedIndex = index;

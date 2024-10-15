@@ -390,8 +390,16 @@ class RelayPageState extends State<RelayPage> {
                                   await SharedPreferences.getInstance();
                               bool hasInitService =
                                   prefs.getBool('hasInitService') ?? false;
-                              hasInitService ? null : await initializeService();
+                              printLog(
+                                  'Se inició el servicio? $hasInitService');
+                              if (!hasInitService) {
+                                printLog('Empiezo');
+                                await initializeService();
+                                printLog('Acabe');
+                              }
+                              await Future.delayed(const Duration(seconds: 30));
                               final backService = FlutterBackgroundService();
+                              printLog('Xd');
                               backService.invoke('trackLocation');
                               Navigator.pop(
                                   navigatorKey.currentContext ?? context);

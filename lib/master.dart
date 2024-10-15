@@ -176,13 +176,12 @@ Map<String, List<String>> detectorOff = {};
 //*-Omnipresencia-*\\
 List<String> devicesToTrack = [];
 Map<String, DateTime> lastSeenDevices = {};
-List<String> entryToTrack = [];
 Map<String, bool> msgFlag = {};
 //*-Omnipresencia-*\\
 
 // !------------------------------VERSION NUMBER---------------------------------------
 //ACORDATE: Cambia el número de versión en el pubspec.yaml antes de publicar
-String appVersionNumber = '24100800';
+String appVersionNumber = '24101500';
 //ACORDATE: 0 = Caldén Smart / 1 = Silema
 int app = 0;
 // !------------------------------VERSION NUMBER---------------------------------------
@@ -936,60 +935,6 @@ String generateRandomNumbers(int length) {
   return result;
 }
 
-void showPrivacyDialogIfNeeded() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool hasShownDialog = prefs.getBool('hasShownDialog') ?? false;
-
-  if (!hasShownDialog) {
-    showAlertDialog(
-      navigatorKey.currentContext!,
-      const Text(
-        'Política de Privacidad',
-        style: TextStyle(color: Color(0xFFFFFFFF)),
-      ),
-      SingleChildScrollView(
-        scrollDirection: Axis.vertical,
-        child: ListBody(
-          children: <Widget>[
-            Text(
-              'En $appName,  valoramos tu privacidad y seguridad. Queremos asegurarte que nuestra aplicación está diseñada con el respeto a tu privacidad personal. Aquí hay algunos puntos clave que debes conocer:\nNo Recopilamos Información Personal: Nuestra aplicación no recopila ni almacena ningún tipo de información personal de nuestros usuarios. Puedes usar nuestra aplicación con la tranquilidad de que tu privacidad está protegida.\nUso de Permisos: Aunque nuestra aplicación solicita ciertos permisos, como el acceso a la cámara, estos se utilizan exclusivamente para el funcionamiento de la aplicación y no para recopilar datos personales.\nPolítica de Privacidad Detallada: Si deseas obtener más información sobre nuestra política de privacidad, te invitamos a visitar nuestra página web. Allí encontrarás una explicación detallada de nuestras prácticas de privacidad.\nPara continuar y disfrutar de todas las funcionalidades de $appName, por favor, acepta nuestra política de privacidad.',
-              style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 10),
-            ),
-          ],
-        ),
-      ),
-      <Widget>[
-        TextButton(
-          style: const ButtonStyle(
-            foregroundColor: WidgetStatePropertyAll(
-              Color(0xFFFFFFFF),
-            ),
-          ),
-          child: const Text(
-            'Leer nuestra\npolitica de privacidad',
-            textAlign: TextAlign.start,
-          ),
-          onPressed: () {
-            launchWebURL(linksOfApp(app, 'Privacidad'));
-          },
-        ),
-        TextButton(
-          style: const ButtonStyle(
-            foregroundColor: WidgetStatePropertyAll(
-              Color(0xFFFFFFFF),
-            ),
-          ),
-          child: const Text('Aceptar'),
-          onPressed: () {
-            Navigator.of(navigatorKey.currentContext!).pop();
-          },
-        ),
-      ],
-    );
-    await prefs.setBool('hasShownDialog', true);
-  }
-}
-
 Future<void> sendWhatsAppMessage(String phoneNumber, String message) async {
   var whatsappUrl =
       "whatsapp://send?phone=$phoneNumber&text=${Uri.encodeFull(message)}";
@@ -1054,18 +999,6 @@ void launchWebURL(String url) async {
   } else {
     throw 'No se pudo abrir $url';
   }
-}
-
-String mqttCommand(String pc, bool turnOn) {
-  late Map<String, dynamic> msg;
-
-  if (pc == '020010_IOT') {
-    msg = {'': turnOn};
-  } else {
-    msg = {'w_status': turnOn};
-  }
-
-  return jsonEncode(msg);
 }
 //*-Funciones diversas-*\\
 
@@ -2412,7 +2345,7 @@ Future<void> initializeService() async {
 
     printLog('Se inició piola');
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('hasShownDialog', true);
+    await prefs.setBool('hasInitService', true);
   } catch (e, s) {
     printLog('Error al inicializar servicio $e');
     printLog('$s');
@@ -2420,11 +2353,28 @@ Future<void> initializeService() async {
 }
 
 @pragma('vm:entry-point')
-bool onStart(ServiceInstance service) {
+FutureOr<bool> onStart(ServiceInstance service) async {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
 
-  setupMqtt();
+  await setupMqtt();
+
+  flutterLocalNotificationsPlugin.show(
+    888,
+    'Servicio inicializado con exito',
+    'Gracias por elegir Caldén Smart',
+    const NotificationDetails(
+      android: AndroidNotificationDetails(
+        'caldenSmart',
+        'Eventos',
+        icon: '@mipmap/ic_launcher',
+        sound: RawResourceAndroidNotificationSound('noti'),
+        enableVibration: true,
+        importance: Importance.max,
+      ),
+      iOS: DarwinNotificationDetails(),
+    ),
+  );
 
   service.on('stopService').listen((event) {
     service.stopSelf();
@@ -2452,18 +2402,25 @@ bool onStart(ServiceInstance service) {
   );
 
   service.on('trackLocation').listen(
-    (event) async {
+    (event) {
+      printLog('Se llamo el cosito coson');
       showNotification(
           'Se inició el trackeo',
           'Recuerde tener la ubicación y bluetooth del telefono encendida',
           'noti');
 
-      List<String> devicesTrack = await loadDeviceListToTrack();
       FlutterBluePlus.startScan(
-        withNames: devicesTrack,
+        withKeywords: [
+          'Eléctrico',
+          'Gas',
+          'Detector',
+          'Radiador',
+          'Domótica',
+          'Relé',
+        ],
         androidUsesFineLocation: true,
         continuousUpdates: true,
-        removeIfGone: const Duration(seconds: 6),
+        removeIfGone: const Duration(seconds: 30),
       );
 
       FlutterBluePlus.scanResults.listen(
@@ -2478,58 +2435,111 @@ bool onStart(ServiceInstance service) {
               .toList();
           List<String> devicesTrack = await loadDeviceListToTrack();
           Map<String, Map<String, dynamic>> globalDATA = await loadGlobalData();
-          // Verificar si cada dispositivo en devicesToTrack está presente en los resultados del escaneo.
+          Map<String, bool> flags = await loadmsgFlag();
+          // printLog('Vamos a buscar en la lista: $devicesTrack');
           for (String trackedDevice in devicesTrack) {
             if (foundDeviceNames.contains(trackedDevice.toLowerCase())) {
-              bool flag = msgFlag[trackedDevice] ?? false;
+              bool flag = flags[trackedDevice] ?? false;
+              // printLog('Flag: $flag');
               if (!flag) {
                 printLog(
                     'Dispositivo $trackedDevice encontrado en el escaneo.');
-                globalDATA
-                    .putIfAbsent(
-                        '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
-                        () => {})
-                    .addAll({'w_status': true});
-                saveGlobalData(globalDATA);
-                try {
-                  String topic =
-                      'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
-                  String topic2 =
-                      'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
-                  String message = jsonEncode({'w_status': true});
-                  sendMessagemqtt(topic, message);
-                  sendMessagemqtt(topic2, message);
-                } catch (e, s) {
-                  printLog('Error al enviar valor $e $s');
+                if (command(trackedDevice) == '020010_IOT') {
+                  List<String> pinToTrack = await loadPinToTrack(trackedDevice);
+                  printLog('Encontre $pinToTrack');
+                  for (String pin in pinToTrack) {
+                    printLog('Voy a mandar al pin $pin');
+                    globalDATA
+                        .putIfAbsent(
+                            '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
+                            () => {})
+                        .addAll({'io$pin': '0:1:0'});
+                    saveGlobalData(globalDATA);
+                    try {
+                      String topic =
+                          'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                      String topic2 =
+                          'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                      String message = jsonEncode({'io$pin': '0:1:0'});
+                      sendMessagemqtt(topic, message);
+                      sendMessagemqtt(topic2, message);
+                    } catch (e, s) {
+                      printLog('Error al enviar valor $e $s');
+                    }
+                  }
+                } else {
+                  globalDATA
+                      .putIfAbsent(
+                          '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
+                          () => {})
+                      .addAll({'w_status': true});
+                  saveGlobalData(globalDATA);
+                  try {
+                    String topic =
+                        'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                    String topic2 =
+                        'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                    String message = jsonEncode({'w_status': true});
+                    sendMessagemqtt(topic, message);
+                    sendMessagemqtt(topic2, message);
+                  } catch (e, s) {
+                    printLog('Error al enviar valor $e $s');
+                  }
                 }
               }
-              msgFlag[trackedDevice] = true;
-              saveMsgFlag(msgFlag);
+              flags[trackedDevice] = true;
+
+              saveMsgFlag(flags);
             } else {
-              bool flag = msgFlag[trackedDevice] ?? false;
+              bool flag = flags[trackedDevice] ?? false;
               if (flag) {
                 printLog(
                     'Dispositivo $trackedDevice NO encontrado en el escaneo.');
-                globalDATA
-                    .putIfAbsent(
-                        '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
-                        () => {})
-                    .addAll({'w_status': false});
-                saveGlobalData(globalDATA);
-                try {
-                  String topic =
-                      'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
-                  String topic2 =
-                      'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
-                  String message = jsonEncode({'w_status': false});
-                  sendMessagemqtt(topic, message);
-                  sendMessagemqtt(topic2, message);
-                } catch (e, s) {
-                  printLog('Error al enviar valor $e $s');
+                if (command(trackedDevice) == '020010_IOT') {
+                  List<String> pinToTrack = await loadPinToTrack(trackedDevice);
+                  printLog('Encontre $pinToTrack');
+                  for (String pin in pinToTrack) {
+                    printLog('Es el pin io$pin');
+                    globalDATA
+                        .putIfAbsent(
+                            '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
+                            () => {})
+                        .addAll({'io$pin': '0:0:0'});
+                    saveGlobalData(globalDATA);
+                    try {
+                      String topic =
+                          'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                      String topic2 =
+                          'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                      String message = jsonEncode({'io$pin': '0:0:0'});
+                      sendMessagemqtt(topic, message);
+                      sendMessagemqtt(topic2, message);
+                    } catch (e, s) {
+                      printLog('Error al enviar valor $e $s');
+                    }
+                  }
+                } else {
+                  globalDATA
+                      .putIfAbsent(
+                          '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
+                          () => {})
+                      .addAll({'w_status': false});
+                  saveGlobalData(globalDATA);
+                  try {
+                    String topic =
+                        'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                    String topic2 =
+                        'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                    String message = jsonEncode({'w_status': false});
+                    sendMessagemqtt(topic, message);
+                    sendMessagemqtt(topic2, message);
+                  } catch (e, s) {
+                    printLog('Error al enviar valor $e $s');
+                  }
                 }
               }
-              msgFlag[trackedDevice] = false;
-              saveMsgFlag(msgFlag);
+              flags[trackedDevice] = false;
+              saveMsgFlag(flags);
             }
           }
         },
@@ -3490,14 +3500,15 @@ class NavButton extends StatelessWidget {
           onTap(index);
         },
         child: SizedBox(
-            height: 75.0,
-            child: Transform.translate(
-              offset: Offset(
-                  0, difference < 1.0 / length ? verticalAlignment * 40 : 0),
-              child: Opacity(
-                  opacity: difference < 1.0 / length * 0.99 ? opacity : 1.0,
-                  child: child),
-            )),
+          height: 75.0,
+          child: Transform.translate(
+            offset: Offset(
+                0, difference < 1.0 / length ? verticalAlignment * 40 : 0),
+            child: Opacity(
+                opacity: difference < 1.0 / length * 0.99 ? opacity : 1.0,
+                child: child),
+          ),
+        ),
       ),
     );
   }

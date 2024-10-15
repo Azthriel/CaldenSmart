@@ -1,13 +1,16 @@
-// VARIABLES \\
 import 'dart:convert';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
 import '../stored_data.dart';
+
+// VARIABLES \\
 
 List<String> tipo = [];
 List<String> estado = [];
@@ -15,6 +18,7 @@ List<bool> alertIO = [];
 List<String> common = [];
 List<String> valores = [];
 late bool tracking;
+late List<bool> _selectedPins;
 
 // FUNCIONES \\
 
@@ -352,6 +356,8 @@ class DomoticaPageState extends State<DomoticaPage> {
 
     tracking = devicesToTrack.contains(deviceName);
 
+    processSelectedPins();
+
     if (deviceOwner) {
       if (vencimientoAdmSec < 10 && vencimientoAdmSec > 0) {
         showPaymentTest(true, vencimientoAdmSec, navigatorKey.currentContext!);
@@ -370,6 +376,17 @@ class DomoticaPageState extends State<DomoticaPage> {
     notificationMap.putIfAbsent(
         '${command(deviceName)}/${extractSerialNumber(deviceName)}',
         () => List<bool>.filled(4, false));
+  }
+
+  Future<void> processSelectedPins() async {
+    List<String> pins = await loadPinToTrack(deviceName);
+    _selectedPins = List<bool>.filled(parts.length, false);
+
+    for (int i = 0; i < pins.length; i++) {
+      pins.contains(i.toString())
+          ? _selectedPins[i] = true
+          : _selectedPins[i] = false;
+    }
   }
 
   void updateWifiValues(List<int> data) {
@@ -478,6 +495,225 @@ class DomoticaPageState extends State<DomoticaPage> {
     myDevice.device.cancelWhenDisconnected(ioSub);
   }
 
+  Future<void> _openTrackingDialog() async {
+    bool fun = false;
+    List<bool> tempSelectedPins = List<bool>.from(_selectedPins);
+
+    await showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black.withOpacity(0.5),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (BuildContext context, Animation<double> animation,
+          Animation<double> secondaryAnimation) {
+        double screenWidth = MediaQuery.of(context).size.width;
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minWidth: 300.0,
+                  maxWidth: screenWidth - 20,
+                ),
+                child: IntrinsicWidth(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.5),
+                          spreadRadius: 1,
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Card(
+                      color: color3,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30.0),
+                      ),
+                      elevation: 24,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.topCenter,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 70, 20, 20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Center(
+                                  child: DefaultTextStyle(
+                                    style: GoogleFonts.poppins(
+                                      color: color0,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    child: const Text(
+                                      'Selecciona los pines para trackear',
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Center(
+                                  child: SingleChildScrollView(
+                                    child: ListBody(
+                                      children:
+                                          List.generate(parts.length, (index) {
+                                        return CheckboxListTile(
+                                          title: Text(
+                                            subNicknamesMap[
+                                                    '$deviceName/-/$index'] ??
+                                                'Pin $index',
+                                            style: GoogleFonts.poppins(
+                                              color: color0,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          value: tempSelectedPins[index],
+                                          activeColor: color6,
+                                          onChanged: (bool? value) {
+                                            setState(() {
+                                              tempSelectedPins[index] =
+                                                  value ?? false;
+                                            });
+                                          },
+                                        );
+                                      }),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 30),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    TextButton(
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: color0,
+                                        backgroundColor: color3,
+                                      ),
+                                      onPressed: () {
+                                        fun = false;
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: const Text('Cancelar'),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    TextButton(
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: color0,
+                                        backgroundColor: color3,
+                                      ),
+                                      onPressed: () async {
+                                        if (tempSelectedPins.contains(true)) {
+                                          List<String> pins =
+                                              await loadPinToTrack(deviceName);
+                                          setState(() {
+                                            _selectedPins = List<bool>.from(
+                                                tempSelectedPins);
+
+                                            for (int i = 0;
+                                                i < _selectedPins.length;
+                                                i++) {
+                                              _selectedPins[i] &&
+                                                      !pins.contains(
+                                                          i.toString())
+                                                  ? pins.add(i.toString())
+                                                  : null;
+                                            }
+                                          });
+                                          await savePinToTrack(
+                                              pins, deviceName);
+
+                                          printLog(
+                                              'When haces tus momos en flutter :v');
+                                          fun = true;
+                                          context.mounted
+                                              ? Navigator.of(context).pop()
+                                              : printLog("Contextn't");
+                                        } else {
+                                          showToast(
+                                              'Por favor, selecciona al menos una opción.');
+                                        }
+                                      },
+                                      child: const Text('Guardar'),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          Positioned(
+                            top: -50,
+                            child: Material(
+                              elevation: 10,
+                              shape: const CircleBorder(),
+                              shadowColor: Colors.black.withOpacity(0.4),
+                              child: CircleAvatar(
+                                radius: 50,
+                                backgroundColor: color3,
+                                child: Image.asset(
+                                  'assets/dragon.png',
+                                  width: 60,
+                                  height: 60,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          ),
+          child: ScaleTransition(
+            scale: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOut,
+            ),
+            child: child,
+          ),
+        );
+      },
+    );
+
+    printLog('ME WHEN YOUR MOM WHEN ME WHEN YOUR MOM $fun');
+    if (fun) {
+      printLog('Pov: Sos re onichan mal');
+      setState(() {
+        tracking = true;
+      });
+      devicesToTrack.add(deviceName);
+      await saveDeviceListToTrack(devicesToTrack);
+      printLog('Equipo $devicesToTrack');
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      bool hasInitService = prefs.getBool('hasInitService') ?? false;
+      printLog('Se inició el servicio? $hasInitService');
+      if (!hasInitService) {
+        printLog('Empiezo');
+        await initializeService();
+        printLog('Acabe');
+      }
+
+      await Future.delayed(const Duration(seconds: 30));
+      final backService = FlutterBackgroundService();
+      printLog('Xd');
+      backService.invoke('trackLocation');
+    }
+  }
+
 //!Visual
   @override
   Widget build(BuildContext context) {
@@ -492,6 +728,95 @@ class DomoticaPageState extends State<DomoticaPage> {
             color: color0,
           ),
         ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color3,
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30.0),
+              ),
+              elevation: 5,
+            ),
+            onPressed: () {
+              if (tracking) {
+                {
+                  showAlertDialog(
+                    context,
+                    const Text(
+                      '¿Seguro que quiere cancelar el tackeo?',
+                    ),
+                    const Text(
+                      'Deshabilitar hará que puedas controlarlo manual.\nSi quieres volver a utilizar el trackeo deberás habilitarlo nuevamente',
+                    ),
+                    [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Cancelar'),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          setState(() {
+                            tracking = false;
+                          });
+                          devicesToTrack.remove(deviceName);
+                          saveDeviceListToTrack(devicesToTrack);
+                          List<String> jijeo = [];
+                          savePinToTrack(jijeo, deviceName);
+
+                          context.mounted
+                              ? Navigator.of(context).pop()
+                              : printLog("Contextn't");
+                        },
+                        child: const Text(
+                          'Aceptar',
+                        ),
+                      )
+                    ],
+                  );
+                }
+              } else {
+                showAlertDialog(
+                  context,
+                  const Text(
+                    '¿Estás seguro que quiere iniciar el trackeo Bluetooth?',
+                  ),
+                  const Text(
+                    'Habilitar está función hará que la aplicación usé más recursos de lo común, si a pesar de esto decides utilizarlo es bajo tu responsabilidad.',
+                  ),
+                  [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Cancelar'),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        context.mounted
+                            ? Navigator.of(context).pop()
+                            : printLog("Contextn't");
+                        await _openTrackingDialog();
+                      },
+                      child: const Text(
+                        'Aceptar',
+                      ),
+                    )
+                  ],
+                );
+              }
+            },
+            child: Text(
+              tracking ? 'Dejar de tackear' : 'Iniciar trackeo',
+              style: const TextStyle(
+                color: color0,
+                fontSize: 18,
+              ),
+            ),
+          ),
+        ],
         leading: IconButton(
           icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
           color: color0,
@@ -532,7 +857,6 @@ class DomoticaPageState extends State<DomoticaPage> {
           ? ListView.builder(
               itemCount: parts.length,
               itemBuilder: (context, int index) {
-                // bool entrada = tipo[index] == 'Entrada';
                 return Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -552,7 +876,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                         ),
                       ),
                       width: width - 50,
-                      height: 220,
+                      height: 250,
                       child: Column(
                         children: [
                           Row(
@@ -621,25 +945,9 @@ class DomoticaPageState extends State<DomoticaPage> {
                                   },
                                 ),
                               ),
-                              Switch(
-                                value: tracking,
-                                onChanged: (valor) {
-                                  setState(() {
-                                    tracking = valor;
-                                  });
-
-                                  if (tracking) {
-                                    devicesToTrack.add(deviceName);
-                                  } else {
-                                    devicesToTrack.remove(deviceName);
-                                  }
-
-                                  entryToTrack.add('$deviceName/$index');
-
-                                  saveDeviceListToTrack(devicesToTrack);
-                                  saveEntryListToTrack(entryToTrack);
-                                },
-                              )
+                              const SizedBox(
+                                height: 10,
+                              ),
                             ],
                           ),
                           const SizedBox(
@@ -653,6 +961,8 @@ class DomoticaPageState extends State<DomoticaPage> {
                     ),
                   ],
                 );
+
+                // bool entrada = tipo[index] == 'Entrada';
               },
             )
           : Column(

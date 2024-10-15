@@ -883,15 +883,24 @@ class WifiPageState extends State<WifiPage> {
                                                         const Color(0xFF9C9D98),
                                                     value: estadoWifi[i],
                                                     onChanged: (value) {
-                                                      String fun2 =
-                                                          '${tipoWifi[i] == 'Entrada' ? '1' : '0'}:${value ? '1' : '0'}:${comunWifi[i]}';
+                                                      // String fun2 =
+                                                      //     '${tipoWifi[i] == 'Entrada' ? '1' : '0'}:${value ? '1' : '0'}:${comunWifi[i]}';
+
                                                       String topic =
                                                           'devices_rx/$equipo/${extractSerialNumber(deviceName)}';
                                                       String topic2 =
                                                           'devices_tx/$equipo/${extractSerialNumber(deviceName)}';
                                                       String message =
-                                                          jsonEncode(
-                                                              {'io$i': fun2});
+                                                          jsonEncode({
+                                                        'type': tipoWifi[i] ==
+                                                                'Entrada'
+                                                            ? '1'
+                                                            : '0',
+                                                        'w_status': value,
+                                                        'r_status':
+                                                            comunWifi[i],
+                                                        'index': i
+                                                      });
                                                       sendMessagemqtt(
                                                           topic, message);
                                                       sendMessagemqtt(

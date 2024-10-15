@@ -4,9 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hugeicons/hugeicons.dart';
-import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
-import '../stored_data.dart';
 
 class ScanPage extends StatefulWidget {
   const ScanPage({super.key});
@@ -78,7 +76,7 @@ class ScanPageState extends State<ScanPage>
           ],
           androidUsesFineLocation: true,
           continuousUpdates: true,
-          removeIfGone: const Duration(seconds: 6),
+          removeIfGone: const Duration(seconds: 30),
         );
 
         FlutterBluePlus.scanResults.listen(
@@ -98,7 +96,6 @@ class ScanPageState extends State<ScanPage>
                   DateTime.now();
             }
             _removeLostDevices();
-            checkTrackedDevices();
           },
         );
       } catch (e, stackTrace) {
@@ -114,7 +111,7 @@ class ScanPageState extends State<ScanPage>
       setState(() {
         devices.removeWhere((device) {
           final lastSeen = lastSeenDevices[device.remoteId.toString()];
-          if (lastSeen != null && now.difference(lastSeen).inSeconds > 6) {
+          if (lastSeen != null && now.difference(lastSeen).inSeconds > 30) {
             printLog('Borre ${device.platformName}');
             lastSeenDevices.remove(device.remoteId.toString());
             return true;
@@ -123,62 +120,6 @@ class ScanPageState extends State<ScanPage>
         });
         sortedDevices = devices;
       });
-    }
-  }
-
-  void checkTrackedDevices() {
-    // Lista de nombres de plataformas de dispositivos encontrados en el escaneo.
-    List<String> foundDeviceNames = sortedDevices
-        .map((device) => device.platformName.toLowerCase())
-        .toList();
-
-    // Verificar si cada dispositivo en devicesToTrack está presente en los resultados del escaneo.
-    for (String trackedDevice in devicesToTrack) {
-      if (foundDeviceNames.contains(trackedDevice.toLowerCase())) {
-        bool flag = msgFlag[trackedDevice] ?? false;
-        if (!flag) {
-          printLog('Dispositivo $trackedDevice encontrado en el escaneo.');
-          globalDATA[
-                  '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}']![
-              'w_status'] = true;
-          saveGlobalData(globalDATA);
-          try {
-            String topic =
-                'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
-            String topic2 =
-                'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
-            String message = mqttCommand(command(trackedDevice), true);
-            sendMessagemqtt(topic, message);
-            sendMessagemqtt(topic2, message);
-          } catch (e, s) {
-            printLog('Error al enviar valor $e $s');
-          }
-        }
-        msgFlag[trackedDevice] = true;
-        saveMsgFlag(msgFlag);
-      } else {
-        bool flag = msgFlag[trackedDevice] ?? false;
-        if (flag) {
-          printLog('Dispositivo $trackedDevice NO encontrado en el escaneo.');
-          globalDATA[
-                  '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}']![
-              'w_status'] = false;
-          saveGlobalData(globalDATA);
-          try {
-            String topic =
-                'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
-            String topic2 =
-                'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
-            String message = mqttCommand(command(trackedDevice), false);
-            sendMessagemqtt(topic, message);
-            sendMessagemqtt(topic2, message);
-          } catch (e, s) {
-            printLog('Error al enviar valor $e $s');
-          }
-        }
-        msgFlag[trackedDevice] = false;
-        saveMsgFlag(msgFlag);
-      }
     }
   }
 
