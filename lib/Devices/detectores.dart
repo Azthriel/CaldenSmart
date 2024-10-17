@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../master.dart';
 import '../stored_data.dart';
 
@@ -17,6 +17,7 @@ int picoMaxppmCH4 = 0;
 int promedioppmCO = 0;
 int promedioppmCH4 = 0;
 int daysToExpire = 0;
+double brightnessLevel = 50.0;
 bool alert = false;
 
 // CLASES \\
@@ -28,6 +29,8 @@ class DetectorPage extends StatefulWidget {
 }
 
 class DetectorPageState extends State<DetectorPage> {
+  int _selectedIndex = 0;
+
   bool alert = false;
   String _textToShow = 'AIRE PURO';
   bool online =
@@ -141,7 +144,7 @@ class DetectorPageState extends State<DetectorPage> {
   }
 
   //*-Funciones de deslizamiento entre pantallas-*\\
-  int _selectedIndex = 0; // Índice del ícono seleccionado
+
   final PageController _pageController = PageController();
 
   void _onItemTapped(int index) {
@@ -155,6 +158,17 @@ class DetectorPageState extends State<DetectorPage> {
     });
   }
 
+  void _sendValueToBle(int value) async {
+    try {
+      final data = [value];
+      myDevice.lightUuid.write(data, withoutResponse: true);
+    } catch (e, stackTrace) {
+      printLog('Error al mandar el valor del brillo $e $stackTrace');
+      // handleManualError(e, stackTrace);
+    }
+  }
+
+//!Visual
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -183,7 +197,7 @@ class DetectorPageState extends State<DetectorPage> {
         );
         Future.delayed(const Duration(seconds: 2), () async {
           await myDevice.device.disconnect();
-          if(context.mounted){
+          if (context.mounted) {
             Navigator.pop(context);
             Navigator.pushReplacementNamed(context, '/menu');
           }
@@ -320,211 +334,932 @@ class DetectorPageState extends State<DetectorPage> {
             });
           },
           children: [
-            Column(
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: SizedBox(
-                    width: 350,
-                    height: 100,
-                    child: Card(
-                      color: color3,
-                      elevation: 4,
-                      margin: const EdgeInsets.symmetric(vertical: 18.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(
-                          color: _textToShow == 'PELIGRO'
-                              ? Colors.red[700]!
-                              : Colors.green[700]!,
-                          width: 2,
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Icon(
-                              _textToShow == 'PELIGRO'
-                                  ? HugeIcons.strokeRoundedHouse01
-                                  : HugeIcons.strokeRoundedHouse01,
-                              color: color0,
-                              size: 50,
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Text(
-                                    'Estado del Aire',
-                                    style:
-                                        TextStyle(color: color0, fontSize: 22),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    _textToShow,
-                                    style: TextStyle(
-                                      color: _textToShow == 'PELIGRO'
-                                          ? Colors.red
-                                          : Colors.green,
-                                      fontSize: 35,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: SizedBox(
-                    width: 350,
-                    height: 100,
-                    child: Card(
-                      color: color3,
-                      elevation: 4,
-                      margin: const EdgeInsets.symmetric(vertical: 18.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(
-                          color: online ? Colors.blue[700]! : Colors.red[700]!,
-                          width: 2,
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Icon(
-                              online
-                                  ? HugeIcons.strokeRoundedHouse01
-                                  : Icons.wifi_off_outlined,
-                              color: color0,
-                              size: 50,
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Text(
-                                    'Estado de conexión',
-                                    style:
-                                        TextStyle(color: color0, fontSize: 22),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    online ? 'En Línea' : 'Desconectado',
-                                    style: TextStyle(
-                                      color: online ? Colors.green : Colors.red,
-                                      fontSize: 30,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: SizedBox(
-                    width: 350,
-                    height: 100,
-                    child: Card(
-                      color: color3,
-                      elevation: 4,
-                      margin: const EdgeInsets.symmetric(vertical: 18.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(
-                          color: Colors.orange[700]!,
-                          width: 2,
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              HugeIcons.strokeRoundedHouse01,
-                              color: color0,
-                              size: 50,
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Text(
-                                    'Caducidad del sensor',
-                                    style:
-                                        TextStyle(color: color0, fontSize: 22),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    '$daysToExpire días restantes',
-                                    style: const TextStyle(
-                                      color: Color.fromARGB(255, 199, 138, 25),
-                                      fontSize: 23,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            // Nueva Página 2
-            Center(
+            // Página 1: Estado del Aire, Estado de conexión, Caducidad del sensor
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  ElevatedButton(
-                    onPressed: () async {
-                      await initializeService();
-                      final backService = FlutterBackgroundService();
-
-                      backService.invoke('trackLocation');
-                    },
-                    child: const Text('Test'),
+                  // Estado del Aire
+                  Expanded(
+                    child: AnimatedOpacity(
+                      opacity: 1.0,
+                      duration: const Duration(milliseconds: 800),
+                      curve: Curves.easeInOut,
+                      child: Card(
+                        color: color3,
+                        elevation: 6,
+                        margin: const EdgeInsets.symmetric(vertical: 10.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          side: BorderSide(
+                            color: _textToShow == 'PELIGRO'
+                                ? Colors.red[700]!
+                                : Colors.green[700]!,
+                            width: 2,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 500),
+                                transitionBuilder: (Widget child,
+                                    Animation<double> animation) {
+                                  return ScaleTransition(
+                                    scale: animation,
+                                    child: child,
+                                  );
+                                },
+                                child: Icon(
+                                  _textToShow == 'PELIGRO'
+                                      ? Icons.warning_amber_rounded
+                                      : Icons.check_circle_rounded,
+                                  key: ValueKey<String>(_textToShow),
+                                  color: _textToShow == 'PELIGRO'
+                                      ? Colors.red
+                                      : Colors.green,
+                                  size: 50,
+                                ),
+                              ),
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Estado del Aire',
+                                      style: TextStyle(
+                                        color: color0,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      _textToShow,
+                                      style: TextStyle(
+                                        color: _textToShow == 'PELIGRO'
+                                            ? Colors.red
+                                            : Colors.green,
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Estado de conexión (Wifi)
+                  Expanded(
+                    child: AnimatedOpacity(
+                      opacity: 1.0,
+                      duration: const Duration(milliseconds: 800),
+                      curve: Curves.easeInOut,
+                      child: Card(
+                        color: color3,
+                        elevation: 6,
+                        margin: const EdgeInsets.symmetric(vertical: 10.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          side: const BorderSide(
+                            color: Color(0xFF10BB96),
+                            width: 2,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 500),
+                                transitionBuilder: (Widget child,
+                                    Animation<double> animation) {
+                                  return ScaleTransition(
+                                    scale: animation,
+                                    child: child,
+                                  );
+                                },
+                                child: Icon(
+                                  online ? Icons.wifi : Icons.wifi_off_outlined,
+                                  key: ValueKey<bool>(online),
+                                  color: const Color(0xFF10BB96),
+                                  size: 50,
+                                ),
+                              ),
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Estado de conexión',
+                                      style: TextStyle(
+                                        color: color0,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      online ? 'En Línea' : 'Desconectado',
+                                      style: TextStyle(
+                                        color: online
+                                            ? const Color(0xFF10BB96)
+                                            : Colors.red,
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Caducidad del sensor
+                  Expanded(
+                    child: AnimatedOpacity(
+                      opacity: 1.0,
+                      duration: const Duration(milliseconds: 800),
+                      curve: Curves.easeInOut,
+                      child: Card(
+                        color: color3,
+                        elevation: 6,
+                        margin: const EdgeInsets.symmetric(vertical: 10.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          side: const BorderSide(
+                            color: Color(0xFF18B2C7),
+                            width: 2,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.timer,
+                                color: Color(0xFF18B2C7),
+                                size: 50,
+                              ),
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Caducidad del sensor',
+                                      style: TextStyle(
+                                        color: color0,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      '$daysToExpire días restantes',
+                                      style: const TextStyle(
+                                        color: Color(0xFF18B2C7),
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-            // Nueva Página 3
-            const Center(child: Text('Página 3')),
-            // Nueva Página 4
-            const Center(child: Text('Página 4')),
+            // Página 2: Gas y CO
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  // Tarjeta de Gas
+                  Expanded(
+                    child: AnimatedOpacity(
+                      opacity: 1.0,
+                      duration: const Duration(milliseconds: 800),
+                      curve: Curves.easeInOut,
+                      child: Card(
+                        color: color3,
+                        elevation: 6,
+                        margin: const EdgeInsets.symmetric(vertical: 10.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          side: const BorderSide(
+                            color: Color(0xFF10BB96),
+                            width: 2,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                HugeIcons.strokeRoundedFire,
+                                color: Color(0xFF10BB96),
+                                size: 50,
+                              ),
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'GAS',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: color0,
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    const Text(
+                                      'Atmósfera explosiva',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: color0,
+                                        fontSize: 22,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    const Divider(
+                                      color: Colors.white54,
+                                      thickness: 1,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          "${(ppmCH4 / 500).round()}%",
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 36,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        const Text(
+                                          'LIE',
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 20,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Tarjeta de CO
+                  Expanded(
+                    child: AnimatedOpacity(
+                      opacity: 1.0,
+                      duration: const Duration(milliseconds: 800),
+                      curve: Curves.easeInOut,
+                      child: Card(
+                        color: color3,
+                        elevation: 6,
+                        margin: const EdgeInsets.symmetric(vertical: 10.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          side: const BorderSide(
+                            color: Color(0xFF18B2C7),
+                            width: 2,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.co2,
+                                color: Color(0xFF18B2C7),
+                                size: 60,
+                              ),
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'CO',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: color0,
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    const Text(
+                                      'Monóxido de carbono',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: color0,
+                                        fontSize: 22,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    const Divider(
+                                      color: Colors.white54,
+                                      thickness: 1,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          ppmCO.toString(),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 36,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        const Text(
+                                          'PPM',
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 20,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Página 3: Pico Máximo PPM CH4 y Pico Máximo PPM CO
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  // Tarjeta Pico Máximo PPM CH4
+                  Expanded(
+                    child: AnimatedOpacity(
+                      opacity: 1.0,
+                      duration: const Duration(milliseconds: 800),
+                      curve: Curves.easeInOut,
+                      child: Card(
+                        color: color3,
+                        elevation: 6,
+                        margin: const EdgeInsets.symmetric(vertical: 10.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          side: const BorderSide(
+                            color: Color(0xFF10BB96),
+                            width: 2,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.trending_up,
+                                color: Color(0xFF10BB96),
+                                size: 50,
+                              ),
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'Pico máximo',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: color0,
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    const Text(
+                                      'PPM CH4',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: color0,
+                                        fontSize: 22,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    const Divider(
+                                      color: Colors.white54,
+                                      thickness: 1,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          picoMaxppmCH4.toString(),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 36,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        const Text(
+                                          'PPM',
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 20,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Tarjeta Pico Máximo PPM CO
+                  Expanded(
+                    child: AnimatedOpacity(
+                      opacity: 1.0,
+                      duration: const Duration(milliseconds: 800),
+                      curve: Curves.easeInOut,
+                      child: Card(
+                        color: color3,
+                        elevation: 6,
+                        margin: const EdgeInsets.symmetric(vertical: 10.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          side: const BorderSide(
+                            color: Color(0xFF18B2C7),
+                            width: 2,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.trending_up,
+                                color: Color(0xFF18B2C7),
+                                size: 50,
+                              ),
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'Pico máximo',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: color0,
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    const Text(
+                                      'PPM CO',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: color0,
+                                        fontSize: 22,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    const Divider(
+                                      color: Colors.white54,
+                                      thickness: 1,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          promedioppmCO.toString(),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 36,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        const Text(
+                                          'PPM',
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 20,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Página 4: Promedio PPM CH4 y Promedio PPM CO
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  // Tarjeta Promedio PPM CH4
+                  Expanded(
+                    child: AnimatedOpacity(
+                      opacity: 1.0,
+                      duration: const Duration(milliseconds: 800),
+                      curve: Curves.easeInOut,
+                      child: Card(
+                        color: color3,
+                        elevation: 6,
+                        margin: const EdgeInsets.symmetric(vertical: 10.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          side: const BorderSide(
+                            color: Color(0xFF10BB96),
+                            width: 2,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                HugeIcons.strokeRoundedChartLineData03,
+                                color: Color(0xFF10BB96),
+                                size: 50,
+                              ),
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'Promedio',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: color0,
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    const Text(
+                                      'PPM CH4',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: color0,
+                                        fontSize: 22,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    const Divider(
+                                      color: Colors.white54,
+                                      thickness: 1,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          promedioppmCH4.toString(),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 36,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        const Text(
+                                          'PPM',
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 20,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Tarjeta Promedio PPM CO
+                  Expanded(
+                    child: AnimatedOpacity(
+                      opacity: 1.0,
+                      duration: const Duration(milliseconds: 800),
+                      curve: Curves.easeInOut,
+                      child: Card(
+                        color: color3,
+                        elevation: 6,
+                        margin: const EdgeInsets.symmetric(vertical: 10.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          side: const BorderSide(
+                            color: Color(0xFF18B2C7),
+                            width: 2,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                HugeIcons.strokeRoundedChartLineData03,
+                                color: Color(0xFF18B2C7),
+                                size: 50,
+                              ),
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'Promedio',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: color0,
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    const Text(
+                                      'PPM CO',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: color0,
+                                        fontSize: 22,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    const Divider(
+                                      color: Colors.white54,
+                                      thickness: 1,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          promedioppmCO.toString(),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 36,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        const Text(
+                                          'PPM',
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 20,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Página 5: Modificar el brillo de la lámpara
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Título "Brillo del display" en la parte superior
+                  Text(
+                    'Brillo del display',
+                    style: GoogleFonts.poppins(
+                      textStyle: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueGrey,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Icono de la bombilla
+                      Icon(
+                        Icons.lightbulb,
+                        size: 200,
+                        color: Colors.yellow
+                            .withOpacity((brightnessLevel + 20) / 120),
+                      ),
+
+                      const SizedBox(width: 20),
+
+                      // Slider vertical para ajustar el brillo
+                      Container(
+                        height: 350,
+                        width: 70,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(40),
+                          color: Colors.grey.withOpacity(0.1),
+                        ),
+                        child: Stack(
+                          alignment: Alignment.bottomCenter,
+                          children: [
+                            // Relleno de la barra con el gradiente
+                            Align(
+                              alignment: Alignment.bottomCenter,
+                              child: Container(
+                                width: 70,
+                                height: (brightnessLevel > 0
+                                    ? ((brightnessLevel / 100) * 350)
+                                        .clamp(40, 350)
+                                    : 40),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(40),
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFFB7E2E7),
+                                      Color(0xFFB2EBF2),
+                                      Color(0xFF80DEEA),
+                                      Color(0xFF26C6DA),
+                                      Color(0xFF00ACC1),
+                                    ],
+                                    begin: Alignment.bottomCenter,
+                                    end: Alignment.topCenter,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            // Slider invisible que controla el relleno
+                            Positioned.fill(
+                              child: SliderTheme(
+                                data: SliderTheme.of(context).copyWith(
+                                  trackHeight: 70,
+                                  thumbShape: const RoundSliderThumbShape(
+                                      enabledThumbRadius: 0),
+                                  overlayShape: SliderComponentShape.noOverlay,
+                                  thumbColor: Colors.transparent,
+                                  activeTrackColor: Colors.transparent,
+                                  inactiveTrackColor: Colors.transparent,
+                                ),
+                                child: RotatedBox(
+                                  quarterTurns: 3,
+                                  child: Slider(
+                                    value: brightnessLevel,
+                                    min: 0,
+                                    max: 100,
+                                    onChanged: (newValue) {
+                                      setState(() {
+                                        brightnessLevel = newValue;
+                                      });
+
+                                      _sendValueToBle(brightnessLevel.toInt());
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const Spacer(),
+
+                  // versiones de hardware y software
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: color3,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Versión de Hardware $hardwareVersion',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        textStyle: const TextStyle(
+                          color: color0,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: color3,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Versión de Software $softwareVersion',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        textStyle: const TextStyle(
+                          color: color0,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
           ],
         ),
         bottomNavigationBar: CurvedNavigationBar(
           index: _selectedIndex,
           color: color3,
           items: const <Widget>[
-            Icon(HugeIcons.strokeRoundedHouse01, size: 30, color: color0),
-            Icon(HugeIcons.strokeRoundedHouse01, size: 30, color: color0),
-            Icon(HugeIcons.strokeRoundedHouse01, size: 30, color: color0),
-            Icon(HugeIcons.strokeRoundedHouse01, size: 30, color: color0),
+            Icon(Icons.eco, size: 30, color: color0),
+            Icon(Icons.local_fire_department, size: 30, color: color0),
+            Icon(Icons.area_chart, size: 30, color: color0),
+            Icon(Icons.bar_chart, size: 30, color: color0),
+            Icon(Icons.lightbulb, size: 30, color: color0),
           ],
           onTap: (index) {
             _onItemTapped(index);

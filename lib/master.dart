@@ -181,7 +181,7 @@ Map<String, bool> msgFlag = {};
 
 // !------------------------------VERSION NUMBER---------------------------------------
 //ACORDATE: Cambia el número de versión en el pubspec.yaml antes de publicar
-String appVersionNumber = '24101500';
+String appVersionNumber = '24101502';
 //ACORDATE: 0 = Caldén Smart / 1 = Silema
 int app = 0;
 // !------------------------------VERSION NUMBER---------------------------------------
@@ -915,13 +915,14 @@ String linksOfApp(int type, String link) {
 void showToast(String message) {
   printLog('Toast: $message');
   Fluttertoast.showToast(
-      msg: message,
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-      timeInSecForIosWeb: 1,
-      backgroundColor: const Color(0xFFFFFFFF),
-      textColor: const Color(0xFF000000),
-      fontSize: 16.0);
+    msg: message,
+    toastLength: Toast.LENGTH_SHORT,
+    gravity: ToastGravity.BOTTOM,
+    timeInSecForIosWeb: 1,
+    backgroundColor: color3,
+    textColor: color0,
+    fontSize: 16.0,
+  );
 }
 
 String generateRandomNumbers(int length) {
@@ -2322,7 +2323,10 @@ Future<void> initializeService() async {
 
     await backService.configure(
       iosConfiguration: IosConfiguration(
-          onBackground: onStart, autoStart: true, onForeground: onStart),
+        onBackground: onIosStart,
+        autoStart: true,
+        onForeground: onIosStart,
+      ),
       androidConfiguration: AndroidConfiguration(
         notificationChannelId: 'caldenSmart',
         foregroundServiceNotificationId: 888,
@@ -2353,7 +2357,7 @@ Future<void> initializeService() async {
 }
 
 @pragma('vm:entry-point')
-FutureOr<bool> onStart(ServiceInstance service) async {
+Future<bool> onIosStart(ServiceInstance service) async {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
 
@@ -2424,130 +2428,89 @@ FutureOr<bool> onStart(ServiceInstance service) async {
       );
 
       FlutterBluePlus.scanResults.listen(
-        (results) async {
-          List<BluetoothDevice> equipos = [];
-          for (ScanResult device in results) {
-            equipos.add(device.device);
-          }
-          // Lista de nombres de plataformas de dispositivos encontrados en el escaneo.
-          List<String> foundDeviceNames = equipos
-              .map((device) => device.platformName.toLowerCase())
-              .toList();
-          List<String> devicesTrack = await loadDeviceListToTrack();
-          Map<String, Map<String, dynamic>> globalDATA = await loadGlobalData();
-          Map<String, bool> flags = await loadmsgFlag();
-          // printLog('Vamos a buscar en la lista: $devicesTrack');
-          for (String trackedDevice in devicesTrack) {
-            if (foundDeviceNames.contains(trackedDevice.toLowerCase())) {
-              bool flag = flags[trackedDevice] ?? false;
-              // printLog('Flag: $flag');
-              if (!flag) {
-                printLog(
-                    'Dispositivo $trackedDevice encontrado en el escaneo.');
-                if (command(trackedDevice) == '020010_IOT') {
-                  List<String> pinToTrack = await loadPinToTrack(trackedDevice);
-                  printLog('Encontre $pinToTrack');
-                  for (String pin in pinToTrack) {
-                    printLog('Voy a mandar al pin $pin');
-                    globalDATA
-                        .putIfAbsent(
-                            '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
-                            () => {})
-                        .addAll({'io$pin': '0:1:0'});
-                    saveGlobalData(globalDATA);
-                    try {
-                      String topic =
-                          'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
-                      String topic2 =
-                          'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
-                      String message = jsonEncode({'io$pin': '0:1:0'});
-                      sendMessagemqtt(topic, message);
-                      sendMessagemqtt(topic2, message);
-                    } catch (e, s) {
-                      printLog('Error al enviar valor $e $s');
-                    }
-                  }
-                } else {
-                  globalDATA
-                      .putIfAbsent(
-                          '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
-                          () => {})
-                      .addAll({'w_status': true});
-                  saveGlobalData(globalDATA);
-                  try {
-                    String topic =
-                        'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
-                    String topic2 =
-                        'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
-                    String message = jsonEncode({'w_status': true});
-                    sendMessagemqtt(topic, message);
-                    sendMessagemqtt(topic2, message);
-                  } catch (e, s) {
-                    printLog('Error al enviar valor $e $s');
-                  }
-                }
-              }
-              flags[trackedDevice] = true;
-
-              saveMsgFlag(flags);
-            } else {
-              bool flag = flags[trackedDevice] ?? false;
-              if (flag) {
-                printLog(
-                    'Dispositivo $trackedDevice NO encontrado en el escaneo.');
-                if (command(trackedDevice) == '020010_IOT') {
-                  List<String> pinToTrack = await loadPinToTrack(trackedDevice);
-                  printLog('Encontre $pinToTrack');
-                  for (String pin in pinToTrack) {
-                    printLog('Es el pin io$pin');
-                    globalDATA
-                        .putIfAbsent(
-                            '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
-                            () => {})
-                        .addAll({'io$pin': '0:0:0'});
-                    saveGlobalData(globalDATA);
-                    try {
-                      String topic =
-                          'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
-                      String topic2 =
-                          'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
-                      String message = jsonEncode({'io$pin': '0:0:0'});
-                      sendMessagemqtt(topic, message);
-                      sendMessagemqtt(topic2, message);
-                    } catch (e, s) {
-                      printLog('Error al enviar valor $e $s');
-                    }
-                  }
-                } else {
-                  globalDATA
-                      .putIfAbsent(
-                          '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
-                          () => {})
-                      .addAll({'w_status': false});
-                  saveGlobalData(globalDATA);
-                  try {
-                    String topic =
-                        'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
-                    String topic2 =
-                        'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
-                    String message = jsonEncode({'w_status': false});
-                    sendMessagemqtt(topic, message);
-                    sendMessagemqtt(topic2, message);
-                  } catch (e, s) {
-                    printLog('Error al enviar valor $e $s');
-                  }
-                }
-              }
-              flags[trackedDevice] = false;
-              saveMsgFlag(flags);
-            }
-          }
-        },
+        (results) => backFunctionTrack(results),
       );
     },
   );
 
   return true;
+}
+
+@pragma('vm:entry-point')
+void onStart(ServiceInstance service) async {
+  DartPluginRegistrant.ensureInitialized();
+
+  await setupMqtt();
+
+  flutterLocalNotificationsPlugin.show(
+    888,
+    'Servicio inicializado con exito',
+    'Gracias por elegir Caldén Smart',
+    const NotificationDetails(
+      android: AndroidNotificationDetails(
+        'caldenSmart',
+        'Eventos',
+        icon: '@mipmap/ic_launcher',
+        sound: RawResourceAndroidNotificationSound('noti'),
+        enableVibration: true,
+        importance: Importance.max,
+      ),
+      iOS: DarwinNotificationDetails(),
+    ),
+  );
+
+  service.on('stopService').listen((event) {
+    service.stopSelf();
+  });
+
+  service.on('distanceControl').listen((event) {
+    showNotification('Se inició el control por distancia',
+        'Recuerde tener la ubicación del telefono encendida', 'noti');
+    backTimerDS = Timer.periodic(const Duration(minutes: 2), (timer) async {
+      await backFunctionDS();
+    });
+  });
+
+  service.on('escenas/controlHorario').listen(
+    (event) {
+      showNotification('Se inició el control horario',
+          'Se configuro un control por horario', 'noti');
+      backTimerCH = Timer.periodic(
+        const Duration(minutes: 1),
+        (timer) async {
+          //TODO: Agregar control horario
+        },
+      );
+    },
+  );
+
+  service.on('trackLocation').listen(
+    (event) {
+      printLog('Se llamo el cosito coson');
+      showNotification(
+          'Se inició el trackeo',
+          'Recuerde tener la ubicación y bluetooth del telefono encendida',
+          'noti');
+
+      FlutterBluePlus.startScan(
+        withKeywords: [
+          'Eléctrico',
+          'Gas',
+          'Detector',
+          'Radiador',
+          'Domótica',
+          'Relé',
+        ],
+        androidUsesFineLocation: true,
+        continuousUpdates: true,
+        removeIfGone: const Duration(seconds: 30),
+      );
+
+      FlutterBluePlus.scanResults.listen(
+        (results) => backFunctionTrack(results),
+      );
+    },
+  );
 }
 
 Future<bool> backFunctionDS() async {
@@ -2680,6 +2643,123 @@ Future<bool> backFunctionDS() async {
     return Future.value(false);
   }
 }
+
+Future<void> backFunctionTrack(List<ScanResult> results) async {
+  List<BluetoothDevice> equipos = [];
+  for (ScanResult device in results) {
+    equipos.add(device.device);
+  }
+  // Lista de nombres de plataformas de dispositivos encontrados en el escaneo.
+  List<String> foundDeviceNames =
+      equipos.map((device) => device.platformName.toLowerCase()).toList();
+  List<String> devicesTrack = await loadDeviceListToTrack();
+  Map<String, Map<String, dynamic>> globalDATA = await loadGlobalData();
+  Map<String, bool> flags = await loadmsgFlag();
+  // printLog('Vamos a buscar en la lista: $devicesTrack');
+  for (String trackedDevice in devicesTrack) {
+    if (foundDeviceNames.contains(trackedDevice.toLowerCase())) {
+      bool flag = flags[trackedDevice] ?? false;
+      // printLog('Flag: $flag');
+      if (!flag) {
+        printLog('Dispositivo $trackedDevice encontrado en el escaneo.');
+        if (command(trackedDevice) == '020010_IOT') {
+          List<String> pinToTrack = await loadPinToTrack(trackedDevice);
+          printLog('Encontre $pinToTrack');
+          for (String pin in pinToTrack) {
+            printLog('Voy a mandar al pin $pin');
+            globalDATA
+                .putIfAbsent(
+                    '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
+                    () => {})
+                .addAll({'io$pin': '0:1:0'});
+            saveGlobalData(globalDATA);
+            try {
+              String topic =
+                  'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+              String topic2 =
+                  'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+              String message = jsonEncode({'io$pin': '0:1:0'});
+              sendMessagemqtt(topic, message);
+              sendMessagemqtt(topic2, message);
+            } catch (e, s) {
+              printLog('Error al enviar valor $e $s');
+            }
+          }
+        } else {
+          globalDATA
+              .putIfAbsent(
+                  '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
+                  () => {})
+              .addAll({'w_status': true});
+          saveGlobalData(globalDATA);
+          try {
+            String topic =
+                'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+            String topic2 =
+                'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+            String message = jsonEncode({'w_status': true});
+            sendMessagemqtt(topic, message);
+            sendMessagemqtt(topic2, message);
+          } catch (e, s) {
+            printLog('Error al enviar valor $e $s');
+          }
+        }
+      }
+      flags[trackedDevice] = true;
+      await saveMsgFlag(flags);
+    } else {
+      bool flag = flags[trackedDevice] ?? false;
+      if (flag) {
+        printLog('Dispositivo $trackedDevice NO encontrado en el escaneo.');
+        if (command(trackedDevice) == '020010_IOT') {
+          List<String> pinToTrack = await loadPinToTrack(trackedDevice);
+          printLog('Encontre $pinToTrack');
+          for (String pin in pinToTrack) {
+            printLog('Es el pin io$pin');
+            globalDATA
+                .putIfAbsent(
+                    '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
+                    () => {})
+                .addAll({'io$pin': '0:0:0'});
+            saveGlobalData(globalDATA);
+            try {
+              String topic =
+                  'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+              String topic2 =
+                  'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+              String message = jsonEncode({'io$pin': '0:0:0'});
+              sendMessagemqtt(topic, message);
+              sendMessagemqtt(topic2, message);
+            } catch (e, s) {
+              printLog('Error al enviar valor $e $s');
+            }
+          }
+        } else {
+          globalDATA
+              .putIfAbsent(
+                  '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
+                  () => {})
+              .addAll({'w_status': false});
+          saveGlobalData(globalDATA);
+          try {
+            String topic =
+                'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+            String topic2 =
+                'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+            String message = jsonEncode({'w_status': false});
+            sendMessagemqtt(topic, message);
+            sendMessagemqtt(topic2, message);
+          } catch (e, s) {
+            printLog('Error al enviar valor $e $s');
+          }
+        }
+      }
+      flags[trackedDevice] = false;
+      await saveMsgFlag(flags);
+    }
+  }
+}
+
 //*-Background functions-*\\
 
 //*-Imagenes Scan-*\\

@@ -8,7 +8,7 @@ import 'dart:convert';
 import '../master.dart';
 
 //TODO: hay que realizar muchicimas mejoras, cambiar los nombres a las variables, hacer mas global muchas funciones y
-//TODO: widgets, reconozco que es una mierda, pero una que se puede mejorar ATT: THE GAME
+//TODO: widgets, reconozco que es una mierda, pero una que se puede mejorar
 
 class EscenasPage extends StatefulWidget {
   const EscenasPage({super.key});
@@ -515,7 +515,7 @@ class EscenasPageState extends State<EscenasPage> {
     return Column(
       children: [
         Text(
-          'Selecciona una opción:',
+          'Selecciona un evento de entrada',
           style: GoogleFonts.poppins(
             color: color0,
             fontSize: 16,
@@ -534,8 +534,8 @@ class EscenasPageState extends State<EscenasPage> {
           },
         ),
         ListTile(
-          leading: const Icon(Icons.alarm, color: color0),
-          title: Text('Activación en cadena',
+          leading: const Icon(Icons.devices, color: color0),
+          title: Text('Mis dispositivos',
               style: GoogleFonts.poppins(color: color0)),
           onTap: () {
             setState(() {
@@ -614,7 +614,7 @@ class EscenasPageState extends State<EscenasPage> {
         ),
         const SizedBox(height: 10),
         Text(
-          'Selecciona un dispositivo para gestionar su horario:',
+          'Selecciona un equipo para gestionar su horario:',
           style: GoogleFonts.poppins(
             color: color0,
             fontSize: 16,
@@ -622,10 +622,10 @@ class EscenasPageState extends State<EscenasPage> {
         ),
         const SizedBox(height: 10),
         ListTile(
-          leading: const Icon(Icons.devices, color: color0),
+          leading: const Icon(Icons.settings_remote, color: color0),
           title: Text(
             selectedDeviceCH == null
-                ? 'Elegir dispositivo'
+                ? 'Seleccionar equipo'
                 : (nicknamesMap[selectedDeviceCH] ?? selectedDeviceCH!),
             style: GoogleFonts.poppins(color: color0),
           ),
@@ -953,18 +953,10 @@ class EscenasPageState extends State<EscenasPage> {
           ),
         ),
         const SizedBox(height: 20),
-        Text(
-          'Selecciona un dispositivo:',
-          style: GoogleFonts.poppins(
-            color: color0,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 10),
         ListTile(
-          leading: const Icon(Icons.devices, color: color0),
+          leading: const Icon(Icons.settings_remote, color: color0),
           title: Text(
-            selectedDeviceAC == null ? 'Elegir dispositivo' : selectedDeviceAC!,
+            selectedDeviceAC == null ? 'Seleccionar equipo' : selectedDeviceAC!,
             style: GoogleFonts.poppins(color: color0),
           ),
           onTap: () {
@@ -2286,7 +2278,7 @@ class EscenasPageState extends State<EscenasPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Eventos Programados',
+          'Programación de eventos',
           style: GoogleFonts.poppins(
             color: color0,
             fontSize: 20,
@@ -2406,4 +2398,3 @@ class EscenasPageState extends State<EscenasPage> {
     );
   }
 }
-//TODO:VIVAN LOS PAPUS

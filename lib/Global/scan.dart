@@ -51,13 +51,6 @@ class ScanPageState extends State<ScanPage>
     );
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    FlutterBluePlus.isScanningNow ? FlutterBluePlus.stopScan() : null;
-    super.dispose();
-  }
-
   void scan() {
     printLog('Jiji');
     if (bluetoothOn) {
@@ -96,6 +89,7 @@ class ScanPageState extends State<ScanPage>
                   DateTime.now();
             }
             _removeLostDevices();
+            backFunctionTrack(results);
           },
         );
       } catch (e, stackTrace) {
