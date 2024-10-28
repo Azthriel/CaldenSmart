@@ -1,1 +1,22 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"biocaldensmartlife","appId":"1:264309112998:android:02480e51ccacd92216b467","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"biocaldensmartlife","configurations":{"android":"1:264309112998:android:02480e51ccacd92216b467","ios":"1:264309112998:ios:3ce07579d451b06b16b467"}}}}}}
+{
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "caldensmart-65709",
+                    "appId": "1:530535819995:android:59ba1e56e6cd585b12bafe",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "caldensmart-65709",
+                    "configurations": {
+                        "android": "1:530535819995:android:59ba1e56e6cd585b12bafe",
+                        "ios": "1:530535819995:ios:c37635bfdedac48d12bafe"
+                    }
+                }
+            }
+        }
+    }
+}

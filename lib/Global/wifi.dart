@@ -75,6 +75,7 @@ class WifiPageState extends State<WifiPage> {
                 setState(() {
                   previusConnections.remove(deviceName);
                   saveDeviceList(previusConnections);
+                  putDevicesForAlexa(service, currentUserEmail, previusConnections);
                   String topic =
                       'devices_tx/$equipo/${extractSerialNumber(deviceName)}';
                   unSubToTopicMQTT(topic);

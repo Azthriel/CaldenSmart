@@ -1,10 +1,14 @@
 import 'package:caldensmart/stored_data.dart';
 import 'package:flutter/material.dart';
 import 'package:caldensmart/master.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:caldensmart/aws/mqtt/mqtt.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
+
+import '../aws/dynamo/dynamo.dart';
+import '../aws/dynamo/dynamo_certificates.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -105,6 +109,53 @@ class ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                           const Divider(color: Colors.transparent),
+                          TextButton(
+                            onPressed: () {
+                              printLog('Hora: ${DateTime.now()}');
+                              showAlertDialog(
+                                context,
+                                false,
+                                const Text(
+                                  '¿Está seguro que quiere eliminar la cuenta?',
+                                ),
+                                const Text(
+                                  'Al presionar aceptar será redirigido al formulario de baja de cuenta',
+                                ),
+                                [
+                                  TextButton(
+                                    style: const ButtonStyle(
+                                      foregroundColor: WidgetStatePropertyAll(
+                                        color0,
+                                      ),
+                                    ),
+                                    child: const Text('Cancelar'),
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                  ),
+                                  TextButton(
+                                    style: const ButtonStyle(
+                                      foregroundColor: WidgetStatePropertyAll(
+                                        color0,
+                                      ),
+                                    ),
+                                    child: const Text('Aceptar'),
+                                    onPressed: () {
+                                      launchWebURL(
+                                          linksOfApp(app, 'Borrar Cuenta'));
+                                      Navigator.of(context).pop();
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
+                            child: Text(
+                              'Borrar cuenta',
+                              style: GoogleFonts.poppins(
+                                color: color3,
+                              ),
+                            ),
+                          )
                         ],
                       ),
                     ),
@@ -460,9 +511,13 @@ class ProfilePageState extends State<ProfilePage> {
                 ),
                 onPressed: () {
                   Amplify.Auth.signOut();
+                  GoogleSignIn().signOut();
+                  Navigator.pop(context);
                   asking();
                   previusConnections.clear();
                   saveDeviceList(previusConnections);
+                  putDevicesForAlexa(
+                      service, currentUserEmail, previusConnections);
                   for (int i = 0; i < topicsToSub.length; i++) {
                     unSubToTopicMQTT(topicsToSub[i]);
                   }

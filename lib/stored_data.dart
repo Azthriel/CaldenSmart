@@ -19,6 +19,7 @@ void loadValues() async {
   detectorOff = await loadDetectorOff();
   devicesToTrack = await loadDeviceListToTrack();
   msgFlag = await loadmsgFlag();
+  configNotiDsc = await loadconfigNotiDsc();
 
   for (String device in previusConnections) {
     await queryItems(service, command(device), extractSerialNumber(device));
@@ -348,5 +349,21 @@ Future<Map<String, bool>> loadmsgFlag() async {
   }
   return {}; // Devuelve un mapa vacío si no hay nada almacenado
 }
-
 //*-Omnipresencia-*\\
+
+//*-Notificación Desconexión-*\\
+Future<void> saveconfigNotiDsc(Map<String, int> data) async {
+  final prefs = await SharedPreferences.getInstance();
+  String taskMapString = json.encode(data);
+  await prefs.setString('configNotiDsc', taskMapString);
+}
+
+Future<Map<String, int>> loadconfigNotiDsc() async {
+  final prefs = await SharedPreferences.getInstance();
+  String? dataString = prefs.getString('configNotiDsc');
+  if (dataString != null) {
+    return Map<String, int>.from(json.decode(dataString));
+  }
+  return {};
+}
+//*-Notificación Desconexión-*\\

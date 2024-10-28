@@ -1,7 +1,6 @@
-import 'package:caldensmart/Global/menu.dart';
+import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-
 import '../master.dart';
 
 class PermissionHandler extends StatefulWidget {
@@ -12,7 +11,7 @@ class PermissionHandler extends StatefulWidget {
 }
 
 class PermissionHandlerState extends State<PermissionHandler> {
-  Future<Widget> permissionCheck() async {
+  Future<void> permissionCheckAndLogin() async {
     var permissionStatus1 = await Permission.bluetoothConnect.request();
 
     if (!permissionStatus1.isGranted) {
@@ -41,8 +40,6 @@ class PermissionHandlerState extends State<PermissionHandler> {
     }
     permissionStatus4 = await Permission.notification.status;
 
-    // requestPermissionFCM();
-
     printLog('Ble: ${permissionStatus1.isGranted} /// $permissionStatus1');
     printLog('Ble Scan: ${permissionStatus2.isGranted} /// $permissionStatus2');
     printLog('Locate: ${permissionStatus3.isGranted} /// $permissionStatus3');
@@ -51,47 +48,76 @@ class PermissionHandlerState extends State<PermissionHandler> {
     if (permissionStatus1.isGranted &&
         permissionStatus2.isGranted &&
         permissionStatus3.isGranted) {
-      return const MenuPage();
+      await checkUserLoggedIn();
     } else if (permissionStatus3.isGranted && !android) {
-      return const MenuPage();
+      await checkUserLoggedIn();
     } else {
-      return AlertDialog(
-        title: const Text('Permisos requeridos'),
-        content: const Text(
-            'No se puede seguir sin los permisos\n Por favor activalos manualmente'),
-        actions: [
-          TextButton(
-            child: const Text('Abrir opciones de la app'),
-            onPressed: () => openAppSettings(),
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Permisos requeridos'),
+            content: const Text(
+                'No se puede seguir sin los permisos\n Por favor activalos manualmente'),
+            actions: [
+              TextButton(
+                child: const Text('Abrir opciones de la app'),
+                onPressed: () => openAppSettings(),
+              ),
+            ],
           ),
-        ],
-      );
+        );
+      }
+    }
+  }
+
+  Future<void> checkUserLoggedIn() async {
+    try {
+      var session = await Amplify.Auth.fetchAuthSession();
+      if (session.isSignedIn) {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/menu');
+        }
+      } else {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/welcome');
+        }
+      }
+    } catch (e) {
+      printLog('Error verificando la autenticación: $e');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/welcome');
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
+    return FutureBuilder<void>(
       builder: (ctx, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done) {
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Ocurrió el siguiente error: ${snapshot.error}',
-                style: const TextStyle(fontSize: 18),
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Colors.black,
+            body: Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
               ),
-            );
-          } else {
-            return snapshot.data as Widget;
-          }
+            ),
+          );
+        } else if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Ocurrió el siguiente error: ${snapshot.error}',
+              style: const TextStyle(fontSize: 18, color: Colors.white),
+            ),
+          );
+        } else {
+          return const Scaffold(
+            backgroundColor: Colors.black,
+          );
         }
-        return const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFFBDBDBD),
-          ),
-        );
       },
-      future: permissionCheck(),
+      future: permissionCheckAndLogin(),
     );
   }
 }

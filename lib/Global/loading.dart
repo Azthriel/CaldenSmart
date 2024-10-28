@@ -28,19 +28,19 @@ class LoadState extends State<LoadingPage> {
     printLog('HOSTIAAAAAAAAAAAAAAAAAAAAAAAA');
     _dotTimer =
         Timer.periodic(const Duration(milliseconds: 800), (Timer timer) {
-      setState(() {
-        dot++;
-        if (dot >= 4) dot = 0;
-        _dots = '.' * dot;
-      });
+      setState(
+        () {
+          dot++;
+          if (dot >= 4) dot = 0;
+          _dots = '.' * dot;
+        },
+      );
     });
     precharge().then((precharge) {
       if (precharge == true) {
         showToast('Dispositivo conectado exitosamente');
         if (deviceType == '022000' || deviceType == '027000') {
           navigatorKey.currentState?.pushReplacementNamed('/calefactor');
-        } else if (deviceType == '041220') {
-          navigatorKey.currentState?.pushReplacementNamed('/radiador');
         } else if (deviceType == '015773') {
           navigatorKey.currentState?.pushReplacementNamed('/detector');
         } else if (deviceType == '020010') {
@@ -65,6 +65,7 @@ class LoadState extends State<LoadingPage> {
       if (!previusConnections.contains(deviceName)) {
         previusConnections.add(deviceName);
         saveDeviceList(previusConnections);
+        putDevicesForAlexa(service, currentUserEmail, previusConnections);
         topicsToSub.add(
             'devices_tx/${command(deviceName)}/${extractSerialNumber(deviceName)}');
         saveTopicList(topicsToSub);
@@ -72,10 +73,15 @@ class LoadState extends State<LoadingPage> {
             'devices_tx/${command(deviceName)}/${extractSerialNumber(deviceName)}');
       }
 
+      setupToken(
+          command(deviceName), extractSerialNumber(deviceName), deviceName);
+
       printLog('Equipo: $deviceType');
 
       await queryItems(
           service, command(deviceName), extractSerialNumber(deviceName));
+
+      discNotfActivated = configNotiDsc.keys.toList().contains(deviceName);
 
       //Si es un calefactor
       if (deviceType == '022000' ||
@@ -198,8 +204,6 @@ class LoadState extends State<LoadingPage> {
                 () => {})
             .addAll({"alert": workValues[4] == 1});
         saveGlobalData(globalDATA);
-        setupToken(
-            command(deviceName), extractSerialNumber(deviceName), deviceName);
       } else if (deviceType == '020010') {
         ioValues = await myDevice.ioUuid.read();
         printLog('Valores IO: $ioValues');

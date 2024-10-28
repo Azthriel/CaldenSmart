@@ -16,6 +16,12 @@ class MenuPageState extends State<MenuPage> {
   int _selectedIndex = 0;
   int counter = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    getMail();
+  }
+
   void _onPageChanged(int index) {
     setState(() {
       _selectedIndex = index;

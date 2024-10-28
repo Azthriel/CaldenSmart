@@ -7,8 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../master.dart';
 
-//TODO: hay que realizar muchicimas mejoras, cambiar los nombres a las variables, hacer mas global muchas funciones y
-//TODO: widgets, reconozco que es una mierda, pero una que se puede mejorar
+//TODO: hay que realizar muchicimas mejoras, cambiar los nombres a las variables, hacer mas global muchas funciones y widgets, reconozco que es una mierda, pero una que se puede mejorar
 
 class EscenasPage extends StatefulWidget {
   const EscenasPage({super.key});

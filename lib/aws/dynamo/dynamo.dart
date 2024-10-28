@@ -256,16 +256,26 @@ Future<List<DateTime>> getDates(DynamoDB service, String pc, String sn) async {
 
       if (date != null && date != '') {
         var parts = date.split('/');
-        fechaExp.add(DateTime(
-            int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2])));
+        fechaExp.add(
+          DateTime(
+            int.parse(parts[0]),
+            int.parse(parts[1]),
+            int.parse(parts[2]),
+          ),
+        );
       } else {
         fechaExp.add(DateTime.now());
       }
 
       if (date2 != null && date2 != '') {
         var parts = date2.split('/');
-        fechaExp.add(DateTime(
-            int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2])));
+        fechaExp.add(
+          DateTime(
+            int.parse(parts[0]),
+            int.parse(parts[1]),
+            int.parse(parts[2]),
+          ),
+        );
       } else {
         fechaExp.add(DateTime.now());
       }
@@ -354,3 +364,23 @@ Future<void> saveNC(DynamoDB service, String pc, String sn, bool data) async {
   }
 }
 //*-Guardar si un equipo es NA o NC-*\\
+
+///*-Guardar equipos para la Alexa Skill-*\\\
+Future<void> putDevicesForAlexa(
+    DynamoDB service, String email, List<String> data) async {
+  if (data.isEmpty) {
+    data.add('');
+  }
+  try {
+    final response = await service.updateItem(tableName: 'Alexa-Devices', key: {
+      'email': AttributeValue(s: email),
+    }, attributeUpdates: {
+      'devices': AttributeValueUpdate(value: AttributeValue(ss: data)),
+    });
+
+    printLog('Item escrito perfectamente $response');
+  } catch (e) {
+    printLog('Error inserting item: $e');
+  }
+}
+///*-Guardar equipos para la Alexa Skill-*\\\

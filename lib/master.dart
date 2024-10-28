@@ -5,7 +5,7 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -25,7 +25,7 @@ import 'aws/dynamo/dynamo_certificates.dart';
 import 'aws/mqtt/mqtt.dart';
 import 'stored_data.dart';
 
-// VARIABLES \\
+//! VARIABLES !\\
 
 //*-Base de datos interna app-*\\
 Map<String, Map<String, dynamic>> globalDATA = {};
@@ -179,10 +179,19 @@ Map<String, DateTime> lastSeenDevices = {};
 Map<String, bool> msgFlag = {};
 //*-Omnipresencia-*\\
 
+//*-Notificación Desconexión-*\\
+bool discNotfActivated = false;
+Map<String, int> configNotiDsc = {};
+//*-Notificación Desconexión-*\\
+
+//*-Control por distancia-*\\
+Map<String, bool> isTaskScheduled = {};
+//*-Control por distancia-*\\
+
 // !------------------------------VERSION NUMBER---------------------------------------
 //ACORDATE: Cambia el número de versión en el pubspec.yaml antes de publicar
-String appVersionNumber = '24101502';
-//ACORDATE: 0 = Caldén Smart / 1 = Silema
+String appVersionNumber = '24102500';
+//ACORDATE: 0 = Caldén Smart
 int app = 0;
 // !------------------------------VERSION NUMBER---------------------------------------
 
@@ -233,8 +242,6 @@ String nameOfApp(int type) {
   switch (type) {
     case 0:
       return 'Caldén Smart';
-    case 1:
-      return 'Silema';
     default:
       return 'Caldén Smart';
   }
@@ -276,7 +283,7 @@ Widget contactInfo(int type) {
                   child: Row(
                     children: [
                       const Icon(
-                        HugeIcons.strokeRoundedCall02,
+                        HugeIcons.strokeRoundedWhatsapp,
                         size: 20,
                         color: color0,
                       ),
@@ -415,7 +422,7 @@ Widget contactInfo(int type) {
                   child: Row(
                     children: [
                       const Icon(
-                        HugeIcons.strokeRoundedCall02,
+                        HugeIcons.strokeRoundedWhatsapp,
                         size: 20,
                         color: color0,
                       ),
@@ -470,165 +477,6 @@ Widget contactInfo(int type) {
           ),
         ],
       );
-    case 1:
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Contacto comercial
-          Container(
-            decoration: BoxDecoration(
-              color: color3,
-              borderRadius: BorderRadius.circular(8.0),
-              border: Border.all(color: color0),
-            ),
-            padding: const EdgeInsets.all(16.0),
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Consulta comercial:',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: color0,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    launchEmail(
-                      'silemacalefaccion@gmail.com',
-                      'Consulta comercial acerca de la linea IOT',
-                      '¡Hola! Tengo una consulta sobre mis equipos.\n',
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      const Icon(
-                        HugeIcons.strokeRoundedMail01,
-                        size: 20,
-                        color: color0,
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Text(
-                            'silemacalefaccion@gmail.com',
-                            style: GoogleFonts.poppins(
-                              fontSize: 20,
-                              color: color0,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Servicio técnico
-          Container(
-            decoration: BoxDecoration(
-              color: color3,
-              borderRadius: BorderRadius.circular(8.0),
-              border: Border.all(color: color0),
-            ),
-            padding: const EdgeInsets.all(16.0),
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Servicio técnico:',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: color0,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    sendWhatsAppMessage(
-                      '5491122845561',
-                      '¡Hola! Tengo una duda comercial sobre los productos $appName: \n',
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      const Icon(
-                        HugeIcons.strokeRoundedCall02,
-                        size: 20,
-                        color: color0,
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Text(
-                        '+54 9 11 2284-5561',
-                        style: GoogleFonts.poppins(
-                          fontSize: 20,
-                          color: color0,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Customer service
-          Container(
-            decoration: BoxDecoration(
-              color: color3,
-              borderRadius: BorderRadius.circular(8.0),
-              border: Border.all(color: color0),
-            ),
-            padding: const EdgeInsets.all(16.0),
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Página web:',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: color0,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    launchWebURL('http://www.silema.com.ar/');
-                  },
-                  child: Row(
-                    children: [
-                      const Icon(
-                        HugeIcons.strokeRoundedEarth,
-                        size: 20,
-                        color: color0,
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Text(
-                        'silema.com.ar',
-                        style: GoogleFonts.poppins(
-                          fontSize: 20,
-                          color: color0,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
     default:
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -663,7 +511,7 @@ Widget contactInfo(int type) {
                   child: Row(
                     children: [
                       const Icon(
-                        HugeIcons.strokeRoundedCall02,
+                        HugeIcons.strokeRoundedWhatsapp,
                         size: 20,
                         color: color0,
                       ),
@@ -802,7 +650,7 @@ Widget contactInfo(int type) {
                   child: Row(
                     children: [
                       const Icon(
-                        HugeIcons.strokeRoundedCall02,
+                        HugeIcons.strokeRoundedWhatsapp,
                         size: 20,
                         color: color0,
                       ),
@@ -866,17 +714,25 @@ String linksOfApp(int type, String link) {
       switch (type) {
         case 0:
           return 'https://caldensmart.com/ayuda/privacidad/';
-        case 1:
-          return 'https://silema.com.ar/privacidad';
         default:
           return 'https://caldensmart.com/ayuda/privacidad/';
+      }
+    case 'TerminosDeUso':
+      switch (type) {
+        case 0:
+          return 'https://caldensmart.com/ayuda/terminos-de-uso/';
+        default:
+          return 'https://caldensmart.com/ayuda/terminos-de-uso/';
+      }
+    case 'Borrar Cuenta':
+      switch (type) {
+        default:
+          return 'https://caldensmart.com/ayuda/eliminar-cuenta/';
       }
     case 'Instagram':
       switch (type) {
         case 0:
-          return 'https://www.instagram.com/calefactores.calden/';
-        case 1:
-          return 'https://www.instagram.com/silemacalefaccion/';
+          return 'https://www.instagram.com/caldensmart/';
         default:
           return 'https://www.instagram.com/gonzaa_trillo/';
       }
@@ -884,8 +740,6 @@ String linksOfApp(int type, String link) {
       switch (type) {
         case 0:
           return 'https://www.facebook.com/CalefactoresCalden';
-        case 1:
-          return 'https://www.facebook.com/SilemaCalefaccionOK/';
         default:
           return 'https://www.facebook.com/CalefactoresCalden';
       }
@@ -893,8 +747,6 @@ String linksOfApp(int type, String link) {
       switch (type) {
         case 0:
           return 'https://caldensmart.com';
-        case 1:
-          return 'https://silema.com.ar';
         default:
           return 'https://caldensmart.com';
       }
@@ -902,8 +754,6 @@ String linksOfApp(int type, String link) {
       switch (type) {
         case 0:
           return 'https://caldensmart.com';
-        case 1:
-          return 'https://silema.com.ar';
         default:
           return 'https://caldensmart.com';
       }
@@ -998,7 +848,7 @@ void launchWebURL(String url) async {
   if (await canLaunchUrl(uri)) {
     await launchUrl(uri);
   } else {
-    throw 'No se pudo abrir $url';
+    printLog('No se pudo abrir $url');
   }
 }
 //*-Funciones diversas-*\\
@@ -1019,7 +869,7 @@ void sendReportError(String cuerpo) async {
         .join('&');
   }
 
-  String recipients = 'ingenieria@intelligentgas.com.ar';
+  String recipients = 'ingenieria@caldensmart.com';
   String subject = 'Reporte de error $deviceName';
 
   try {
@@ -1027,7 +877,8 @@ void sendReportError(String cuerpo) async {
       scheme: 'mailto',
       path: recipients,
       query: encodeQueryParameters(
-          <String, String>{'subject': subject, 'body': cuerpo}),
+        <String, String>{'subject': subject, 'body': cuerpo},
+      ),
     );
 
     if (await canLaunchUrl(emailLaunchUri)) {
@@ -1571,36 +1422,65 @@ Future<void> handleNotifications(RemoteMessage message) async {
     String number = message.data['sn']!;
     String device = recoverDeviceName(product, number);
     String sound = soundOfNotification[product] ?? 'alarm2';
+    String caso = message.data['case']!;
 
-    if (product == '015773_IOT') {
-      String displayTitle = '¡ALERTA EN ${nicknamesMap[device] ?? device}!';
-      String displayMessage = 'El detector disparó una alarma';
-      showNotification(displayTitle.toUpperCase(), displayMessage, sound);
-      printLog('Esta el cortito ${detectorOff.keys.contains(device)}');
-      if (detectorOff.keys.contains(device)) {
-        List<String> equipos = detectorOff[device] ?? [];
+    printLog('El caso que llego es $caso');
 
-        for (String equipo in equipos) {
-          printLog('Apago $equipo');
-          String deviceSerialNumber = extractSerialNumber(equipo);
-          String productCode = command(equipo);
-          String topic = 'devices_rx/$productCode/$deviceSerialNumber';
-          String topic2 = 'devices_tx/$productCode/$deviceSerialNumber';
-          String message = jsonEncode({"w_status": false});
-          sendMessagemqtt(topic, message);
-          sendMessagemqtt(topic2, message);
+    if (caso == 'Alarm') {
+      if (product == '015773_IOT') {
+        final now = DateTime.now();
+        String displayTitle = '¡ALERTA EN ${nicknamesMap[device] ?? device}!';
+        String displayMessage =
+            'El detector disparó una alarma.\nA las ${now.hour > 10 ? now.hour : '0${now.hour}'}:${now.minute > 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+        showNotification(displayTitle.toUpperCase(), displayMessage, sound);
+        printLog('Esta el cortito ${detectorOff.keys.contains(device)}');
+        if (detectorOff.keys.contains(device)) {
+          List<String> equipos = detectorOff[device] ?? [];
+
+          for (String equipo in equipos) {
+            printLog('Apago $equipo');
+            String deviceSerialNumber = extractSerialNumber(equipo);
+            String productCode = command(equipo);
+            String topic = 'devices_rx/$productCode/$deviceSerialNumber';
+            String topic2 = 'devices_tx/$productCode/$deviceSerialNumber';
+            String message = jsonEncode({"w_status": false});
+            sendMessagemqtt(topic, message);
+            sendMessagemqtt(topic2, message);
+          }
+        }
+      } else if (product == '020010_IOT') {
+        final now = DateTime.now();
+        String entry = subNicknamesMap['$device/-/${message.data['entry']!}'] ??
+            'Entrada${message.data['entry']!}';
+        String displayTitle = '¡ALERTA EN ${nicknamesMap[device] ?? device}!';
+        String displayMessage =
+            'La $entry disparó una alarma.\nA las ${now.hour > 10 ? now.hour : '0${now.hour}'}:${now.minute > 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+        if (notificationMap['$product/$number']![
+            int.parse(message.data['entry']!)]) {
+          printLog(
+              'En la lista: ${notificationMap['$product/$number']!} en la posición ${int.parse(message.data['entry']!)} hay un true');
+          showNotification(displayTitle.toUpperCase(), displayMessage, sound);
         }
       }
-    } else if (product == '020010_IOT') {
-      String entry = subNicknamesMap['$device/-/${message.data['entry']!}'] ??
-          'Entrada${message.data['entry']!}';
-      String displayTitle = '¡ALERTA EN ${nicknamesMap[device] ?? device}!';
-      String displayMessage = 'La $entry disparó una alarma';
-      if (notificationMap['$product/$number']![
-          int.parse(message.data['entry']!)]) {
-        printLog(
-            'En la lista: ${notificationMap['$product/$number']!} en la posición ${int.parse(message.data['entry']!)} hay un true');
-        showNotification(displayTitle.toUpperCase(), displayMessage, sound);
+    } else if (caso == 'Disconnect') {
+      configNotiDsc = await loadconfigNotiDsc();
+      if (configNotiDsc.keys.toList().contains(device)) {
+        final now = DateTime.now();
+        int espera = configNotiDsc[device] ?? 0;
+        printLog('La espera son $espera minutos');
+        await Future.delayed(
+          Duration(minutes: espera),
+        );
+        await queryItems(service, product, number);
+        bool cstate = globalDATA['$product/$number']?['cstate'] ?? false;
+        printLog('El cstate después de la espera es $cstate');
+        if (!cstate) {
+          String displayTitle =
+              '¡El equipo ${nicknamesMap[device] ?? device} se desconecto!';
+          String displayMessage =
+              'Se detecto una desconexión a las ${now.hour > 10 ? now.hour : '0${now.hour}'}:${now.minute > 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+          showNotification(displayTitle, displayMessage, 'noti');
+        }
       }
     }
   } catch (e, s) {
@@ -1624,7 +1504,7 @@ void showNotification(String title, String body, String sonido) async {
           'CaldénSmart_$sonido',
           'Eventos',
           icon: '@mipmap/ic_launcher',
-          sound: RawResourceAndroidNotificationSound(sonido),
+          sound: RawResourceAndroidNotificationSound(sonido.toLowerCase()),
           enableVibration: true,
           importance: Importance.max,
         ),
@@ -1704,50 +1584,6 @@ void bluetoothStatus() async {
 //*-Monitoreo Localizacion y Bluetooth*-\\
 
 //*-Admin secundarios y alquiler temporario-*\\
-void showAdminText() {
-  showDialog(
-      context: navigatorKey.currentContext!,
-      barrierDismissible: true,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF252223),
-          title: const Text(
-            'Haz alcanzado el límite máximo de administradores secundarios',
-            style: TextStyle(color: Color(0xFFFFFFFF)),
-          ),
-          content: const Text(
-            'En caso de requerir más puedes solicitarlos vía mail',
-            style: TextStyle(color: Color(0xFFFFFFFF)),
-          ),
-          actions: [
-            TextButton(
-                style: const ButtonStyle(
-                    foregroundColor: WidgetStatePropertyAll(Color(0xFFFFFFFF))),
-                onPressed: () async {
-                  String cuerpo =
-                      '¡Hola! Me comunico porque busco extender el plazo de administradores secundarios en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
-                  final Uri emailLaunchUri = Uri(
-                    scheme: 'mailto',
-                    path: 'cobranzas@ibsanitarios.com.ar',
-                    query: encodeQueryParameters(<String, String>{
-                      'subject': 'Extensión de administradores secundarios',
-                      'body': cuerpo,
-                      'CC': 'pablo@intelligentgas.com.ar'
-                    }),
-                  );
-                  if (await canLaunchUrl(emailLaunchUri)) {
-                    await launchUrl(emailLaunchUri);
-                  } else {
-                    showToast('No se pudo enviar el correo electrónico');
-                  }
-                  navigatorKey.currentState?.pop();
-                },
-                child: const Text('Solicitar'))
-          ],
-        );
-      });
-}
-
 Future<void> analizePayment(
   String pc,
   String sn,
@@ -1777,505 +1613,67 @@ Future<void> analizePayment(
 
 void showPaymentTest(bool adm, int vencimiento, BuildContext context) {
   try {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF1E242B),
-          title: const Text(
-            '¡Estas por perder tu beneficio!',
-            style: TextStyle(
-              color: Color(0xFFB2B5AE),
-            ),
+    showAlertDialog(
+      context,
+      false,
+      const Text(
+        '¡Estas por perder tu beneficio!',
+      ),
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Text(
+            'Faltan $vencimiento días para que te quedes sin la opción:',
+            style: const TextStyle(fontWeight: FontWeight.normal),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Text(
-                'Faltan $vencimiento días para que te quedes sin la opción:',
-                style: const TextStyle(
-                    color: Color(0xFFB2B5AE), fontWeight: FontWeight.normal),
-              ),
-              adm
-                  ? const Text(
-                      'Administradores secundarios extra',
-                      style: TextStyle(
-                          color: Color(0xFFB2B5AE),
-                          fontWeight: FontWeight.bold),
-                    )
-                  : const Text(
-                      'Habilitar alquiler temporario',
-                      style: TextStyle(
-                          color: Color(0xFFB2B5AE),
-                          fontWeight: FontWeight.bold),
-                    )
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              style: const ButtonStyle(
-                foregroundColor: WidgetStatePropertyAll(
-                  Color(0xFFB2B5AE),
-                ),
-              ),
-              child: const Text('Ignorar'),
-              onPressed: () {
-                navigatorKey.currentState?.pop();
-              },
-            ),
-            TextButton(
-              style: const ButtonStyle(
-                foregroundColor: WidgetStatePropertyAll(
-                  Color(0xFFB2B5AE),
-                ),
-              ),
-              child: const Text('Solicitar extensión'),
-              onPressed: () async {
-                String cuerpo = adm
-                    ? '¡Hola! Me comunico porque busco extender mi beneficio de "Administradores secundarios extra" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner\nVencimiento en: $vencimiento dias'
-                    : '¡Hola! Me comunico porque busco extender mi beneficio "Habilitar alquiler temporario" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner\nVencimiento en: $vencimiento dias';
-                final Uri emailLaunchUri = Uri(
-                  scheme: 'mailto',
-                  path: 'cobranzas@ibsanitarios.com.ar',
-                  query: encodeQueryParameters(<String, String>{
-                    'subject': 'Extensión de beneficio',
-                    'body': cuerpo,
-                    'CC': 'pablo@intelligentgas.com.ar'
-                  }),
-                );
-                if (await canLaunchUrl(emailLaunchUri)) {
-                  await launchUrl(emailLaunchUri);
-                } else {
-                  showToast('No se pudo enviar el correo electrónico');
-                }
-                navigatorKey.currentState?.pop();
-              },
-            ),
-          ],
-        );
-      },
+          adm
+              ? const Text(
+                  'Administradores secundarios extra',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                )
+              : const Text(
+                  'Habilitar alquiler temporario',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                )
+        ],
+      ),
+      <Widget>[
+        TextButton(
+          child: const Text('Ignorar'),
+          onPressed: () {
+            navigatorKey.currentState?.pop();
+          },
+        ),
+        TextButton(
+          child: const Text('Solicitar extensión'),
+          onPressed: () async {
+            String cuerpo = adm
+                ? '¡Hola! Me comunico porque busco extender mi beneficio de "Administradores secundarios extra" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner\nVencimiento en: $vencimiento dias'
+                : '¡Hola! Me comunico porque busco extender mi beneficio "Habilitar alquiler temporario" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner\nVencimiento en: $vencimiento dias';
+            final Uri emailLaunchUri = Uri(
+              scheme: 'mailto',
+              path: 'cobranzas@caldensmart.com',
+              query: encodeQueryParameters(<String, String>{
+                'subject': 'Extensión de beneficio',
+                'body': cuerpo,
+                'CC': 'serviciotecnico@caldensmart.com'
+              }),
+            );
+            if (await canLaunchUrl(emailLaunchUri)) {
+              await launchUrl(emailLaunchUri);
+            } else {
+              showToast('No se pudo enviar el correo electrónico');
+            }
+            navigatorKey.currentState?.pop();
+          },
+        ),
+      ],
     );
   } catch (e, s) {
     printLog(e);
     printLog(s);
   }
-}
-
-void showATText() {
-  showDialog(
-      context: navigatorKey.currentContext!,
-      barrierDismissible: true,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF252223),
-          title: const Text(
-            'Actualmente no tienes habilitado este beneficio',
-            style: TextStyle(color: Color(0xFFFFFFFF)),
-          ),
-          content: const Text(
-            'En caso de requerirlo puedes solicitarlo vía mail',
-            style: TextStyle(color: Color(0xFFFFFFFF)),
-          ),
-          actions: [
-            TextButton(
-                style: const ButtonStyle(
-                    foregroundColor: WidgetStatePropertyAll(Color(0xFFFFFFFF))),
-                onPressed: () async {
-                  String cuerpo =
-                      '¡Hola! Me comunico porque busco habilitar la opción de "Alquiler temporario" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
-                  final Uri emailLaunchUri = Uri(
-                    scheme: 'mailto',
-                    path: 'cobranzas@ibsanitarios.com.ar',
-                    query: encodeQueryParameters(<String, String>{
-                      'subject': 'Habilitación alquiler temporario',
-                      'body': cuerpo,
-                      'CC': 'pablo@intelligentgas.com.ar'
-                    }),
-                  );
-                  if (await canLaunchUrl(emailLaunchUri)) {
-                    await launchUrl(emailLaunchUri);
-                  } else {
-                    showToast('No se pudo enviar el correo electrónico');
-                  }
-                  navigatorKey.currentState?.pop();
-                },
-                child: const Text('Solicitar'))
-          ],
-        );
-      });
-}
-
-//TODO: Cuando este hecho calefactores hay que cambiar todo esto
-Future<void> configAT() async {
-  showDialog(
-      context: navigatorKey.currentContext!,
-      barrierDismissible: true,
-      builder: (context) {
-        final TextEditingController tenantController = TextEditingController();
-        final TextEditingController tenantDistanceOn = TextEditingController();
-        final TextEditingController tenantDistanceOff = TextEditingController();
-        bool dOnOk = false;
-        bool dOffOk = false;
-        final FocusNode dOnNode = FocusNode();
-        final FocusNode dOffNode = FocusNode();
-        return AlertDialog(
-          backgroundColor: const Color(0xFF252223),
-          title: const Text(
-            'Configura los parametros del alquiler',
-            style: TextStyle(color: Color(0xFFFFFFFF)),
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: tenantController,
-                    keyboardType: TextInputType.emailAddress,
-                    style: const TextStyle(
-                      color: Color(0xFFFFFFFF),
-                    ),
-                    decoration: const InputDecoration(
-                      icon: Icon(Icons.person),
-                      iconColor: Color(0xFFFFFFFF),
-                      labelText: "Email del inquilino",
-                      labelStyle: TextStyle(
-                        color: Color(0xFFFFFFFF),
-                      ),
-                    ),
-                    onEditingComplete: () {
-                      if (tenantController.text != '') {
-                        dOffNode.requestFocus();
-                      } else {
-                        showToast('Debes ingresar un mail');
-                      }
-                    },
-                  ),
-                  TextField(
-                    controller: tenantDistanceOff,
-                    keyboardType: TextInputType.number,
-                    focusNode: dOffNode,
-                    style: const TextStyle(
-                      color: Color(0xFFFFFFFF),
-                    ),
-                    decoration: const InputDecoration(
-                      icon: Icon(Icons.map),
-                      iconColor: Color(0xFFFFFFFF),
-                      labelText: "Distancia de apagado",
-                      labelStyle: TextStyle(
-                        color: Color(0xFFFFFFFF),
-                      ),
-                      hintText: 'Entre 100 y 300 metros',
-                      hintStyle: TextStyle(
-                        color: Color(0xFF8D8D8D),
-                      ),
-                    ),
-                    onEditingComplete: () {
-                      int? fun = int.tryParse(tenantDistanceOff.text);
-                      if (fun == null || fun < 100 || fun > 300) {
-                        showToast('Distancia de apagado no permitida');
-                      } else {
-                        dOffOk = true;
-                        dOnNode.requestFocus();
-                      }
-                    },
-                  ),
-                  TextField(
-                    controller: tenantDistanceOn,
-                    keyboardType: TextInputType.number,
-                    focusNode: dOnNode,
-                    style: const TextStyle(
-                      color: Color(0xFFFFFFFF),
-                    ),
-                    decoration: const InputDecoration(
-                      icon: Icon(Icons.map),
-                      iconColor: Color(0xFFFFFFFF),
-                      labelText: "Distancia de encendido",
-                      labelStyle: TextStyle(
-                        color: Color(0xFFFFFFFF),
-                      ),
-                      hintText: 'Entre 3000 y 5000 metros',
-                      hintStyle: TextStyle(
-                        color: Color(0xFF8D8D8D),
-                      ),
-                    ),
-                    onEditingComplete: () {
-                      int? fun = int.tryParse(tenantDistanceOn.text);
-                      if (fun == null || fun < 3000 || fun > 5000) {
-                        showToast('Distancia de encendido no permitida');
-                      } else {
-                        dOnOk = true;
-                      }
-                    },
-                  ),
-                ]),
-          ),
-          actions: [
-            TextButton(
-                style: const ButtonStyle(
-                  foregroundColor: WidgetStatePropertyAll(
-                    Color(0xFFFFFFFF),
-                  ),
-                ),
-                onPressed: () {
-                  if (dOnOk && dOffOk && tenantController.text != '') {
-                    saveATData(
-                      service,
-                      command(deviceName),
-                      extractSerialNumber(deviceName),
-                      true,
-                      tenantController.text.trim(),
-                      tenantDistanceOn.text.trim(),
-                      tenantDistanceOff.text.trim(),
-                    );
-                    navigatorKey.currentState?.pop();
-                  } else {
-                    showToast('Parametros no permitidos');
-                  }
-                },
-                child: const Text('Activar')),
-          ],
-        );
-      });
-}
-
-void showCupertinoAdminText() {
-  showCupertinoDialog(
-      context: navigatorKey.currentContext!,
-      barrierDismissible: true,
-      builder: (context) {
-        return CupertinoAlertDialog(
-          title: const Text(
-            'Haz alcanzado el límite máximo de administradores secundarios',
-            style: TextStyle(color: CupertinoColors.white),
-          ),
-          content: const Text(
-            'En caso de requerir más puedes solicitarlos vía mail',
-            style: TextStyle(color: Color(0xFFFFFFFF)),
-          ),
-          actions: [
-            CupertinoButton(
-                color: const Color(0xFFFFFFFF),
-                onPressed: () async {
-                  String cuerpo =
-                      '¡Hola! Me comunico porque busco extender el plazo de administradores secundarios en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
-                  final Uri emailLaunchUri = Uri(
-                    scheme: 'mailto',
-                    path: 'cobranzas@ibsanitarios.com.ar',
-                    query: encodeQueryParameters(<String, String>{
-                      'subject': 'Extensión de administradores secundarios',
-                      'body': cuerpo,
-                      'CC': 'pablo@intelligentgas.com.ar'
-                    }),
-                  );
-                  if (await canLaunchUrl(emailLaunchUri)) {
-                    await launchUrl(emailLaunchUri);
-                  } else {
-                    showToast('No se pudo enviar el correo electrónico');
-                  }
-                  navigatorKey.currentState?.pop();
-                },
-                child: const Text('Solicitar'))
-          ],
-        );
-      });
-}
-
-void showCupertinoATText() {
-  showCupertinoDialog(
-      context: navigatorKey.currentContext!,
-      barrierDismissible: true,
-      builder: (context) {
-        return CupertinoAlertDialog(
-          title: const Text(
-            'Actualmente no tienes habilitado este beneficio',
-            style: TextStyle(color: CupertinoColors.label),
-          ),
-          content: const Text(
-            'En caso de requerirlo puedes solicitarlo vía mail',
-            style: TextStyle(color: CupertinoColors.label),
-          ),
-          actions: [
-            TextButton(
-                style: const ButtonStyle(
-                    foregroundColor:
-                        WidgetStatePropertyAll(CupertinoColors.label)),
-                onPressed: () async {
-                  String cuerpo =
-                      '¡Hola! Me comunico porque busco habilitar la opción de "Alquiler temporario" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
-                  final Uri emailLaunchUri = Uri(
-                    scheme: 'mailto',
-                    path: 'cobranzas@ibsanitarios.com.ar',
-                    query: encodeQueryParameters(<String, String>{
-                      'subject': 'Habilitación alquiler temporario',
-                      'body': cuerpo,
-                      'CC': 'pablo@intelligentgas.com.ar'
-                    }),
-                  );
-                  if (await canLaunchUrl(emailLaunchUri)) {
-                    await launchUrl(emailLaunchUri);
-                  } else {
-                    showToast('No se pudo enviar el correo electrónico');
-                  }
-                  navigatorKey.currentState?.pop();
-                },
-                child: const Text('Solicitar'))
-          ],
-        );
-      });
-}
-
-Future<void> configCupertinoAT() async {
-  showCupertinoDialog(
-    context: navigatorKey.currentContext!,
-    barrierDismissible: true,
-    builder: (context) {
-      final TextEditingController tenantController = TextEditingController();
-      final TextEditingController tenantDistanceOn = TextEditingController();
-      final TextEditingController tenantDistanceOff = TextEditingController();
-      bool dOnOk = false;
-      bool dOffOk = false;
-      final FocusNode dOnNode = FocusNode();
-      final FocusNode dOffNode = FocusNode();
-      return CupertinoAlertDialog(
-        title: const Text(
-          'Configura los parametros del alquiler',
-          style: TextStyle(color: CupertinoColors.label),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CupertinoTextField(
-                  controller: tenantController,
-                  keyboardType: TextInputType.emailAddress,
-                  style: const TextStyle(
-                    color: CupertinoColors.label,
-                  ),
-                  decoration: const BoxDecoration(
-                    color: Colors.transparent,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Color(0xFFBDBDBD),
-                      ),
-                    ),
-                  ),
-                  placeholder: 'Email del inquilino',
-                  placeholderStyle: const TextStyle(
-                    color: CupertinoColors.label,
-                  ),
-                  prefix: const Icon(
-                    CupertinoIcons.mail,
-                    color: CupertinoColors.label,
-                  ),
-                  onEditingComplete: () {
-                    if (tenantController.text != '') {
-                      dOffNode.requestFocus();
-                    } else {
-                      showToast('Debes ingresar un mail');
-                    }
-                  },
-                ),
-                const SizedBox(height: 10),
-                CupertinoTextField(
-                  controller: tenantDistanceOff,
-                  keyboardType: TextInputType.number,
-                  focusNode: dOffNode,
-                  style: const TextStyle(
-                    color: CupertinoColors.label,
-                  ),
-                  decoration: const BoxDecoration(
-                    color: Colors.transparent,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Color(0xFFBDBDBD),
-                      ),
-                    ),
-                  ),
-                  placeholder: 'Distancia de apagado',
-                  placeholderStyle: const TextStyle(
-                    color: CupertinoColors.label,
-                  ),
-                  prefix: const Icon(
-                    CupertinoIcons.map,
-                    color: CupertinoColors.label,
-                  ),
-                  onEditingComplete: () {
-                    int? fun = int.tryParse(tenantDistanceOff.text);
-                    if (fun == null || fun < 100 || fun > 300) {
-                      showToast('Distancia de apagado no permitida');
-                    } else {
-                      dOffOk = true;
-                      dOnNode.requestFocus();
-                    }
-                  },
-                ),
-                const SizedBox(height: 10),
-                CupertinoTextField(
-                  controller: tenantDistanceOn,
-                  keyboardType: TextInputType.number,
-                  focusNode: dOnNode,
-                  style: const TextStyle(
-                    color: CupertinoColors.label,
-                  ),
-                  decoration: const BoxDecoration(
-                    color: Colors.transparent,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Color(0xFFBDBDBD),
-                      ),
-                    ),
-                  ),
-                  placeholder: 'Distancia de encendido',
-                  placeholderStyle: const TextStyle(
-                    color: CupertinoColors.label,
-                  ),
-                  prefix: const Icon(
-                    CupertinoIcons.map,
-                    color: CupertinoColors.label,
-                  ),
-                  onEditingComplete: () {
-                    int? fun = int.tryParse(tenantDistanceOn.text);
-                    if (fun == null || fun < 3000 || fun > 5000) {
-                      showToast('Distancia de encendido no permitida');
-                    } else {
-                      dOnOk = true;
-                    }
-                  },
-                ),
-              ]),
-        ),
-        actions: [
-          TextButton(
-              style: const ButtonStyle(
-                foregroundColor: WidgetStatePropertyAll(
-                  CupertinoColors.label,
-                ),
-              ),
-              onPressed: () {
-                if (dOnOk && dOffOk && tenantController.text != '') {
-                  saveATData(
-                    service,
-                    command(deviceName),
-                    extractSerialNumber(deviceName),
-                    true,
-                    tenantController.text.trim(),
-                    tenantDistanceOn.text.trim(),
-                    tenantDistanceOff.text.trim(),
-                  );
-                  navigatorKey.currentState?.pop();
-                } else {
-                  showToast('Parametros no permitidos');
-                }
-              },
-              child: const Text('Activar')),
-        ],
-      );
-    },
-  );
 }
 //*-Admin secundarios y alquiler temporario-*\\
 
@@ -2285,7 +1683,7 @@ void asking() async {
 
   if (!alreadyLog) {
     printLog('Usuario no está logueado');
-    navigatorKey.currentState?.pushReplacementNamed('/login');
+    navigatorKey.currentState?.pushReplacementNamed('/welcome');
   } else {
     printLog('Usuario logueado');
     navigatorKey.currentState?.pushReplacementNamed('/menu');
@@ -2781,128 +2179,126 @@ String rutaDeImagen(String device) {
 //*-Imagenes Scan-*\\
 
 //*-show dialog generico-*\\
-void showAlertDialog(BuildContext context, Widget? title, Widget? content,
-    List<Widget>? actions) {
+void showAlertDialog(BuildContext context, bool dismissible, Widget? title,
+    Widget? content, List<Widget>? actions) {
   showGeneralDialog(
     context: context,
-    barrierDismissible: true,
+    barrierDismissible: dismissible,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: Colors.black.withOpacity(0.5),
     transitionDuration: const Duration(milliseconds: 300),
     pageBuilder: (BuildContext context, Animation<double> animation,
         Animation<double> secondaryAnimation) {
       double screenWidth = MediaQuery.of(context).size.width;
-      return Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minWidth: 300.0,
-            maxWidth: screenWidth - 20,
-          ),
-          child: IntrinsicWidth(
-            child: Container(
-              decoration: BoxDecoration(
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.5),
-                    spreadRadius: 1,
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+      return StatefulBuilder(
+        builder: (BuildContext context, StateSetter changeState) {
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: 300.0,
+                maxWidth: screenWidth - 20,
               ),
-              child: Card(
-                color: color3,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30.0),
-                ),
-                elevation: 24,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  alignment: Alignment.topCenter,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 70, 20, 20),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Center(
-                            child: DefaultTextStyle(
-                              style: GoogleFonts.poppins(
-                                color: color0,
-                                fontSize: 24,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              child: title ??
-                                  const SizedBox(
-                                    height: 0,
-                                    width: 0,
-                                  ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Center(
-                            child: DefaultTextStyle(
-                              style: GoogleFonts.poppins(
-                                color: color0,
-                                fontSize: 16,
-                              ),
-                              child: content ??
-                                  const SizedBox(
-                                    height: 0,
-                                    width: 0,
-                                  ),
-                            ),
-                          ),
-                          const SizedBox(height: 30),
-                          if (actions != null)
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: actions.map((widget) {
-                                if (widget is TextButton) {
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 5.0),
-                                    child: TextButton(
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: color0,
-                                        backgroundColor: color3,
-                                      ),
-                                      onPressed: widget.onPressed,
-                                      child: widget.child!,
-                                    ),
-                                  );
-                                } else {
-                                  return widget;
-                                }
-                              }).toList(),
-                            ),
-                        ],
+              child: IntrinsicWidth(
+                child: Container(
+                  decoration: BoxDecoration(
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.5),
+                        spreadRadius: 1,
+                        blurRadius: 20,
+                        offset: const Offset(0, 4),
                       ),
+                    ],
+                  ),
+                  child: Card(
+                    color: color3,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30.0),
                     ),
-                    Positioned(
-                      top: -50,
-                      child: Material(
-                        elevation: 10,
-                        shape: const CircleBorder(),
-                        shadowColor: Colors.black.withOpacity(0.4),
-                        child: CircleAvatar(
-                          radius: 50,
-                          backgroundColor: color3,
-                          child: Image.asset(
-                            'assets/dragon.png',
-                            width: 60,
-                            height: 60,
+                    elevation: 24,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.topCenter,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 70, 20, 20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Center(
+                                child: DefaultTextStyle(
+                                  style: GoogleFonts.poppins(
+                                    color: color0,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  child: title ?? const SizedBox.shrink(),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Center(
+                                child: DefaultTextStyle(
+                                  style: GoogleFonts.poppins(
+                                    color: color0,
+                                    fontSize: 16,
+                                  ),
+                                  child: content ?? const SizedBox.shrink(),
+                                ),
+                              ),
+                              const SizedBox(height: 30),
+                              if (actions != null)
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: actions.map(
+                                    (widget) {
+                                      if (widget is TextButton) {
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 5.0),
+                                          child: TextButton(
+                                            style: TextButton.styleFrom(
+                                              foregroundColor: color0,
+                                              backgroundColor: color3,
+                                            ),
+                                            onPressed: widget.onPressed,
+                                            child: widget.child!,
+                                          ),
+                                        );
+                                      } else {
+                                        return widget;
+                                      }
+                                    },
+                                  ).toList(),
+                                ),
+                            ],
                           ),
                         ),
-                      ),
+                        Positioned(
+                          top: -50,
+                          child: Material(
+                            elevation: 10,
+                            shape: const CircleBorder(),
+                            shadowColor: Colors.black.withOpacity(0.4),
+                            child: CircleAvatar(
+                              radius: 50,
+                              backgroundColor: color3,
+                              child: Image.asset(
+                                'assets/dragon.png',
+                                width: 60,
+                                height: 60,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       );
     },
     transitionBuilder: (context, animation, secondaryAnimation, child) {
@@ -3954,3 +3350,157 @@ class AnimSearchBarState extends State<AnimSearchBar>
   }
 }
 //*-AnimSearchBar*-\\
+
+//*-pantalla para usuario no autorizo a entrar al equipo-*\\class AccessDeniedScreen extends StatelessWidget {
+class AccessDeniedScreen extends StatelessWidget {
+  const AccessDeniedScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: color1,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.topLeft,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back, color: color3),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) {
+                      return AlertDialog(
+                        backgroundColor: const Color(0xFF252223),
+                        content: Row(
+                          children: [
+                            Image.asset('assets/dragon.gif',
+                                width: 100, height: 100),
+                            Container(
+                              margin: const EdgeInsets.only(left: 15),
+                              child: const Text(
+                                "Desconectando...",
+                                style: TextStyle(color: Color(0xFFFFFFFF)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                  Future.delayed(const Duration(seconds: 2), () async {
+                    await myDevice.device.disconnect();
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      Navigator.pushReplacementNamed(context, '/menu');
+                    }
+                  });
+                  return;
+                },
+              ),
+            ),
+            const Spacer(),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.dangerous,
+                  size: 80,
+                  color: color3,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No eres dueño de este equipo',
+                  style: GoogleFonts.poppins(
+                    fontSize: 24,
+                    color: color3,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: RichText(
+                textAlign: TextAlign.center,
+                text: TextSpan(
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: color3,
+                  ),
+                  children: [
+                    const TextSpan(text: 'Si crees que es un error, '),
+                    TextSpan(
+                      text: 'contáctanos',
+                      style: const TextStyle(
+                        decoration: TextDecoration.underline,
+                        color: color3,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () {
+                          launchEmail(
+                            'service@caldensmart.com',
+                            'Consulta sobre línea Smart',
+                            '¡Hola! Me comunico en relación a uno de mis equipos: \n',
+                          );
+                        },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+//*-pantalla para usuario no autorizo a entrar al equipo-*\\
+
+//*-si el equipo ya tiene un usuario conectado -*\\
+class DeviceInUseScreen extends StatelessWidget {
+  const DeviceInUseScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: color1,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              height: 50,
+            ),
+            Text(
+              'Actualmente hay un usuario usando el equipo',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 28,
+                color: color3,
+              ),
+            ),
+            Text(
+              'Espere a que se desconecte para poder usarlo',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 28,
+                color: color3,
+              ),
+            ),
+            SizedBox(
+              height: 20,
+            ),
+            CircularProgressIndicator(
+              color: color3,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+//*-si el equipo ya tiene un usuario conectado -*\\

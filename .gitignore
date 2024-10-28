@@ -12,8 +12,11 @@ migrate_working_dir/
 lib/aws/mqtt/mqtt_certificates.dart
 lib/aws/dynamo/dynamo_certificates.dart
 lib/firebase_options.dart
-lib/amplify_options.dart
+lib/amplifyconfiguration.dart
 lib/easterEgg
+key.properties
+firebase.json
+amplify/
 
 
 
@@ -51,6 +54,10 @@ app.*.map.json
 android/app/build/
 android/app/google-services.json
 
+
+*.apk
+*.bin
+
 #amplify-do-not-edit-begin
 amplify/\#current-cloud-backend
 amplify/.config/local-*
@@ -72,6 +79,3 @@ amplifytools.xcconfig
 .secret-*
 **.sample
 #amplify-do-not-edit-end
-
-*.apk
-*.bin

@@ -4,7 +4,6 @@ import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:caldensmart/Devices/relay.dart';
 import 'package:caldensmart/Global/profile.dart';
 import 'Devices/domotica.dart';
-import 'Devices/radiador.dart';
 import 'Devices/detectores.dart';
 import 'Global/escenas.dart';
 import 'easterEgg/easter_egg.dart';
@@ -12,13 +11,14 @@ import 'Global/loading.dart';
 import 'Global/menu.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'Devices/calefactores.dart';
-import 'amplify_options.dart';
+import 'amplifyconfiguration.dart';
 import 'aws/mqtt/mqtt.dart';
 import 'firebase_options.dart';
 import 'Global/permission.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'login/welcome.dart';
 import 'master.dart';
 import 'stored_data.dart';
 
@@ -100,18 +100,20 @@ class MyAppState extends State<MyApp> {
         bottomSheetTheme: const BottomSheetThemeData(
             surfaceTintColor: Colors.transparent,
             backgroundColor: Colors.transparent),
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF302b36)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF302b36),
+        ),
         useMaterial3: true,
       ),
       initialRoute: '/perm',
       routes: {
         '/perm': (context) => const PermissionHandler(),
+        '/welcome': (context) => const WelcomePage(),
         '/loading': (context) => const LoadingPage(),
         '/menu': (context) => const MenuPage(),
-        '/eg': (context) => EasterEgg(),
+        '/eg': (context) => const EasterEgg(),
         '/detector': (context) => const DetectorPage(),
         '/calefactor': (context) => const CalefactorPage(),
-        '/radiador': (context) => const RadiadorPage(),
         '/domotica': (context) => const DomoticaPage(),
         '/profile': (context) => const ProfilePage(),
         '/escenas': (context) => const EscenasPage(),

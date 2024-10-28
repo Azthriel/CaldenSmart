@@ -51,6 +51,14 @@ class ScanPageState extends State<ScanPage>
     );
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+    _animationController.dispose();
+    searchController.dispose();
+    _controller.dispose();
+  }
+
   void scan() {
     printLog('Jiji');
     if (bluetoothOn) {
@@ -77,19 +85,22 @@ class ScanPageState extends State<ScanPage>
             for (ScanResult result in results) {
               if (!devices
                   .any((device) => device.remoteId == result.device.remoteId)) {
-                if (navigatorKey.currentContext?.mounted ?? context.mounted) {
-                  devices.add(result.device);
-                  devices
-                      .sort((a, b) => a.platformName.compareTo(b.platformName));
-                  sortedDevices = devices;
-                  context.mounted ? setState(() {}) : null;
+                if (context.mounted) {
+                  setState(() {
+                    devices.add(result.device);
+                    devices.sort(
+                        (a, b) => a.platformName.compareTo(b.platformName));
+                    sortedDevices = devices;
+                  });
                 }
               }
               lastSeenDevices[result.device.remoteId.toString()] =
                   DateTime.now();
             }
-            _removeLostDevices();
-            backFunctionTrack(results);
+            if (context.mounted) {
+              _removeLostDevices();
+              backFunctionTrack(results);
+            }
           },
         );
       } catch (e, stackTrace) {
@@ -100,6 +111,9 @@ class ScanPageState extends State<ScanPage>
   }
 
   void _removeLostDevices() {
+    if (!context.mounted) {
+      return;
+    }
     DateTime now = DateTime.now();
     if (context.mounted) {
       setState(() {

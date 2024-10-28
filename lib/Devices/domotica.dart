@@ -743,6 +743,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                 {
                   showAlertDialog(
                     context,
+                    false,
                     const Text(
                       '¿Seguro que quiere cancelar el tackeo?',
                     ),
@@ -780,6 +781,7 @@ class DomoticaPageState extends State<DomoticaPage> {
               } else {
                 showAlertDialog(
                   context,
+                  false,
                   const Text(
                     '¿Estás seguro que quiere iniciar el trackeo Bluetooth?',
                   ),
