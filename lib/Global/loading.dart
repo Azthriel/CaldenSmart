@@ -84,9 +84,7 @@ class LoadState extends State<LoadingPage> {
       discNotfActivated = configNotiDsc.keys.toList().contains(deviceName);
 
       //Si es un calefactor
-      if (deviceType == '022000' ||
-          deviceType == '027000' ||
-          deviceType == '041220') {
+      if (deviceType == '022000' || deviceType == '027000') {
         varsValues = await myDevice.varsUuid.read();
         var parts2 = utf8.decode(varsValues).split(':');
         printLog('Valores Vars: $parts2');

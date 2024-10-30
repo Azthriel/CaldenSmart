@@ -251,7 +251,7 @@ class ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                     subtitle: Text(
-                      "alarma para domótica",
+                      "Alarma para domótica",
                       style: GoogleFonts.poppins(
                         color: color3,
                       ),
@@ -324,7 +324,7 @@ class ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                     subtitle: Text(
-                      "alarma para detectores",
+                      "Alarma para detectores",
                       style: GoogleFonts.poppins(
                         color: color3,
                       ),

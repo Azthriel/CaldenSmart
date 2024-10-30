@@ -25,23 +25,23 @@ late List<bool> _selectedPins;
 void controlOut(bool value, int index) {
   String fun = '$index#${value ? '1' : '0'}';
   myDevice.ioUuid.write(fun.codeUnits);
-
-  String fun2 =
-      '${tipo[index] == 'Entrada' ? '1' : '0'}:${value ? '1' : '0'}:${common[index]}';
   String topic =
       'devices_rx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
   String topic2 =
       'devices_tx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
-  String message = jsonEncode({'io$index': fun2});
+  String message = jsonEncode({
+    'pinType': tipo[index] == 'Salida' ? '0' : '1',
+    'index': index,
+    'w_status': value,
+    'r_state': common[index],
+  });
   sendMessagemqtt(topic, message);
   sendMessagemqtt(topic2, message);
-  estado[index] = value ? '1' : '0';
-  for (int i = 0; i < estado.length; i++) {
-    String device =
-        '${tipo[i] == 'Salida' ? '0' : '1'}:${estado[i]}:${common[i]}';
-    globalDATA['${command(deviceName)}/${extractSerialNumber(deviceName)}']![
-        'io$i'] = device;
-  }
+
+  globalDATA
+      .putIfAbsent(
+          '${command(deviceName)}/${extractSerialNumber(deviceName)}', () => {})
+      .addAll({'io$index': message});
 
   saveGlobalData(globalDATA);
 }
@@ -472,14 +472,7 @@ class DomoticaPageState extends State<DomoticaPage> {
 
       printLog(
           'En la posición $i el modo es ${tipo[i]} y su estado es ${estado[i]}');
-      globalDATA
-          .putIfAbsent(
-              '${command(deviceName)}/${extractSerialNumber(deviceName)}',
-              () => {})
-          .addAll({'io$i': parts[i]});
     }
-
-    saveGlobalData(globalDATA);
     setState(() {});
   }
 

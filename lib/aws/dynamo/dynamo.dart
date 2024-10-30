@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:aws_dynamodb_api/dynamodb-2012-08-10.dart';
 import '/master.dart';
 import '/stored_data.dart';
@@ -5,6 +7,7 @@ import '/stored_data.dart';
 //*-Lee todos los datos de un equipo-*\\
 Future<void> queryItems(DynamoDB service, String pc, String sn) async {
   try {
+    printLog('Buscare en el equipo: $pc/$sn');
     final response = await service.query(
       tableName: 'sime-domotica',
       keyConditionExpression: 'product_code = :pk AND device_id = :sk',
@@ -97,6 +100,17 @@ Future<void> queryItems(DynamoDB service, String pc, String sn) async {
                 globalDATA
                     .putIfAbsent('$pc/$sn', () => {})
                     .addAll({key: value.boolValue ?? false});
+                break;
+              case 'io0' || 'io1' || 'io2' || 'io3':
+                Map<String, AttributeValue> mapa = value.m ?? {};
+                Map<String, dynamic> valores = {};
+                for (String llave in mapa.keys) {
+                  AttributeValue valor = mapa[llave]!;
+                  valores.addAll({llave: valor.boolValue ?? valor.n});
+                }
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: jsonEncode(valores)});
                 break;
             }
           }
@@ -369,7 +383,9 @@ Future<void> saveNC(DynamoDB service, String pc, String sn, bool data) async {
 Future<void> putDevicesForAlexa(
     DynamoDB service, String email, List<String> data) async {
   if (data.isEmpty) {
-    data.add('');
+    service.deleteItem(key: {
+      'email': AttributeValue(s: email),
+    }, tableName: 'Alexa-Devices');
   }
   try {
     final response = await service.updateItem(tableName: 'Alexa-Devices', key: {

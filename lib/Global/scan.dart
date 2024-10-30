@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +29,7 @@ class ScanPageState extends State<ScanPage>
   final EasyRefreshController _controller = EasyRefreshController(
     controlFinishRefresh: true,
   );
+  StreamSubscription<List<ScanResult>>? listener;
 
   @override
   void initState() {
@@ -57,6 +59,7 @@ class ScanPageState extends State<ScanPage>
     _animationController.dispose();
     searchController.dispose();
     _controller.dispose();
+    listener?.cancel();
   }
 
   void scan() {
@@ -68,19 +71,19 @@ class ScanPageState extends State<ScanPage>
         FlutterBluePlus.isScanningNow ? FlutterBluePlus.stopScan() : null;
         FlutterBluePlus.startScan(
           withKeywords: [
-            'Eléctrico',
+            'Electrico',
             'Gas',
             'Detector',
             'Radiador',
-            'Domótica',
-            'Relé',
+            'Domotica',
+            'Rele',
           ],
           androidUsesFineLocation: true,
           continuousUpdates: true,
           removeIfGone: const Duration(seconds: 30),
         );
 
-        FlutterBluePlus.scanResults.listen(
+        listener = FlutterBluePlus.scanResults.listen(
           (results) {
             for (ScanResult result in results) {
               if (!devices
@@ -328,7 +331,8 @@ class ScanPageState extends State<ScanPage>
                 itemCount: filteredDevices.length,
                 itemBuilder: (context, index) {
                   final device = filteredDevices[index];
-                  final imagePath = deviceImages[device.remoteId.toString()];
+                  final deviceName = device.platformName;
+                  final imagePath = deviceImages[deviceName];
                   return FadeTransition(
                     opacity: _animation,
                     child: ScaleTransition(
@@ -353,11 +357,15 @@ class ScanPageState extends State<ScanPage>
                                   children: [
                                     Positioned.fill(
                                       child: imagePath != null
-                                          ? Image.file(File(imagePath),
-                                              fit: BoxFit.cover)
+                                          ? Image.file(
+                                              File(imagePath),
+                                              fit: BoxFit.cover,
+                                            )
                                           : Image.asset(
-                                              rutaDeImagen(device.platformName),
-                                              fit: BoxFit.cover),
+                                              ImageManager.rutaDeImagen(
+                                                  device.platformName),
+                                              fit: BoxFit.cover,
+                                            ),
                                     ),
                                     Positioned.fill(
                                       child: Container(

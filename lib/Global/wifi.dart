@@ -6,7 +6,6 @@ import 'package:caldensmart/aws/mqtt/mqtt.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hugeicons/hugeicons.dart';
-
 import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
 
@@ -22,6 +21,7 @@ class WifiPageState extends State<WifiPage> {
   void initState() {
     super.initState();
     for (String device in previusConnections) {
+      // printLog('Voy a cargar los datos de $device');
       queryItems(service, command(device), extractSerialNumber(device));
     }
   }
@@ -75,7 +75,8 @@ class WifiPageState extends State<WifiPage> {
                 setState(() {
                   previusConnections.remove(deviceName);
                   saveDeviceList(previusConnections);
-                  putDevicesForAlexa(service, currentUserEmail, previusConnections);
+                  putDevicesForAlexa(
+                      service, currentUserEmail, previusConnections);
                   String topic =
                       'devices_tx/$equipo/${extractSerialNumber(deviceName)}';
                   unSubToTopicMQTT(topic);
@@ -146,6 +147,10 @@ class WifiPageState extends State<WifiPage> {
                       String equipo = command(deviceName);
                       Map<String, dynamic> topicData = notifier.getData(
                           '$equipo/${extractSerialNumber(deviceName)}');
+                      printLog(
+                          'Llego un cambio en ${'$equipo/${extractSerialNumber(deviceName)}'}',
+                          'Magenta');
+                      printLog('Y fue el siguiente: $topicData', 'magenta');
                       globalDATA
                           .putIfAbsent(
                               '$equipo/${extractSerialNumber(deviceName)}',
@@ -154,7 +159,7 @@ class WifiPageState extends State<WifiPage> {
                       saveGlobalData(globalDATA);
                       Map<String, dynamic> deviceDATA = globalDATA[
                           '$equipo/${extractSerialNumber(deviceName)}']!;
-                      printLog(deviceDATA);
+                      // printLog(deviceDATA);
 
                       bool online = deviceDATA['cstate'] ?? false;
 
@@ -690,21 +695,6 @@ class WifiPageState extends State<WifiPage> {
                             ),
                           );
                         case '020010_IOT':
-                          String io =
-                              '${deviceDATA['io0']}/${deviceDATA['io1']}/${deviceDATA['io2']}/${deviceDATA['io3']}';
-                          printLog('IO: $io');
-                          var partes = io.split('/');
-                          List<String> tipoWifi = [];
-                          List<bool> estadoWifi = [];
-                          List<String> comunWifi = [];
-                          for (int i = 0; i < partes.length; i++) {
-                            var deviceParts = partes[i].split(':');
-                            tipoWifi.add(
-                                deviceParts[0] == '0' ? 'Salida' : 'Entrada');
-                            estadoWifi.add(deviceParts[1] == '1');
-                            comunWifi.add(deviceParts[2]);
-                          }
-
                           return Card(
                             key: ValueKey(deviceName),
                             color: color3,
@@ -751,16 +741,27 @@ class WifiPageState extends State<WifiPage> {
                                 ),
                                 children: <Widget>[
                                   Column(
-                                    children: List.generate(partes.length, (i) {
-                                      bool entradaWifi =
-                                          tipoWifi[i] == 'Entrada';
+                                    children: List.generate(4, (i) {
+                                      Map<String, dynamic> equipo =
+                                          jsonDecode(deviceDATA['io$i']);
+                                      printLog(
+                                          'Voy a realizar el cambio: $equipo',
+                                          'amarillo');
+                                      String tipoWifi =
+                                          equipo['pinType'].toString() == '0'
+                                              ? 'Salida'
+                                              : 'Entrada';
+                                      bool estadoWifi = equipo['w_status'];
+                                      String comunWifi =
+                                          equipo['r_state'].toString();
+                                      bool entradaWifi = tipoWifi == 'Entrada';
                                       return ListTile(
                                         title: Row(
                                           children: [
                                             Text(
                                               subNicknamesMap[
                                                       '$deviceName/-/$i'] ??
-                                                  '${tipoWifi[i]} $i',
+                                                  '$tipoWifi $i',
                                               style: GoogleFonts.poppins(
                                                 color: color0,
                                                 fontWeight: FontWeight.bold,
@@ -777,8 +778,8 @@ class WifiPageState extends State<WifiPage> {
                                                 MainAxisAlignment.start,
                                             children: [
                                               entradaWifi
-                                                  ? estadoWifi[i]
-                                                      ? comunWifi[i] == '1'
+                                                  ? estadoWifi
+                                                      ? comunWifi == '1'
                                                           ? Text(
                                                               'Cerrado',
                                                               style: GoogleFonts
@@ -802,7 +803,7 @@ class WifiPageState extends State<WifiPage> {
                                                                         .bold,
                                                               ),
                                                             )
-                                                      : comunWifi[i] == '1'
+                                                      : comunWifi == '1'
                                                           ? Text(
                                                               'Abierto',
                                                               style: GoogleFonts
@@ -826,7 +827,7 @@ class WifiPageState extends State<WifiPage> {
                                                                         .bold,
                                                               ),
                                                             )
-                                                  : estadoWifi[i]
+                                                  : estadoWifi
                                                       ? Text(
                                                           'Encendido',
                                                           style: GoogleFonts
@@ -852,8 +853,8 @@ class WifiPageState extends State<WifiPage> {
                                         ),
                                         trailing: owner
                                             ? entradaWifi
-                                                ? estadoWifi[i]
-                                                    ? comunWifi[i] == '1'
+                                                ? estadoWifi
+                                                    ? comunWifi == '1'
                                                         ? const Icon(
                                                             Icons.new_releases,
                                                             color: Color(
@@ -863,7 +864,7 @@ class WifiPageState extends State<WifiPage> {
                                                             Icons.new_releases,
                                                             color: color6,
                                                           )
-                                                    : comunWifi[i] == '1'
+                                                    : comunWifi == '1'
                                                         ? const Icon(
                                                             Icons.new_releases,
                                                             color: color6,
@@ -882,40 +883,40 @@ class WifiPageState extends State<WifiPage> {
                                                         const Color(0xFFB2B5AE),
                                                     inactiveTrackColor:
                                                         const Color(0xFF9C9D98),
-                                                    value: estadoWifi[i],
+                                                    value: estadoWifi,
                                                     onChanged: (value) {
-                                                      // String fun2 =
-                                                      //     '${tipoWifi[i] == 'Entrada' ? '1' : '0'}:${value ? '1' : '0'}:${comunWifi[i]}';
-
+                                                      String
+                                                          deviceSerialNumber =
+                                                          extractSerialNumber(
+                                                              deviceName);
                                                       String topic =
-                                                          'devices_rx/$equipo/${extractSerialNumber(deviceName)}';
+                                                          'devices_rx/${command(deviceName)}/$deviceSerialNumber';
                                                       String topic2 =
-                                                          'devices_tx/$equipo/${extractSerialNumber(deviceName)}';
+                                                          'devices_tx/${command(deviceName)}/$deviceSerialNumber';
                                                       String message =
                                                           jsonEncode({
-                                                        'type': tipoWifi[i] ==
-                                                                'Entrada'
-                                                            ? '1'
-                                                            : '0',
+                                                        'pinType':
+                                                            tipoWifi == 'Salida'
+                                                                ? 0
+                                                                : 1,
+                                                        'index': i,
                                                         'w_status': value,
-                                                        'r_status':
-                                                            comunWifi[i],
-                                                        'index': i
+                                                        'r_state': comunWifi,
                                                       });
                                                       sendMessagemqtt(
                                                           topic, message);
                                                       sendMessagemqtt(
                                                           topic2, message);
-                                                      estadoWifi[i] = value;
-                                                      for (int j = 0;
-                                                          j < estadoWifi.length;
-                                                          j++) {
-                                                        String device =
-                                                            '${tipoWifi[j] == 'Salida' ? '0' : '1'}:${estadoWifi[j] == true ? '1' : '0'}:${comunWifi[j]}';
-                                                        globalDATA[
-                                                                '$equipo/${extractSerialNumber(deviceName)}']![
-                                                            'io$j'] = device;
-                                                      }
+                                                      setState(() {
+                                                        estadoWifi = value;
+                                                      });
+                                                      globalDATA
+                                                          .putIfAbsent(
+                                                              '${command(deviceName)}/$deviceSerialNumber',
+                                                              () => {})
+                                                          .addAll({
+                                                        'io$i': message
+                                                      });
                                                       saveGlobalData(
                                                           globalDATA);
                                                     },
