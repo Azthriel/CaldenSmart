@@ -92,7 +92,8 @@ class ScanPageState extends State<ScanPage>
                   setState(() {
                     devices.add(result.device);
                     devices.sort(
-                        (a, b) => a.platformName.compareTo(b.platformName));
+                      (a, b) => a.platformName.compareTo(b.platformName),
+                    );
                     sortedDevices = devices;
                   });
                 }

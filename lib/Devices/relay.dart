@@ -6,15 +6,11 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hugeicons/hugeicons.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
-import '../stored_data.dart';
-
-//TODO: Modifique y agregue la ventana que faltaba para relé
+import '../Global/stored_data.dart';
 
 // VARIABLES \\
 late bool tracking;
@@ -298,7 +294,6 @@ class RelayPageState extends State<RelayPage> {
         // Usamos un Completer para esperar a que el diálogo se cierre
         final completer = Completer<void>();
 
-        //TODO: cambie el showdialog que habia por un showAlertDialog generico
         showAlertDialog(
           navigatorKey.currentContext ?? context,
           false,
@@ -371,8 +366,6 @@ class RelayPageState extends State<RelayPage> {
     bool isSecondaryAdmin = adminDevices.contains(currentUserEmail);
     bool isRegularUser = !isOwner && !isSecondaryAdmin;
 
-    //TODO: pantalla de usuario conectado
-
     // si hay un usuario conectado al equipo no lo deje ingresar
     if (userConnected) {
       return const DeviceInUseScreen();
@@ -384,7 +377,6 @@ class RelayPageState extends State<RelayPage> {
     }
 
     final List<Widget> pages = [
-      //TODO: en la pagina uno, los colores e iconos del boton cambian dependiendo si es NC o NA
       //*- Página 1: Estado del Dispositivo -*\\
       Stack(
         children: [
@@ -422,8 +414,8 @@ class RelayPageState extends State<RelayPage> {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: turnOn
-                            ? (isNC ? Colors.greenAccent : Colors.redAccent)
-                            : (isNC ? Colors.redAccent : Colors.greenAccent),
+                            ? (isNC ? Colors.greenAccent : Colors.greenAccent)
+                            : (isNC ? Colors.redAccent : Colors.redAccent),
                         shape: BoxShape.circle,
                         boxShadow: const [
                           BoxShadow(
@@ -605,7 +597,7 @@ class RelayPageState extends State<RelayPage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    'Trackeo Bluetooth',
+                    'Control por presencia',
                     style: GoogleFonts.poppins(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -645,7 +637,8 @@ class RelayPageState extends State<RelayPage> {
                             saveDeviceListToTrack(devicesToTrack);
                           }
                         } else {
-                          showToast('Debes aceptar el uso de trackeo');
+                          showToast(
+                              'Debes aceptar el uso de control por presencia');
                         }
                       } else {
                         showToast(
@@ -667,7 +660,7 @@ class RelayPageState extends State<RelayPage> {
                         ],
                       ),
                       child: Icon(
-                        HugeIcons.strokeRoundedRoute02,
+                        Icons.directions_walk,
                         size: 80,
                         color: tracking ? Colors.white : Colors.grey[300],
                       ),
@@ -736,7 +729,6 @@ class RelayPageState extends State<RelayPage> {
         ],
       ),
 
-      //TODO: implemente la pantalla faltante para rele
       //*- Página 3 - Control por distancia -*\\
       Stack(
         children: [
@@ -1381,107 +1373,107 @@ class RelayPageState extends State<RelayPage> {
                               ),
                               const SizedBox(height: 10),
                               //! Opción 4 - Habitante inteligente
-                              InkWell(
-                                onTap: () {
-                                  if (activatedAT) {
-                                    saveATData(
-                                      service,
-                                      command(deviceName),
-                                      extractSerialNumber(deviceName),
-                                      false,
-                                      '',
-                                      distOnValue.round().toString(),
-                                      distOffValue.round().toString(),
-                                    );
-                                    setState(() {});
-                                  } else {
-                                    if (!payAT) {
-                                      showAlertDialog(
-                                        context,
-                                        true,
-                                        Text(
-                                          'Actualmente no tienes habilitado este beneficio',
-                                          style: GoogleFonts.poppins(
-                                              color: color0),
-                                        ),
-                                        Text(
-                                          'En caso de requerirlo puedes solicitarlo vía mail',
-                                          style: GoogleFonts.poppins(
-                                              color: color0),
-                                        ),
-                                        [
-                                          TextButton(
-                                            style: TextButton.styleFrom(
-                                              foregroundColor:
-                                                  const Color(0xFFFFFFFF),
-                                            ),
-                                            onPressed: () async {
-                                              String cuerpo =
-                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
-                                              final Uri emailLaunchUri = Uri(
-                                                scheme: 'mailto',
-                                                path:
-                                                    'cobranzas@ibsanitarios.com.ar',
-                                                query:
-                                                    encodeQueryParameters(<String,
-                                                        String>{
-                                                  'subject':
-                                                      'Habilitación habitante inteligente',
-                                                  'body': cuerpo,
-                                                  'CC':
-                                                      'pablo@intelligentgas.com.ar'
-                                                }),
-                                              );
-                                              if (await canLaunchUrl(
-                                                  emailLaunchUri)) {
-                                                await launchUrl(emailLaunchUri);
-                                              } else {
-                                                showToast(
-                                                    'No se pudo enviar el correo electrónico');
-                                              }
-                                              navigatorKey.currentState?.pop();
-                                            },
-                                            child: const Text('Solicitar'),
-                                          ),
-                                        ],
-                                      );
-                                    } else {
-                                      setState(() {
-                                        showSmartResident = !showSmartResident;
-                                      });
-                                    }
-                                  }
-                                },
-                                borderRadius: BorderRadius.circular(15),
-                                child: Container(
-                                  margin:
-                                      const EdgeInsets.symmetric(vertical: 10),
-                                  padding: const EdgeInsets.all(15),
-                                  decoration: BoxDecoration(
-                                    color: color3,
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Habitante inteligente',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 15,
-                                          color: color0,
-                                        ),
-                                      ),
-                                      Icon(
-                                        showSmartResident
-                                            ? Icons.arrow_drop_up
-                                            : Icons.arrow_drop_down,
-                                        color: color0,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
+                              // InkWell(
+                              //   onTap: () {
+                              //     if (activatedAT) {
+                              //       saveATData(
+                              //         service,
+                              //         command(deviceName),
+                              //         extractSerialNumber(deviceName),
+                              //         false,
+                              //         '',
+                              //         distOnValue.round().toString(),
+                              //         distOffValue.round().toString(),
+                              //       );
+                              //       setState(() {});
+                              //     } else {
+                              //       if (!payAT) {
+                              //         showAlertDialog(
+                              //           context,
+                              //           true,
+                              //           Text(
+                              //             'Actualmente no tienes habilitado este beneficio',
+                              //             style: GoogleFonts.poppins(
+                              //                 color: color0),
+                              //           ),
+                              //           Text(
+                              //             'En caso de requerirlo puedes solicitarlo vía mail',
+                              //             style: GoogleFonts.poppins(
+                              //                 color: color0),
+                              //           ),
+                              //           [
+                              //             TextButton(
+                              //               style: TextButton.styleFrom(
+                              //                 foregroundColor:
+                              //                     const Color(0xFFFFFFFF),
+                              //               ),
+                              //               onPressed: () async {
+                              //                 String cuerpo =
+                              //                     '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
+                              //                 final Uri emailLaunchUri = Uri(
+                              //                   scheme: 'mailto',
+                              //                   path:
+                              //                       'cobranzas@ibsanitarios.com.ar',
+                              //                   query:
+                              //                       encodeQueryParameters(<String,
+                              //                           String>{
+                              //                     'subject':
+                              //                         'Habilitación habitante inteligente',
+                              //                     'body': cuerpo,
+                              //                     'CC':
+                              //                         'pablo@intelligentgas.com.ar'
+                              //                   }),
+                              //                 );
+                              //                 if (await canLaunchUrl(
+                              //                     emailLaunchUri)) {
+                              //                   await launchUrl(emailLaunchUri);
+                              //                 } else {
+                              //                   showToast(
+                              //                       'No se pudo enviar el correo electrónico');
+                              //                 }
+                              //                 navigatorKey.currentState?.pop();
+                              //               },
+                              //               child: const Text('Solicitar'),
+                              //             ),
+                              //           ],
+                              //         );
+                              //       } else {
+                              //         setState(() {
+                              //           showSmartResident = !showSmartResident;
+                              //         });
+                              //       }
+                              //     }
+                              //   },
+                              //   borderRadius: BorderRadius.circular(15),
+                              //   child: Container(
+                              //     margin:
+                              //         const EdgeInsets.symmetric(vertical: 10),
+                              //     padding: const EdgeInsets.all(15),
+                              //     decoration: BoxDecoration(
+                              //       color: color3,
+                              //       borderRadius: BorderRadius.circular(15),
+                              //     ),
+                              //     child: Row(
+                              //       mainAxisAlignment:
+                              //           MainAxisAlignment.spaceBetween,
+                              //       children: [
+                              //         Text(
+                              //           'Habitante inteligente',
+                              //           style: GoogleFonts.poppins(
+                              //             fontSize: 15,
+                              //             color: color0,
+                              //           ),
+                              //         ),
+                              //         Icon(
+                              //           showSmartResident
+                              //               ? Icons.arrow_drop_up
+                              //               : Icons.arrow_drop_down,
+                              //           color: color0,
+                              //         ),
+                              //       ],
+                              //     ),
+                              //   ),
+                              // ),
                               AnimatedSize(
                                 duration: const Duration(milliseconds: 600),
                                 curve: Curves.easeInOut,
@@ -1706,8 +1698,6 @@ class RelayPageState extends State<RelayPage> {
                               ),
 
                               const SizedBox(height: 10),
-
-                              //TODO: Agrego opcion de notificacion
                               //! Opción 5 - activar notificación
                               SizedBox(
                                 width: double.infinity,
@@ -1965,7 +1955,6 @@ class RelayPageState extends State<RelayPage> {
               ),
               const SizedBox(height: 30),
 
-              //TODO: agregue opcion para cambiar imagen
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -2042,7 +2031,6 @@ class RelayPageState extends State<RelayPage> {
       ),
     ];
 
-    //TODO: al desconectar sin tocar la flecha sigue diciendo desconectando y no se cierra la app
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, A) {

@@ -25,7 +25,7 @@ import 'package:wifi_scan/wifi_scan.dart';
 import 'aws/dynamo/dynamo.dart';
 import 'aws/dynamo/dynamo_certificates.dart';
 import 'aws/mqtt/mqtt.dart';
-import 'stored_data.dart';
+import 'Global/stored_data.dart';
 
 //! VARIABLES !\\
 
@@ -110,6 +110,7 @@ List<String> topicsToSub = [];
 //*-Equipos registrados-*\\
 List<String> previusConnections = [];
 List<String> adminDevices = [];
+List<String> alexaDevices = [];
 //*-Equipos registrados-*\\
 
 //*-Nicknames-*\\
@@ -192,7 +193,7 @@ Map<String, bool> isTaskScheduled = {};
 
 // !------------------------------VERSION NUMBER---------------------------------------
 //ACORDATE: Cambia el número de versión en el pubspec.yaml antes de publicar
-String appVersionNumber = '24102900';
+String appVersionNumber = '24103100';
 //ACORDATE: 0 = Caldén Smart
 int app = 0;
 // !------------------------------VERSION NUMBER---------------------------------------
@@ -2748,8 +2749,12 @@ class QRScanPageState extends State<QRScanPage>
           child: Container(
               color: Colors.black54,
               child: const Center(
-                child: Text('Escanea el QR',
-                    style: TextStyle(color: Color(0xFFB2B5AE))),
+                child: Text(
+                  'Escanea el QR',
+                  style: TextStyle(
+                    color: Color(0xFFB2B5AE),
+                  ),
+                ),
               )),
         ),
         // Abajo
@@ -3810,38 +3815,55 @@ class DeviceInUseScreen extends StatelessWidget {
 
 //*- imagenes de los equipos -*\\
 class ImageManager {
-
   /// Función para abrir el menú de opciones de imagen
   /// [onImageChanged] es un callback que se ejecuta después de cambiar la imagen
   static void openImageOptions(
       BuildContext context, String deviceName, VoidCallback onImageChanged) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: color3,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(20),
+        ),
+      ),
       builder: (BuildContext bc) {
         return SafeArea(
-          child: Wrap(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Elegir de la galería'),
+                leading: const Icon(Icons.photo_library, color: color0),
+                title: const Text(
+                  'Elegir de la galería',
+                  style: TextStyle(color: color0),
+                ),
                 onTap: () async {
                   Navigator.of(context).pop();
                   await pickFromGallery(deviceName);
                   onImageChanged();
                 },
               ),
+              const Divider(color: color0),
               ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Tomar una foto'),
+                leading: const Icon(Icons.camera_alt, color: color0),
+                title: const Text(
+                  'Tomar una foto',
+                  style: TextStyle(color: color0),
+                ),
                 onTap: () async {
                   Navigator.of(context).pop();
                   await takePhoto(deviceName);
                   onImageChanged();
                 },
               ),
+              const Divider(color: color0),
               ListTile(
-                leading: const Icon(Icons.restore),
-                title: const Text('Restablecer imagen'),
+                leading: const Icon(Icons.restore, color: color0),
+                title: const Text(
+                  'Restablecer imagen',
+                  style: TextStyle(color: color0),
+                ),
                 onTap: () {
                   Navigator.of(context).pop();
                   removeDeviceImage(deviceName);
@@ -3879,8 +3901,6 @@ class ImageManager {
     }
   }
 
-
-
   /// Función privada para guardar la imagen localmente
   static Future<String> _saveImageLocally(XFile image) async {
     final Directory appDir = await getApplicationDocumentsDirectory();
@@ -3898,7 +3918,7 @@ class ImageManager {
 
   /// Ruta de imágenes predeterminadas
   static String rutaDeImagen(String device) {
-    if (device.contains('Eléctrico')) {
+    if (device.contains('Electrico')) {
       return 'assets/devices/022000.jpg';
     } else if (device.contains('Gas')) {
       return 'assets/devices/027000.webp';
@@ -3906,7 +3926,7 @@ class ImageManager {
       return 'assets/devices/015773.jpeg';
     } else if (device.contains('Radiador')) {
       return 'assets/devices/041220.jpg';
-    } else if (device.contains('Domótica')) {
+    } else if (device.contains('Domotica')) {
       return 'assets/devices/020010.jpg';
     } else {
       return 'assets/Logo.png';

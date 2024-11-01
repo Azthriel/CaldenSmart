@@ -1,4 +1,4 @@
-import 'package:caldensmart/stored_data.dart';
+import 'package:caldensmart/Global/stored_data.dart';
 import 'package:flutter/material.dart';
 import 'package:caldensmart/master.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -516,8 +516,9 @@ class ProfilePageState extends State<ProfilePage> {
                   asking();
                   previusConnections.clear();
                   saveDeviceList(previusConnections);
-                  putDevicesForAlexa(
-                      service, currentUserEmail, previusConnections);
+                  alexaDevices.clear();
+                  saveAlexaDevices(alexaDevices);
+                  putDevicesForAlexa(service, currentUserEmail, alexaDevices);
                   for (int i = 0; i < topicsToSub.length; i++) {
                     unSubToTopicMQTT(topicsToSub[i]);
                   }

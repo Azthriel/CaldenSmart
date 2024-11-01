@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../master.dart';
-import '../stored_data.dart';
+import '../Global/stored_data.dart';
 
 // VARIABLES \\
 

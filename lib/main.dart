@@ -20,7 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'login/welcome.dart';
 import 'master.dart';
-import 'stored_data.dart';
+import 'Global/stored_data.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

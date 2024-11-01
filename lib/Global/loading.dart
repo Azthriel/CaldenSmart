@@ -8,7 +8,7 @@ import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
-import '../stored_data.dart';
+import 'stored_data.dart';
 
 class LoadingPage extends StatefulWidget {
   const LoadingPage({super.key});
@@ -65,12 +65,17 @@ class LoadState extends State<LoadingPage> {
       if (!previusConnections.contains(deviceName)) {
         previusConnections.add(deviceName);
         saveDeviceList(previusConnections);
-        putDevicesForAlexa(service, currentUserEmail, previusConnections);
         topicsToSub.add(
             'devices_tx/${command(deviceName)}/${extractSerialNumber(deviceName)}');
         saveTopicList(topicsToSub);
         subToTopicMQTT(
             'devices_tx/${command(deviceName)}/${extractSerialNumber(deviceName)}');
+
+        if (deviceType != '020010') {
+          alexaDevices.add(deviceName);
+          saveAlexaDevices(alexaDevices);
+          putDevicesForAlexa(service, currentUserEmail, alexaDevices);
+        }
       }
 
       setupToken(

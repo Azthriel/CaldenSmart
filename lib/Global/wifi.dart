@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:caldensmart/master.dart';
-import 'package:caldensmart/stored_data.dart';
+import 'package:caldensmart/Global/stored_data.dart';
 import 'package:caldensmart/aws/mqtt/mqtt.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -753,7 +753,7 @@ class WifiPageState extends State<WifiPage> {
                                               : 'Entrada';
                                       bool estadoWifi = equipo['w_status'];
                                       String comunWifi =
-                                          equipo['r_state'].toString();
+                                          (equipo['r_state'] ?? '0').toString();
                                       bool entradaWifi = tipoWifi == 'Entrada';
                                       return ListTile(
                                         title: Row(

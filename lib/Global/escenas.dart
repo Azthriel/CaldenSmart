@@ -1,4 +1,4 @@
-import 'package:caldensmart/stored_data.dart';
+import 'package:caldensmart/Global/stored_data.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hugeicons/hugeicons.dart';

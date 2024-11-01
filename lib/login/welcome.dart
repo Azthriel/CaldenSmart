@@ -115,17 +115,15 @@ class WelcomePageState extends State<WelcomePage>
   ///*- Variable para el estado del checkbox de aceptar términos *-\\\
   bool acceptTerms = false;
 
-  // Variable para controlar la visibilidad de la contraseña
+  /// Variable para controlar la visibilidad de la contraseña
   bool obscurePassword = true;
 
-  // Método para alternar la visibilidad de la contraseña
+  /// Método para alternar la visibilidad de la contraseña
   void togglePasswordVisibility() {
     setState(() {
       obscurePassword = !obscurePassword;
     });
   }
-
-  // VARIABLES //
 
   ///*- Inicializa los controladores de animación *-\\\
   @override

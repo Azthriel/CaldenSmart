@@ -1,7 +1,7 @@
 import 'dart:convert';
 import '/aws/dynamo/dynamo_certificates.dart';
 import '/aws/dynamo/dynamo.dart';
-import 'master.dart';
+import '../master.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // MASTERLOAD \\
@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void loadValues() async {
   globalDATA = await loadGlobalData();
   previusConnections = await loadDeviceList();
+  alexaDevices = await loadAlexaDevices();
   topicsToSub = await loadTopicList();
   nicknamesMap = await loadNicknamesMap();
   tokensOfDevices = await loadToken();
@@ -367,3 +368,15 @@ Future<Map<String, int>> loadconfigNotiDsc() async {
   return {};
 }
 //*-Notificación Desconexión-*\\
+
+//*-Alexa devices -*\\
+Future<void> saveAlexaDevices(List<String> listaDispositivos) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setStringList('AlexaDevices', listaDispositivos);
+}
+
+Future<List<String>> loadAlexaDevices() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getStringList('AlexaDevices') ?? [];
+}
+//*-Alexa devices -*\\

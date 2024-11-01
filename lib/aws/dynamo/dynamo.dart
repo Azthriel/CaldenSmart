@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:aws_dynamodb_api/dynamodb-2012-08-10.dart';
 import '/master.dart';
-import '/stored_data.dart';
+import '../../Global/stored_data.dart';
 
 //*-Lee todos los datos de un equipo-*\\
 Future<void> queryItems(DynamoDB service, String pc, String sn) async {
