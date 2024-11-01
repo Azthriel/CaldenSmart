@@ -121,6 +121,11 @@ class DomoticaPageState extends State<DomoticaPage> {
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
     printLog(fun);
     var parts = fun.split(':');
+    final regex = RegExp(r'\((\d+)\)');
+    final match = regex.firstMatch(parts[2]);
+    int users = int.parse(match!.group(1).toString());
+    printLog('Hay $users conectados');
+    userConnected = users > 1;
     if (parts[0] == 'WCS_CONNECTED') {
       atemp = false;
       nameOfWifi = parts[1];
@@ -498,7 +503,7 @@ class DomoticaPageState extends State<DomoticaPage> {
     bool isRegularUser = !isOwner && !isSecondaryAdmin;
 
     // si hay un usuario conectado al equipo no lo deje ingresar
-    if (userConnected) {
+    if (userConnected && lastUser > 1) {
       return const DeviceInUseScreen();
     }
     // si no eres dueño del equipo
@@ -624,18 +629,11 @@ class DomoticaPageState extends State<DomoticaPage> {
                           children: [
                             Center(
                               child: Icon(
-                                (notificationMap['deviceKey'] != null &&
-                                        notificationMap['deviceKey']!.length >
-                                            index &&
-                                        notificationMap['deviceKey']![index])
-                                    ? Icons.notifications_active
-                                    : Icons.notifications_off,
-                                color: (notificationMap['deviceKey'] != null &&
-                                        notificationMap['deviceKey']!.length >
-                                            index &&
-                                        notificationMap['deviceKey']![index])
-                                    ? Colors.green
-                                    : Colors.red,
+                                alertIO[index]
+                                    ? Icons.new_releases
+                                    : Icons.new_releases,
+                                color:
+                                    alertIO[index] ? Colors.red : Colors.grey,
                                 size: 40,
                               ),
                             ),
@@ -644,84 +642,41 @@ class DomoticaPageState extends State<DomoticaPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  (notificationMap['deviceKey'] != null &&
-                                          notificationMap['deviceKey']!.length >
-                                              index &&
-                                          notificationMap['deviceKey']![index])
-                                      ? 'Notificaciones activas'
-                                      : 'Notificaciones desactivadas',
+                                  notificationMap[
+                                              '${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+                                          index]
+                                      ? '¿Desactivar notificaciones?'
+                                      : '¿Activar notificaciones?',
                                   style: const TextStyle(
                                     color: color0,
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                                GestureDetector(
-                                  onTap: () {
+                                IconButton(
+                                  onPressed: () {
+                                    bool activated = notificationMap[
+                                            '${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+                                        index];
                                     setState(() {
-                                      bool currentValue = notificationMap[
-                                                  'deviceKey'] !=
-                                              null &&
-                                          notificationMap['deviceKey']!.length >
-                                              index &&
-                                          notificationMap['deviceKey']![index];
-                                      notificationMap['deviceKey']![index] =
-                                          !currentValue;
-
-                                      if (!currentValue) {
-                                        FlutterBackgroundService().invoke(
-                                            'activateNotification',
-                                            {'index': index});
-                                      } else {
-                                        FlutterBackgroundService().invoke(
-                                            'deactivateNotification',
-                                            {'index': index});
-                                      }
+                                      activated = !activated;
+                                      notificationMap[
+                                              '${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+                                          index] = activated;
                                     });
+                                    saveNotificationMap(notificationMap);
                                   },
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 300),
-                                    width: 55,
-                                    height: 30,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(20),
-                                      color: (notificationMap['deviceKey'] !=
-                                                  null &&
-                                              notificationMap['deviceKey']!
-                                                      .length >
-                                                  index &&
-                                              notificationMap['deviceKey']![
-                                                  index])
-                                          ? Colors.greenAccent.shade400
-                                          : Colors.red.shade300,
-                                    ),
-                                    child: AnimatedAlign(
-                                      duration:
-                                          const Duration(milliseconds: 300),
-                                      alignment:
-                                          (notificationMap['deviceKey'] !=
-                                                      null &&
-                                                  notificationMap['deviceKey']!
-                                                          .length >
-                                                      index &&
-                                                  notificationMap['deviceKey']![
-                                                      index])
-                                              ? Alignment.centerRight
-                                              : Alignment.centerLeft,
-                                      curve: Curves.easeInOut,
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(3.0),
-                                        child: Container(
-                                          width: 24,
-                                          height: 24,
-                                          decoration: const BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: Colors.white,
-                                          ),
+                                  icon: notificationMap[
+                                              '${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+                                          index]
+                                      ? Icon(
+                                          Icons.notifications_off,
+                                          color: Colors.red.shade300,
+                                        )
+                                      : const Icon(
+                                          Icons.notification_add_rounded,
+                                          color: Colors.green,
                                         ),
-                                      ),
-                                    ),
-                                  ),
                                 ),
                               ],
                             ),

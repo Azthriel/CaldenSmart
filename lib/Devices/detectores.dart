@@ -30,9 +30,9 @@ class DetectorPage extends StatefulWidget {
 
 class DetectorPageState extends State<DetectorPage> {
   int _selectedIndex = 0;
-  int _selectedNotificationOption = 0;
-  bool _showNotificationOptions = false;
-  bool _isNotificationActive = false;
+  // int _selectedNotificationOption = 0;
+  // bool _showNotificationOptions = false;
+  // bool _isNotificationActive = false;
 
   bool alert = false;
   String _textToShow = 'AIRE PURO';
@@ -56,6 +56,11 @@ class DetectorPageState extends State<DetectorPage> {
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
     printLog(fun);
     var parts = fun.split(':');
+    final regex = RegExp(r'\((\d+)\)');
+    final match = regex.firstMatch(parts[2]);
+    int users = int.parse(match!.group(1).toString());
+    printLog('Hay $users conectados');
+    userConnected = users > 1;
     if (parts[0] == 'WCS_CONNECTED') {
       atemp = false;
       nameOfWifi = parts[1];
@@ -1305,212 +1310,212 @@ class DetectorPageState extends State<DetectorPage> {
                     const SizedBox(height: 20),
 
                     // Botón 2: Activar/Desactivar notificación de desconexión
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          if (_isNotificationActive) {
-                            showAlertDialog(
-                              context,
-                              true,
-                              const Text('Confirmar Desactivación'),
-                              const Text(
-                                  '¿Estás seguro de que deseas desactivar la notificación de desconexión?'),
-                              [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                  child: const Text('Cancelar'),
-                                ),
-                                TextButton(
-                                  onPressed: () async {
-                                    // Actualizar el estado para desactivar la notificación
-                                    setState(() {
-                                      _isNotificationActive = false;
-                                      _showNotificationOptions = false;
-                                    });
+                    // SizedBox(
+                    //   width: double.infinity,
+                    //   child: ElevatedButton(
+                    //     onPressed: () async {
+                    //       if (_isNotificationActive) {
+                    //         showAlertDialog(
+                    //           context,
+                    //           true,
+                    //           const Text('Confirmar Desactivación'),
+                    //           const Text(
+                    //               '¿Estás seguro de que deseas desactivar la notificación de desconexión?'),
+                    //           [
+                    //             TextButton(
+                    //               onPressed: () {
+                    //                 Navigator.of(context).pop();
+                    //               },
+                    //               child: const Text('Cancelar'),
+                    //             ),
+                    //             TextButton(
+                    //               onPressed: () async {
+                    //                 // Actualizar el estado para desactivar la notificación
+                    //                 setState(() {
+                    //                   _isNotificationActive = false;
+                    //                   _showNotificationOptions = false;
+                    //                 });
 
-                                    // Actualizar la configuración: eliminar la configuración de notificación para el dispositivo actual
-                                    configNotiDsc.removeWhere(
-                                        (key, value) => key == deviceName);
-                                    await saveconfigNotiDsc(configNotiDsc);
+                    //                 // Actualizar la configuración: eliminar la configuración de notificación para el dispositivo actual
+                    //                 configNotiDsc.removeWhere(
+                    //                     (key, value) => key == deviceName);
+                    //                 await saveconfigNotiDsc(configNotiDsc);
 
-                                    if (context.mounted) {
-                                      Navigator.of(context).pop();
-                                    }
-                                  },
-                                  child: const Text('Aceptar'),
-                                ),
-                              ],
-                            );
-                          } else {
-                            setState(() {
-                              _showNotificationOptions =
-                                  !_showNotificationOptions;
-                            });
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: color0,
-                          backgroundColor: color3,
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            side: const BorderSide(
-                              color: Color(0xFF10BB96),
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                        child: Text(
-                          _isNotificationActive
-                              ? 'Desactivar notificación de desconexión'
-                              : 'Activar notificación de desconexión',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
+                    //                 if (context.mounted) {
+                    //                   Navigator.of(context).pop();
+                    //                 }
+                    //               },
+                    //               child: const Text('Aceptar'),
+                    //             ),
+                    //           ],
+                    //         );
+                    //       } else {
+                    //         setState(() {
+                    //           _showNotificationOptions =
+                    //               !_showNotificationOptions;
+                    //         });
+                    //       }
+                    //     },
+                    //     style: ElevatedButton.styleFrom(
+                    //       foregroundColor: color0,
+                    //       backgroundColor: color3,
+                    //       padding: const EdgeInsets.symmetric(vertical: 15),
+                    //       shape: RoundedRectangleBorder(
+                    //         borderRadius: BorderRadius.circular(30),
+                    //         side: const BorderSide(
+                    //           color: Color(0xFF10BB96),
+                    //           width: 2,
+                    //         ),
+                    //       ),
+                    //     ),
+                    //     child: Text(
+                    //       _isNotificationActive
+                    //           ? 'Desactivar notificación de desconexión'
+                    //           : 'Activar notificación de desconexión',
+                    //       style: const TextStyle(
+                    //         fontSize: 18,
+                    //         fontWeight: FontWeight.bold,
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
 
-                    const SizedBox(height: 30),
+                    // const SizedBox(height: 30),
 
-                    // Tarjeta con descripción y opciones de notificación
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                      child: _showNotificationOptions
-                          ? Card(
-                              color: color3,
-                              elevation: 6,
-                              margin: const EdgeInsets.symmetric(
-                                  vertical: 10.0, horizontal: 20.0),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
-                                side: const BorderSide(
-                                  color: Color(0xFF18B2C7),
-                                  width: 2,
-                                ),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(20.0),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Text(
-                                      'Selecciona cuándo deseas recibir una notificación en caso de que el dispositivo permanezca desconectado:',
-                                      style: TextStyle(
-                                        color: color0,
-                                        fontSize: 16,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: 20),
-                                    RadioListTile<int>(
-                                      value: 0,
-                                      groupValue: _selectedNotificationOption,
-                                      onChanged: (int? value) {
-                                        setState(() {
-                                          _selectedNotificationOption = value!;
-                                        });
-                                      },
-                                      title: const Text(
-                                        'Instantáneo',
-                                        style: TextStyle(
-                                          color: color0,
-                                          fontSize: 18,
-                                        ),
-                                      ),
-                                      activeColor: const Color(0xFF10BB96),
-                                    ),
-                                    RadioListTile<int>(
-                                      value: 1,
-                                      groupValue: _selectedNotificationOption,
-                                      onChanged: (int? value) {
-                                        setState(() {
-                                          _selectedNotificationOption = value!;
-                                        });
-                                      },
-                                      title: const Text(
-                                        'Si permanece 10 minutos desconectado',
-                                        style: TextStyle(
-                                          color: color0,
-                                          fontSize: 18,
-                                        ),
-                                      ),
-                                      activeColor: const Color(0xFF10BB96),
-                                    ),
-                                    RadioListTile<int>(
-                                      value: 2,
-                                      groupValue: _selectedNotificationOption,
-                                      onChanged: (int? value) {
-                                        setState(() {
-                                          _selectedNotificationOption = value!;
-                                        });
-                                      },
-                                      title: const Text(
-                                        'Si permanece 1 hora desconectado',
-                                        style: TextStyle(
-                                          color: color0,
-                                          fontSize: 18,
-                                        ),
-                                      ),
-                                      activeColor: const Color(0xFF10BB96),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: ElevatedButton(
-                                        onPressed: () async {
-                                          setState(() {
-                                            _isNotificationActive = true;
-                                            _showNotificationOptions = false;
-                                          });
+                    // // Tarjeta con descripción y opciones de notificación
+                    // AnimatedSize(
+                    //   duration: const Duration(milliseconds: 300),
+                    //   curve: Curves.easeInOut,
+                    //   child: _showNotificationOptions
+                    //       ? Card(
+                    //           color: color3,
+                    //           elevation: 6,
+                    //           margin: const EdgeInsets.symmetric(
+                    //               vertical: 10.0, horizontal: 20.0),
+                    //           shape: RoundedRectangleBorder(
+                    //             borderRadius: BorderRadius.circular(15),
+                    //             side: const BorderSide(
+                    //               color: Color(0xFF18B2C7),
+                    //               width: 2,
+                    //             ),
+                    //           ),
+                    //           child: Padding(
+                    //             padding: const EdgeInsets.all(20.0),
+                    //             child: Column(
+                    //               mainAxisSize: MainAxisSize.min,
+                    //               children: [
+                    //                 const Text(
+                    //                   'Selecciona cuándo deseas recibir una notificación en caso de que el dispositivo permanezca desconectado:',
+                    //                   style: TextStyle(
+                    //                     color: color0,
+                    //                     fontSize: 16,
+                    //                   ),
+                    //                   textAlign: TextAlign.center,
+                    //                 ),
+                    //                 const SizedBox(height: 20),
+                    //                 RadioListTile<int>(
+                    //                   value: 0,
+                    //                   groupValue: _selectedNotificationOption,
+                    //                   onChanged: (int? value) {
+                    //                     setState(() {
+                    //                       _selectedNotificationOption = value!;
+                    //                     });
+                    //                   },
+                    //                   title: const Text(
+                    //                     'Instantáneo',
+                    //                     style: TextStyle(
+                    //                       color: color0,
+                    //                       fontSize: 18,
+                    //                     ),
+                    //                   ),
+                    //                   activeColor: const Color(0xFF10BB96),
+                    //                 ),
+                    //                 RadioListTile<int>(
+                    //                   value: 1,
+                    //                   groupValue: _selectedNotificationOption,
+                    //                   onChanged: (int? value) {
+                    //                     setState(() {
+                    //                       _selectedNotificationOption = value!;
+                    //                     });
+                    //                   },
+                    //                   title: const Text(
+                    //                     'Si permanece 10 minutos desconectado',
+                    //                     style: TextStyle(
+                    //                       color: color0,
+                    //                       fontSize: 18,
+                    //                     ),
+                    //                   ),
+                    //                   activeColor: const Color(0xFF10BB96),
+                    //                 ),
+                    //                 RadioListTile<int>(
+                    //                   value: 2,
+                    //                   groupValue: _selectedNotificationOption,
+                    //                   onChanged: (int? value) {
+                    //                     setState(() {
+                    //                       _selectedNotificationOption = value!;
+                    //                     });
+                    //                   },
+                    //                   title: const Text(
+                    //                     'Si permanece 1 hora desconectado',
+                    //                     style: TextStyle(
+                    //                       color: color0,
+                    //                       fontSize: 18,
+                    //                     ),
+                    //                   ),
+                    //                   activeColor: const Color(0xFF10BB96),
+                    //                 ),
+                    //                 const SizedBox(height: 20),
+                    //                 SizedBox(
+                    //                   width: double.infinity,
+                    //                   child: ElevatedButton(
+                    //                     onPressed: () async {
+                    //                       setState(() {
+                    //                         _isNotificationActive = true;
+                    //                         _showNotificationOptions = false;
+                    //                       });
 
-                                          configNotiDsc.addAll({
-                                            deviceName:
-                                                _selectedNotificationOption
-                                          });
-                                          await saveconfigNotiDsc(
-                                              configNotiDsc);
+                    //                       configNotiDsc.addAll({
+                    //                         deviceName:
+                    //                             _selectedNotificationOption
+                    //                       });
+                    //                       await saveconfigNotiDsc(
+                    //                           configNotiDsc);
 
-                                          printLog(configNotiDsc);
+                    //                       printLog(configNotiDsc);
 
-                                          String displayTitle =
-                                              'Notificación Activada';
-                                          String displayMessage =
-                                              'Has activado la notificación de desconexión con la opción seleccionada.';
-                                          showNotification(displayTitle,
-                                              displayMessage, 'noti');
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          foregroundColor: color0,
-                                          backgroundColor:
-                                              const Color(0xFF10BB96),
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 12),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                                30), // Bordes redondeados
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'Aceptar',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          : const SizedBox.shrink(),
-                    ),
+                    //                       String displayTitle =
+                    //                           'Notificación Activada';
+                    //                       String displayMessage =
+                    //                           'Has activado la notificación de desconexión con la opción seleccionada.';
+                    //                       showNotification(displayTitle,
+                    //                           displayMessage, 'noti');
+                    //                     },
+                    //                     style: ElevatedButton.styleFrom(
+                    //                       foregroundColor: color0,
+                    //                       backgroundColor:
+                    //                           const Color(0xFF10BB96),
+                    //                       padding: const EdgeInsets.symmetric(
+                    //                           vertical: 12),
+                    //                       shape: RoundedRectangleBorder(
+                    //                         borderRadius: BorderRadius.circular(
+                    //                             30), // Bordes redondeados
+                    //                       ),
+                    //                     ),
+                    //                     child: const Text(
+                    //                       'Aceptar',
+                    //                       style: TextStyle(
+                    //                         fontSize: 18,
+                    //                         fontWeight: FontWeight.bold,
+                    //                       ),
+                    //                     ),
+                    //                   ),
+                    //                 ),
+                    //               ],
+                    //             ),
+                    //           ),
+                    //         )
+                    //       : const SizedBox.shrink(),
+                    // ),
                   ],
                 ),
               ),

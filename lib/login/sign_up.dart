@@ -1,6 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+// import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'welcome.dart';
 import 'package:caldensmart/master.dart';
@@ -223,55 +223,55 @@ Widget buildRegisterForm(WelcomePageState state) {
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: <Widget>[
-                    Expanded(
-                      child: Divider(color: color3, thickness: 1),
-                    ),
-                    SizedBox(width: 10),
-                    Text('O', style: TextStyle(color: color3, fontSize: 16)),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Divider(color: color3, thickness: 1),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      try {
-                        GoogleSignInAccount? account =
-                            await GoogleSignIn().signIn();
-                        if (account != null) {
-                          showToast('Registrado como ${account.email}');
-                        }
-                      } catch (error) {
-                        showToast('Error al registrarse con Google');
-                        printLog('Error al registrarse con google: $error');
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30.0),
-                        side: const BorderSide(color: color3),
-                      ),
-                      elevation: 5,
-                    ),
-                    icon:
-                        Image.asset('assets/google.png', width: 24, height: 24),
-                    label: const Text(
-                      'Google',
-                      style: TextStyle(color: color3, fontSize: 16),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
+                // const Row(
+                //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                //   children: <Widget>[
+                //     Expanded(
+                //       child: Divider(color: color3, thickness: 1),
+                //     ),
+                //     SizedBox(width: 10),
+                //     Text('O', style: TextStyle(color: color3, fontSize: 16)),
+                //     SizedBox(width: 10),
+                //     Expanded(
+                //       child: Divider(color: color3, thickness: 1),
+                //     ),
+                //   ],
+                // ),
+                // const SizedBox(height: 10),
+                // SizedBox(
+                //   width: double.infinity,
+                //   child: ElevatedButton.icon(
+                //     onPressed: () async {
+                //       try {
+                //         GoogleSignInAccount? account =
+                //             await GoogleSignIn().signIn();
+                //         if (account != null) {
+                //           showToast('Registrado como ${account.email}');
+                //         }
+                //       } catch (error) {
+                //         showToast('Error al registrarse con Google');
+                //         printLog('Error al registrarse con google: $error');
+                //       }
+                //     },
+                //     style: ElevatedButton.styleFrom(
+                //       backgroundColor: Colors.white,
+                //       padding: const EdgeInsets.symmetric(
+                //           horizontal: 20, vertical: 12),
+                //       shape: RoundedRectangleBorder(
+                //         borderRadius: BorderRadius.circular(30.0),
+                //         side: const BorderSide(color: color3),
+                //       ),
+                //       elevation: 5,
+                //     ),
+                //     icon:
+                //         Image.asset('assets/google.png', width: 24, height: 24),
+                //     label: const Text(
+                //       'Google',
+                //       style: TextStyle(color: color3, fontSize: 16),
+                //     ),
+                //   ),
+                // ),
+                // const SizedBox(height: 10),
                 Center(
                   child: TextButton(
                     onPressed: () {

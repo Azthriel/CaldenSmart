@@ -382,21 +382,29 @@ Future<void> saveNC(DynamoDB service, String pc, String sn, bool data) async {
 ///*-Guardar equipos para la Alexa Skill-*\\\
 Future<void> putDevicesForAlexa(
     DynamoDB service, String email, List<String> data) async {
+  // printLog('Voy a guardar : $data', 'magenta');
   if (data.isEmpty) {
-    service.deleteItem(key: {
-      'email': AttributeValue(s: email),
-    }, tableName: 'Alexa-Devices');
-  }
-  try {
-    final response = await service.updateItem(tableName: 'Alexa-Devices', key: {
-      'email': AttributeValue(s: email),
-    }, attributeUpdates: {
-      'devices': AttributeValueUpdate(value: AttributeValue(ss: data)),
-    });
+    // printLog('xd', 'magenta');
+    try {
+      service.deleteItem(key: {
+        'email': AttributeValue(s: email),
+      }, tableName: 'Alexa-Devices');
+    } catch (e) {
+      printLog('Error borrando el item alexa $e');
+    }
+  } else {
+    try {
+      final response =
+          await service.updateItem(tableName: 'Alexa-Devices', key: {
+        'email': AttributeValue(s: email),
+      }, attributeUpdates: {
+        'devices': AttributeValueUpdate(value: AttributeValue(ss: data)),
+      });
 
-    printLog('Item escrito perfectamente $response');
-  } catch (e) {
-    printLog('Error inserting item: $e');
+      printLog('Item escrito perfectamente $response');
+    } catch (e) {
+      printLog('Error guardando alexa item: $e');
+    }
   }
 }
 ///*-Guardar equipos para la Alexa Skill-*\\\

@@ -1,7 +1,6 @@
 import 'package:caldensmart/Global/stored_data.dart';
 import 'package:flutter/material.dart';
 import 'package:caldensmart/master.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:caldensmart/aws/mqtt/mqtt.dart';
@@ -510,10 +509,7 @@ class ProfilePageState extends State<ProfilePage> {
                   padding: const EdgeInsets.symmetric(vertical: 15.0),
                 ),
                 onPressed: () {
-                  Amplify.Auth.signOut();
-                  GoogleSignIn().signOut();
-                  Navigator.pop(context);
-                  asking();
+                  showToast('Cerrando sesión...');
                   previusConnections.clear();
                   saveDeviceList(previusConnections);
                   alexaDevices.clear();
@@ -525,6 +521,10 @@ class ProfilePageState extends State<ProfilePage> {
                   topicsToSub.clear();
                   saveTopicList(topicsToSub);
                   backTimerDS?.cancel();
+                  Amplify.Auth.signOut();
+                  // GoogleSignIn().signOut();
+                  Navigator.pop(context);
+                  asking();
                 },
                 child: Text(
                   "Cerrar sesión",

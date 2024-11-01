@@ -526,10 +526,11 @@ class EscenasPageState extends State<EscenasPage> {
           title: Text('Control horario',
               style: GoogleFonts.poppins(color: color0)),
           onTap: () {
-            setState(() {
-              showControlHorarioCH = true;
-              isDeviceSelection = true;
-            });
+            showToast("Próximamente");
+            // setState(() {
+            //   showControlHorarioCH = true;
+            //   isDeviceSelection = true;
+            // });
           },
         ),
         ListTile(
@@ -537,10 +538,11 @@ class EscenasPageState extends State<EscenasPage> {
           title: Text('Mis dispositivos',
               style: GoogleFonts.poppins(color: color0)),
           onTap: () {
-            setState(() {
-              showActivacionEnCadena = true;
-              showCard = true;
-            });
+            showToast("Próximamente");
+            // setState(() {
+            //   showActivacionEnCadena = true;
+            //   showCard = true;
+            // });
           },
         ),
         // Opciones futuras con toast

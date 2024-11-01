@@ -196,6 +196,11 @@ class CalefactorPageState extends State<CalefactorPage> {
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
     printLog(fun);
     var parts = fun.split(':');
+    final regex = RegExp(r'\((\d+)\)');
+    final match = regex.firstMatch(parts[2]);
+    int users = int.parse(match!.group(1).toString());
+    printLog('Hay $users conectados');
+    userConnected = users > 1;
     if (parts[0] == 'WCS_CONNECTED') {
       atemp = false;
       nameOfWifi = parts[1];
@@ -450,7 +455,7 @@ class CalefactorPageState extends State<CalefactorPage> {
     //TODO: pantalla de usuario conectado
 
     // si hay un usuario conectado al equipo no lo deje ingresar
-    if (userConnected) {
+    if (userConnected && lastUser > 1) {
       return const DeviceInUseScreen();
     }
 

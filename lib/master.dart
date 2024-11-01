@@ -193,7 +193,7 @@ Map<String, bool> isTaskScheduled = {};
 
 // !------------------------------VERSION NUMBER---------------------------------------
 //ACORDATE: Cambia el número de versión en el pubspec.yaml antes de publicar
-String appVersionNumber = '24103100';
+String appVersionNumber = '24110101';
 //ACORDATE: 0 = Caldén Smart
 int app = 0;
 // !------------------------------VERSION NUMBER---------------------------------------
@@ -244,15 +244,15 @@ void printLog(var text, [String? color]) {
 ///*-Extrae parametros del equipo-*\\
 String command(String device) {
   switch (true) {
-    case true when device.contains('Eléctrico') || device.contains('Electrico'):
+    case true when device.contains('Electrico'):
       return '022000_IOT';
     case true when device.contains('Gas'):
       return '027000_IOT';
     case true when device.contains('Detector'):
       return '015773_IOT';
-    case true when device.contains('Domótica') || device.contains('Domotica'):
+    case true when device.contains('Domotica'):
       return '020010_IOT';
-    case true when device.contains('Relé') || device.contains('Rele'):
+    case true when device.contains('Rele'):
       return '027313_IOT';
     default:
       return '';
@@ -1596,7 +1596,7 @@ Future<void> initNotifications() async {
 
 Future<void> handleNotifications(RemoteMessage message) async {
   try {
-    printLog('Llegó esta notif: ${message.data}');
+    printLog('Llegó esta notif: ${message.data}', 'rojo');
     String product = message.data['pc']!;
     String number = message.data['sn']!;
     String device = recoverDeviceName(product, number);
@@ -1637,30 +1637,40 @@ Future<void> handleNotifications(RemoteMessage message) async {
         if (notificationMap['$product/$number']![
             int.parse(message.data['entry']!)]) {
           printLog(
-              'En la lista: ${notificationMap['$product/$number']!} en la posición ${int.parse(message.data['entry']!)} hay un true');
+              'En la lista: ${notificationMap['$product/$number']!} en la posición ${message.data['entry']!} hay un true');
           showNotification(displayTitle.toUpperCase(), displayMessage, sound);
         }
       }
     } else if (caso == 'Disconnect') {
-      configNotiDsc = await loadconfigNotiDsc();
-      if (configNotiDsc.keys.toList().contains(device)) {
+      if (product == '015773_IOT') {
         final now = DateTime.now();
-        int espera = configNotiDsc[device] ?? 0;
-        printLog('La espera son $espera minutos');
-        await Future.delayed(
-          Duration(minutes: espera),
-        );
-        await queryItems(service, product, number);
-        bool cstate = globalDATA['$product/$number']?['cstate'] ?? false;
-        printLog('El cstate después de la espera es $cstate');
-        if (!cstate) {
-          String displayTitle =
-              '¡El equipo ${nicknamesMap[device] ?? device} se desconecto!';
-          String displayMessage =
-              'Se detecto una desconexión a las ${now.hour > 10 ? now.hour : '0${now.hour}'}:${now.minute > 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
-          showNotification(displayTitle, displayMessage, 'noti');
-        }
+        String displayTitle =
+            '¡El equipo ${nicknamesMap[device] ?? device} se desconecto!';
+        String displayMessage =
+            'Se detecto una desconexión a las ${now.hour > 10 ? now.hour : '0${now.hour}'}:${now.minute > 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+        showNotification(displayTitle, displayMessage, 'noti');
       }
+      //TODO: Arreglar noti para que funcione la espera
+
+      // configNotiDsc = await loadconfigNotiDsc();
+      // if (configNotiDsc.keys.toList().contains(device)) {
+      //   final now = DateTime.now();
+      //   int espera = configNotiDsc[device] ?? 0;
+      //   printLog('La espera son $espera minutos');
+      //   await Future.delayed(
+      //     Duration(minutes: espera),
+      //   );
+      //   await queryItems(service, product, number);
+      //   bool cstate = globalDATA['$product/$number']?['cstate'] ?? false;
+      //   printLog('El cstate después de la espera es $cstate');
+      //   if (!cstate) {
+      //     String displayTitle =
+      //         '¡El equipo ${nicknamesMap[device] ?? device} se desconecto!';
+      //     String displayMessage =
+      //         'Se detecto una desconexión a las ${now.hour > 10 ? now.hour : '0${now.hour}'}:${now.minute > 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+      //     showNotification(displayTitle, displayMessage, 'noti');
+      //   }
+      // }
     }
   } catch (e, s) {
     printLog("Error: $e");
@@ -1699,6 +1709,7 @@ void showNotification(String title, String body, String sonido) async {
 void setupToken(String pc, String sn, String device) async {
   if (android) {
     String? token = await FirebaseMessaging.instance.getToken();
+    printLog("Token actual de Firebase: $token", 'Magenta');
     List<String> tokens = await getTokens(service, pc, sn);
     printLog('Tokens: $tokens');
     if (token != null) {
@@ -3630,7 +3641,7 @@ class AccessDeniedScreen extends StatelessWidget {
                       color: color3,
                     ),
                     children: [
-                      const TextSpan(text: 'Si crees que es un error, '),
+                      const TextSpan(text: 'Si crees que es un error,\n'),
                       TextSpan(
                         text: 'contáctanos por correo',
                         style: const TextStyle(
@@ -3639,10 +3650,17 @@ class AccessDeniedScreen extends StatelessWidget {
                         ),
                         recognizer: TapGestureRecognizer()
                           ..onTap = () {
+                            String adminActual = globalDATA[
+                                        '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                    ?['owner'] ??
+                                'Desconocido';
+                            String message =
+                                'Hola, te hablo en relación a mi equipo $deviceName.\nEste mismo me dice que no soy dueño.\nDatos del equipo:\nCódigo de producto: ${command(deviceName)}\nNúmero de serie: ${extractSerialNumber(deviceName)}\nDueño actual: $adminActual\n';
+
                             launchEmail(
                               'service@caldensmart.com',
                               'Consulta sobre línea Smart',
-                              '¡Hola! Me comunico en relación a uno de mis equipos: \n',
+                              message,
                             );
                           },
                       ),
@@ -3655,14 +3673,15 @@ class AccessDeniedScreen extends StatelessWidget {
                         ),
                         recognizer: TapGestureRecognizer()
                           ..onTap = () {
-                            var phoneNumber = '5491162232619';
-                            var equipoInfo = utf8.decode(infoValues).split(':');
-                            var adminActual = equipoInfo.length > 4
-                                ? equipoInfo[4]
-                                : 'No disponible';
+                            String phoneNumber = '5491162232619';
 
-                            var message =
-                                'Hola, te hablo en relación a mi equipo $deviceName.\nEste mismo me dice que no soy administrador.\n*Datos del equipo:*\nCódigo de producto: ${command(deviceName)}\nNúmero de serie: ${extractSerialNumber(deviceName)}\nAdministrador actual: $adminActual';
+                            String adminActual = globalDATA[
+                                        '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                    ?['owner'] ??
+                                'Desconocido';
+
+                            String message =
+                                'Hola, te hablo en relación a mi equipo $deviceName.\nEste mismo me dice que no soy dueño.\n*Datos del equipo:*\nCódigo de producto: ${command(deviceName)}\nNúmero de serie: ${extractSerialNumber(deviceName)}\nDueño actual: $adminActual\n';
 
                             sendWhatsAppMessage(phoneNumber, message);
                           },
@@ -3773,7 +3792,7 @@ class DeviceInUseScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Actualmente hay un usuario usando el equipo',
+                    'Actualmente hay un usuario\nusando el equipo...',
                     style: GoogleFonts.poppins(
                       fontSize: 24,
                       color: color3,
@@ -3785,7 +3804,7 @@ class DeviceInUseScreen extends StatelessWidget {
                     height: 10,
                   ),
                   Text(
-                    'espere a que se desconecte para poder usarlo',
+                    'Espere a que\nse desconecte\npara poder usarlo',
                     style: GoogleFonts.poppins(
                       fontSize: 24,
                       color: color3,

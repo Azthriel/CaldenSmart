@@ -88,6 +88,14 @@ class LoadState extends State<LoadingPage> {
 
       discNotfActivated = configNotiDsc.keys.toList().contains(deviceName);
 
+      var parts3 = utf8.decode(toolsValues).split(':');
+      final regex = RegExp(r'\((\d+)\)');
+      final match = regex.firstMatch(parts3[2]);
+      int users = int.parse(match!.group(1).toString());
+      printLog('Hay $users conectados');
+      userConnected = users > 1;
+
+
       //Si es un calefactor
       if (deviceType == '022000' || deviceType == '027000') {
         varsValues = await myDevice.varsUuid.read();
@@ -102,13 +110,6 @@ class LoadState extends State<LoadingPage> {
         trueStatus = parts2[4] == '1';
         nightMode = parts2[5] == '1';
         printLog('Estado: $turnOn');
-
-        var parts3 = utf8.decode(toolsValues).split(':');
-        final regex = RegExp(r'\((\d+)\)');
-        final match = regex.firstMatch(parts3[2]);
-        int users = int.parse(match!.group(1).toString());
-        printLog('Hay $users conectados');
-        userConnected = users > 1;
         lastUser = users;
         owner = globalDATA[
                     '${command(deviceName)}/${extractSerialNumber(deviceName)}']![
