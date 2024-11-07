@@ -24,16 +24,22 @@ import 'Global/stored_data.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  appName = nameOfApp(app);
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
 
   await Amplify.addPlugin(
     AmplifyAuthCognito(),
   );
   await Amplify.configure(amplifyconfig);
+
+  //! IOS O ANDROID !\\
+  android = Platform.isAndroid;
+  //! IOS O ANDROID !\\
+  appName = nameOfApp(app);
 
   await initNotifications();
 
@@ -66,10 +72,6 @@ class MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
 
-    //! IOS O ANDROID !\\
-    android = Platform.isAndroid;
-    //! IOS O ANDROID !\\
-
     loadValues();
 
     setupMqtt().then((value) {
@@ -87,7 +89,7 @@ class MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: true,
+      debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       title: nameOfApp(app),
       theme: ThemeData(
@@ -98,8 +100,9 @@ class MyAppState extends State<MyApp> {
           selectionHandleColor: Color(0xFFCFC8BD),
         ),
         bottomSheetTheme: const BottomSheetThemeData(
-            surfaceTintColor: Colors.transparent,
-            backgroundColor: Colors.transparent),
+          surfaceTintColor: Colors.transparent,
+          backgroundColor: Colors.transparent,
+        ),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF302b36),
         ),

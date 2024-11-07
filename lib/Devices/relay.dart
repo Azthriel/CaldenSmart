@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
 import '../aws/mqtt/mqtt.dart';
@@ -48,7 +49,6 @@ class RelayPageState extends State<RelayPage> {
 
     tracking = devicesToTrack.contains(deviceName);
     nickname = nicknamesMap[deviceName] ?? deviceName;
-
     showOptions = currentUserEmail == owner;
 
     printLog('¿Encendido? $turnOn');
@@ -366,10 +366,7 @@ class RelayPageState extends State<RelayPage> {
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
 
-    // Determinamos el rol del usuario actual
-    bool isOwner = currentUserEmail == owner;
-    bool isSecondaryAdmin = adminDevices.contains(currentUserEmail);
-    bool isRegularUser = !isOwner && !isSecondaryAdmin;
+    bool isRegularUser = !deviceOwner && !secondaryAdmin;
 
     // si hay un usuario conectado al equipo no lo deje ingresar
     if (userConnected && lastUser > 1) {
@@ -377,7 +374,7 @@ class RelayPageState extends State<RelayPage> {
     }
 
     // Condición para mostrar la pantalla de acceso restringido
-    if (isRegularUser && owner != '') {
+    if (isRegularUser && owner != '' && !tenant) {
       return const AccessDeniedScreen();
     }
 
@@ -404,7 +401,10 @@ class RelayPageState extends State<RelayPage> {
                   const SizedBox(height: 40),
                   GestureDetector(
                     onTap: () {
-                      if (isOwner || isSecondaryAdmin || owner == '') {
+                      if (deviceOwner ||
+                          secondaryAdmin ||
+                          owner == '' ||
+                          tenant) {
                         turnDeviceOn(!turnOn);
                         setState(() {
                           turnOn = !turnOn;
@@ -460,7 +460,7 @@ class RelayPageState extends State<RelayPage> {
                     ),
                   ),
                   const SizedBox(height: 50),
-                  if (isOwner || owner == '')
+                  if (deviceOwner || owner == '')
                     // Solo el propietario ve la tarjeta de NA y NC
                     Card(
                       shape: RoundedRectangleBorder(
@@ -578,7 +578,7 @@ class RelayPageState extends State<RelayPage> {
               ),
             ),
           ),
-          if (isRegularUser && owner != '')
+          if (isRegularUser && owner != '' && !tenant)
             Container(
               color: Colors.black.withOpacity(0.7),
               child: const Center(
@@ -613,7 +613,7 @@ class RelayPageState extends State<RelayPage> {
                   const SizedBox(height: 40),
                   GestureDetector(
                     onTap: () async {
-                      if (isOwner || owner == '') {
+                      if (deviceOwner || owner == '') {
                         if (isAgreeChecked) {
                           setState(() {
                             tracking = !tracking;
@@ -671,7 +671,7 @@ class RelayPageState extends State<RelayPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 100),
+                  const SizedBox(height: 70),
                   Card(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -721,7 +721,7 @@ class RelayPageState extends State<RelayPage> {
               ),
             ),
           ),
-          if (!isOwner && owner != '')
+          if (!deviceOwner && owner != '')
             Container(
               color: Colors.black.withOpacity(0.7),
               child: const Center(
@@ -764,7 +764,7 @@ class RelayPageState extends State<RelayPage> {
                 const SizedBox(height: 30),
                 GestureDetector(
                   onTap: () {
-                    if (isOwner || owner == '') {
+                    if (deviceOwner || owner == '' || tenant) {
                       verifyPermission().then((result) {
                         if (result == true) {
                           setState(() {
@@ -1009,7 +1009,7 @@ class RelayPageState extends State<RelayPage> {
               ],
             ),
           ),
-          if (!isOwner && owner != '')
+          if (!deviceOwner && owner != '' && !tenant)
             Container(
               color: Colors.black.withOpacity(0.7),
               child: const Center(
@@ -1042,7 +1042,7 @@ class RelayPageState extends State<RelayPage> {
               //! Opción - Reclamar propiedad del equipo o dejar de ser propietario
               InkWell(
                 onTap: () async {
-                  if (isOwner) {
+                  if (currentUserEmail == owner) {
                     // Opción para dejar de ser propietario
                     showAlertDialog(
                       context,
@@ -1073,7 +1073,6 @@ class RelayPageState extends State<RelayPage> {
                               myDevice.device.disconnect();
                               Navigator.of(context).pop();
                               setState(() {
-                                isOwner = false;
                                 showOptions = false;
                               });
                             } catch (e, s) {
@@ -1095,7 +1094,7 @@ class RelayPageState extends State<RelayPage> {
                       );
                       setState(() {
                         owner = currentUserEmail;
-                        isOwner = true;
+                        deviceOwner = true;
                         showOptions = true;
                       });
                       showToast('Ahora eres el propietario del equipo');
@@ -1125,7 +1124,7 @@ class RelayPageState extends State<RelayPage> {
                     ],
                   ),
                   child: Text(
-                    isOwner
+                    currentUserEmail == owner
                         ? 'Dejar de ser dueño del equipo'
                         : 'Reclamar propiedad del equipo',
                     textAlign: TextAlign.center,
@@ -1149,7 +1148,7 @@ class RelayPageState extends State<RelayPage> {
                       ? Column(
                           children: [
                             //! Opciones adicionales existentes (isOwner)
-                            if (isOwner) ...[
+                            if (deviceOwner) ...[
                               //! Opción 2 - Añadir administradores secundarios
                               InkWell(
                                 onTap: () {
@@ -1378,107 +1377,99 @@ class RelayPageState extends State<RelayPage> {
                               ),
                               const SizedBox(height: 10),
                               //! Opción 4 - Habitante inteligente
-                              // InkWell(
-                              //   onTap: () {
-                              //     if (activatedAT) {
-                              //       saveATData(
-                              //         service,
-                              //         command(deviceName),
-                              //         extractSerialNumber(deviceName),
-                              //         false,
-                              //         '',
-                              //         distOnValue.round().toString(),
-                              //         distOffValue.round().toString(),
-                              //       );
-                              //       setState(() {});
-                              //     } else {
-                              //       if (!payAT) {
-                              //         showAlertDialog(
-                              //           context,
-                              //           true,
-                              //           Text(
-                              //             'Actualmente no tienes habilitado este beneficio',
-                              //             style: GoogleFonts.poppins(
-                              //                 color: color0),
-                              //           ),
-                              //           Text(
-                              //             'En caso de requerirlo puedes solicitarlo vía mail',
-                              //             style: GoogleFonts.poppins(
-                              //                 color: color0),
-                              //           ),
-                              //           [
-                              //             TextButton(
-                              //               style: TextButton.styleFrom(
-                              //                 foregroundColor:
-                              //                     const Color(0xFFFFFFFF),
-                              //               ),
-                              //               onPressed: () async {
-                              //                 String cuerpo =
-                              //                     '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
-                              //                 final Uri emailLaunchUri = Uri(
-                              //                   scheme: 'mailto',
-                              //                   path:
-                              //                       'cobranzas@ibsanitarios.com.ar',
-                              //                   query:
-                              //                       encodeQueryParameters(<String,
-                              //                           String>{
-                              //                     'subject':
-                              //                         'Habilitación habitante inteligente',
-                              //                     'body': cuerpo,
-                              //                     'CC':
-                              //                         'pablo@intelligentgas.com.ar'
-                              //                   }),
-                              //                 );
-                              //                 if (await canLaunchUrl(
-                              //                     emailLaunchUri)) {
-                              //                   await launchUrl(emailLaunchUri);
-                              //                 } else {
-                              //                   showToast(
-                              //                       'No se pudo enviar el correo electrónico');
-                              //                 }
-                              //                 navigatorKey.currentState?.pop();
-                              //               },
-                              //               child: const Text('Solicitar'),
-                              //             ),
-                              //           ],
-                              //         );
-                              //       } else {
-                              //         setState(() {
-                              //           showSmartResident = !showSmartResident;
-                              //         });
-                              //       }
-                              //     }
-                              //   },
-                              //   borderRadius: BorderRadius.circular(15),
-                              //   child: Container(
-                              //     margin:
-                              //         const EdgeInsets.symmetric(vertical: 10),
-                              //     padding: const EdgeInsets.all(15),
-                              //     decoration: BoxDecoration(
-                              //       color: color3,
-                              //       borderRadius: BorderRadius.circular(15),
-                              //     ),
-                              //     child: Row(
-                              //       mainAxisAlignment:
-                              //           MainAxisAlignment.spaceBetween,
-                              //       children: [
-                              //         Text(
-                              //           'Habitante inteligente',
-                              //           style: GoogleFonts.poppins(
-                              //             fontSize: 15,
-                              //             color: color0,
-                              //           ),
-                              //         ),
-                              //         Icon(
-                              //           showSmartResident
-                              //               ? Icons.arrow_drop_up
-                              //               : Icons.arrow_drop_down,
-                              //           color: color0,
-                              //         ),
-                              //       ],
-                              //     ),
-                              //   ),
-                              // ),
+
+                              InkWell(
+                                onTap: () {
+                                  if (activatedAT) {
+                                    setState(() {
+                                      showSmartResident = !showSmartResident;
+                                    });
+                                  } else {
+                                    if (!payAT) {
+                                      showAlertDialog(
+                                        context,
+                                        true,
+                                        Text(
+                                          'Actualmente no tienes habilitado este beneficio',
+                                          style: GoogleFonts.poppins(
+                                              color: color0),
+                                        ),
+                                        Text(
+                                          'En caso de requerirlo puedes solicitarlo vía mail',
+                                          style: GoogleFonts.poppins(
+                                              color: color0),
+                                        ),
+                                        [
+                                          TextButton(
+                                            style: TextButton.styleFrom(
+                                              foregroundColor:
+                                                  const Color(0xFFFFFFFF),
+                                            ),
+                                            onPressed: () async {
+                                              String cuerpo =
+                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
+                                              final Uri emailLaunchUri = Uri(
+                                                scheme: 'mailto',
+                                                path:
+                                                    'cobranzas@ibsanitarios.com.ar',
+                                                query:
+                                                    encodeQueryParameters(<String,
+                                                        String>{
+                                                  'subject':
+                                                      'Habilitación habitante inteligente',
+                                                  'body': cuerpo,
+                                                  'CC':
+                                                      'pablo@intelligentgas.com.ar'
+                                                }),
+                                              );
+                                              if (await canLaunchUrl(
+                                                  emailLaunchUri)) {
+                                                await launchUrl(emailLaunchUri);
+                                              } else {
+                                                showToast(
+                                                    'No se pudo enviar el correo electrónico');
+                                              }
+                                              navigatorKey.currentState?.pop();
+                                            },
+                                            child: const Text('Solicitar'),
+                                          ),
+                                        ],
+                                      );
+                                    } else {
+                                      setState(() {
+                                        showSmartResident = !showSmartResident;
+                                      });
+                                    }
+                                  }
+                                },
+                                borderRadius: BorderRadius.circular(15),
+                                child: Container(
+                                  margin:
+                                      const EdgeInsets.symmetric(vertical: 10),
+                                  padding: const EdgeInsets.all(15),
+                                  decoration: BoxDecoration(
+                                    color: color3,
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Habitante inteligente',
+                                        style: GoogleFonts.poppins(
+                                            fontSize: 15, color: color0),
+                                      ),
+                                      Icon(
+                                        showSmartResident
+                                            ? Icons.arrow_drop_up
+                                            : Icons.arrow_drop_down,
+                                        color: color0,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                               AnimatedSize(
                                 duration: const Duration(milliseconds: 600),
                                 curve: Curves.easeInOut,
@@ -1519,15 +1510,13 @@ class RelayPageState extends State<RelayPage> {
                                                   keyboardType: TextInputType
                                                       .emailAddress,
                                                   style: GoogleFonts.poppins(
-                                                    color: color0,
-                                                  ),
+                                                      color: color0),
                                                   decoration: InputDecoration(
                                                     labelText:
                                                         "Email del inquilino",
                                                     labelStyle:
                                                         GoogleFonts.poppins(
-                                                      color: color0,
-                                                    ),
+                                                            color: color0),
                                                     enabledBorder:
                                                         OutlineInputBorder(
                                                       borderRadius:
@@ -1549,11 +1538,112 @@ class RelayPageState extends State<RelayPage> {
                                                   ),
                                                 ),
                                                 const SizedBox(height: 20),
+                                                // Mostrar el email actual solo si existe
+                                                if (activatedAT)
+                                                  Container(
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            15),
+                                                    decoration: BoxDecoration(
+                                                      color: color3,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              15),
+                                                      border: Border.all(
+                                                          color: color0,
+                                                          width: 2),
+                                                      boxShadow: const [
+                                                        BoxShadow(
+                                                          color: Colors.black12,
+                                                          blurRadius: 4,
+                                                          offset: Offset(2, 2),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          'Inquilino actual:',
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                            fontSize: 16,
+                                                            color: color0,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                            height: 5),
+                                                        Row(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .spaceBetween,
+                                                          children: [
+                                                            Expanded(
+                                                              child: Text(
+                                                                globalDATA[
+                                                                        '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                                    ?['tenant'],
+                                                                style:
+                                                                    GoogleFonts
+                                                                        .poppins(
+                                                                  fontSize: 14,
+                                                                  color: color0,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            IconButton(
+                                                              icon: const Icon(
+                                                                  Icons.delete,
+                                                                  color: Colors
+                                                                      .redAccent),
+                                                              onPressed:
+                                                                  () async {
+                                                                await saveATData(
+                                                                  service,
+                                                                  command(
+                                                                      deviceName),
+                                                                  extractSerialNumber(
+                                                                      deviceName),
+                                                                  false,
+                                                                  '',
+                                                                  '3000',
+                                                                  '100',
+                                                                );
+
+                                                                setState(() {
+                                                                  tenantController
+                                                                      .clear();
+                                                                  globalDATA[
+                                                                          '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                                      ?[
+                                                                      'tenant'] = '';
+                                                                  activatedAT =
+                                                                      false;
+                                                                  dOnOk = false;
+                                                                  dOffOk =
+                                                                      false;
+                                                                });
+                                                                showToast(
+                                                                    "Inquilino eliminado correctamente.");
+                                                              },
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+
+                                                const SizedBox(height: 10),
+
+                                                // Distancia de apagado y encendido sliders
                                                 Text(
                                                   'Distancia de apagado (${distOffValue.round()} metros)',
                                                   style: GoogleFonts.poppins(
-                                                    color: color0,
-                                                  ),
+                                                      color: color0),
                                                 ),
                                                 Slider(
                                                   value: distOffValue,
@@ -1574,8 +1664,7 @@ class RelayPageState extends State<RelayPage> {
                                                 Text(
                                                   'Distancia de encendido (${distOnValue.round()} metros)',
                                                   style: GoogleFonts.poppins(
-                                                    color: color0,
-                                                  ),
+                                                      color: color0),
                                                 ),
                                                 Slider(
                                                   value: distOnValue,
@@ -1593,6 +1682,8 @@ class RelayPageState extends State<RelayPage> {
                                                   },
                                                 ),
                                                 const SizedBox(height: 20),
+
+                                                // Botones de Activar y Cancelar
                                                 Center(
                                                   child: Row(
                                                     mainAxisAlignment:
@@ -1623,7 +1714,19 @@ class RelayPageState extends State<RelayPage> {
                                                                   .round()
                                                                   .toString(),
                                                             );
-                                                            setState(() {});
+
+                                                            setState(() {
+                                                              activatedAT =
+                                                                  true;
+                                                              globalDATA['${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                                      ?[
+                                                                      'tenant'] =
+                                                                  tenantController
+                                                                      .text
+                                                                      .trim();
+                                                            });
+                                                            showToast(
+                                                                'Configuración guardada para el inquilino.');
                                                           } else {
                                                             showToast(
                                                                 'Por favor, completa todos los campos');
@@ -1651,9 +1754,8 @@ class RelayPageState extends State<RelayPage> {
                                                           'Activar',
                                                           style: GoogleFonts
                                                               .poppins(
-                                                            color: color3,
-                                                            fontSize: 16,
-                                                          ),
+                                                                  color: color3,
+                                                                  fontSize: 16),
                                                         ),
                                                       ),
                                                       const SizedBox(width: 20),
@@ -1686,9 +1788,8 @@ class RelayPageState extends State<RelayPage> {
                                                           'Cancelar',
                                                           style: GoogleFonts
                                                               .poppins(
-                                                            color: color3,
-                                                            fontSize: 16,
-                                                          ),
+                                                                  color: color3,
+                                                                  fontSize: 16),
                                                         ),
                                                       ),
                                                     ],
@@ -2185,38 +2286,47 @@ class RelayPageState extends State<RelayPage> {
         ),
         backgroundColor: color1,
         resizeToAvoidBottomInset: false,
-        body: PageView(
-          controller: _pageController,
-          onPageChanged: (index) {
-            setState(() {
-              _page = index;
-            });
-          },
-          children: pages,
-        ),
-        bottomNavigationBar: CurvedNavigationBar(
-          index: _page,
-          height: 75.0,
-          items: const <Widget>[
-            Icon(Icons.home, size: 30, color: color0),
-            Icon(Icons.bluetooth, size: 30, color: color0),
-            Icon(Icons.location_on, size: 30, color: color0),
-            Icon(Icons.settings, size: 30, color: color0),
+        body: Stack(
+          children: [
+            PageView(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() {
+                  _page = index;
+                });
+              },
+              children: pages,
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: CurvedNavigationBar(
+                index: _page,
+                height: 75.0,
+                items: const <Widget>[
+                  Icon(Icons.home, size: 30, color: color0),
+                  Icon(Icons.bluetooth, size: 30, color: color0),
+                  Icon(Icons.location_on, size: 30, color: color0),
+                  Icon(Icons.settings, size: 30, color: color0),
+                ],
+                color: color3,
+                buttonBackgroundColor: color3,
+                backgroundColor: Colors.transparent,
+                animationCurve: Curves.easeInOut,
+                animationDuration: const Duration(milliseconds: 600),
+                onTap: (index) {
+                  setState(() {
+                    _page = index;
+                    _pageController.animateToPage(index,
+                        duration: const Duration(milliseconds: 600),
+                        curve: Curves.easeInOut);
+                  });
+                },
+                letIndexChange: (index) => true,
+              ),
+            ),
           ],
-          color: color3,
-          buttonBackgroundColor: color3,
-          backgroundColor: Colors.transparent,
-          animationCurve: Curves.easeInOut,
-          animationDuration: const Duration(milliseconds: 600),
-          onTap: (index) {
-            setState(() {
-              _page = index;
-              _pageController.animateToPage(index,
-                  duration: const Duration(milliseconds: 600),
-                  curve: Curves.easeInOut);
-            });
-          },
-          letIndexChange: (index) => true,
         ),
       ),
     );

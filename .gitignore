@@ -15,9 +15,7 @@ lib/firebase_options.dart
 lib/amplifyconfiguration.dart
 lib/easterEgg
 key.properties
-firebase.json
 amplify/
-
 
 
 # IntelliJ related

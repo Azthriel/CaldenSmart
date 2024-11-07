@@ -14,17 +14,7 @@ Widget buildEnterCodeForm(WelcomePageState state) {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(HugeIcons.strokeRoundedArrowLeft01,
-                        color: color3),
-                    onPressed: () {
-                      state.switchForm(FormType.forgotPassword);
-                    },
-                  ),
-                  const SizedBox(width: 10),
-                  const Expanded(
+              const Expanded(
                     child: Text(
                       'Código de verificación',
                       style: TextStyle(
@@ -33,8 +23,6 @@ Widget buildEnterCodeForm(WelcomePageState state) {
                           color: color3),
                     ),
                   ),
-                ],
-              ),
               const SizedBox(height: 10),
               const Text(
                 'Ingrese el código enviado a su correo y su nueva contraseña',

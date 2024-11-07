@@ -95,7 +95,6 @@ class LoadState extends State<LoadingPage> {
       printLog('Hay $users conectados');
       userConnected = users > 1;
 
-
       //Si es un calefactor
       if (deviceType == '022000' || deviceType == '027000') {
         varsValues = await myDevice.varsUuid.read();

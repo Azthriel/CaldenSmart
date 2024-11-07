@@ -243,14 +243,14 @@ class ProfilePageState extends State<ProfilePage> {
                     leading: const Icon(HugeIcons.strokeRoundedHome11,
                         color: color3),
                     title: Text(
-                      "Domótica",
+                      "Domotica",
                       style: GoogleFonts.poppins(
                         color: color3,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     subtitle: Text(
-                      "Alarma para domótica",
+                      "Alarma para domotica",
                       style: GoogleFonts.poppins(
                         color: color3,
                       ),

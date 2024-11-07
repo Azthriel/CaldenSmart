@@ -74,7 +74,6 @@ class ScanPageState extends State<ScanPage>
             'Electrico',
             'Gas',
             'Detector',
-            'Radiador',
             'Domotica',
             'Rele',
           ],
@@ -88,7 +87,7 @@ class ScanPageState extends State<ScanPage>
             for (ScanResult result in results) {
               if (!devices
                   .any((device) => device.remoteId == result.device.remoteId)) {
-                if (context.mounted) {
+                if (navigatorKey.currentContext?.mounted ?? context.mounted) {
                   setState(() {
                     devices.add(result.device);
                     devices.sort(

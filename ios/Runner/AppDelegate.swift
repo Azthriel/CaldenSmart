@@ -1,86 +1,61 @@
-import UIKit
-import Flutter
-import CoreLocation
 import CoreBluetooth
+import CoreLocation
+import Flutter
+import UIKit
+import UserNotifications
+import flutter_local_notifications
 
-@UIApplicationMain
-@objc class AppDelegate: FlutterAppDelegate, CLLocationManagerDelegate, CBCentralManagerDelegate {
-    
-    private var locationManager: CLLocationManager?
-    private var centralManager: CBCentralManager?
-    
-    override func application(
-        _ application: UIApplication,
-        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-    ) -> Bool {
-        let controller: FlutterViewController = window?.rootViewController as! FlutterViewController
-        let methodChannel = FlutterMethodChannel(name: "com.caldensmart.sime/native", binaryMessenger: controller.binaryMessenger)
-        
-        methodChannel.setMethodCallHandler { [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
-            switch call.method {
-            case "isLocationServiceEnabled":
-                self?.checkLocationServices(result: result)
-            case "openLocationSettings":
-                self?.openLocationSettings(result: result)
-            case "isBluetoothOn":
-                self?.checkBluetoothState(result: result)
-            case "turnOnBluetooth":
-                self?.requestBluetoothActivation(result: result)
-            default:
-                result(FlutterMethodNotImplemented)
-            }
-        }
-        
-        return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-    }
-    
-    // Verificar si los servicios de localización están habilitados
-    private func checkLocationServices(result: FlutterResult) {
-        if CLLocationManager.locationServicesEnabled() {
-            result(true)
-        } else {
-            result(false)
-        }
-    }
-    
-    // Abrir configuración de servicios de localización
-    private func openLocationSettings(result: FlutterResult) {
+@main
+@objc class AppDelegate: FlutterAppDelegate {
+  private let CHANNEL = "com.caldensmart.sime/native"
+
+  override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  ) -> Bool {
+
+    let flutterViewController = window?.rootViewController as! FlutterViewController
+    let methodChannel = FlutterMethodChannel(
+      name: CHANNEL,
+      binaryMessenger: flutterViewController.binaryMessenger)
+
+    methodChannel.setMethodCallHandler {
+      [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
+      switch call.method {
+      case "isLocationServiceEnabled":
+        result(CLLocationManager.locationServicesEnabled())
+      case "openLocationSettings":
         if let url = URL(string: UIApplication.openSettingsURLString) {
-            if UIApplication.shared.canOpenURL(url) {
-                UIApplication.shared.open(url, options: [:], completionHandler: nil)
-                result(nil)
-            } else {
-                result(FlutterError(code: "UNAVAILABLE", message: "No se puede abrir la configuración", details: nil))
-            }
+          UIApplication.shared.open(url, options: [:], completionHandler: nil)
         }
-    }
-    
-    // Verificar si el Bluetooth está encendido
-    private func checkBluetoothState(result: FlutterResult) {
-        centralManager = CBCentralManager(delegate: self, queue: nil)
-        
-        if let centralManager = centralManager {
-            if centralManager.state == .poweredOn {
-                result(true)
-            } else {
-                result(false)
-            }
+        result(nil)
+      case "isBluetoothOn":
+        let bluetoothManager = CBCentralManager()
+        result(bluetoothManager.state == .poweredOn)
+      case "turnOnBluetooth":
+        let bluetoothManager = CBCentralManager()
+        if bluetoothManager.state != .poweredOn {
+          // No es posible encender Bluetooth directamente en iOS, solicitará al usuario
+          result(
+            FlutterError(
+              code: "UNAVAILABLE", message: "Cannot turn on Bluetooth directly", details: nil))
         } else {
-            result(FlutterError(code: "UNAVAILABLE", message: "Bluetooth no está disponible", details: nil))
+          result(true)
         }
+      default:
+        result(FlutterMethodNotImplemented)
+      }
     }
-    
-    // Solicitar activación del Bluetooth (esto no puede encenderlo automáticamente)
-    private func requestBluetoothActivation(result: FlutterResult) {
-        if centralManager?.state == .poweredOff {
-            result(FlutterError(code: "UNAVAILABLE", message: "No se puede encender el Bluetooth automáticamente", details: nil))
-        } else {
-            result(true)
-        }
+
+    FlutterLocalNotificationsPlugin.setPluginRegistrantCallback { (registry) in
+      GeneratedPluginRegistrant.register(with: registry)
     }
-    
-    // Delegado para CBCentralManager
-    func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        // Implementación si es necesario
+
+    if #available(iOS 10.0, *) {
+      UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
     }
+
+    GeneratedPluginRegistrant.register(with: self)
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
 }

@@ -1284,7 +1284,10 @@ class DetectorPageState extends State<DetectorPage> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          //TODO: acción para cambiar la imagen del dispositivo
+                          ImageManager.openImageOptions(context, deviceName,
+                              () {
+                            setState(() {});
+                          });
                         },
                         style: ElevatedButton.styleFrom(
                           foregroundColor: color0,

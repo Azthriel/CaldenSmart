@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
 import '../aws/mqtt/mqtt.dart';
@@ -31,10 +32,10 @@ class CalefactorPageState extends State<CalefactorPage> {
   var parts2 = utf8.decode(varsValues).split(':');
   late double tempValue;
   late bool loading;
-  // int _selectedNotificationOption = 0;
+  int _selectedNotificationOption = 0;
   double result = 0.0;
-  // bool _isNotificationActive = false;
-  // bool _showNotificationOptions = false;
+  bool _isNotificationActive = false;
+  bool _showNotificationOptions = false;
   bool showSecondaryAdminFields = false;
   bool showAddAdminField = false;
   bool showSecondaryAdminList = false;
@@ -452,14 +453,12 @@ class CalefactorPageState extends State<CalefactorPage> {
     bool isSecondaryAdmin = adminDevices.contains(currentUserEmail);
     bool isRegularUser = !isOwner && !isSecondaryAdmin;
 
-    //TODO: pantalla de usuario conectado
-
     // si hay un usuario conectado al equipo no lo deje ingresar
     if (userConnected && lastUser > 1) {
       return const DeviceInUseScreen();
     }
 
-    if (isRegularUser && owner != '') {
+    if (isRegularUser && owner != '' && !tenant) {
       return const AccessDeniedScreen();
     }
 
@@ -937,7 +936,7 @@ class CalefactorPageState extends State<CalefactorPage> {
               ],
             ),
           ),
-          if (!isOwner && owner != '')
+          if (!isOwner && owner != '' && !tenant)
             Container(
               color: Colors.black.withOpacity(0.7),
               child: const Center(
@@ -1477,581 +1476,680 @@ class CalefactorPageState extends State<CalefactorPage> {
                               ),
                               const SizedBox(height: 10),
                               //! Opción 4 - Habitante inteligente
-                              // InkWell(
-                              //   onTap: () {
-                              //     if (activatedAT) {
-                              //       saveATData(
-                              //         service,
-                              //         command(deviceName),
-                              //         extractSerialNumber(deviceName),
-                              //         false,
-                              //         '',
-                              //         distOnValue.round().toString(),
-                              //         distOffValue.round().toString(),
-                              //       );
-                              //       setState(() {});
-                              //     } else {
-                              //       if (!payAT) {
-                              //         showAlertDialog(
-                              //           context,
-                              //           true,
-                              //           Text(
-                              //             'Actualmente no tienes habilitado este beneficio',
-                              //             style: GoogleFonts.poppins(
-                              //                 color: color0),
-                              //           ),
-                              //           Text(
-                              //             'En caso de requerirlo puedes solicitarlo vía mail',
-                              //             style: GoogleFonts.poppins(
-                              //                 color: color0),
-                              //           ),
-                              //           [
-                              //             TextButton(
-                              //               style: TextButton.styleFrom(
-                              //                 foregroundColor:
-                              //                     const Color(0xFFFFFFFF),
-                              //               ),
-                              //               onPressed: () async {
-                              //                 String cuerpo =
-                              //                     '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
-                              //                 final Uri emailLaunchUri = Uri(
-                              //                   scheme: 'mailto',
-                              //                   path:
-                              //                       'cobranzas@ibsanitarios.com.ar',
-                              //                   query:
-                              //                       encodeQueryParameters(<String,
-                              //                           String>{
-                              //                     'subject':
-                              //                         'Habilitación habitante inteligente',
-                              //                     'body': cuerpo,
-                              //                     'CC':
-                              //                         'pablo@intelligentgas.com.ar'
-                              //                   }),
-                              //                 );
-                              //                 if (await canLaunchUrl(
-                              //                     emailLaunchUri)) {
-                              //                   await launchUrl(emailLaunchUri);
-                              //                 } else {
-                              //                   showToast(
-                              //                       'No se pudo enviar el correo electrónico');
-                              //                 }
-                              //                 navigatorKey.currentState?.pop();
-                              //               },
-                              //               child: const Text('Solicitar'),
-                              //             ),
-                              //           ],
-                              //         );
-                              //       } else {
-                              //         setState(() {
-                              //           showSmartResident = !showSmartResident;
-                              //         });
-                              //       }
-                              //     }
-                              //   },
-                              //   borderRadius: BorderRadius.circular(15),
-                              //   child: Container(
-                              //     margin:
-                              //         const EdgeInsets.symmetric(vertical: 10),
-                              //     padding: const EdgeInsets.all(15),
-                              //     decoration: BoxDecoration(
-                              //       color: color3,
-                              //       borderRadius: BorderRadius.circular(15),
-                              //     ),
-                              //     child: Row(
-                              //       mainAxisAlignment:
-                              //           MainAxisAlignment.spaceBetween,
-                              //       children: [
-                              //         Text(
-                              //           'Habitante inteligente',
-                              //           style: GoogleFonts.poppins(
-                              //             fontSize: 15,
-                              //             color: color0,
-                              //           ),
-                              //         ),
-                              //         Icon(
-                              //           showSmartResident
-                              //               ? Icons.arrow_drop_up
-                              //               : Icons.arrow_drop_down,
-                              //           color: color0,
-                              //         ),
-                              //       ],
-                              //     ),
-                              //   ),
-                              // ),
-                              // AnimatedSize(
-                              //   duration: const Duration(milliseconds: 600),
-                              //   curve: Curves.easeInOut,
-                              //   child: showSmartResident && payAT
-                              //       ? Column(
-                              //           children: [
-                              //             Container(
-                              //               padding: const EdgeInsets.all(20),
-                              //               margin:
-                              //                   const EdgeInsets.only(top: 20),
-                              //               decoration: BoxDecoration(
-                              //                 color: color3,
-                              //                 borderRadius:
-                              //                     BorderRadius.circular(15),
-                              //                 boxShadow: const [
-                              //                   BoxShadow(
-                              //                     color: Colors.black26,
-                              //                     blurRadius: 5,
-                              //                     offset: Offset(0, 3),
-                              //                   ),
-                              //                 ],
-                              //               ),
-                              //               child: Column(
-                              //                 crossAxisAlignment:
-                              //                     CrossAxisAlignment.start,
-                              //                 children: [
-                              //                   Text(
-                              //                     'Configura los parámetros del alquiler',
-                              //                     style: GoogleFonts.poppins(
-                              //                       fontSize: 18,
-                              //                       fontWeight: FontWeight.bold,
-                              //                       color: color0,
-                              //                     ),
-                              //                   ),
-                              //                   const SizedBox(height: 20),
-                              //                   TextField(
-                              //                     controller: tenantController,
-                              //                     keyboardType: TextInputType
-                              //                         .emailAddress,
-                              //                     style: GoogleFonts.poppins(
-                              //                       color: color0,
-                              //                     ),
-                              //                     decoration: InputDecoration(
-                              //                       labelText:
-                              //                           "Email del inquilino",
-                              //                       labelStyle:
-                              //                           GoogleFonts.poppins(
-                              //                         color: color0,
-                              //                       ),
-                              //                       enabledBorder:
-                              //                           OutlineInputBorder(
-                              //                         borderRadius:
-                              //                             BorderRadius.circular(
-                              //                                 15),
-                              //                         borderSide:
-                              //                             const BorderSide(
-                              //                                 color: color0),
-                              //                       ),
-                              //                       focusedBorder:
-                              //                           OutlineInputBorder(
-                              //                         borderRadius:
-                              //                             BorderRadius.circular(
-                              //                                 15),
-                              //                         borderSide:
-                              //                             const BorderSide(
-                              //                                 color: color0),
-                              //                       ),
-                              //                     ),
-                              //                   ),
-                              //                   const SizedBox(height: 20),
-                              //                   Text(
-                              //                     'Distancia de apagado (${distOffValue.round()} metros)',
-                              //                     style: GoogleFonts.poppins(
-                              //                       color: color0,
-                              //                     ),
-                              //                   ),
-                              //                   Slider(
-                              //                     value: distOffValue,
-                              //                     min: 100,
-                              //                     max: 300,
-                              //                     divisions: 200,
-                              //                     activeColor: color0,
-                              //                     inactiveColor:
-                              //                         color0.withOpacity(0.3),
-                              //                     onChanged: (double value) {
-                              //                       setState(() {
-                              //                         distOffValue = value;
-                              //                         dOffOk = true;
-                              //                       });
-                              //                     },
-                              //                   ),
-                              //                   const SizedBox(height: 10),
-                              //                   Text(
-                              //                     'Distancia de encendido (${distOnValue.round()} metros)',
-                              //                     style: GoogleFonts.poppins(
-                              //                       color: color0,
-                              //                     ),
-                              //                   ),
-                              //                   Slider(
-                              //                     value: distOnValue,
-                              //                     min: 3000,
-                              //                     max: 5000,
-                              //                     divisions: 200,
-                              //                     activeColor: color0,
-                              //                     inactiveColor:
-                              //                         color0.withOpacity(0.3),
-                              //                     onChanged: (double value) {
-                              //                       setState(() {
-                              //                         distOnValue = value;
-                              //                         dOnOk = true;
-                              //                       });
-                              //                     },
-                              //                   ),
-                              //                   const SizedBox(height: 20),
-                              //                   Center(
-                              //                     child: Row(
-                              //                       mainAxisAlignment:
-                              //                           MainAxisAlignment
-                              //                               .center,
-                              //                       children: [
-                              //                         TextButton(
-                              //                           onPressed: () {
-                              //                             if (dOnOk &&
-                              //                                 dOffOk &&
-                              //                                 tenantController
-                              //                                     .text
-                              //                                     .isNotEmpty) {
-                              //                               saveATData(
-                              //                                 service,
-                              //                                 command(
-                              //                                     deviceName),
-                              //                                 extractSerialNumber(
-                              //                                     deviceName),
-                              //                                 true,
-                              //                                 tenantController
-                              //                                     .text
-                              //                                     .trim(),
-                              //                                 distOnValue
-                              //                                     .round()
-                              //                                     .toString(),
-                              //                                 distOffValue
-                              //                                     .round()
-                              //                                     .toString(),
-                              //                               );
-                              //                               setState(() {});
-                              //                             } else {
-                              //                               showToast(
-                              //                                   'Por favor, completa todos los campos');
-                              //                             }
-                              //                           },
-                              //                           style: TextButton
-                              //                               .styleFrom(
-                              //                             backgroundColor:
-                              //                                 color0,
-                              //                             padding:
-                              //                                 const EdgeInsets
-                              //                                     .symmetric(
-                              //                                     horizontal:
-                              //                                         30,
-                              //                                     vertical: 15),
-                              //                             shape:
-                              //                                 RoundedRectangleBorder(
-                              //                               borderRadius:
-                              //                                   BorderRadius
-                              //                                       .circular(
-                              //                                           15),
-                              //                             ),
-                              //                           ),
-                              //                           child: Text(
-                              //                             'Activar',
-                              //                             style: GoogleFonts
-                              //                                 .poppins(
-                              //                               color: color3,
-                              //                               fontSize: 16,
-                              //                             ),
-                              //                           ),
-                              //                         ),
-                              //                         const SizedBox(width: 20),
-                              //                         TextButton(
-                              //                           onPressed: () {
-                              //                             setState(() {
-                              //                               showSmartResident =
-                              //                                   false;
-                              //                             });
-                              //                           },
-                              //                           style: TextButton
-                              //                               .styleFrom(
-                              //                             backgroundColor:
-                              //                                 color0,
-                              //                             padding:
-                              //                                 const EdgeInsets
-                              //                                     .symmetric(
-                              //                                     horizontal:
-                              //                                         30,
-                              //                                     vertical: 15),
-                              //                             shape:
-                              //                                 RoundedRectangleBorder(
-                              //                               borderRadius:
-                              //                                   BorderRadius
-                              //                                       .circular(
-                              //                                           15),
-                              //                             ),
-                              //                           ),
-                              //                           child: Text(
-                              //                             'Cancelar',
-                              //                             style: GoogleFonts
-                              //                                 .poppins(
-                              //                               color: color3,
-                              //                               fontSize: 16,
-                              //                             ),
-                              //                           ),
-                              //                         ),
-                              //                       ],
-                              //                     ),
-                              //                   ),
-                              //                 ],
-                              //               ),
-                              //             ),
-                              //           ],
-                              //         )
-                              //       : const SizedBox(),
-                              // ),
+                              InkWell(
+                                onTap: () {
+                                  if (activatedAT) {
+                                    setState(() {
+                                      showSmartResident = !showSmartResident;
+                                    });
+                                  } else {
+                                    if (!payAT) {
+                                      showAlertDialog(
+                                        context,
+                                        true,
+                                        Text(
+                                          'Actualmente no tienes habilitado este beneficio',
+                                          style: GoogleFonts.poppins(
+                                              color: color0),
+                                        ),
+                                        Text(
+                                          'En caso de requerirlo puedes solicitarlo vía mail',
+                                          style: GoogleFonts.poppins(
+                                              color: color0),
+                                        ),
+                                        [
+                                          TextButton(
+                                            style: TextButton.styleFrom(
+                                              foregroundColor:
+                                                  const Color(0xFFFFFFFF),
+                                            ),
+                                            onPressed: () async {
+                                              String cuerpo =
+                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
+                                              final Uri emailLaunchUri = Uri(
+                                                scheme: 'mailto',
+                                                path:
+                                                    'cobranzas@ibsanitarios.com.ar',
+                                                query:
+                                                    encodeQueryParameters(<String,
+                                                        String>{
+                                                  'subject':
+                                                      'Habilitación habitante inteligente',
+                                                  'body': cuerpo,
+                                                  'CC':
+                                                      'pablo@intelligentgas.com.ar'
+                                                }),
+                                              );
+                                              if (await canLaunchUrl(
+                                                  emailLaunchUri)) {
+                                                await launchUrl(emailLaunchUri);
+                                              } else {
+                                                showToast(
+                                                    'No se pudo enviar el correo electrónico');
+                                              }
+                                              navigatorKey.currentState?.pop();
+                                            },
+                                            child: const Text('Solicitar'),
+                                          ),
+                                        ],
+                                      );
+                                    } else {
+                                      setState(() {
+                                        showSmartResident = !showSmartResident;
+                                      });
+                                    }
+                                  }
+                                },
+                                borderRadius: BorderRadius.circular(15),
+                                child: Container(
+                                  margin:
+                                      const EdgeInsets.symmetric(vertical: 10),
+                                  padding: const EdgeInsets.all(15),
+                                  decoration: BoxDecoration(
+                                    color: color3,
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Habitante inteligente',
+                                        style: GoogleFonts.poppins(
+                                            fontSize: 15, color: color0),
+                                      ),
+                                      Icon(
+                                        showSmartResident
+                                            ? Icons.arrow_drop_up
+                                            : Icons.arrow_drop_down,
+                                        color: color0,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              AnimatedSize(
+                                duration: const Duration(milliseconds: 600),
+                                curve: Curves.easeInOut,
+                                child: showSmartResident && payAT
+                                    ? Column(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(20),
+                                            margin:
+                                                const EdgeInsets.only(top: 20),
+                                            decoration: BoxDecoration(
+                                              color: color3,
+                                              borderRadius:
+                                                  BorderRadius.circular(15),
+                                              boxShadow: const [
+                                                BoxShadow(
+                                                  color: Colors.black26,
+                                                  blurRadius: 5,
+                                                  offset: Offset(0, 3),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Configura los parámetros del alquiler',
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: color0,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 20),
+                                                TextField(
+                                                  controller: tenantController,
+                                                  keyboardType: TextInputType
+                                                      .emailAddress,
+                                                  style: GoogleFonts.poppins(
+                                                      color: color0),
+                                                  decoration: InputDecoration(
+                                                    labelText:
+                                                        "Email del inquilino",
+                                                    labelStyle:
+                                                        GoogleFonts.poppins(
+                                                            color: color0),
+                                                    enabledBorder:
+                                                        OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              15),
+                                                      borderSide:
+                                                          const BorderSide(
+                                                              color: color0),
+                                                    ),
+                                                    focusedBorder:
+                                                        OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              15),
+                                                      borderSide:
+                                                          const BorderSide(
+                                                              color: color0),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 20),
+                                                // Mostrar el email actual solo si existe
+                                                if (activatedAT)
+                                                  Container(
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            15),
+                                                    decoration: BoxDecoration(
+                                                      color: color3,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              15),
+                                                      border: Border.all(
+                                                          color: color0,
+                                                          width: 2),
+                                                      boxShadow: const [
+                                                        BoxShadow(
+                                                          color: Colors.black12,
+                                                          blurRadius: 4,
+                                                          offset: Offset(2, 2),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          'Inquilino actual:',
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                            fontSize: 16,
+                                                            color: color0,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                            height: 5),
+                                                        Row(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .spaceBetween,
+                                                          children: [
+                                                            Expanded(
+                                                              child: Text(
+                                                                globalDATA[
+                                                                        '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                                    ?['tenant'],
+                                                                style:
+                                                                    GoogleFonts
+                                                                        .poppins(
+                                                                  fontSize: 14,
+                                                                  color: color0,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            IconButton(
+                                                              icon: const Icon(
+                                                                  Icons.delete,
+                                                                  color: Colors
+                                                                      .redAccent),
+                                                              onPressed:
+                                                                  () async {
+                                                                await saveATData(
+                                                                  service,
+                                                                  command(
+                                                                      deviceName),
+                                                                  extractSerialNumber(
+                                                                      deviceName),
+                                                                  false,
+                                                                  '',
+                                                                  '3000',
+                                                                  '100',
+                                                                );
 
-                              // const SizedBox(height: 10),
-                              //TODO: Agrego opcion de notificacion
+                                                                setState(() {
+                                                                  tenantController
+                                                                      .clear();
+                                                                  globalDATA[
+                                                                          '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                                      ?[
+                                                                      'tenant'] = '';
+                                                                  activatedAT =
+                                                                      false;
+                                                                  dOnOk = false;
+                                                                  dOffOk =
+                                                                      false;
+                                                                });
+                                                                showToast(
+                                                                    "Inquilino eliminado correctamente.");
+                                                              },
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+
+                                                const SizedBox(height: 10),
+
+                                                // Distancia de apagado y encendido sliders
+                                                Text(
+                                                  'Distancia de apagado (${distOffValue.round()} metros)',
+                                                  style: GoogleFonts.poppins(
+                                                      color: color0),
+                                                ),
+                                                Slider(
+                                                  value: distOffValue,
+                                                  min: 100,
+                                                  max: 300,
+                                                  divisions: 200,
+                                                  activeColor: color0,
+                                                  inactiveColor:
+                                                      color0.withOpacity(0.3),
+                                                  onChanged: (double value) {
+                                                    setState(() {
+                                                      distOffValue = value;
+                                                      dOffOk = true;
+                                                    });
+                                                  },
+                                                ),
+                                                const SizedBox(height: 10),
+                                                Text(
+                                                  'Distancia de encendido (${distOnValue.round()} metros)',
+                                                  style: GoogleFonts.poppins(
+                                                      color: color0),
+                                                ),
+                                                Slider(
+                                                  value: distOnValue,
+                                                  min: 3000,
+                                                  max: 5000,
+                                                  divisions: 200,
+                                                  activeColor: color0,
+                                                  inactiveColor:
+                                                      color0.withOpacity(0.3),
+                                                  onChanged: (double value) {
+                                                    setState(() {
+                                                      distOnValue = value;
+                                                      dOnOk = true;
+                                                    });
+                                                  },
+                                                ),
+                                                const SizedBox(height: 20),
+
+                                                // Botones de Activar y Cancelar
+                                                Center(
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          if (dOnOk &&
+                                                              dOffOk &&
+                                                              tenantController
+                                                                  .text
+                                                                  .isNotEmpty) {
+                                                            saveATData(
+                                                              service,
+                                                              command(
+                                                                  deviceName),
+                                                              extractSerialNumber(
+                                                                  deviceName),
+                                                              true,
+                                                              tenantController
+                                                                  .text
+                                                                  .trim(),
+                                                              distOnValue
+                                                                  .round()
+                                                                  .toString(),
+                                                              distOffValue
+                                                                  .round()
+                                                                  .toString(),
+                                                            );
+
+                                                            setState(() {
+                                                              activatedAT =
+                                                                  true;
+                                                              globalDATA['${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                                      ?[
+                                                                      'tenant'] =
+                                                                  tenantController
+                                                                      .text
+                                                                      .trim();
+                                                            });
+                                                            showToast(
+                                                                'Configuración guardada para el inquilino.');
+                                                          } else {
+                                                            showToast(
+                                                                'Por favor, completa todos los campos');
+                                                          }
+                                                        },
+                                                        style: TextButton
+                                                            .styleFrom(
+                                                          backgroundColor:
+                                                              color0,
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      30,
+                                                                  vertical: 15),
+                                                          shape:
+                                                              RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        15),
+                                                          ),
+                                                        ),
+                                                        child: Text(
+                                                          'Activar',
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                                  color: color3,
+                                                                  fontSize: 16),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 20),
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          setState(() {
+                                                            showSmartResident =
+                                                                false;
+                                                          });
+                                                        },
+                                                        style: TextButton
+                                                            .styleFrom(
+                                                          backgroundColor:
+                                                              color0,
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      30,
+                                                                  vertical: 15),
+                                                          shape:
+                                                              RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        15),
+                                                          ),
+                                                        ),
+                                                        child: Text(
+                                                          'Cancelar',
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                                  color: color3,
+                                                                  fontSize: 16),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : const SizedBox(),
+                              ),
+                              const SizedBox(height: 10),
                               //! Opción 5 - activar notificación
-                              // SizedBox(
-                              //   width: double.infinity,
-                              //   child: ElevatedButton(
-                              //     onPressed: () async {
-                              //       if (_isNotificationActive) {
-                              //         showAlertDialog(
-                              //           context,
-                              //           true,
-                              //           Text(
-                              //             'Confirmar Desactivación',
-                              //             style: GoogleFonts.poppins(),
-                              //           ),
-                              //           Text(
-                              //             '¿Estás seguro de que deseas desactivar la notificación de desconexión?',
-                              //             style: GoogleFonts.poppins(),
-                              //           ),
-                              //           [
-                              //             TextButton(
-                              //               onPressed: () {
-                              //                 Navigator.of(context).pop();
-                              //               },
-                              //               child: Text(
-                              //                 'Cancelar',
-                              //                 style: GoogleFonts.poppins(),
-                              //               ),
-                              //             ),
-                              //             TextButton(
-                              //               onPressed: () async {
-                              //                 setState(() {
-                              //                   _isNotificationActive = false;
-                              //                   _showNotificationOptions =
-                              //                       false;
-                              //                 });
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    if (_isNotificationActive) {
+                                      showAlertDialog(
+                                        context,
+                                        true,
+                                        Text(
+                                          'Confirmar Desactivación',
+                                          style: GoogleFonts.poppins(),
+                                        ),
+                                        Text(
+                                          '¿Estás seguro de que deseas desactivar la notificación de desconexión?',
+                                          style: GoogleFonts.poppins(),
+                                        ),
+                                        [
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                            child: Text(
+                                              'Cancelar',
+                                              style: GoogleFonts.poppins(),
+                                            ),
+                                          ),
+                                          TextButton(
+                                            onPressed: () async {
+                                              setState(() {
+                                                _isNotificationActive = false;
+                                                _showNotificationOptions =
+                                                    false;
+                                              });
 
-                              //                 configNotiDsc.removeWhere(
-                              //                     (key, value) =>
-                              //                         key == deviceName);
-                              //                 await saveconfigNotiDsc(
-                              //                     configNotiDsc);
+                                              configNotiDsc.removeWhere(
+                                                  (key, value) =>
+                                                      key == deviceName);
+                                              await saveconfigNotiDsc(
+                                                  configNotiDsc);
 
-                              //                 if (context.mounted) {
-                              //                   Navigator.of(context).pop();
-                              //                 }
-                              //               },
-                              //               child: Text(
-                              //                 'Aceptar',
-                              //                 style: GoogleFonts.poppins(),
-                              //               ),
-                              //             ),
-                              //           ],
-                              //         );
-                              //       } else {
-                              //         setState(() {
-                              //           _showNotificationOptions =
-                              //               !_showNotificationOptions;
-                              //         });
-                              //       }
-                              //     },
-                              //     style: ElevatedButton.styleFrom(
-                              //       foregroundColor: color0,
-                              //       backgroundColor: color3,
-                              //       padding: const EdgeInsets.symmetric(
-                              //           vertical: 15, horizontal: 20),
-                              //       shape: RoundedRectangleBorder(
-                              //         borderRadius: BorderRadius.circular(15),
-                              //       ),
-                              //     ),
-                              //     child: Row(
-                              //       mainAxisAlignment:
-                              //           MainAxisAlignment.spaceBetween,
-                              //       children: [
-                              //         Expanded(
-                              //           child: Text(
-                              //             _isNotificationActive
-                              //                 ? 'Desactivar notificación de desconexión'
-                              //                 : 'Activar notificación de desconexión',
-                              //             style: GoogleFonts.poppins(
-                              //               textStyle: const TextStyle(
-                              //                 fontSize: 16,
-                              //                 color: color0,
-                              //               ),
-                              //             ),
-                              //           ),
-                              //         ),
-                              //         Icon(
-                              //           _showNotificationOptions
-                              //               ? Icons.arrow_drop_up
-                              //               : Icons.arrow_drop_down,
-                              //           color: color0,
-                              //         ),
-                              //       ],
-                              //     ),
-                              //   ),
-                              // ),
+                                              if (context.mounted) {
+                                                Navigator.of(context).pop();
+                                              }
+                                            },
+                                            child: Text(
+                                              'Aceptar',
+                                              style: GoogleFonts.poppins(),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    } else {
+                                      setState(() {
+                                        _showNotificationOptions =
+                                            !_showNotificationOptions;
+                                      });
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    foregroundColor: color0,
+                                    backgroundColor: color3,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 15, horizontal: 20),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          _isNotificationActive
+                                              ? 'Desactivar notificación de desconexión'
+                                              : 'Activar notificación de desconexión',
+                                          style: GoogleFonts.poppins(
+                                            textStyle: const TextStyle(
+                                              fontSize: 16,
+                                              color: color0,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Icon(
+                                        _showNotificationOptions
+                                            ? Icons.arrow_drop_up
+                                            : Icons.arrow_drop_down,
+                                        color: color0,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
 
-                              // const SizedBox(height: 30),
+                              const SizedBox(height: 30),
 
-                              // AnimatedSize(
-                              //   duration: const Duration(milliseconds: 300),
-                              //   curve: Curves.easeInOut,
-                              //   child: _showNotificationOptions
-                              //       ? Card(
-                              //           color: color3,
-                              //           elevation: 6,
-                              //           margin: const EdgeInsets.symmetric(
-                              //               vertical: 10.0, horizontal: 20.0),
-                              //           child: Padding(
-                              //             padding: const EdgeInsets.all(20.0),
-                              //             child: Column(
-                              //               mainAxisSize: MainAxisSize.min,
-                              //               children: [
-                              //                 Text(
-                              //                   'Selecciona cuándo deseas recibir una notificación en caso de que el dispositivo permanezca desconectado:',
-                              //                   style: GoogleFonts.poppins(
-                              //                     textStyle: const TextStyle(
-                              //                       color: color0,
-                              //                       fontSize: 16,
-                              //                     ),
-                              //                   ),
-                              //                   textAlign: TextAlign.center,
-                              //                 ),
-                              //                 const SizedBox(height: 20),
-                              //                 RadioListTile<int>(
-                              //                   value: 0,
-                              //                   groupValue:
-                              //                       _selectedNotificationOption,
-                              //                   onChanged: (int? value) {
-                              //                     setState(() {
-                              //                       _selectedNotificationOption =
-                              //                           value!;
-                              //                     });
-                              //                   },
-                              //                   title: Text(
-                              //                     'Instantáneo',
-                              //                     style: GoogleFonts.poppins(
-                              //                       textStyle: const TextStyle(
-                              //                         color: color0,
-                              //                         fontSize: 18,
-                              //                       ),
-                              //                     ),
-                              //                   ),
-                              //                   activeColor: color0,
-                              //                 ),
-                              //                 RadioListTile<int>(
-                              //                   value: 1,
-                              //                   groupValue:
-                              //                       _selectedNotificationOption,
-                              //                   onChanged: (int? value) {
-                              //                     setState(() {
-                              //                       _selectedNotificationOption =
-                              //                           value!;
-                              //                     });
-                              //                   },
-                              //                   title: Text(
-                              //                     'Si permanece 10 minutos desconectado',
-                              //                     style: GoogleFonts.poppins(
-                              //                       textStyle: const TextStyle(
-                              //                         color: color0,
-                              //                         fontSize: 18,
-                              //                       ),
-                              //                     ),
-                              //                   ),
-                              //                   activeColor: color0,
-                              //                 ),
-                              //                 RadioListTile<int>(
-                              //                   value: 2,
-                              //                   groupValue:
-                              //                       _selectedNotificationOption,
-                              //                   onChanged: (int? value) {
-                              //                     setState(() {
-                              //                       _selectedNotificationOption =
-                              //                           value!;
-                              //                     });
-                              //                   },
-                              //                   title: Text(
-                              //                     'Si permanece 1 hora desconectado',
-                              //                     style: GoogleFonts.poppins(
-                              //                       textStyle: const TextStyle(
-                              //                         color: color0,
-                              //                         fontSize: 18,
-                              //                       ),
-                              //                     ),
-                              //                   ),
-                              //                   activeColor: color0,
-                              //                 ),
-                              //                 const SizedBox(height: 20),
-                              //                 SizedBox(
-                              //                   width: double.infinity,
-                              //                   child: ElevatedButton(
-                              //                     onPressed: () async {
-                              //                       setState(() {
-                              //                         _isNotificationActive =
-                              //                             true;
-                              //                         _showNotificationOptions =
-                              //                             false;
-                              //                       });
+                              AnimatedSize(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                                child: _showNotificationOptions
+                                    ? Card(
+                                        color: color3,
+                                        elevation: 6,
+                                        margin: const EdgeInsets.symmetric(
+                                            vertical: 10.0, horizontal: 20.0),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(20.0),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                'Selecciona cuándo deseas recibir una notificación en caso de que el dispositivo permanezca desconectado:',
+                                                style: GoogleFonts.poppins(
+                                                  textStyle: const TextStyle(
+                                                    color: color0,
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              const SizedBox(height: 20),
+                                              RadioListTile<int>(
+                                                value: 0,
+                                                groupValue:
+                                                    _selectedNotificationOption,
+                                                onChanged: (int? value) {
+                                                  setState(() {
+                                                    _selectedNotificationOption =
+                                                        value!;
+                                                  });
+                                                },
+                                                title: Text(
+                                                  'Instantáneo',
+                                                  style: GoogleFonts.poppins(
+                                                    textStyle: const TextStyle(
+                                                      color: color0,
+                                                      fontSize: 18,
+                                                    ),
+                                                  ),
+                                                ),
+                                                activeColor: color0,
+                                              ),
+                                              RadioListTile<int>(
+                                                value: 1,
+                                                groupValue:
+                                                    _selectedNotificationOption,
+                                                onChanged: (int? value) {
+                                                  setState(() {
+                                                    _selectedNotificationOption =
+                                                        value!;
+                                                  });
+                                                },
+                                                title: Text(
+                                                  'Si permanece 10 minutos desconectado',
+                                                  style: GoogleFonts.poppins(
+                                                    textStyle: const TextStyle(
+                                                      color: color0,
+                                                      fontSize: 18,
+                                                    ),
+                                                  ),
+                                                ),
+                                                activeColor: color0,
+                                              ),
+                                              RadioListTile<int>(
+                                                value: 2,
+                                                groupValue:
+                                                    _selectedNotificationOption,
+                                                onChanged: (int? value) {
+                                                  setState(() {
+                                                    _selectedNotificationOption =
+                                                        value!;
+                                                  });
+                                                },
+                                                title: Text(
+                                                  'Si permanece 1 hora desconectado',
+                                                  style: GoogleFonts.poppins(
+                                                    textStyle: const TextStyle(
+                                                      color: color0,
+                                                      fontSize: 18,
+                                                    ),
+                                                  ),
+                                                ),
+                                                activeColor: color0,
+                                              ),
+                                              const SizedBox(height: 20),
+                                              SizedBox(
+                                                width: double.infinity,
+                                                child: ElevatedButton(
+                                                  onPressed: () async {
+                                                    setState(() {
+                                                      _isNotificationActive =
+                                                          true;
+                                                      _showNotificationOptions =
+                                                          false;
+                                                    });
 
-                              //                       configNotiDsc.addAll({
-                              //                         deviceName:
-                              //                             _selectedNotificationOption
-                              //                       });
-                              //                       await saveconfigNotiDsc(
-                              //                           configNotiDsc);
+                                                    configNotiDsc.addAll({
+                                                      deviceName:
+                                                          _selectedNotificationOption
+                                                    });
+                                                    await saveconfigNotiDsc(
+                                                        configNotiDsc);
 
-                              //                       printLog(configNotiDsc);
+                                                    printLog(configNotiDsc);
 
-                              //                       String displayTitle =
-                              //                           'Notificación Activada';
-                              //                       String displayMessage =
-                              //                           'Has activado la notificación de desconexión con la opción seleccionada.';
-                              //                       showNotification(
-                              //                           displayTitle,
-                              //                           displayMessage,
-                              //                           'noti');
-                              //                     },
-                              //                     style:
-                              //                         ElevatedButton.styleFrom(
-                              //                       foregroundColor: color3,
-                              //                       backgroundColor: color0,
-                              //                       padding: const EdgeInsets
-                              //                           .symmetric(
-                              //                           vertical: 12),
-                              //                       shape:
-                              //                           RoundedRectangleBorder(
-                              //                         borderRadius:
-                              //                             BorderRadius.circular(
-                              //                                 30),
-                              //                       ),
-                              //                     ),
-                              //                     child: Text(
-                              //                       'Aceptar',
-                              //                       style: GoogleFonts.poppins(
-                              //                         textStyle:
-                              //                             const TextStyle(
-                              //                           fontSize: 18,
-                              //                           fontWeight:
-                              //                               FontWeight.bold,
-                              //                         ),
-                              //                       ),
-                              //                     ),
-                              //                   ),
-                              //                 ),
-                              //               ],
-                              //             ),
-                              //           ),
-                              //         )
-                              //       : const SizedBox.shrink(),
-                              // ),
+                                                    String displayTitle =
+                                                        'Notificación Activada';
+                                                    String displayMessage =
+                                                        'Has activado la notificación de desconexión con la opción seleccionada.';
+                                                    showNotification(
+                                                        displayTitle,
+                                                        displayMessage,
+                                                        'noti');
+                                                  },
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    foregroundColor: color3,
+                                                    backgroundColor: color0,
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        vertical: 12),
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              30),
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    'Aceptar',
+                                                    style: GoogleFonts.poppins(
+                                                      textStyle:
+                                                          const TextStyle(
+                                                        fontSize: 18,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                                    : const SizedBox.shrink(),
+                              ),
                             ],
                           ],
                         )
@@ -2060,7 +2158,6 @@ class CalefactorPageState extends State<CalefactorPage> {
               ),
               const SizedBox(height: 30),
 
-              //TODO: agregue el modo actual a los calefactores
               Container(
                 width: MediaQuery.of(context).size.width * 1.5,
                 padding:
@@ -2120,7 +2217,6 @@ class CalefactorPageState extends State<CalefactorPage> {
 
               const SizedBox(height: 10),
 
-              //TODO: le agregue la funcion al boton para cambiar imagen
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -2346,39 +2442,48 @@ class CalefactorPageState extends State<CalefactorPage> {
         ),
         backgroundColor: color1,
         resizeToAvoidBottomInset: false,
-        body: PageView(
-          controller: _pageController,
-          onPageChanged: (index) {
-            setState(() {
-              _page = index;
-            });
-          },
-          children: pages,
-        ),
-        bottomNavigationBar: CurvedNavigationBar(
-          index: _page,
-          height: 75.0,
-          items: const <Widget>[
-            Icon(Icons.home, size: 30, color: color0),
-            Icon(Icons.thermostat, size: 30, color: color0),
-            Icon(Icons.location_on, size: 30, color: color0),
-            Icon(Icons.calculate, size: 30, color: color0),
-            Icon(Icons.settings, size: 30, color: color0),
+        body: Stack(
+          children: [
+            PageView(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() {
+                  _page = index;
+                });
+              },
+              children: pages,
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: CurvedNavigationBar(
+                index: _page,
+                height: 75.0,
+                items: const <Widget>[
+                  Icon(Icons.home, size: 30, color: color0),
+                  Icon(Icons.thermostat, size: 30, color: color0),
+                  Icon(Icons.location_on, size: 30, color: color0),
+                  Icon(Icons.calculate, size: 30, color: color0),
+                  Icon(Icons.settings, size: 30, color: color0),
+                ],
+                color: color3,
+                buttonBackgroundColor: color3,
+                backgroundColor: Colors.transparent,
+                animationCurve: Curves.easeInOut,
+                animationDuration: const Duration(milliseconds: 600),
+                onTap: (index) {
+                  setState(() {
+                    _page = index;
+                    _pageController.animateToPage(index,
+                        duration: const Duration(milliseconds: 600),
+                        curve: Curves.easeInOut);
+                  });
+                },
+                letIndexChange: (index) => true,
+              ),
+            ),
           ],
-          color: color3,
-          buttonBackgroundColor: color3,
-          backgroundColor: color1,
-          animationCurve: Curves.easeInOut,
-          animationDuration: const Duration(milliseconds: 600),
-          onTap: (index) {
-            setState(() {
-              _page = index;
-              _pageController.animateToPage(index,
-                  duration: const Duration(milliseconds: 600),
-                  curve: Curves.easeInOut);
-            });
-          },
-          letIndexChange: (index) => true,
         ),
       ),
     );

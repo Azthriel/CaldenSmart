@@ -14,7 +14,7 @@ Future<bool> setupMqtt() async {
   try {
     printLog('Haciendo setup');
     String deviceId = 'FlutterDevice/${generateRandomNumbers(32)}';
-    String broker = 'a3fm8tbrbcxfbf-ats.iot.sa-east-1.amazonaws.com';
+    String broker = mqttBroker;
 
     mqttAWSFlutterClient = MqttServerClient(broker, deviceId);
 

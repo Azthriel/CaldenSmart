@@ -679,7 +679,7 @@ class EscenasPageState extends State<EscenasPage> {
                             setState(() {
                               selectedDeviceCH = device;
                               showDeviceListCH = false;
-                              if (device.toLowerCase().contains('domótica')) {
+                              if (device.toLowerCase().contains('domotica')) {
                                 showIoSelectionCH = true;
 
                                 String equipo = command(device);
@@ -1026,7 +1026,7 @@ class EscenasPageState extends State<EscenasPage> {
                                 showDeviceOptionsAC = true;
                               } else if (device
                                   .toLowerCase()
-                                  .contains('domótica')) {
+                                  .contains('domotica')) {
                                 // Si es un dispositivo domótico
                                 showTriggerOutputSelectionAC =
                                     true; // Nuevo paso
@@ -1714,9 +1714,9 @@ class EscenasPageState extends State<EscenasPage> {
 //*-Construye la interfaz para seleccionar dispositivos que serán apagados al activarse un detector.-*\\
   //*-Construye la interfaz para seleccionar dispositivos que serán apagados al activarse un detector.-*\\
   Widget buildCardDetector() {
-    // Filtrar dispositivos que no sean de tipo domótica
+    // Filtrar dispositivos que no sean de tipo domotica
     final dispositivosFiltrados = dispositivosParaApagar
-        .where((dispositivo) => !dispositivo.toLowerCase().contains('domótica'))
+        .where((dispositivo) => !dispositivo.toLowerCase().contains('domotica'))
         .toList();
 
     return Column(
@@ -2065,7 +2065,7 @@ class EscenasPageState extends State<EscenasPage> {
               : diasSeleccionados.first)
           : 'los días seleccionados';
 
-      if (escena['device']?.toLowerCase().contains('domótica') == true) {
+      if (escena['device']?.toLowerCase().contains('domotica') == true) {
         if (salidasSeleccionadas != null && salidasSeleccionadas.isNotEmpty) {
           String salidasFormateadas = formatearSalidas(salidasSeleccionadas);
           return 'Se ${escena['action']} $salidasFormateadas de $dispositivo los días $dias a la hora seleccionada.';
