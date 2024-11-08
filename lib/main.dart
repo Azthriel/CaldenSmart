@@ -24,11 +24,20 @@ import 'Global/stored_data.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  //! IOS O ANDROID !\\
+  android = Platform.isAndroid;
+  //! IOS O ANDROID !\\
 
-  if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+  // Inicializa Firebase solo si no ha sido inicializado previamente.
+  try {
+    if (Firebase.apps.isEmpty) {
+      printLog("Skibidi toilet", "Cyan");
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } catch (e) {
+    printLog("Firebase ya está inicializado: $e");
   }
 
   await Amplify.addPlugin(
@@ -36,9 +45,6 @@ Future<void> main() async {
   );
   await Amplify.configure(amplifyconfig);
 
-  //! IOS O ANDROID !\\
-  android = Platform.isAndroid;
-  //! IOS O ANDROID !\\
   appName = nameOfApp(app);
 
   await initNotifications();

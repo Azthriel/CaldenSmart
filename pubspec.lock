@@ -89,6 +89,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.4.4"
+  ansicolor:
+    dependency: transitive
+    description:
+      name: ansicolor
+      sha256: "50e982d500bc863e1d703448afdbf9e5a72eb48840a4f766fa361ffd6877055f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.3"
   archive:
     dependency: transitive
     description:
@@ -470,14 +478,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.33.4"
-  flutter_email_sender:
-    dependency: "direct main"
-    description:
-      name: flutter_email_sender
-      sha256: fb515d4e073d238d0daf1d765e5318487b6396d46b96e0ae9745dbc9a133f97a
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.0.3"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -510,6 +510,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.2.0"
+  flutter_native_splash:
+    dependency: "direct dev"
+    description:
+      name: flutter_native_splash
+      sha256: aa06fec78de2190f3db4319dd60fdc8d12b2626e93ef9828633928c2dcaea840
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.1"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -604,10 +612,10 @@ packages:
     dependency: "direct main"
     description:
       name: google_sign_in
-      sha256: "0b8787cb9c1a68ad398e8010e8c8766bfa33556d2ab97c439fb4137756d7308f"
+      sha256: fad6ddc80c427b0bba705f2116204ce1173e09cf299f85e053d57a55e5b2dd56
       url: "https://pub.dev"
     source: hosted
-    version: "6.2.1"
+    version: "6.2.2"
   google_sign_in_android:
     dependency: transitive
     description:
