@@ -209,75 +209,75 @@ Widget buildLoginForm(WelcomePageState state) {
                   ),
                 ),
                 const SizedBox(height: 15),
-                // Divisores con "O" en el medio.
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: <Widget>[
-                    Expanded(
-                      child: Divider(
-                        color: color3,
-                        thickness: 1,
-                      ),
-                    ),
-                    SizedBox(width: 10),
-                    Text(
-                      'O',
-                      style: TextStyle(
-                        color: color3,
-                        fontSize: 16,
-                      ),
-                    ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Divider(
-                        color: color3,
-                        thickness: 1,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(
-                  height: 15,
-                ),
-                // Botón para iniciar sesión con Google.
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      showToast('Iniciando sesión con Google...');
-                      await signInWithGoogle();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          30.0,
-                        ),
-                        side: const BorderSide(
-                          color: color3,
-                        ),
-                      ),
-                      elevation: 5,
-                    ),
-                    icon: Image.asset(
-                      'assets/google.png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    label: const Text(
-                      'Google',
-                      style: TextStyle(
-                        color: color3,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 15),
+                // // Divisores con "O" en el medio.
+                // const Row(
+                //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                //   children: <Widget>[
+                //     Expanded(
+                //       child: Divider(
+                //         color: color3,
+                //         thickness: 1,
+                //       ),
+                //     ),
+                //     SizedBox(width: 10),
+                //     Text(
+                //       'O',
+                //       style: TextStyle(
+                //         color: color3,
+                //         fontSize: 16,
+                //       ),
+                //     ),
+                //     SizedBox(width: 10),
+                //     Expanded(
+                //       child: Divider(
+                //         color: color3,
+                //         thickness: 1,
+                //       ),
+                //     ),
+                //   ],
+                // ),
+                // const SizedBox(
+                //   height: 15,
+                // ),
+                // // Botón para iniciar sesión con Google.
+                // SizedBox(
+                //   width: double.infinity,
+                //   child: ElevatedButton.icon(
+                //     onPressed: () async {
+                //       showToast('Iniciando sesión con Google...');
+                //       await signInWithGoogle();
+                //     },
+                //     style: ElevatedButton.styleFrom(
+                //       backgroundColor: Colors.white,
+                //       padding: const EdgeInsets.symmetric(
+                //         horizontal: 20,
+                //         vertical: 12,
+                //       ),
+                //       shape: RoundedRectangleBorder(
+                //         borderRadius: BorderRadius.circular(
+                //           30.0,
+                //         ),
+                //         side: const BorderSide(
+                //           color: color3,
+                //         ),
+                //       ),
+                //       elevation: 5,
+                //     ),
+                //     icon: Image.asset(
+                //       'assets/google.png',
+                //       width: 24,
+                //       height: 24,
+                //     ),
+                //     label: const Text(
+                //       'Google',
+                //       style: TextStyle(
+                //         color: color3,
+                //         fontSize: 16,
+                //       ),
+                //     ),
+                //   ),
+                // ),
+                // const SizedBox(height: 15),
                 // Texto para registrarse.
                 Center(
                   child: TextButton(

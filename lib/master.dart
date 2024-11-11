@@ -193,7 +193,7 @@ Map<String, bool> isTaskScheduled = {};
 
 // !------------------------------VERSION NUMBER---------------------------------------
 //ACORDATE: Cambia el número de versión en el pubspec.yaml antes de publicar
-String appVersionNumber = '24110700';
+String appVersionNumber = '24111100';
 //ACORDATE: 0 = Caldén Smart
 int app = 0;
 // !------------------------------VERSION NUMBER---------------------------------------
@@ -867,7 +867,7 @@ String recoverDeviceName(String pc, String sn) {
       code = 'Detector';
       break;
     case '022000_IOT':
-      code = 'Eléctrico';
+      code = 'Electrico';
       break;
     case '027000_IOT':
       code = 'Gas';
@@ -1688,6 +1688,7 @@ Future<void> initNotifications() async {
 
 @pragma('vm:entry-point')
 Future<void> handleNotifications(RemoteMessage message) async {
+  android = Platform.isAndroid;
   try {
     printLog('Llegó esta notif: ${message.data}', 'rojo');
     String product = message.data['pc']!;
@@ -1735,24 +1736,25 @@ Future<void> handleNotifications(RemoteMessage message) async {
         }
       }
     } else if (caso == 'Disconnect') {
-      if (product == '015773_IOT') {
-        final now = DateTime.now();
-        String displayTitle =
-            '¡El equipo ${nicknamesMap[device] ?? device} se desconecto!';
-        String displayMessage =
-            'Se detecto una desconexión a las ${now.hour > 10 ? now.hour : '0${now.hour}'}:${now.minute > 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
-        showNotification(displayTitle, displayMessage, 'noti');
-      }
-      //TODO: Arreglar noti para que funcione la espera
+      // if (product == '015773_IOT') {
+      //   final now = DateTime.now();
+      //   String displayTitle =
+      //       '¡El equipo ${nicknamesMap[device] ?? device} se desconecto!';
+      //   String displayMessage =
+      //       'Se detecto una desconexión a las ${now.hour > 10 ? now.hour : '0${now.hour}'}:${now.minute > 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+      //   showNotification(displayTitle, displayMessage, 'noti');
+      // }
 
       configNotiDsc = await loadconfigNotiDsc();
       if (configNotiDsc.keys.toList().contains(device)) {
         final now = DateTime.now();
         int espera = configNotiDsc[device] ?? 0;
-        printLog('La espera son $espera minutos');
+        printLog('La espera son $espera minutos', "cyan");
+        printLog('Empezo la espera ${DateTime.now()}', "cyan");
         await Future.delayed(
           Duration(minutes: espera),
         );
+        printLog('Termino la espera ${DateTime.now()}', "cyan");
         await queryItems(service, product, number);
         bool cstate = globalDATA['$product/$number']?['cstate'] ?? false;
         printLog('El cstate después de la espera es $cstate');
@@ -1794,7 +1796,7 @@ void showNotification(String title, String body, String sonido) async {
             DarwinNotificationDetails(sound: '$sonido.wav', presentSound: true),
       ),
     );
-    printLog("Notificacion enviada anacardamente nasharda");
+    // printLog("Notificacion enviada anacardamente nasharda");
   } catch (e, s) {
     printLog('Error enviando notif: $e');
     printLog(s);
