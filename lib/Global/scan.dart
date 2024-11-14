@@ -76,6 +76,7 @@ class ScanPageState extends State<ScanPage>
             'Detector',
             'Domotica',
             'Rele',
+            'Roll'
           ],
           androidUsesFineLocation: true,
           continuousUpdates: true,
@@ -102,7 +103,6 @@ class ScanPageState extends State<ScanPage>
             }
             if (context.mounted) {
               _removeLostDevices();
-              backFunctionTrack(results);
             }
           },
         );
@@ -140,6 +140,8 @@ class ScanPageState extends State<ScanPage>
       deviceName = device.platformName;
       myDeviceid = device.remoteId.toString();
 
+      //TODO: Leche
+
       printLog('Teoricamente estoy conectado');
 
       MyDevice myDevice = MyDevice();
@@ -149,38 +151,45 @@ class ScanPageState extends State<ScanPage>
         switch (state) {
           case BluetoothConnectionState.disconnected:
             {
-              if (!toastFlag) {
-                showToast('Dispositivo desconectado');
-                toastFlag = true;
+              if (!quickAction) {
+                printLog("Para que mierda hago yo las cosas DIOS", "cyan");
+                if (!toastFlag) {
+                  showToast('Dispositivo desconectado');
+                  toastFlag = true;
+                }
+                nameOfWifi = '';
+                connectionFlag = false;
+                printLog(
+                    'Razon: ${myDevice.device.disconnectReason?.description}');
+                navigatorKey.currentState?.pushReplacementNamed('/menu');
               }
-              nameOfWifi = '';
-              connectionFlag = false;
-              printLog(
-                  'Razon: ${myDevice.device.disconnectReason?.description}');
-              navigatorKey.currentState?.pushReplacementNamed('/menu');
               break;
             }
           case BluetoothConnectionState.connected:
             {
-              if (!connectionFlag) {
-                connectionFlag = true;
-                FlutterBluePlus.isScanningNow
-                    ? FlutterBluePlus.stopScan()
-                    : null;
-                myDevice.setup(device).then((valor) {
-                  printLog('RETORNASHE $valor');
-                  connectionTry = 0;
-                  if (valor) {
-                    navigatorKey.currentState?.pushReplacementNamed('/loading');
-                  } else {
-                    connectionFlag = false;
-                    printLog('Fallo en el setup');
-                    showToast('Error en el dispositivo, intente nuevamente');
-                    myDevice.device.disconnect();
-                  }
-                });
-              } else {
-                printLog('Las chistosadas se apoderan del mundo');
+              if (!quickAction) {
+                printLog("Para que mierda hago yo las cosas DIOS", "cyan");
+                if (!connectionFlag) {
+                  connectionFlag = true;
+                  FlutterBluePlus.isScanningNow
+                      ? FlutterBluePlus.stopScan()
+                      : null;
+                  myDevice.setup(device).then((valor) {
+                    printLog('RETORNASHE $valor');
+                    connectionTry = 0;
+                    if (valor) {
+                      navigatorKey.currentState
+                          ?.pushReplacementNamed('/loading');
+                    } else {
+                      connectionFlag = false;
+                      printLog('Fallo en el setup');
+                      showToast('Error en el dispositivo, intente nuevamente');
+                      myDevice.device.disconnect();
+                    }
+                  });
+                } else {
+                  printLog('Las chistosadas se apoderan del mundo');
+                }
               }
               break;
             }
@@ -333,6 +342,25 @@ class ScanPageState extends State<ScanPage>
                   final device = filteredDevices[index];
                   final deviceName = device.platformName;
                   final imagePath = deviceImages[deviceName];
+                  List<dynamic> admins = globalDATA[
+                              '${command(device.platformName)}/${extractSerialNumber(device.platformName)}']
+                          ?['secondary_admin'] ??
+                      [];
+                  bool owner = globalDATA[
+                                  '${command(device.platformName)}/${extractSerialNumber(device.platformName)}']
+                              ?['owner'] ==
+                          currentUserEmail ||
+                      admins.contains(deviceName) ||
+                      globalDATA['${command(device.platformName)}/${extractSerialNumber(device.platformName)}']
+                              ?['owner'] ==
+                          '' ||
+                      globalDATA['${command(device.platformName)}/${extractSerialNumber(device.platformName)}']
+                              ?['owner'] ==
+                          null;
+                  bool condicion =
+                      command(device.platformName) != '015773_IOT' &&
+                          owner &&
+                          quickAccess.contains(device.platformName);
                   return FadeTransition(
                     opacity: _animation,
                     child: ScaleTransition(
@@ -418,7 +446,7 @@ class ScanPageState extends State<ScanPage>
                                             ? device.platformName
                                             : device.remoteId.toString(),
                                         style: GoogleFonts.poppins(
-                                          fontSize: 16,
+                                          fontSize: 12,
                                           color: Colors.white,
                                         ),
                                       ),
@@ -440,6 +468,72 @@ class ScanPageState extends State<ScanPage>
                                         ),
                                       ),
                                     ),
+                                    if (condicion) ...[
+                                      Positioned(
+                                        bottom: 16,
+                                        right: 16,
+                                        child: Transform.scale(
+                                          scale: 1.33,
+                                          child: Switch(
+                                            value: globalDATA[
+                                                        '${command(device.platformName)}/${extractSerialNumber(device.platformName)}']
+                                                    ?['w_status'] ??
+                                                false,
+                                            activeColor: color1,
+                                            onChanged: (bool newValue) async {
+                                              quickAction = true;
+                                              setState(() {
+                                                globalDATA[
+                                                        '${command(device.platformName)}/${extractSerialNumber(device.platformName)}']
+                                                    ?['w_status'] = newValue;
+                                              });
+                                              await device.connect(
+                                                timeout:
+                                                    const Duration(seconds: 6),
+                                              );
+                                              if (device.isConnected) {
+                                                printLog(
+                                                    "Arranca por la derecha la maquina del sexo tilin",
+                                                    "cyan");
+                                                MyDevice myDevice = MyDevice();
+                                                myDevice
+                                                    .setup(device)
+                                                    .then((valor) async {
+                                                  printLog('RETORNASHE $valor');
+                                                  connectionTry = 0;
+                                                  if (valor) {
+                                                    printLog(
+                                                        "Tengo sexo en monopatin",
+                                                        "cyan");
+                                                    await controlDeviceBLE(
+                                                        device.platformName,
+                                                        newValue);
+                                                    await myDevice.device
+                                                        .disconnect();
+                                                    quickAction = false;
+                                                    printLog(
+                                                        "¿Se me cayo la pichula? ${device.isDisconnected}",
+                                                        "cyan");
+                                                  } else {
+                                                    printLog(
+                                                        'Fallo en el setup');
+                                                    showToast(
+                                                        "Error con el acceso rápido\nIntente nuevamente");
+                                                    myDevice.device
+                                                        .disconnect();
+                                                  }
+                                                });
+                                              } else {
+                                                printLog(
+                                                    "Fallecio el sexo", "cyan");
+                                                showToast(
+                                                    "Error con el acceso rápido\nIntente nuevamente");
+                                              }
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),

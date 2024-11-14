@@ -21,6 +21,8 @@ void loadValues() async {
   devicesToTrack = await loadDeviceListToTrack();
   msgFlag = await loadmsgFlag();
   configNotiDsc = await loadconfigNotiDsc();
+  quickAccess = await loadquickAccess();
+  pinQuickAccess = await loadpinQuickAccess();
 
   for (String device in previusConnections) {
     await queryItems(service, command(device), extractSerialNumber(device));
@@ -194,23 +196,38 @@ Future<Map<String, List<bool>>> loadNotificationMap() async {
 }
 //*-Dómotica con notis encendida-*\\
 
-//*-Dispositivos de los que sos dueño-*\\
-Future<void> saveOwnedDevices(List<String> lista) async {
+//*-Dispositivos que tienen el acceso rápido habilitado-*\\
+Future<void> savequickAccess(List<String> lista) async {
   final prefs = await SharedPreferences.getInstance();
   String devicesList = json.encode(lista);
-  await prefs.setString('OwnedDevices', devicesList);
+  await prefs.setString('quickAccess', devicesList);
 }
 
-Future<List<String>> loadOwnedDevices() async {
+Future<List<String>> loadquickAccess() async {
   final prefs = await SharedPreferences.getInstance();
-  String? devicesList = prefs.getString('OwnedDevices');
+  String? devicesList = prefs.getString('quickAccess');
   if (devicesList != null) {
     List<dynamic> decodedList = json.decode(devicesList);
     return decodedList.cast<String>();
   }
-  return []; // Devuelve una lista vacía si no hay nada almacenado
+  return [];
 }
-//*-Dispositivos de los que sos dueño-*\\
+
+Future<void> savepinQuickAccess(Map<String, String> data) async {
+  final prefs = await SharedPreferences.getInstance();
+  String taskMapString = json.encode(data);
+  await prefs.setString('pinQuickAccess', taskMapString);
+}
+
+Future<Map<String, String>> loadpinQuickAccess() async {
+  final prefs = await SharedPreferences.getInstance();
+  String? dataString = prefs.getString('pinQuickAccess');
+  if (dataString != null) {
+    return Map<String, String>.from(json.decode(dataString));
+  }
+  return {};
+}
+//*-Dispositivos que tienen el acceso rápido habilitado-*\\
 
 //*-Tokens de los celulares-*\\
 Future<void> saveToken(Map<String, String> token) async {

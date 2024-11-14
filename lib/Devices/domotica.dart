@@ -65,7 +65,6 @@ class DomoticaPageState extends State<DomoticaPage> {
   bool showSmartResident = false;
   bool dOnOk = false;
   bool dOffOk = false;
-  bool _isNotificationActive = false;
   bool _showNotificationOptions = false;
   bool isAgreeChecked = false;
   bool isPasswordCorrect = false;
@@ -77,7 +76,7 @@ class DomoticaPageState extends State<DomoticaPage> {
   final TextEditingController tenantController = TextEditingController();
 
   @override
-  initState() {
+  void initState() {
     super.initState();
 
     tracking = devicesToTrack.contains(deviceName);
@@ -435,7 +434,7 @@ class DomoticaPageState extends State<DomoticaPage> {
       await Future.delayed(const Duration(seconds: 30));
       final backService = FlutterBackgroundService();
       printLog('Xd');
-      backService.invoke('trackLocation');
+      backService.invoke('presenceControl');
     }
   }
 
@@ -492,6 +491,67 @@ class DomoticaPageState extends State<DomoticaPage> {
       printLog('Error al eliminar administrador secundario: $e');
       showToast('Error al eliminar el administrador. Inténtalo de nuevo.');
     }
+  }
+
+  Future<int?> showPinSelectionDialog(BuildContext context) async {
+    int? selectedPin;
+    return showDialog<int>(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              backgroundColor: color3,
+              title: Text(
+                'Selecciona un pin',
+                style: GoogleFonts.poppins(
+                  color: color0,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: SingleChildScrollView(
+                child: ListBody(
+                  children: List.generate(parts.length, (index) {
+                    var equipo = parts[index].split(':');
+                    return equipo[0] == '0'
+                        ? RadioListTile<int>(
+                            title: Text(
+                              subNicknamesMap['$deviceName/-/$index'] ??
+                                  'Pin $index',
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                                fontSize: 16,
+                              ),
+                            ),
+                            value: index,
+                            groupValue: selectedPin,
+                            activeColor: color6,
+                            onChanged: (int? value) {
+                              setState(() {
+                                selectedPin = value;
+                              });
+                            },
+                          )
+                        : const SizedBox.shrink();
+                  }),
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: Text(
+                    'Aceptar',
+                    style: GoogleFonts.poppins(color: color6),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop(selectedPin);
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
 //!Visual
@@ -1925,89 +1985,85 @@ class DomoticaPageState extends State<DomoticaPage> {
                               ),
                               const SizedBox(height: 10),
                               //! Opción 5 - activar notificación
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: () async {
-                                    if (_isNotificationActive) {
-                                      showAlertDialog(
-                                        context,
-                                        true,
-                                        Text(
-                                          'Confirmar Desactivación',
-                                          style: GoogleFonts.poppins(),
+                              InkWell(
+                                onTap: () async {
+                                  if (discNotfActivated) {
+                                    showAlertDialog(
+                                      context,
+                                      true,
+                                      Text(
+                                        'Confirmar Desactivación',
+                                        style:
+                                            GoogleFonts.poppins(color: color0),
+                                      ),
+                                      Text(
+                                        '¿Estás seguro de que deseas desactivar la notificación de desconexión?',
+                                        style:
+                                            GoogleFonts.poppins(color: color0),
+                                      ),
+                                      [
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                          child: Text(
+                                            'Cancelar',
+                                            style: GoogleFonts.poppins(
+                                                color: color0),
+                                          ),
                                         ),
-                                        Text(
-                                          '¿Estás seguro de que deseas desactivar la notificación de desconexión?',
-                                          style: GoogleFonts.poppins(),
-                                        ),
-                                        [
-                                          TextButton(
-                                            onPressed: () {
+                                        TextButton(
+                                          onPressed: () async {
+                                            // Actualizar el estado para desactivar la notificación
+                                            setState(() {
+                                              discNotfActivated = false;
+                                              _showNotificationOptions = false;
+                                            });
+
+                                            // Eliminar la configuración de notificación para el dispositivo actual
+                                            configNotiDsc.removeWhere(
+                                                (key, value) =>
+                                                    key == deviceName);
+                                            await saveconfigNotiDsc(
+                                                configNotiDsc);
+
+                                            if (context.mounted) {
                                               Navigator.of(context).pop();
-                                            },
-                                            child: Text(
-                                              'Cancelar',
-                                              style: GoogleFonts.poppins(),
-                                            ),
+                                            }
+                                          },
+                                          child: Text(
+                                            'Aceptar',
+                                            style: GoogleFonts.poppins(
+                                                color: color0),
                                           ),
-                                          TextButton(
-                                            onPressed: () async {
-                                              setState(() {
-                                                _isNotificationActive = false;
-                                                _showNotificationOptions =
-                                                    false;
-                                              });
-
-                                              configNotiDsc.removeWhere(
-                                                  (key, value) =>
-                                                      key == deviceName);
-                                              await saveconfigNotiDsc(
-                                                  configNotiDsc);
-
-                                              if (context.mounted) {
-                                                Navigator.of(context).pop();
-                                              }
-                                            },
-                                            child: Text(
-                                              'Aceptar',
-                                              style: GoogleFonts.poppins(),
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    } else {
-                                      setState(() {
-                                        _showNotificationOptions =
-                                            !_showNotificationOptions;
-                                      });
-                                    }
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    foregroundColor: color0,
-                                    backgroundColor: color3,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 15, horizontal: 20),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(15),
-                                    ),
+                                        ),
+                                      ],
+                                    );
+                                  } else {
+                                    setState(() {
+                                      _showNotificationOptions =
+                                          !_showNotificationOptions;
+                                    });
+                                  }
+                                },
+                                child: Container(
+                                  margin:
+                                      const EdgeInsets.symmetric(vertical: 10),
+                                  padding: const EdgeInsets.all(15),
+                                  decoration: BoxDecoration(
+                                    color: color3,
+                                    borderRadius: BorderRadius.circular(15),
                                   ),
                                   child: Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Expanded(
-                                        child: Text(
-                                          _isNotificationActive
-                                              ? 'Desactivar notificación de desconexión'
-                                              : 'Activar notificación de desconexión',
-                                          style: GoogleFonts.poppins(
-                                            textStyle: const TextStyle(
-                                              fontSize: 16,
-                                              color: color0,
-                                            ),
-                                          ),
-                                        ),
+                                      Text(
+                                        discNotfActivated
+                                            ? 'Desactivar notificación\nde desconexión'
+                                            : 'Activar notificación\nde desconexión',
+                                        style: GoogleFonts.poppins(
+                                            fontSize: 15, color: color0),
                                       ),
                                       Icon(
                                         _showNotificationOptions
@@ -2020,155 +2076,116 @@ class DomoticaPageState extends State<DomoticaPage> {
                                 ),
                               ),
 
-                              const SizedBox(height: 30),
-
+// Tarjeta de opciones de notificación
                               AnimatedSize(
-                                duration: const Duration(milliseconds: 300),
+                                duration: const Duration(milliseconds: 600),
                                 curve: Curves.easeInOut,
                                 child: _showNotificationOptions
-                                    ? Card(
-                                        color: color3,
-                                        elevation: 6,
-                                        margin: const EdgeInsets.symmetric(
-                                            vertical: 10.0, horizontal: 20.0),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(20.0),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                'Selecciona cuándo deseas recibir una notificación en caso de que el dispositivo permanezca desconectado:',
+                                    ? Container(
+                                        padding: const EdgeInsets.all(20),
+                                        margin: const EdgeInsets.only(top: 20),
+                                        decoration: BoxDecoration(
+                                          color: color3,
+                                          borderRadius:
+                                              BorderRadius.circular(15),
+                                        ),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              'Selecciona cuándo deseas recibir una notificación en caso de que el equipo se desconecte:',
+                                              style: GoogleFonts.poppins(
+                                                  color: color0, fontSize: 16),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            const SizedBox(height: 20),
+                                            RadioListTile<int>(
+                                              value: 0,
+                                              groupValue:
+                                                  _selectedNotificationOption,
+                                              onChanged: (int? value) {
+                                                setState(() {
+                                                  _selectedNotificationOption =
+                                                      value!;
+                                                });
+                                              },
+                                              activeColor: color1,
+                                              title: Text(
+                                                'Instantáneo',
                                                 style: GoogleFonts.poppins(
-                                                  textStyle: const TextStyle(
-                                                    color: color0,
-                                                    fontSize: 16,
-                                                  ),
-                                                ),
-                                                textAlign: TextAlign.center,
+                                                    color: color0),
                                               ),
-                                              const SizedBox(height: 20),
-                                              RadioListTile<int>(
-                                                value: 0,
-                                                groupValue:
-                                                    _selectedNotificationOption,
-                                                onChanged: (int? value) {
-                                                  setState(() {
-                                                    _selectedNotificationOption =
-                                                        value!;
-                                                  });
-                                                },
-                                                title: Text(
-                                                  'Instantáneo',
-                                                  style: GoogleFonts.poppins(
-                                                    textStyle: const TextStyle(
-                                                      color: color0,
-                                                      fontSize: 18,
-                                                    ),
-                                                  ),
-                                                ),
-                                                activeColor: color0,
+                                            ),
+                                            RadioListTile<int>(
+                                              value: 10,
+                                              groupValue:
+                                                  _selectedNotificationOption,
+                                              onChanged: (int? value) {
+                                                setState(() {
+                                                  _selectedNotificationOption =
+                                                      value!;
+                                                });
+                                              },
+                                              title: Text(
+                                                'Si permanece 10 minutos desconectado',
+                                                style: GoogleFonts.poppins(
+                                                    color: color0),
                                               ),
-                                              RadioListTile<int>(
-                                                value: 1,
-                                                groupValue:
-                                                    _selectedNotificationOption,
-                                                onChanged: (int? value) {
-                                                  setState(() {
-                                                    _selectedNotificationOption =
-                                                        value!;
-                                                  });
-                                                },
-                                                title: Text(
-                                                  'Si permanece 10 minutos desconectado',
-                                                  style: GoogleFonts.poppins(
-                                                    textStyle: const TextStyle(
-                                                      color: color0,
-                                                      fontSize: 18,
-                                                    ),
-                                                  ),
-                                                ),
-                                                activeColor: color0,
+                                            ),
+                                            RadioListTile<int>(
+                                              value: 60,
+                                              groupValue:
+                                                  _selectedNotificationOption,
+                                              onChanged: (int? value) {
+                                                setState(() {
+                                                  _selectedNotificationOption =
+                                                      value!;
+                                                });
+                                              },
+                                              title: Text(
+                                                'Si permanece 1 hora desconectado',
+                                                style: GoogleFonts.poppins(
+                                                    color: color0),
                                               ),
-                                              RadioListTile<int>(
-                                                value: 2,
-                                                groupValue:
-                                                    _selectedNotificationOption,
-                                                onChanged: (int? value) {
-                                                  setState(() {
-                                                    _selectedNotificationOption =
-                                                        value!;
-                                                  });
-                                                },
-                                                title: Text(
-                                                  'Si permanece 1 hora desconectado',
-                                                  style: GoogleFonts.poppins(
-                                                    textStyle: const TextStyle(
-                                                      color: color0,
-                                                      fontSize: 18,
-                                                    ),
-                                                  ),
-                                                ),
-                                                activeColor: color0,
-                                              ),
-                                              const SizedBox(height: 20),
-                                              SizedBox(
-                                                width: double.infinity,
-                                                child: ElevatedButton(
-                                                  onPressed: () async {
-                                                    setState(() {
-                                                      _isNotificationActive =
-                                                          true;
-                                                      _showNotificationOptions =
-                                                          false;
-                                                    });
+                                            ),
+                                            const SizedBox(height: 20),
+                                            ElevatedButton(
+                                              onPressed: () async {
+                                                setState(() {
+                                                  discNotfActivated = true;
+                                                  _showNotificationOptions =
+                                                      false;
+                                                });
 
-                                                    configNotiDsc.addAll({
-                                                      deviceName:
-                                                          _selectedNotificationOption
-                                                    });
-                                                    await saveconfigNotiDsc(
-                                                        configNotiDsc);
+                                                configNotiDsc[deviceName] =
+                                                    _selectedNotificationOption;
+                                                await saveconfigNotiDsc(
+                                                    configNotiDsc);
 
-                                                    printLog(configNotiDsc);
-
-                                                    String displayTitle =
-                                                        'Notificación Activada';
-                                                    String displayMessage =
-                                                        'Has activado la notificación de desconexión con la opción seleccionada.';
-                                                    showNotification(
-                                                        displayTitle,
-                                                        displayMessage,
-                                                        'noti');
-                                                  },
-                                                  style:
-                                                      ElevatedButton.styleFrom(
-                                                    foregroundColor: color3,
-                                                    backgroundColor: color0,
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        vertical: 12),
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              30),
-                                                    ),
-                                                  ),
-                                                  child: Text(
-                                                    'Aceptar',
-                                                    style: GoogleFonts.poppins(
-                                                      textStyle:
-                                                          const TextStyle(
-                                                        fontSize: 18,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                  ),
+                                                showNotification(
+                                                  'Notificación Activada',
+                                                  'Has activado la notificación de desconexión con la opción seleccionada.',
+                                                  'noti',
+                                                );
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: color0,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 15),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(15),
                                                 ),
                                               ),
-                                            ],
-                                          ),
+                                              child: Text(
+                                                'Aceptar',
+                                                style: GoogleFonts.poppins(
+                                                    color: color3,
+                                                    fontSize: 16),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       )
                                     : const SizedBox.shrink(),
@@ -2179,7 +2196,63 @@ class DomoticaPageState extends State<DomoticaPage> {
                       : const SizedBox(),
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(
+                height: 30,
+              ),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    // Mostrar el diálogo para seleccionar un pin al activar acceso rápido
+                    if (!quickAccesActivated) {
+                      int? selectedPin = await showPinSelectionDialog(context);
+
+                      if (selectedPin != null) {
+                        pinQuickAccess
+                            .addAll({deviceName: selectedPin.toString()});
+                        if (!quickAccesActivated) {
+                          quickAccess.add(deviceName);
+                          await savequickAccess(quickAccess);
+                          await savepinQuickAccess(pinQuickAccess);
+                          setState(() {
+                            quickAccesActivated = true;
+                          });
+                        } else {
+                          quickAccess.remove(deviceName);
+                          pinQuickAccess.remove(deviceName);
+                          await savequickAccess(quickAccess);
+                          await savepinQuickAccess(pinQuickAccess);
+                          setState(() {
+                            quickAccesActivated = false;
+                          });
+                        }
+                      }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: color0,
+                    backgroundColor: color3,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: Text(
+                    quickAccesActivated
+                        ? 'Desactivar acceso rápido'
+                        : 'Activar acceso rápido',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(
+                height: 10,
+              ),
 
               SizedBox(
                 width: double.infinity,
@@ -2340,7 +2413,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                         String newNickname = nicknameController.text;
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
-                        saveSubNicknamesMap(nicknamesMap);
+                        saveNicknamesMap(nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },
@@ -2348,15 +2421,18 @@ class DomoticaPageState extends State<DomoticaPage> {
                 ],
               );
             },
-            child: Row(
-              children: [
-                Text(
-                  nickname,
-                  style: poppinsStyle.copyWith(color: color0),
-                ),
-                const SizedBox(width: 3),
-                const Icon(Icons.edit, size: 20, color: color0)
-              ],
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  Text(
+                    nickname,
+                    style: poppinsStyle.copyWith(color: color0),
+                  ),
+                  const SizedBox(width: 3),
+                  const Icon(Icons.edit, size: 20, color: color0)
+                ],
+              ),
             ),
           ),
           leading: IconButton(

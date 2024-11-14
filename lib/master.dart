@@ -180,6 +180,7 @@ Map<String, List<String>> detectorOff = {};
 List<String> devicesToTrack = [];
 Map<String, DateTime> lastSeenDevices = {};
 Map<String, bool> msgFlag = {};
+Timer? bleScanTimer;
 //*-Omnipresencia-*\\
 
 //*-Notificación Desconexión-*\\
@@ -191,9 +192,36 @@ Map<String, int> configNotiDsc = {};
 Map<String, bool> isTaskScheduled = {};
 //*-Control por distancia-*\\
 
+//*- Roller -*\\
+bool distanceControlActive = false;
+int actualPosition = 0;
+bool rollerMoving = false;
+int workingPosition = 0;
+String rollerlength = '';
+String rollerPolarity = '';
+String contrapulseTime = '';
+bool awsInit = false;
+String rollerRPM = '';
+String rollerMicroStep = '';
+String rollerIMAX = '';
+String rollerIRMSRUN = '';
+String rollerIRMSHOLD = '';
+bool rollerFreewheeling = false;
+String rollerTPWMTHRS = '';
+String rollerTCOOLTHRS = '';
+String rollerSGTHRS = '';
+//*- Roller -*\\
+
+//*-Acceso rápido BLE-*\\
+List<String> quickAccess = [];
+bool quickAccesActivated = false;
+bool quickAction = false;
+Map<String, String> pinQuickAccess = {};
+//*-Acceso rápido BLE-*\\
+
 // !------------------------------VERSION NUMBER---------------------------------------
 //ACORDATE: Cambia el número de versión en el pubspec.yaml antes de publicar
-String appVersionNumber = '24111100';
+String appVersionNumber = '24111401';
 //ACORDATE: 0 = Caldén Smart
 int app = 0;
 // !------------------------------VERSION NUMBER---------------------------------------
@@ -239,7 +267,7 @@ void printLog(var text, [String? color]) {
     color = '\x1B[0m';
   }
   if (xDebugMode) {
-    if (android) {
+    if (Platform.isAndroid) {
       // ignore: avoid_print
       print('${color}PrintData: $text\x1B[0m');
     } else {
@@ -1792,8 +1820,10 @@ void showNotification(String title, String body, String sonido) async {
           enableVibration: true,
           importance: Importance.max,
         ),
-        iOS:
-            DarwinNotificationDetails(sound: '$sonido.wav', presentSound: true),
+        iOS: DarwinNotificationDetails(
+          sound: '$sonido.wav',
+          presentSound: true,
+        ),
       ),
     );
     // printLog("Notificacion enviada anacardamente nasharda");
@@ -2103,7 +2133,7 @@ Future<bool> onIosStart(ServiceInstance service) async {
     },
   );
 
-  service.on('trackLocation').listen(
+  service.on('presenceControl').listen(
     (event) {
       printLog('Se llamo el cosito coson');
       showNotification(
@@ -2153,7 +2183,10 @@ void onStart(ServiceInstance service) async {
         enableVibration: true,
         importance: Importance.max,
       ),
-      iOS: DarwinNotificationDetails(),
+      iOS: DarwinNotificationDetails(
+        sound: 'noti.wav',
+        presentSound: true,
+      ),
     ),
   );
 
@@ -2182,7 +2215,7 @@ void onStart(ServiceInstance service) async {
     },
   );
 
-  service.on('trackLocation').listen(
+  service.on('presenceControl').listen(
     (event) {
       printLog('Se llamo el cosito coson');
       showNotification(
@@ -2190,25 +2223,55 @@ void onStart(ServiceInstance service) async {
           'Recuerde tener la ubicación y bluetooth del telefono encendida',
           'noti');
 
-      FlutterBluePlus.startScan(
-        withKeywords: [
-          'Electrico',
-          'Gas',
-          'Detector',
-          'Radiador',
-          'Domotica',
-          'Rele',
-        ],
-        androidUsesFineLocation: true,
-        continuousUpdates: true,
-        removeIfGone: const Duration(seconds: 30),
-      );
+      // NativeService.enableWakelock();
+      bleScanTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
+        printLog("Voy a hacer un escaneo zarpado asi re kawai xd", "Verde");
+        FlutterBluePlus.startScan(
+          withKeywords: [
+            'Electrico',
+            'Gas',
+            'Detector',
+            'Radiador',
+            'Domotica',
+            'Rele',
+            'Roll'
+          ],
+          androidUsesFineLocation: true,
+          continuousUpdates: false, // Realizar un escaneo puntual y detener
+        );
+
+        // Detener el escaneo después de un tiempo fijo
+        Future.delayed(const Duration(seconds: 30), () {
+          printLog("Paro el escaneo anashajavaibe", "Verde");
+          FlutterBluePlus.stopScan();
+        });
+      });
+
+      // FlutterBluePlus.startScan(
+      //   withKeywords: [
+      //     'Electrico',
+      //     'Gas',
+      //     'Detector',
+      //     'Radiador',
+      //     'Domotica',
+      //     'Rele',
+      //   ],
+      //   androidUsesFineLocation: true,
+      //   continuousUpdates: true,
+      //   removeIfGone: const Duration(seconds: 30),
+      // );
 
       FlutterBluePlus.scanResults.listen(
         (results) => backFunctionTrack(results),
       );
     },
   );
+
+  service.on('CancelpresenceControl').listen((event) {
+    printLog("Pincho el trackeo AÑA", "rojo");
+    bleScanTimer?.cancel();
+    FlutterBluePlus.stopScan();
+  });
 }
 
 Future<bool> backFunctionDS() async {
@@ -2350,6 +2413,8 @@ Future<void> backFunctionTrack(List<ScanResult> results) async {
   // Lista de nombres de plataformas de dispositivos encontrados en el escaneo.
   List<String> foundDeviceNames =
       equipos.map((device) => device.platformName.toLowerCase()).toList();
+
+  printLog("Los anashe equipos son: $foundDeviceNames", "Cyan");
   List<String> devicesTrack = await loadDeviceListToTrack();
   Map<String, Map<String, dynamic>> globalDATA = await loadGlobalData();
   Map<String, bool> flags = await loadmsgFlag();
@@ -2359,7 +2424,8 @@ Future<void> backFunctionTrack(List<ScanResult> results) async {
       bool flag = flags[trackedDevice] ?? false;
       // printLog('Flag: $flag');
       if (!flag) {
-        printLog('Dispositivo $trackedDevice encontrado en el escaneo.');
+        printLog(
+            'Dispositivo $trackedDevice encontrado en el escaneo.', "verde");
         if (command(trackedDevice) == '020010_IOT') {
           List<String> pinToTrack = await loadPinToTrack(trackedDevice);
           printLog('Encontre $pinToTrack');
@@ -2408,7 +2474,8 @@ Future<void> backFunctionTrack(List<ScanResult> results) async {
     } else {
       bool flag = flags[trackedDevice] ?? false;
       if (flag) {
-        printLog('Dispositivo $trackedDevice NO encontrado en el escaneo.');
+        printLog(
+            'Dispositivo $trackedDevice NO encontrado en el escaneo.', "verde");
         if (command(trackedDevice) == '020010_IOT') {
           List<String> pinToTrack = await loadPinToTrack(trackedDevice);
           printLog('Encontre $pinToTrack');
@@ -2457,7 +2524,6 @@ Future<void> backFunctionTrack(List<ScanResult> results) async {
     }
   }
 }
-
 //*-Background functions-*\\
 
 //*-show dialog generico-*\\
@@ -2602,6 +2668,51 @@ void showAlertDialog(BuildContext context, bool dismissible, Widget? title,
 }
 //*-show dialog generico-*\\
 
+//*-Acceso rápido BLE-*\\
+Future<void> controlDeviceBLE(String name, bool newState) async {
+  printLog("Voy a ${newState ? 'Encender' : 'Apagar'} el equipo $name", "Rojo");
+  if (command(name) == '020010_IOT') {
+    String fun = '${pinQuickAccess[name]!}#${newState ? '1' : '0'}';
+    myDevice.ioUuid.write(fun.codeUnits);
+    String topic =
+        'devices_rx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
+    String topic2 =
+        'devices_tx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
+    String message = jsonEncode({
+      'index': int.parse(pinQuickAccess[name]!),
+      'w_status': newState,
+    });
+    sendMessagemqtt(topic, message);
+    sendMessagemqtt(topic2, message);
+
+    globalDATA
+        .putIfAbsent(
+            '${command(deviceName)}/${extractSerialNumber(deviceName)}',
+            () => {})
+        .addAll({'io${pinQuickAccess[name]!}': message});
+
+    saveGlobalData(globalDATA);
+  } else {
+    int fun = newState ? 1 : 0;
+    String data = '${command(name)}[11]($fun)';
+    myDevice.toolsUuid.write(data.codeUnits);
+    globalDATA['${command(name)}/${extractSerialNumber(name)}']!['w_status'] =
+        newState;
+    saveGlobalData(globalDATA);
+    try {
+      String topic = 'devices_rx/${command(name)}/${extractSerialNumber(name)}';
+      String topic2 =
+          'devices_tx/${command(name)}/${extractSerialNumber(name)}';
+      String message = jsonEncode({'w_status': newState});
+      sendMessagemqtt(topic, message);
+      sendMessagemqtt(topic2, message);
+    } catch (e, s) {
+      printLog('Error al enviar valor en cdBLE $e $s');
+    }
+  }
+}
+//*-Acceso rápido BLE-*\\
+
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
 //! CLASES !\\
@@ -2620,6 +2731,7 @@ class MyDevice {
   late BluetoothCharacteristic infoUuid;
 
   late BluetoothCharacteristic toolsUuid;
+  late BluetoothCharacteristic otaUuid;
   late BluetoothCharacteristic varsUuid;
   late BluetoothCharacteristic workUuid;
   late BluetoothCharacteristic lightUuid;
@@ -2714,6 +2826,19 @@ class MyDevice {
               Guid(
                   '52a2f121-a8e3-468c-a5de-45dca9a2a207')); //DistanceControl:W_Status:EnergyTimer:AwsINIT
           break;
+        case '024011':
+          BluetoothService espService = services.firstWhere(
+              (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
+
+          varsUuid = espService.characteristics.firstWhere((c) =>
+              c.uuid ==
+              Guid(
+                  '52a2f121-a8e3-468c-a5de-45dca9a2a207')); //DstCtrl:LargoRoller:InversionGiro:VelocidadMotor:PosicionActual:PosicionTrabajo:RollerMoving:AWSinit
+          otaUuid = espService.characteristics.firstWhere((c) =>
+              c.uuid ==
+              Guid(
+                  'ae995fcd-2c7a-4675-84f8-332caf784e9f')); //Ota comandos (Solo notify)
+          break;
         case '030710':
           break;
       }
@@ -2773,6 +2898,22 @@ class NativeService {
       printLog('Error abriendo la configuración de ubicación: $e');
     }
   }
+
+  // static Future<void> enableWakelock() async {
+  //   try {
+  //     await platform.invokeMethod("enableWakeLock");
+  //   } on PlatformException catch (e) {
+  //     printLog('Error al habilitar el wakelock: $e');
+  //   }
+  // }
+
+  // static Future<void> disableWakelock() async {
+  //   try {
+  //     await platform.invokeMethod("disableWakelock");
+  //   } on PlatformException catch (e) {
+  //     printLog('Error al deshabilitar el wakelock: $e');
+  //   }
+  // }
 }
 //*-Metodos, interacción con código Nativo-*\\
 
@@ -4054,3 +4195,62 @@ class ImageManager {
   }
 }
 //*- imagenes de los equipos -*\\
+
+//*- icono en el boton de la slide -*\\
+class IconThumbSlider extends SliderComponentShape {
+  final IconData iconData;
+  final double thumbRadius;
+
+  const IconThumbSlider({required this.iconData, required this.thumbRadius});
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) {
+    return Size.fromRadius(thumbRadius);
+  }
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    final Canvas canvas = context.canvas;
+
+    // Draw the thumb as a circle
+    final paint = Paint()
+      ..color = sliderTheme.thumbColor!
+      ..style = PaintingStyle.fill;
+
+    canvas.drawCircle(center, thumbRadius, paint);
+
+    // Draw the icon on the thumb
+    TextSpan span = TextSpan(
+      style: TextStyle(
+        fontSize: thumbRadius,
+        fontFamily: iconData.fontFamily,
+        color: sliderTheme.valueIndicatorColor,
+      ),
+      text: String.fromCharCode(iconData.codePoint),
+    );
+    TextPainter tp = TextPainter(
+        text: span,
+        textAlign: TextAlign.center,
+        textDirection: TextDirection.ltr);
+    tp.layout();
+    Offset iconOffset = Offset(
+      center.dx - (tp.width / 2),
+      center.dy - (tp.height / 2),
+    );
+    tp.paint(canvas, iconOffset);
+  }
+}
+//*- icono en el boton de la slide -*\\

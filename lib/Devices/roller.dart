@@ -1,62 +1,124 @@
-import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../Global/stored_data.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
-import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
-import '../Global/stored_data.dart';
 
-// VARIABLES \\
-late bool tracking;
-bool isNC = false;
-bool isAgreeChecked = false;
-
-// CLASES \\
-
-class RelayPage extends StatefulWidget {
-  const RelayPage({super.key});
+class RollerPage extends StatefulWidget {
+  const RollerPage({super.key});
   @override
-  RelayPageState createState() => RelayPageState();
+  RollerPageState createState() => RollerPageState();
 }
 
-class RelayPageState extends State<RelayPage> {
+class RollerPageState extends State<RollerPage> {
+  int _page = 0;
+  int _selectedNotificationOption = 0;
+
+  final TextEditingController tenantController = TextEditingController();
+  final TextEditingController tenantDistanceOn = TextEditingController();
+  final PageController _pageController = PageController(initialPage: 0);
+
+  TextEditingController rLargeController = TextEditingController();
+  TextEditingController workController = TextEditingController();
+  TextEditingController motorSpeedUpController = TextEditingController();
+  TextEditingController motorSpeedDownController = TextEditingController();
+  TextEditingController contrapulseController = TextEditingController();
+  TextEditingController emailController = TextEditingController();
+
+  late AnimationController _animationController;
+
+  bool showOptions = false;
+  bool _showNotificationOptions = false;
   bool showSecondaryAdminFields = false;
   bool showAddAdminField = false;
   bool showSecondaryAdminList = false;
   bool showSmartResident = false;
   bool dOnOk = false;
   bool dOffOk = false;
-  bool showOptions = false;
-  bool _showNotificationOptions = false;
-  TextEditingController emailController = TextEditingController();
-  int _selectedNotificationOption = 0;
-  int _page = 0;
-  final PageController _pageController = PageController(initialPage: 0);
-  final TextEditingController tenantController = TextEditingController();
-  final TextEditingController tenantDistanceOn = TextEditingController();
 
   @override
   void initState() {
     super.initState();
 
-    tracking = devicesToTrack.contains(deviceName);
     nickname = nicknamesMap[deviceName] ?? deviceName;
     showOptions = currentUserEmail == owner;
 
-    printLog('¿Encendido? $turnOn');
-    printLog('¿Alquiler temporario? $activatedAT');
-    printLog('¿Inquilino? $tenant');
-
     updateWifiValues(toolsValues);
     subscribeToWifiStatus();
-    subscribeTrueStatus();
+    subToVars();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  // FUNCIONES \\
+
+  void updateWifiValues(List<int> data) {
+    var fun =
+        utf8.decode(data); //Wifi status | wifi ssid | ble status | nickname
+    fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
+    printLog(fun);
+    var parts = fun.split(':');
+    if (parts[0] == 'WCS_CONNECTED') {
+      nameOfWifi = parts[1];
+      isWifiConnected = true;
+      printLog('sis $isWifiConnected');
+      setState(() {
+        textState = 'CONECTADO';
+        statusColor = Colors.green;
+        wifiIcon = Icons.wifi;
+      });
+    } else if (parts[0] == 'WCS_DISCONNECTED') {
+      isWifiConnected = false;
+      printLog('non $isWifiConnected');
+
+      setState(() {
+        textState = 'DESCONECTADO';
+        statusColor = Colors.red;
+        wifiIcon = Icons.wifi_off;
+      });
+
+      if (parts[0] == 'WCS_DISCONNECTED' && atemp == true) {
+        //If comes from subscription, parts[1] = reason of error.
+        setState(() {
+          wifiIcon = Icons.warning_amber_rounded;
+        });
+
+        if (parts[1] == '202' || parts[1] == '15') {
+          errorMessage = 'Contraseña incorrecta';
+        } else if (parts[1] == '201') {
+          errorMessage = 'La red especificada no existe';
+        } else if (parts[1] == '1') {
+          errorMessage = 'Error desconocido';
+        } else {
+          errorMessage = parts[1];
+        }
+
+        if (int.tryParse(parts[1]) != null) {
+          errorSintax = getWifiErrorSintax(int.parse(parts[1]));
+        }
+      }
+    }
+
+    setState(() {});
+  }
+
+  void subscribeToWifiStatus() async {
+    printLog('Se subscribio a wifi');
+    await myDevice.toolsUuid.setNotifyValue(true);
+
+    final wifiSub =
+        myDevice.toolsUuid.onValueReceived.listen((List<int> status) {
+      updateWifiValues(status);
+    });
+
+    myDevice.device.cancelWhenDisconnected(wifiSub);
   }
 
   Future<void> addSecondaryAdmin(String email) async {
@@ -114,253 +176,86 @@ class RelayPageState extends State<RelayPage> {
     return emailRegex.hasMatch(email);
   }
 
-  void updateWifiValues(List<int> data) {
-    var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
-    fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-    printLog(fun);
-    var parts = fun.split(':');
-    final regex = RegExp(r'\((\d+)\)');
-    final match = regex.firstMatch(parts[2]);
-    int users = int.parse(match!.group(1).toString());
-    printLog('Hay $users conectados');
-    userConnected = users > 1;
-    if (parts[0] == 'WCS_CONNECTED') {
-      atemp = false;
-      nameOfWifi = parts[1];
-      isWifiConnected = true;
-      printLog('sis $isWifiConnected');
-      setState(() {
-        textState = 'CONECTADO';
-        statusColor = Colors.green;
-        wifiIcon = Icons.wifi;
-        errorMessage = '';
-        errorSintax = '';
-        werror = false;
-      });
-    } else if (parts[0] == 'WCS_DISCONNECTED') {
-      isWifiConnected = false;
-      printLog('non $isWifiConnected');
-
-      nameOfWifi = '';
-
-      setState(() {
-        textState = 'DESCONECTADO';
-        statusColor = Colors.red;
-        wifiIcon = Icons.wifi_off;
-      });
-
-      if (atemp) {
-        setState(() {
-          wifiIcon = Icons.warning_amber_rounded;
-          werror = true;
-          if (parts[1] == '202' || parts[1] == '15') {
-            errorMessage = 'Contraseña incorrecta';
-          } else if (parts[1] == '201') {
-            errorMessage = 'La red especificada no existe';
-          } else if (parts[1] == '1') {
-            errorMessage = 'Error desconocido';
-          } else {
-            errorMessage = parts[1];
-          }
-
-          errorSintax = getWifiErrorSintax(int.parse(parts[1]));
-        });
-      }
-    }
-
-    setState(() {});
-  }
-
-  void subscribeToWifiStatus() async {
-    printLog('Se subscribió a wifi');
-    await myDevice.toolsUuid.setNotifyValue(true);
-
-    final wifiSub =
-        myDevice.toolsUuid.onValueReceived.listen((List<int> status) {
-      printLog('Llegaron cositas wifi');
-      updateWifiValues(status);
-    });
-
-    myDevice.device.cancelWhenDisconnected(wifiSub);
-  }
-
-  void subscribeTrueStatus() async {
+  void subToVars() async {
     printLog('Me subscribo a vars');
     await myDevice.varsUuid.setNotifyValue(true);
 
-    final trueStatusSub =
+    final varsSub =
         myDevice.varsUuid.onValueReceived.listen((List<int> status) {
       var parts = utf8.decode(status).split(':');
-      setState(() {
-        turnOn = parts[0] == '1';
-      });
+      // printLog(parts);
+      if (context.mounted) {
+        setState(() {
+          actualPosition = int.parse(parts[0]);
+          rollerMoving = parts[1] == '1';
+        });
+      }
     });
 
-    myDevice.device.cancelWhenDisconnected(trueStatusSub);
+    myDevice.device.cancelWhenDisconnected(varsSub);
   }
 
-  void turnDeviceOn(bool on) async {
-    int fun = on ? 1 : 0;
-    String data = '${command(deviceName)}[11]($fun)';
+  void setRange(int mm) {
+    String data = '${command(deviceName)}[7]($mm)';
+    printLog(data);
     myDevice.toolsUuid.write(data.codeUnits);
-    globalDATA['${command(deviceName)}/${extractSerialNumber(deviceName)}']![
-        'w_status'] = on;
-    saveGlobalData(globalDATA);
-    try {
-      String topic =
-          'devices_rx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
-      String topic2 =
-          'devices_tx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
-      String message = jsonEncode({'w_status': on});
-      sendMessagemqtt(topic, message);
-      sendMessagemqtt(topic2, message);
-    } catch (e, s) {
-      printLog('Error al enviar valor a firebase $e $s');
-    }
   }
 
-  Future<Position> _determinePosition() async {
-    bool serviceEnabled;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      showToast('La ubicación esta desactivada\nPor favor enciendala');
-      return Future.error('Los servicios de ubicación están deshabilitados.');
-    }
-    // Cuando los permisos están OK, obtenemos la ubicación actual
-    return await Geolocator.getCurrentPosition();
+  void setDistance(int pc) {
+    String data = '${command(deviceName)}[7]($pc%)';
+    printLog(data);
+    myDevice.toolsUuid.write(data.codeUnits);
   }
 
-  void controlTask(bool value, String device) async {
-    setState(() {
-      isTaskScheduled.addAll({device: value});
-    });
-    if (isTaskScheduled[device]!) {
-      // Programar la tarea.
-      try {
-        showToast('Recuerda tener la ubicación encendida.');
-        String data = '${command(deviceName)}[5](1)';
-        myDevice.toolsUuid.write(data.codeUnits);
-        List<String> deviceControl = await loadDevicesForDistanceControl();
-        deviceControl.add(deviceName);
-        saveDevicesForDistanceControl(deviceControl);
-        printLog(
-            'Hay ${deviceControl.length} equipos con el control x distancia');
-        Position position = await _determinePosition();
-        Map<String, double> maplatitude = await loadLatitude();
-        maplatitude.addAll({deviceName: position.latitude});
-        savePositionLatitude(maplatitude);
-        Map<String, double> maplongitude = await loadLongitud();
-        maplongitude.addAll({deviceName: position.longitude});
-        savePositionLongitud(maplongitude);
-
-        if (deviceControl.length == 1) {
-          await initializeService();
-          final backService = FlutterBackgroundService();
-          await backService.startService();
-          backService.invoke('distanceControl');
-          printLog('Servicio iniciado a las ${DateTime.now()}');
-        }
-      } catch (e) {
-        showToast('Error al iniciar control por distancia.');
-        printLog('Error al setear la ubicación $e');
-      }
-    } else {
-      // Cancelar la tarea.
-      showToast('Se cancelo el control por distancia');
-      String data = '${command(deviceName)}[5](0)';
-      myDevice.toolsUuid.write(data.codeUnits);
-      List<String> deviceControl = await loadDevicesForDistanceControl();
-      deviceControl.remove(deviceName);
-      saveDevicesForDistanceControl(deviceControl);
-      printLog(
-          'Quedan ${deviceControl.length} equipos con el control x distancia');
-      Map<String, double> maplatitude = await loadLatitude();
-      maplatitude.remove(deviceName);
-      savePositionLatitude(maplatitude);
-      Map<String, double> maplongitude = await loadLongitud();
-      maplongitude.remove(deviceName);
-      savePositionLongitud(maplongitude);
-
-      if (deviceControl.isEmpty) {
-        final backService = FlutterBackgroundService();
-        backService.invoke("stopService");
-        backTimerDS?.cancel();
-        printLog('Servicio apagado');
-      }
-    }
+  void setRollerConfig(int type) {
+    String data = '${command(deviceName)}[8]($type)';
+    printLog(data);
+    myDevice.toolsUuid.write(data.codeUnits);
   }
 
-  Future<bool> verifyPermission() async {
-    try {
-      var permissionStatus4 = await Permission.locationAlways.status;
-      if (!permissionStatus4.isGranted) {
-        // Usamos un Completer para esperar a que el diálogo se cierre
-        final completer = Completer<void>();
-
-        showAlertDialog(
-          navigatorKey.currentContext ?? context,
-          false,
-          const Text(
-            'Habilita la ubicación todo el tiempo',
-            style: TextStyle(color: Color(0xFFFFFFFF)),
-          ),
-          Text(
-            '$appName utiliza tu ubicación, incluso cuando la app está cerrada o en desuso, para poder encender o apagar el calefactor en base a tu distancia con el mismo.',
-            style: const TextStyle(
-              color: Color(0xFFFFFFFF),
-            ),
-          ),
-          <Widget>[
-            TextButton(
-              style: const ButtonStyle(
-                foregroundColor: WidgetStatePropertyAll(Color(0xFFFFFFFF)),
-              ),
-              child: const Text('Habilitar'),
-              onPressed: () async {
-                try {
-                  var permissionStatus4 =
-                      await Permission.locationAlways.request();
-
-                  if (!permissionStatus4.isGranted) {
-                    await Permission.locationAlways.request();
-                  }
-                  permissionStatus4 = await Permission.locationAlways.status;
-
-                  // Completa el Completer una vez que el permiso ha sido manejado
-                  completer.complete();
-                  Navigator.of(navigatorKey.currentContext ?? context).pop();
-                } catch (e, s) {
-                  printLog(e);
-                  printLog(s);
-                  completer.completeError(
-                      e); // Completa con error si ocurre una excepción
-                }
-              },
-            ),
-          ],
-        );
-
-        // Espera a que el Completer se complete
-        await completer.future;
-      }
-
-      // Vuelve a verificar el estado del permiso
-      permissionStatus4 = await Permission.locationAlways.status;
-
-      if (permissionStatus4.isGranted) {
-        return true;
-      } else {
-        return false;
-      }
-    } catch (e, s) {
-      printLog('Error al habilitar la ubicación: $e');
-      printLog(s);
-      return false;
-    }
+  void setMotorSpeed(String rpm) {
+    String data = '${command(deviceName)}[10]($rpm)';
+    printLog(data);
+    myDevice.toolsUuid.write(data.codeUnits);
   }
 
-  //! VISUAL
+  void setMicroStep(String uStep) {
+    String data = '${command(deviceName)}[11]($uStep)';
+    printLog(data);
+    myDevice.toolsUuid.write(data.codeUnits);
+  }
+
+  void setMotorCurrent(bool run, String value) {
+    String data = '${command(deviceName)}[12](${run ? '1' : '0'}#$value)';
+    printLog(data);
+    myDevice.toolsUuid.write(data.codeUnits);
+  }
+
+  void setFreeWheeling(bool active) {
+    String data = '${command(deviceName)}[14](${active ? '1' : '0'})';
+    printLog(data);
+    myDevice.toolsUuid.write(data.codeUnits);
+  }
+
+  void setTPWMTHRS(String value) {
+    String data = '${command(deviceName)}[15]($value)';
+    printLog(data);
+    myDevice.toolsUuid.write(data.codeUnits);
+  }
+
+  void setTCOOLTHRS(String value) {
+    String data = '${command(deviceName)}[16]($value)';
+    printLog(data);
+    myDevice.toolsUuid.write(data.codeUnits);
+  }
+
+  void setSGTHRS(String value) {
+    String data = '${command(deviceName)}[17]($value)';
+    printLog(data);
+    myDevice.toolsUuid.write(data.codeUnits);
+  }
+
+//! VISUAL
   @override
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
@@ -378,665 +273,885 @@ class RelayPageState extends State<RelayPage> {
     }
 
     final List<Widget> pages = [
-      //*- Página 1: Estado del Dispositivo -*\\
-      Stack(
-        children: [
-          SingleChildScrollView(
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+      //*- Página 1 cortina -*\\
+      SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Estado de la cortina',
+                style: GoogleFonts.poppins(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: color3,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              CurtainAnimation(
+                position: actualPosition,
+                onTapDown: (details) {
+                  RenderBox box = context.findRenderObject() as RenderBox;
+                  Offset localPosition =
+                      box.globalToLocal(details.globalPosition);
+                  double relativeHeight = (localPosition.dy - 200) / 250;
+                  int newPosition =
+                      (relativeHeight * 100).clamp(0, 100).round();
+
+                  setState(() {
+                    workingPosition = newPosition;
+                    setDistance(newPosition);
+                  });
+                },
+              ),
+              const SizedBox(height: 20),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  Text(
-                    'Estado del Dispositivo',
-                    style: GoogleFonts.poppins(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: color3,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 40),
-                  GestureDetector(
-                    onTap: () {
-                      if (deviceOwner ||
-                          secondaryAdmin ||
-                          owner == '' ||
-                          tenant) {
-                        turnDeviceOn(!turnOn);
+                  Expanded(
+                    child: GestureDetector(
+                      onLongPressStart: (LongPressStartDetails a) {
+                        String data = '${command(deviceName)}[7](0%)';
+                        myDevice.toolsUuid.write(data.codeUnits);
                         setState(() {
-                          turnOn = !turnOn;
+                          workingPosition = 0;
                         });
-                      } else {
-                        showToast(
-                            'No tienes permiso para realizar esta acción');
-                      }
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 500),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: turnOn
-                            ? (isNC ? Colors.greenAccent : Colors.greenAccent)
-                            : (isNC ? Colors.redAccent : Colors.redAccent),
-                        shape: BoxShape.circle,
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 10,
-                            offset: Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: AnimatedCrossFade(
-                        firstChild: Icon(
-                          isNC ? Icons.lock_open : Icons.lock,
-                          size: 80,
-                          color: Colors.white,
-                        ),
-                        secondChild: Icon(
-                          isNC ? Icons.lock : Icons.lock_open,
-                          size: 80,
-                          color: Colors.white,
-                        ),
-                        crossFadeState: turnOn
-                            ? CrossFadeState.showFirst
-                            : CrossFadeState.showSecond,
-                        duration: const Duration(milliseconds: 500),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    isNC
-                        ? (turnOn ? 'ABIERTO' : 'CERRADO')
-                        : (turnOn ? 'CERRADO' : 'ABIERTO'),
-                    style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                      color: color3,
-                    ),
-                  ),
-                  const SizedBox(height: 50),
-                  if (deviceOwner || owner == '')
-                    // Solo el propietario ve la tarjeta de NA y NC
-                    Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      elevation: 5,
-                      color: color3,
-                      child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Puedes cambiar entre Normal Abierto (NO) y Normal Cerrado (NC). Selecciona una opción:',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                color: color0,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 20),
-                            Container(
-                              height: 40,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(30.0),
-                                border: Border.all(
-                                  color: color0,
-                                  width: 2,
+                        printLog(data);
+                      },
+                      onLongPressEnd: (LongPressEndDetails a) {
+                        String data =
+                            '${command(deviceName)}[7]($actualPosition%)';
+                        myDevice.toolsUuid.write(data.codeUnits);
+                        setState(() {
+                          workingPosition = actualPosition;
+                        });
+                        printLog(data);
+                      },
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {},
+                          borderRadius: BorderRadius.circular(30.0),
+                          splashColor: Colors.white.withOpacity(0.2),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: color3,
+                              borderRadius: BorderRadius.circular(30.0),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  offset: Offset(0, 4),
+                                  blurRadius: 5.0,
                                 ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          isNC = false;
-                                        });
-                                        saveNC(
-                                          service,
-                                          command(deviceName),
-                                          extractSerialNumber(deviceName),
-                                          false,
-                                        );
-                                      },
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: !isNC
-                                              ? color0
-                                              : Colors.transparent,
-                                          borderRadius: const BorderRadius.only(
-                                            topLeft: Radius.circular(28),
-                                            bottomLeft: Radius.circular(28),
-                                          ),
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            'Normal Abierto',
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 14,
-                                              color: !isNC ? color3 : color0,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 2,
+                              ],
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 15.0),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.arrow_upward, color: color0),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Subir',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
                                     color: color0,
                                   ),
-                                  Expanded(
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          isNC = true;
-                                        });
-                                        saveNC(
-                                          service,
-                                          command(deviceName),
-                                          extractSerialNumber(deviceName),
-                                          true,
-                                        );
-                                      },
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: isNC
-                                              ? color0
-                                              : Colors.transparent,
-                                          borderRadius: const BorderRadius.only(
-                                            topRight: Radius.circular(28),
-                                            bottomRight: Radius.circular(28),
-                                          ),
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            'Normal Cerrado',
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 14,
-                                              color: isNC ? color3 : color0,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: GestureDetector(
+                      onLongPressStart: (LongPressStartDetails a) {
+                        String data = '${command(deviceName)}[7](100%)';
+                        myDevice.toolsUuid.write(data.codeUnits);
+                        setState(() {
+                          workingPosition = 100;
+                        });
+                        printLog(data);
+                      },
+                      onLongPressEnd: (LongPressEndDetails a) {
+                        String data =
+                            '${command(deviceName)}[7]($actualPosition%)';
+                        myDevice.toolsUuid.write(data.codeUnits);
+                        setState(() {
+                          workingPosition = actualPosition;
+                        });
+                        printLog(data);
+                      },
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {},
+                          borderRadius: BorderRadius.circular(30.0),
+                          splashColor: Colors.white.withOpacity(0.2),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: color3,
+                              borderRadius: BorderRadius.circular(30.0),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  offset: Offset(0, 4),
+                                  blurRadius: 5.0,
+                                ),
+                              ],
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 15.0),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.arrow_downward, color: color0),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Bajar',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: color0,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
-            ),
-          ),
-          if (isRegularUser && owner != '' && !tenant)
-            Container(
-              color: Colors.black.withOpacity(0.7),
-              child: const Center(
-                child: Text(
-                  'No tienes acceso a esta función',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  setRollerConfig(0);
+                  setState(() {
+                    workingPosition = 0;
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: color0,
+                  backgroundColor: color3,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30.0),
+                  ),
+                  elevation: 5,
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(width: 8),
+                    Text(
+                      'Guardar inicio',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-        ],
+              const SizedBox(height: 10),
+              //TODO
+              ElevatedButton(
+                onPressed: () {
+                  setRollerConfig(0);
+                  setState(() {
+                    workingPosition = 100;
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: color0,
+                  backgroundColor: color3,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30.0),
+                  ),
+                  elevation: 5,
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(width: 8),
+                    Text(
+                      'Guardar fin',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
 
-      //*- Página 2: Trackeo Bluetooth -*\\
-      Stack(
-        children: [
-          SingleChildScrollView(
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+      //*- Página 2 -*\\
+      SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
+          child: Column(
+            children: [
+              Row(
                 children: [
-                  Text(
-                    'Control por presencia',
-                    style: GoogleFonts.poppins(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: color3,
-                    ),
-                    textAlign: TextAlign.center,
+                  const SizedBox(
+                    width: 10,
                   ),
-                  const SizedBox(height: 40),
-                  GestureDetector(
-                    onTap: () {
-                      if (deviceOwner || owner == '') {
-                        if (isAgreeChecked) {
-                          verifyPermission().then((accepted) async {
-                            if (accepted) {
-                              setState(() {
-                                tracking = !tracking;
-                              });
-
-                              if (tracking) {
-                                devicesToTrack.add(deviceName);
-                                saveDeviceListToTrack(devicesToTrack);
-
-                                SharedPreferences prefs =
-                                    await SharedPreferences.getInstance();
-                                bool hasInitService =
-                                    prefs.getBool('hasInitService') ?? false;
-
-                                if (!hasInitService) {
-                                  await initializeService();
-                                  await prefs.setBool('hasInitService', true);
-                                }
-
-                                await Future.delayed(
-                                    const Duration(seconds: 30));
-
-                                printLog("Achi");
-
-                                final backService = FlutterBackgroundService();
-                                backService.invoke('presenceControl');
-                              } else {
-                                devicesToTrack.remove(deviceName);
-                                saveDeviceListToTrack(devicesToTrack);
-                                if (devicesToTrack.isEmpty) {
-                                  final backService =
-                                      FlutterBackgroundService();
-                                  backService.invoke('CancelpresenceControl');
-                                }
-                              }
-                            } else {
-                              showToast(
-                                  'Debes habilitar la ubicación constante\npara el uso del\ncontrol por presencia');
-                            }
-                          });
-                        } else {
-                          showToast(
-                              'Debes aceptar el uso de control por presencia');
-                        }
-                      } else {
-                        showToast(
-                            'No tienes permiso para realizar esta acción');
-                      }
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 500),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: tracking ? Colors.greenAccent : Colors.redAccent,
-                        shape: BoxShape.circle,
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 10,
-                            offset: Offset(0, 5),
-                          ),
-                        ],
+                  Column(
+                    children: [
+                      const Text(
+                        'Largo del Roller:',
+                        style: TextStyle(
+                            fontSize: 20.0,
+                            color: Color(0xfffbe4d8),
+                            fontWeight: FontWeight.bold),
                       ),
-                      child: Icon(
-                        Icons.directions_walk,
-                        size: 80,
-                        color: tracking ? Colors.white : Colors.grey[300],
+                      const SizedBox(
+                        width: 10,
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 70),
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: 5,
-                    color: color3,
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           Text(
-                            'Habilitar esta función hará que la aplicación use más recursos de lo común, si a pesar de esto decides utilizarlo es bajo tu responsabilidad.',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              color: color0,
-                            ),
+                            rollerlength,
+                            style: const TextStyle(
+                                fontSize: 25.0,
+                                color: Color(0xFFdfb6b2),
+                                fontWeight: FontWeight.bold),
                           ),
-                          const SizedBox(height: 10),
-                          CheckboxListTile(
-                            title: Text(
-                              'Sí, estoy de acuerdo',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                color: color0,
-                              ),
-                            ),
-                            value: isAgreeChecked,
-                            activeColor: color0,
-                            onChanged: (bool? value) {
-                              setState(() {
-                                isAgreeChecked = value ?? false;
-                                if (!isAgreeChecked && tracking) {
-                                  tracking = false;
-                                  devicesToTrack.remove(deviceName);
-                                  saveDeviceListToTrack(devicesToTrack);
-                                }
-                              });
-                            },
-                            controlAffinity: ListTileControlAffinity.leading,
+                          const SizedBox(
+                            width: 5,
+                          ),
+                          const Text(
+                            'mm',
+                            style: TextStyle(
+                                fontSize: 20.0,
+                                color: Color(0xfffbe4d8),
+                                fontWeight: FontWeight.normal),
                           ),
                         ],
+                      )
+                    ],
+                  ),
+                  const Spacer(),
+                  ElevatedButton(
+                      onPressed: () {
+                        showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: const Text('Modificar largo (mm)'),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    TextField(
+                                      controller: rLargeController,
+                                      keyboardType: TextInputType.number,
+                                      decoration: const InputDecoration(
+                                          label: Text(
+                                        'Ingresar tamaño:',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.normal),
+                                      )),
+                                      onSubmitted: (value) {
+                                        int? valor =
+                                            int.tryParse(rLargeController.text);
+                                        if (valor != null) {
+                                          setRange(valor);
+                                          setState(() {
+                                            rollerlength = value;
+                                          });
+                                        } else {
+                                          showToast('Valor no permitido');
+                                        }
+                                        rLargeController.clear();
+                                        navigatorKey.currentState?.pop();
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                actions: [
+                                  TextButton(
+                                      onPressed: () {
+                                        int? valor =
+                                            int.tryParse(rLargeController.text);
+                                        if (valor != null) {
+                                          setRange(valor);
+                                          setState(() {
+                                            rollerlength =
+                                                rLargeController.text;
+                                          });
+                                        } else {
+                                          showToast('Valor no permitido');
+                                        }
+                                        rLargeController.clear();
+                                        navigatorKey.currentState?.pop();
+                                      },
+                                      child: const Text('Modificar'))
+                                ],
+                              );
+                            });
+                      },
+                      child: const Text('Modificar')),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                ],
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              const Divider(),
+              const SizedBox(
+                height: 10,
+              ),
+              Row(
+                children: [
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  const Text(
+                    'Polaridad del Roller:',
+                    style: TextStyle(
+                        fontSize: 20.0,
+                        color: Color(0xfffbe4d8),
+                        fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  Text(
+                    rollerPolarity,
+                    style: const TextStyle(
+                        fontSize: 25.0,
+                        color: Color(0xFFdfb6b2),
+                        fontWeight: FontWeight.bold),
+                  ),
+                  const Spacer(),
+                  ElevatedButton(
+                      onPressed: () {
+                        setRollerConfig(1);
+                        rollerPolarity == '0'
+                            ? rollerPolarity = '1'
+                            : rollerPolarity = '0';
+                        context.mounted ? setState(() {}) : null;
+                      },
+                      child: const Text('Inver')),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                ],
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              const Divider(),
+              const SizedBox(
+                height: 10,
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  const Text(
+                    'RPM del motor:',
+                    style: TextStyle(
+                        fontSize: 20.0,
+                        color: Color(0xfffbe4d8),
+                        fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  Text(
+                    rollerRPM,
+                    style: const TextStyle(
+                      fontSize: 25.0,
+                      color: Color(0xFFdfb6b2),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  SizedBox(
+                    width: 300,
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 20.0,
+                        thumbColor: const Color(0xfffbe4d8),
+                        thumbShape: const IconThumbSlider(
+                          iconData: Icons.speed,
+                          thumbRadius: 20,
+                        ),
+                      ),
+                      child: Slider(
+                        min: 0,
+                        max: 400,
+                        value: double.parse(rollerRPM),
+                        onChanged: (value) {
+                          setState(() {
+                            rollerRPM = value.round().toString();
+                          });
+                        },
+                        onChangeEnd: (value) {
+                          setMotorSpeed(value.round().toString());
+                        },
+                      ),
+                    ),
+                  )
+                ],
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              const Divider(),
+              const SizedBox(
+                height: 10,
+              ),
+              Row(
+                children: [
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  const Text(
+                    'MicroSteps del roller:',
+                    style: TextStyle(
+                        fontSize: 20.0,
+                        color: Color(0xfffbe4d8),
+                        fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  Text(
+                    rollerMicroStep,
+                    style: const TextStyle(
+                        fontSize: 25.0,
+                        color: Color(0xFFdfb6b2),
+                        fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              SizedBox(
+                width: 300,
+                child: DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: 'Nuevo valor de microStep:',
+                    labelStyle: TextStyle(
+                      color: Color(0xfffbe4d8),
+                    ),
+                    hintStyle: TextStyle(
+                      color: Color(0xfffbe4d8),
+                    ),
+                    // fillColor: Color(0xfffbe4d8),
+                  ),
+                  dropdownColor: const Color(0xff190019),
+                  items: <String>[
+                    '256',
+                    '128',
+                    '64',
+                    '32',
+                    '16',
+                    '8',
+                    '4',
+                    '2',
+                    '0',
+                  ].map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(
+                        value,
+                        style: const TextStyle(
+                          color: Color(0xfffbe4d8),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setMicroStep(value);
+                      setState(() {
+                        rollerMicroStep = value.toString();
+                      });
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              const Divider(),
+              const SizedBox(
+                height: 10,
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  const Text(
+                    'Run current:',
+                    style: TextStyle(
+                        fontSize: 20.0,
+                        color: Color(0xfffbe4d8),
+                        fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  Text(
+                    '${((int.parse(rollerIRMSRUN) * 2100) / 31).round()} mA',
+                    style: const TextStyle(
+                      fontSize: 25.0,
+                      color: Color(0xFFdfb6b2),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  SizedBox(
+                    width: 300,
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 20.0,
+                        thumbColor: const Color(0xfffbe4d8),
+                        thumbShape: const IconThumbSlider(
+                          iconData: Icons.electric_bolt,
+                          thumbRadius: 20,
+                        ),
+                      ),
+                      child: Slider(
+                        min: 0,
+                        max: 31,
+                        value: double.parse(rollerIRMSRUN),
+                        onChanged: (value) {
+                          setState(() {
+                            rollerIRMSRUN = value.round().toString();
+                          });
+                        },
+                        onChangeEnd: (value) {
+                          setMotorCurrent(true, value.round().toString());
+                        },
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-          ),
-          if (!deviceOwner && owner != '')
-            Container(
-              color: Colors.black.withOpacity(0.7),
-              child: const Center(
-                child: Text(
-                  'No tienes acceso a esta función',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
+              const SizedBox(
+                height: 10,
               ),
-            ),
-        ],
-      ),
-
-      //*- Página 3 - Control por distancia -*\\
-      Stack(
-        children: [
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  'Control por distancia',
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: color3,
+              const Divider(),
+              const SizedBox(
+                height: 10,
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    height: 10,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Activar control por distancia',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w500,
-                    color: color3,
+                  const Text(
+                    'Hold current:',
+                    style: TextStyle(
+                        fontSize: 20.0,
+                        color: Color(0xfffbe4d8),
+                        fontWeight: FontWeight.bold),
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 30),
-                GestureDetector(
-                  onTap: () {
-                    if (deviceOwner || owner == '' || tenant) {
-                      verifyPermission().then((result) {
-                        if (result == true) {
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  Text(
+                    '${((int.parse(rollerIRMSHOLD) * 2100) / 31).round()} mA',
+                    style: const TextStyle(
+                      fontSize: 25.0,
+                      color: Color(0xFFdfb6b2),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  SizedBox(
+                    width: 300,
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 20.0,
+                        thumbColor: const Color(0xfffbe4d8),
+                        thumbShape: const IconThumbSlider(
+                          iconData: Icons.electric_bolt,
+                          thumbRadius: 20,
+                        ),
+                      ),
+                      child: Slider(
+                        min: 0,
+                        max: 31,
+                        value: double.parse(rollerIRMSHOLD),
+                        onChanged: (value) {
                           setState(() {
-                            isTaskScheduled[deviceName] =
-                                !(isTaskScheduled[deviceName] ?? false);
+                            rollerIRMSHOLD = value.round().toString();
                           });
-                          saveControlValue(isTaskScheduled);
-                          controlTask(
-                              isTaskScheduled[deviceName] ?? false, deviceName);
+                        },
+                        onChangeEnd: (value) {
+                          setMotorCurrent(false, value.round().toString());
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              const Divider(),
+              const SizedBox(
+                height: 10,
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  const Text(
+                    'Threshold PWM:',
+                    style: TextStyle(
+                        fontSize: 20.0,
+                        color: Color(0xfffbe4d8),
+                        fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  Text(
+                    rollerTPWMTHRS,
+                    style: const TextStyle(
+                      fontSize: 25.0,
+                      color: Color(0xFFdfb6b2),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  SizedBox(
+                    width: 300,
+                    child: TextField(
+                      style: const TextStyle(color: Color(0xFFdfb6b2)),
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Modificar:',
+                        labelStyle: TextStyle(
+                            color: Color(0xFFdfb6b2),
+                            fontWeight: FontWeight.bold),
+                      ),
+                      onSubmitted: (value) {
+                        if (int.parse(value) < 1048575 &&
+                            int.parse(value) > 0) {
+                          printLog('Añaseo $value');
+                          setTPWMTHRS(value);
                         } else {
                           showToast(
-                            'Permitir ubicación todo el tiempo\nPara usar el control por distancia',
-                          );
-                          openAppSettings();
+                              'El valor no esta en el rango\n0 - 1048575');
                         }
-                      });
-                    } else {
-                      showToast('No tienes acceso a esta función');
-                    }
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 500),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: isTaskScheduled[deviceName] ?? false
-                          ? Colors.greenAccent
-                          : Colors.redAccent,
-                      shape: BoxShape.circle,
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 10,
-                          offset: Offset(0, 5),
-                        ),
-                      ],
+                      },
                     ),
-                    child: Icon(
-                        (isTaskScheduled[deviceName] ?? false)
-                            ? Icons.check_circle_outline_rounded
-                            : Icons.cancel_rounded,
-                        size: 80,
-                        color: Colors.white),
                   ),
-                ),
-                const SizedBox(height: 10),
-                AnimatedOpacity(
-                  opacity: isTaskScheduled[deviceName] ?? false ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 500),
-                  child: AnimatedSize(
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.easeInOut,
-                    child: isTaskScheduled[deviceName] ?? false
-                        ? Column(
-                            children: [
-                              // Tarjeta de Distancia de apagado
-                              Card(
-                                color: color3.withOpacity(0.9),
-                                elevation: 6,
-                                margin: const EdgeInsets.symmetric(
-                                    vertical: 8.0, horizontal: 20.0),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  side: BorderSide(
-                                    color: Color.lerp(
-                                        Colors.blueAccent,
-                                        Colors.redAccent,
-                                        (distOffValue - 100) / 200)!,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(10.0),
-                                  child: Column(
-                                    children: [
-                                      const Text(
-                                        'Distancia de apagado',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: color1,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            distOffValue.round().toString(),
-                                            style: const TextStyle(
-                                              fontSize: 24,
-                                              color: color1,
-                                            ),
-                                          ),
-                                          const Text(
-                                            ' Metros',
-                                            style: TextStyle(
-                                              fontSize: 24,
-                                              color: color1,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      SliderTheme(
-                                        data: SliderTheme.of(context).copyWith(
-                                          trackHeight: 20.0,
-                                          thumbColor: color3,
-                                          activeTrackColor: Colors.blueAccent,
-                                          inactiveTrackColor:
-                                              Colors.blueGrey[100],
-                                          thumbShape:
-                                              const RoundSliderThumbShape(
-                                            enabledThumbRadius: 12.0,
-                                            elevation: 0.0,
-                                            pressedElevation: 0.0,
-                                          ),
-                                        ),
-                                        child: Slider(
-                                          activeColor: Colors.white,
-                                          inactiveColor:
-                                              const Color(0xFFBDBDBD),
-                                          value: distOffValue,
-                                          divisions: 20,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              distOffValue = value;
-                                            });
-                                          },
-                                          onChangeEnd: (value) {
-                                            printLog(
-                                                'Valor enviado: ${value.round()}');
-                                            putDistanceOff(
-                                              service,
-                                              command(deviceName),
-                                              extractSerialNumber(deviceName),
-                                              value.toString(),
-                                            );
-                                          },
-                                          min: 100,
-                                          max: 300,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 15),
-                              Card(
-                                color: color3.withOpacity(0.9),
-                                elevation: 6,
-                                margin: const EdgeInsets.symmetric(
-                                    vertical: 8.0, horizontal: 20.0),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  side: BorderSide(
-                                    color: Color.lerp(
-                                        Colors.blueAccent,
-                                        Colors.redAccent,
-                                        (distOnValue - 3000) / 2000)!,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(10.0),
-                                  child: Column(
-                                    children: [
-                                      const Text(
-                                        'Distancia de encendido',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: color1,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            distOnValue.round().toString(),
-                                            style: const TextStyle(
-                                              fontSize: 24,
-                                              color: color1,
-                                            ),
-                                          ),
-                                          const Text(
-                                            ' Metros',
-                                            style: TextStyle(
-                                              fontSize: 24,
-                                              color: color1,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      SliderTheme(
-                                        data: SliderTheme.of(context).copyWith(
-                                          trackHeight: 20.0,
-                                          thumbColor: color3,
-                                          activeTrackColor: Colors.blueAccent,
-                                          inactiveTrackColor:
-                                              Colors.blueGrey[100],
-                                          thumbShape:
-                                              const RoundSliderThumbShape(
-                                            enabledThumbRadius: 12.0,
-                                            elevation: 0.0,
-                                            pressedElevation: 0.0,
-                                          ),
-                                        ),
-                                        child: Slider(
-                                          activeColor: Colors.white,
-                                          inactiveColor:
-                                              const Color(0xFFBDBDBD),
-                                          value: distOnValue,
-                                          divisions: 20,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              distOnValue = value;
-                                            });
-                                          },
-                                          onChangeEnd: (value) {
-                                            printLog(
-                                                'Valor enviado: ${value.round()}');
-                                            putDistanceOn(
-                                              service,
-                                              command(deviceName),
-                                              extractSerialNumber(deviceName),
-                                              value.toString(),
-                                            );
-                                          },
-                                          min: 3000,
-                                          max: 5000,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          )
-                        : const SizedBox(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (!deviceOwner && owner != '' && !tenant)
-            Container(
-              color: Colors.black.withOpacity(0.7),
-              child: const Center(
-                child: Text(
-                  'No tienes acceso a esta función',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
+                ],
               ),
-            ),
-        ],
+              const SizedBox(
+                height: 10,
+              ),
+              const Divider(),
+              const SizedBox(
+                height: 10,
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  const Text(
+                    'Threshold COOL:',
+                    style: TextStyle(
+                        fontSize: 20.0,
+                        color: Color(0xfffbe4d8),
+                        fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  Text(
+                    rollerTCOOLTHRS,
+                    style: const TextStyle(
+                      fontSize: 25.0,
+                      color: Color(0xFFdfb6b2),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  SizedBox(
+                    width: 300,
+                    child: TextField(
+                      style: const TextStyle(color: Color(0xFFdfb6b2)),
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Modificar:',
+                        labelStyle: TextStyle(
+                            color: Color(0xFFdfb6b2),
+                            fontWeight: FontWeight.bold),
+                      ),
+                      onSubmitted: (value) {
+                        if (int.parse(value) < 1048575 &&
+                            int.parse(value) > 1) {
+                          setTCOOLTHRS(value);
+                        } else {
+                          showToast(
+                              'El valor no esta en el rango\n1 - 1048575');
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              const Divider(),
+              const SizedBox(
+                height: 10,
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  const Text(
+                    'SG Threshold:',
+                    style: TextStyle(
+                        fontSize: 20.0,
+                        color: Color(0xfffbe4d8),
+                        fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  Text(
+                    rollerSGTHRS,
+                    style: const TextStyle(
+                      fontSize: 25.0,
+                      color: Color(0xFFdfb6b2),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  SizedBox(
+                    width: 300,
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 20.0,
+                        thumbColor: const Color(0xfffbe4d8),
+                        thumbShape: const IconThumbSlider(
+                          iconData: Icons.catching_pokemon,
+                          thumbRadius: 20,
+                        ),
+                      ),
+                      child: Slider(
+                        min: 0,
+                        max: 255,
+                        value: double.parse(rollerSGTHRS),
+                        onChanged: (value) {
+                          setState(() {
+                            rollerSGTHRS = value.round().toString();
+                          });
+                        },
+                        onChangeEnd: (value) {
+                          setSGTHRS(value.round().toString());
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              const Divider(),
+              const SizedBox(
+                height: 10,
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  const Text(
+                    'Free Wheeling:',
+                    style: TextStyle(
+                        fontSize: 20.0,
+                        color: Color(0xfffbe4d8),
+                        fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  SizedBox(
+                    width: 300,
+                    child: Switch(
+                      activeColor: const Color(0xfffbe4d8),
+                      activeTrackColor: const Color(0xff854f6c),
+                      inactiveThumbColor: const Color(0xff854f6c),
+                      inactiveTrackColor: const Color(0xfffbe4d8),
+                      value: rollerFreewheeling,
+                      onChanged: (value) {
+                        setFreeWheeling(value);
+                        setState(() {
+                          rollerFreewheeling = value;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              const Divider(),
+              const SizedBox(
+                height: 10,
+              ),
+            ],
+          ),
+        ),
       ),
 
-      //*- Página 4: Gestión del Equipo -*\\
+      //*- Página 3: Gestión del Equipo -*\\
       SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
@@ -1390,8 +1505,8 @@ class RelayPageState extends State<RelayPage> {
                                     : const SizedBox(),
                               ),
                               const SizedBox(height: 10),
-                              //! Opción 4 - Habitante inteligente
 
+                              //! Opción 4 - Habitante inteligente
                               InkWell(
                                 onTap: () {
                                   if (activatedAT) {
@@ -2024,55 +2139,15 @@ class RelayPageState extends State<RelayPage> {
                                       )
                                     : const SizedBox.shrink(),
                               ),
+                              const SizedBox(height: 20),
                             ],
                           ],
                         )
                       : const SizedBox(),
                 ),
               ),
-              const SizedBox(
-                height: 30,
-              ),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    if (!quickAccesActivated) {
-                      quickAccess.add(deviceName);
-                      await savequickAccess(quickAccess);
-                      setState(() {
-                        quickAccesActivated = true;
-                      });
-                    } else {
-                      quickAccess.remove(deviceName);
-                      await savequickAccess(quickAccess);
-                      setState(() {
-                        quickAccesActivated = false;
-                      });
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: color0,
-                    backgroundColor: color3,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  child: Text(
-                    quickAccesActivated
-                        ? 'Desactivar acceso rápido'
-                        : 'Activar acceso rápido',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(
-                height: 10,
-              ),
+              const SizedBox(height: 30),
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -2319,7 +2394,6 @@ class RelayPageState extends State<RelayPage> {
                 items: const <Widget>[
                   Icon(Icons.home, size: 30, color: color0),
                   Icon(Icons.bluetooth, size: 30, color: color0),
-                  Icon(Icons.location_on, size: 30, color: color0),
                   Icon(Icons.settings, size: 30, color: color0),
                 ],
                 color: color3,
@@ -2344,3 +2418,69 @@ class RelayPageState extends State<RelayPage> {
     );
   }
 }
+
+//*- Diseño de la cortina -*\\
+class CurtainAnimation extends StatelessWidget {
+  final int position;
+  final Function(TapDownDetails) onTapDown;
+
+  const CurtainAnimation({
+    super.key,
+    required this.position,
+    required this.onTapDown,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    double curtainHeight = (position / 100) * 250;
+
+    return GestureDetector(
+      onTapDown: onTapDown,
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.8,
+        height: 300,
+        decoration: const BoxDecoration(
+          color: Colors.transparent,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 10,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.topCenter,
+          children: [
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 320,
+              child: Image.asset(
+                'assets/parteSuperior.png',
+                fit: BoxFit.cover,
+              ),
+            ),
+            Positioned(
+              top: 19,
+              left: 20,
+              right: 20,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+                height: curtainHeight,
+                child: Image.asset(
+                  'assets/persiana.jpg',
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+//*- Diseño de la cortina -*\\

@@ -148,8 +148,9 @@ void listenToTopics() {
       }
 
       printLog('Received message: $messageMap from topic: $topic');
-    } catch (e) {
+    } catch (e, s) {
       printLog('Error decoding message: $e');
+      printLog('Error decoding message: $s');
     }
   });
 }

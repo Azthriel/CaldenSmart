@@ -5,6 +5,7 @@ import 'package:caldensmart/Devices/relay.dart';
 import 'package:caldensmart/Global/profile.dart';
 import 'Devices/domotica.dart';
 import 'Devices/detectores.dart';
+import 'Devices/roller.dart';
 import 'Global/escenas.dart';
 import 'easterEgg/easter_egg.dart';
 import 'Global/loading.dart';
@@ -127,6 +128,7 @@ class MyAppState extends State<MyApp> {
         '/profile': (context) => const ProfilePage(),
         '/escenas': (context) => const EscenasPage(),
         '/relay': (context) => const RelayPage(),
+        '/roller': (context) => const RollerPage(),
       },
     );
   }

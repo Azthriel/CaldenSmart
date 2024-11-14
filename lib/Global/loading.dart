@@ -71,7 +71,7 @@ class LoadState extends State<LoadingPage> {
         subToTopicMQTT(
             'devices_tx/${command(deviceName)}/${extractSerialNumber(deviceName)}');
 
-        if (deviceType != '020010') {
+        if (deviceType != '020010' && deviceType != '015773') {
           alexaDevices.add(deviceName);
           saveAlexaDevices(alexaDevices);
           putDevicesForAlexa(service, currentUserEmail, alexaDevices);
@@ -94,6 +94,8 @@ class LoadState extends State<LoadingPage> {
       int users = int.parse(match!.group(1).toString());
       printLog('Hay $users conectados');
       userConnected = users > 1;
+
+      quickAccesActivated = quickAccess.contains(deviceName);
 
       //Si es un calefactor
       if (deviceType == '022000' || deviceType == '027000') {
@@ -327,6 +329,27 @@ class LoadState extends State<LoadingPage> {
               3000.0;
           isTaskScheduled = await loadControlValue();
         }
+      } else if (deviceType == '024011') {
+        varsValues = await myDevice.varsUuid.read();
+        var parts2 = utf8.decode(varsValues).split(':');
+        printLog('Valores vars: $parts2');
+
+        distanceControlActive = parts2[0] == '1';
+        rollerlength = parts2[1];
+        rollerPolarity = parts2[2];
+        rollerRPM = parts2[3];
+        rollerMicroStep = parts2[4];
+        rollerIMAX = parts2[5];
+        rollerIRMSRUN = parts2[6];
+        rollerIRMSHOLD = parts2[7];
+        rollerFreewheeling = parts2[8] == '1';
+        rollerTPWMTHRS = parts2[9];
+        rollerTCOOLTHRS = parts2[10];
+        rollerSGTHRS = parts2[11];
+        actualPosition = int.parse(parts2[12]);
+        workingPosition = int.parse(parts2[13]);
+        rollerMoving = parts2[14] == '1';
+        awsInit = parts2[15] == '1';
       }
 
       return Future.value(true);
