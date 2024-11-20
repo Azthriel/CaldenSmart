@@ -682,9 +682,9 @@ class EscenasPageState extends State<EscenasPage> {
                               if (device.toLowerCase().contains('domotica')) {
                                 showIoSelectionCH = true;
 
-                                String equipo = command(device);
+                                String equipo = DeviceManager.getProductCode(device);
                                 Map<String, dynamic> deviceDATA = globalDATA[
-                                        '$equipo/${extractSerialNumber(device)}'] ??
+                                        '$equipo/${DeviceManager.extractSerialNumber(device)}'] ??
                                     {};
 
                                 String io =
@@ -1821,9 +1821,9 @@ class EscenasPageState extends State<EscenasPage> {
 
 //*-Muestra la interfaz para seleccionar la salida específica de un dispositivo que activará la cadena en AC-*\\
   Widget buildOutputTriggerSelectionAC() {
-    String equipo = command(selectedDeviceAC!);
+    String equipo = DeviceManager.getProductCode(selectedDeviceAC!);
     Map<String, dynamic> deviceDATA =
-        globalDATA['$equipo/${extractSerialNumber(selectedDeviceAC!)}'] ?? {};
+        globalDATA['$equipo/${DeviceManager.extractSerialNumber(selectedDeviceAC!)}'] ?? {};
 
     String io =
         '${deviceDATA['io0']}/${deviceDATA['io1']}/${deviceDATA['io2']}/${deviceDATA['io3']}';
@@ -1919,9 +1919,9 @@ class EscenasPageState extends State<EscenasPage> {
 
 //*-Construye la interfaz para seleccionar la salida que actuará como accionador de la cadena en AC-*\\
   Widget buildTriggerOutputSelectionAC() {
-    String equipo = command(selectedDeviceAC!);
+    String equipo = DeviceManager.getProductCode(selectedDeviceAC!);
     Map<String, dynamic> deviceDATA =
-        globalDATA['$equipo/${extractSerialNumber(selectedDeviceAC!)}'] ?? {};
+        globalDATA['$equipo/${DeviceManager.extractSerialNumber(selectedDeviceAC!)}'] ?? {};
 
     String io =
         '${deviceDATA['io0']}/${deviceDATA['io1']}/${deviceDATA['io2']}/${deviceDATA['io3']}';
@@ -2004,9 +2004,9 @@ class EscenasPageState extends State<EscenasPage> {
                   intervalTimes = {};
                   intervalControllers = {};
 
-                  String equipo = command(selectedDeviceAC!);
+                  String equipo = DeviceManager.getProductCode(selectedDeviceAC!);
                   Map<String, dynamic> deviceDATA = globalDATA[
-                          '$equipo/${extractSerialNumber(selectedDeviceAC!)}'] ??
+                          '$equipo/${DeviceManager.extractSerialNumber(selectedDeviceAC!)}'] ??
                       {};
 
                   String io =

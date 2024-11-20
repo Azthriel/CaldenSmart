@@ -343,22 +343,22 @@ class ScanPageState extends State<ScanPage>
                   final deviceName = device.platformName;
                   final imagePath = deviceImages[deviceName];
                   List<dynamic> admins = globalDATA[
-                              '${command(device.platformName)}/${extractSerialNumber(device.platformName)}']
+                              '${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
                           ?['secondary_admin'] ??
                       [];
                   bool owner = globalDATA[
-                                  '${command(device.platformName)}/${extractSerialNumber(device.platformName)}']
+                                  '${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
                               ?['owner'] ==
                           currentUserEmail ||
                       admins.contains(deviceName) ||
-                      globalDATA['${command(device.platformName)}/${extractSerialNumber(device.platformName)}']
+                      globalDATA['${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
                               ?['owner'] ==
                           '' ||
-                      globalDATA['${command(device.platformName)}/${extractSerialNumber(device.platformName)}']
+                      globalDATA['${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
                               ?['owner'] ==
                           null;
                   bool condicion =
-                      command(device.platformName) != '015773_IOT' &&
+                      DeviceManager.getProductCode(device.platformName) != '015773_IOT' &&
                           owner &&
                           quickAccess.contains(device.platformName);
                   return FadeTransition(
@@ -414,7 +414,7 @@ class ScanPageState extends State<ScanPage>
                                       left: 16,
                                       child: Text(
                                         nicknamesMap[device.platformName] ??
-                                            device.platformName,
+                                            DeviceManager.getComercialName(device.platformName),
                                         style: GoogleFonts.poppins(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 22,
@@ -441,10 +441,7 @@ class ScanPageState extends State<ScanPage>
                                       left: 16,
                                       right: 16,
                                       child: Text(
-                                        nicknamesMap[device.platformName] !=
-                                                null
-                                            ? device.platformName
-                                            : device.remoteId.toString(),
+                                        device.platformName,
                                         style: GoogleFonts.poppins(
                                           fontSize: 12,
                                           color: Colors.white,
@@ -476,7 +473,7 @@ class ScanPageState extends State<ScanPage>
                                           scale: 1.33,
                                           child: Switch(
                                             value: globalDATA[
-                                                        '${command(device.platformName)}/${extractSerialNumber(device.platformName)}']
+                                                        '${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
                                                     ?['w_status'] ??
                                                 false,
                                             activeColor: color1,
@@ -484,7 +481,7 @@ class ScanPageState extends State<ScanPage>
                                               quickAction = true;
                                               setState(() {
                                                 globalDATA[
-                                                        '${command(device.platformName)}/${extractSerialNumber(device.platformName)}']
+                                                        '${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
                                                     ?['w_status'] = newValue;
                                               });
                                               await device.connect(

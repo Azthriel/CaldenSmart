@@ -28,8 +28,6 @@ class RollerPageState extends State<RollerPage> {
   TextEditingController contrapulseController = TextEditingController();
   TextEditingController emailController = TextEditingController();
 
-  late AnimationController _animationController;
-
   bool showOptions = false;
   bool _showNotificationOptions = false;
   bool showSecondaryAdminFields = false;
@@ -53,8 +51,16 @@ class RollerPageState extends State<RollerPage> {
 
   @override
   void dispose() {
-    _animationController.dispose();
     super.dispose();
+    _pageController.dispose();
+    tenantController.dispose();
+    tenantDistanceOn.dispose();
+    rLargeController.dispose();
+    workController.dispose();
+    motorSpeedUpController.dispose();
+    motorSpeedDownController.dispose();
+    contrapulseController.dispose();
+    emailController.dispose();
   }
 
   // FUNCIONES \\
@@ -135,8 +141,8 @@ class RollerPageState extends State<RollerPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..add(email);
 
-      await putSecondaryAdmins(service, command(deviceName),
-          extractSerialNumber(deviceName), updatedAdmins);
+      await putSecondaryAdmins(service, DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
 
       setState(() {
         adminDevices = updatedAdmins;
@@ -154,8 +160,8 @@ class RollerPageState extends State<RollerPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..remove(email);
 
-      await putSecondaryAdmins(service, command(deviceName),
-          extractSerialNumber(deviceName), updatedAdmins);
+      await putSecondaryAdmins(service, DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
 
       setState(() {
         adminDevices.remove(email);
@@ -196,61 +202,60 @@ class RollerPageState extends State<RollerPage> {
   }
 
   void setRange(int mm) {
-    String data = '${command(deviceName)}[7]($mm)';
+    String data = '${DeviceManager.getProductCode(deviceName)}[7]($mm)';
     printLog(data);
     myDevice.toolsUuid.write(data.codeUnits);
   }
 
   void setDistance(int pc) {
-    String data = '${command(deviceName)}[7]($pc%)';
+    String data = '${DeviceManager.getProductCode(deviceName)}[7]($pc%)';
     printLog(data);
     myDevice.toolsUuid.write(data.codeUnits);
   }
 
   void setRollerConfig(int type) {
-    String data = '${command(deviceName)}[8]($type)';
-    printLog(data);
+    String data = '${DeviceManager.getProductCode(deviceName)}[8]($type)';
     myDevice.toolsUuid.write(data.codeUnits);
   }
 
   void setMotorSpeed(String rpm) {
-    String data = '${command(deviceName)}[10]($rpm)';
+    String data = '${DeviceManager.getProductCode(deviceName)}[10]($rpm)';
     printLog(data);
     myDevice.toolsUuid.write(data.codeUnits);
   }
 
   void setMicroStep(String uStep) {
-    String data = '${command(deviceName)}[11]($uStep)';
+    String data = '${DeviceManager.getProductCode(deviceName)}[11]($uStep)';
     printLog(data);
     myDevice.toolsUuid.write(data.codeUnits);
   }
 
   void setMotorCurrent(bool run, String value) {
-    String data = '${command(deviceName)}[12](${run ? '1' : '0'}#$value)';
+    String data = '${DeviceManager.getProductCode(deviceName)}[12](${run ? '1' : '0'}#$value)';
     printLog(data);
     myDevice.toolsUuid.write(data.codeUnits);
   }
 
   void setFreeWheeling(bool active) {
-    String data = '${command(deviceName)}[14](${active ? '1' : '0'})';
+    String data = '${DeviceManager.getProductCode(deviceName)}[14](${active ? '1' : '0'})';
     printLog(data);
     myDevice.toolsUuid.write(data.codeUnits);
   }
 
   void setTPWMTHRS(String value) {
-    String data = '${command(deviceName)}[15]($value)';
+    String data = '${DeviceManager.getProductCode(deviceName)}[15]($value)';
     printLog(data);
     myDevice.toolsUuid.write(data.codeUnits);
   }
 
   void setTCOOLTHRS(String value) {
-    String data = '${command(deviceName)}[16]($value)';
+    String data = '${DeviceManager.getProductCode(deviceName)}[16]($value)';
     printLog(data);
     myDevice.toolsUuid.write(data.codeUnits);
   }
 
   void setSGTHRS(String value) {
-    String data = '${command(deviceName)}[17]($value)';
+    String data = '${DeviceManager.getProductCode(deviceName)}[17]($value)';
     printLog(data);
     myDevice.toolsUuid.write(data.codeUnits);
   }
@@ -314,7 +319,7 @@ class RollerPageState extends State<RollerPage> {
                   Expanded(
                     child: GestureDetector(
                       onLongPressStart: (LongPressStartDetails a) {
-                        String data = '${command(deviceName)}[7](0%)';
+                        String data = '${DeviceManager.getProductCode(deviceName)}[7](0%)';
                         myDevice.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = 0;
@@ -323,7 +328,7 @@ class RollerPageState extends State<RollerPage> {
                       },
                       onLongPressEnd: (LongPressEndDetails a) {
                         String data =
-                            '${command(deviceName)}[7]($actualPosition%)';
+                            '${DeviceManager.getProductCode(deviceName)}[7]($actualPosition%)';
                         myDevice.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = actualPosition;
@@ -373,7 +378,7 @@ class RollerPageState extends State<RollerPage> {
                   Expanded(
                     child: GestureDetector(
                       onLongPressStart: (LongPressStartDetails a) {
-                        String data = '${command(deviceName)}[7](100%)';
+                        String data = '${DeviceManager.getProductCode(deviceName)}[7](100%)';
                         myDevice.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = 100;
@@ -382,7 +387,7 @@ class RollerPageState extends State<RollerPage> {
                       },
                       onLongPressEnd: (LongPressEndDetails a) {
                         String data =
-                            '${command(deviceName)}[7]($actualPosition%)';
+                            '${DeviceManager.getProductCode(deviceName)}[7]($actualPosition%)';
                         myDevice.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = actualPosition;
@@ -462,7 +467,7 @@ class RollerPageState extends State<RollerPage> {
                 ),
               ),
               const SizedBox(height: 10),
-              //TODO
+              //TODO: guardar fin
               ElevatedButton(
                 onPressed: () {
                   setRollerConfig(0);
@@ -1195,8 +1200,8 @@ class RollerPageState extends State<RollerPage> {
                             try {
                               putOwner(
                                 service,
-                                command(deviceName),
-                                extractSerialNumber(deviceName),
+                                DeviceManager.getProductCode(deviceName),
+                                DeviceManager.extractSerialNumber(deviceName),
                                 '',
                               );
                               myDevice.device.disconnect();
@@ -1217,8 +1222,8 @@ class RollerPageState extends State<RollerPage> {
                     try {
                       putOwner(
                         service,
-                        command(deviceName),
-                        extractSerialNumber(deviceName),
+                        DeviceManager.getProductCode(deviceName),
+                        DeviceManager.extractSerialNumber(deviceName),
                         currentUserEmail,
                       );
                       setState(() {
@@ -1536,7 +1541,7 @@ class RollerPageState extends State<RollerPage> {
                                             ),
                                             onPressed: () async {
                                               String cuerpo =
-                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
+                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
                                               final Uri emailLaunchUri = Uri(
                                                 scheme: 'mailto',
                                                 path:
@@ -1714,7 +1719,7 @@ class RollerPageState extends State<RollerPage> {
                                                             Expanded(
                                                               child: Text(
                                                                 globalDATA[
-                                                                        '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                                                                     ?['tenant'],
                                                                 style:
                                                                     GoogleFonts
@@ -1733,9 +1738,9 @@ class RollerPageState extends State<RollerPage> {
                                                                   () async {
                                                                 await saveATData(
                                                                   service,
-                                                                  command(
+                                                                  DeviceManager.getProductCode(
                                                                       deviceName),
-                                                                  extractSerialNumber(
+                                                                  DeviceManager.extractSerialNumber(
                                                                       deviceName),
                                                                   false,
                                                                   '',
@@ -1747,7 +1752,7 @@ class RollerPageState extends State<RollerPage> {
                                                                   tenantController
                                                                       .clear();
                                                                   globalDATA[
-                                                                          '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                                          '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                                                                       ?[
                                                                       'tenant'] = '';
                                                                   activatedAT =
@@ -1828,9 +1833,9 @@ class RollerPageState extends State<RollerPage> {
                                                                   .isNotEmpty) {
                                                             saveATData(
                                                               service,
-                                                              command(
+                                                              DeviceManager.getProductCode(
                                                                   deviceName),
-                                                              extractSerialNumber(
+                                                              DeviceManager.extractSerialNumber(
                                                                   deviceName),
                                                               true,
                                                               tenantController
@@ -1847,7 +1852,7 @@ class RollerPageState extends State<RollerPage> {
                                                             setState(() {
                                                               activatedAT =
                                                                   true;
-                                                              globalDATA['${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                                                                       ?[
                                                                       'tenant'] =
                                                                   tenantController

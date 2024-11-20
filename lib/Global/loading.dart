@@ -47,6 +47,8 @@ class LoadState extends State<LoadingPage> {
           navigatorKey.currentState?.pushReplacementNamed('/domotica');
         } else if (deviceType == '027313') {
           navigatorKey.currentState?.pushReplacementNamed('/relay');
+        } else if (deviceType == '024011') {
+          navigatorKey.currentState?.pushReplacementNamed('/roller');
         }
       } else {
         showToast('Error en el dispositivo, intente nuevamente');
@@ -66,10 +68,10 @@ class LoadState extends State<LoadingPage> {
         previusConnections.add(deviceName);
         saveDeviceList(previusConnections);
         topicsToSub.add(
-            'devices_tx/${command(deviceName)}/${extractSerialNumber(deviceName)}');
+            'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}');
         saveTopicList(topicsToSub);
         subToTopicMQTT(
-            'devices_tx/${command(deviceName)}/${extractSerialNumber(deviceName)}');
+            'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}');
 
         if (deviceType != '020010' && deviceType != '015773') {
           alexaDevices.add(deviceName);
@@ -79,12 +81,12 @@ class LoadState extends State<LoadingPage> {
       }
 
       setupToken(
-          command(deviceName), extractSerialNumber(deviceName), deviceName);
+          DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName), deviceName);
 
       printLog('Equipo: $deviceType');
 
       await queryItems(
-          service, command(deviceName), extractSerialNumber(deviceName));
+          service, DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName));
 
       discNotfActivated = configNotiDsc.keys.toList().contains(deviceName);
 
@@ -113,12 +115,12 @@ class LoadState extends State<LoadingPage> {
         printLog('Estado: $turnOn');
         lastUser = users;
         owner = globalDATA[
-                    '${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+                    '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                 'owner'] ??
             '';
         printLog('Owner actual: $owner');
         adminDevices = await getSecondaryAdmins(
-            service, command(deviceName), extractSerialNumber(deviceName));
+            service, DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName));
         printLog('Administradores: $adminDevices');
 
         if (owner != '') {
@@ -140,15 +142,15 @@ class LoadState extends State<LoadingPage> {
         }
 
         await analizePayment(
-            command(deviceName), extractSerialNumber(deviceName));
+            DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName));
 
         if (payAT) {
           activatedAT = globalDATA[
-                      '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                      '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                   ?['AT'] ??
               false;
           tenant = globalDATA[
-                      '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                      '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                   ?['tenant'] ==
               currentUserEmail;
         } else {
@@ -158,11 +160,11 @@ class LoadState extends State<LoadingPage> {
 
         if (canControlDistance) {
           distOffValue = globalDATA[
-                      '${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+                      '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                   'distanceOff'] ??
               100.0;
           distOnValue = globalDATA[
-                      '${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+                      '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                   'distanceOn'] ??
               3000.0;
           isTaskScheduled = await loadControlValue();
@@ -170,12 +172,12 @@ class LoadState extends State<LoadingPage> {
 
         globalDATA
             .putIfAbsent(
-                '${command(deviceName)}/${extractSerialNumber(deviceName)}',
+                '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
                 () => {})
             .addAll({"w_status": turnOn});
         globalDATA
             .putIfAbsent(
-                '${command(deviceName)}/${extractSerialNumber(deviceName)}',
+                '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
                 () => {})
             .addAll({"f_status": trueStatus});
 
@@ -195,17 +197,17 @@ class LoadState extends State<LoadingPage> {
 
         globalDATA
             .putIfAbsent(
-                '${command(deviceName)}/${extractSerialNumber(deviceName)}',
+                '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
                 () => {})
             .addAll({"ppmCO": ppmCO});
         globalDATA
             .putIfAbsent(
-                '${command(deviceName)}/${extractSerialNumber(deviceName)}',
+                '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
                 () => {})
             .addAll({"ppmCH4": ppmCH4});
         globalDATA
             .putIfAbsent(
-                '${command(deviceName)}/${extractSerialNumber(deviceName)}',
+                '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
                 () => {})
             .addAll({"alert": workValues[4] == 1});
         saveGlobalData(globalDATA);
@@ -214,12 +216,12 @@ class LoadState extends State<LoadingPage> {
         printLog('Valores IO: $ioValues');
 
         owner = globalDATA[
-                    '${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+                    '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                 'owner'] ??
             '';
         printLog('Owner actual: $owner');
         adminDevices = await getSecondaryAdmins(
-            service, command(deviceName), extractSerialNumber(deviceName));
+            service, DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName));
         printLog('Administradores: $adminDevices');
 
         if (owner != '') {
@@ -241,15 +243,15 @@ class LoadState extends State<LoadingPage> {
         }
 
         await analizePayment(
-            command(deviceName), extractSerialNumber(deviceName));
+            DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName));
 
         if (payAT) {
           activatedAT = globalDATA[
-                      '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                      '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                   ?['AT'] ??
               false;
           tenant = globalDATA[
-                      '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                      '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                   ?['tenant'] ==
               currentUserEmail;
         } else {
@@ -264,17 +266,17 @@ class LoadState extends State<LoadingPage> {
         turnOn = parts2[1] == '1';
 
         isNC = globalDATA[
-                    '${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+                    '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                 'isNC'] ??
             false;
 
         owner = globalDATA[
-                    '${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+                    '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                 'owner'] ??
             '';
         printLog('Owner actual: $owner');
         adminDevices = await getSecondaryAdmins(
-            service, command(deviceName), extractSerialNumber(deviceName));
+            service, DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName));
         printLog('Administradores: $adminDevices');
 
         if (owner != '') {
@@ -296,15 +298,15 @@ class LoadState extends State<LoadingPage> {
         }
 
         await analizePayment(
-            command(deviceName), extractSerialNumber(deviceName));
+            DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName));
 
         if (payAT) {
           activatedAT = globalDATA[
-                      '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                      '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                   ?['AT'] ??
               false;
           tenant = globalDATA[
-                      '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                      '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                   ?['tenant'] ==
               currentUserEmail;
         } else {
@@ -320,11 +322,11 @@ class LoadState extends State<LoadingPage> {
 
         if (canControlDistance) {
           distOffValue = globalDATA[
-                      '${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+                      '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                   'distanceOff'] ??
               100.0;
           distOnValue = globalDATA[
-                      '${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+                      '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                   'distanceOn'] ??
               3000.0;
           isTaskScheduled = await loadControlValue();

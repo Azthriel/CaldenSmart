@@ -22,6 +22,12 @@ class MenuPageState extends State<MenuPage> {
     getMail();
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+    _pageController.dispose();
+  }
+
   void _onPageChanged(int index) {
     setState(() {
       _selectedIndex = index;

@@ -92,6 +92,16 @@ class CalefactorPageState extends State<CalefactorPage> {
     subscribeTrueStatus();
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+    _pageController.dispose();
+    tenantController.dispose();
+    costController.dispose();
+    emailController.dispose();
+    tenantDistanceOn.dispose();
+  }
+
   Future<void> addSecondaryAdmin(String email) async {
     if (!isValidEmail(email)) {
       showToast('Por favor, introduce un correo electrónico válido.');
@@ -106,8 +116,8 @@ class CalefactorPageState extends State<CalefactorPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..add(email);
 
-      await putSecondaryAdmins(service, command(deviceName),
-          extractSerialNumber(deviceName), updatedAdmins);
+      await putSecondaryAdmins(service, DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
 
       setState(() {
         adminDevices = updatedAdmins;
@@ -125,8 +135,8 @@ class CalefactorPageState extends State<CalefactorPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..remove(email);
 
-      await putSecondaryAdmins(service, command(deviceName),
-          extractSerialNumber(deviceName), updatedAdmins);
+      await putSecondaryAdmins(service, DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
 
       setState(() {
         adminDevices.remove(email);
@@ -281,22 +291,22 @@ class CalefactorPageState extends State<CalefactorPage> {
   }
 
   void sendTemperature(int temp) {
-    String data = '${command(deviceName)}[7]($temp)';
+    String data = '${DeviceManager.getProductCode(deviceName)}[7]($temp)';
     myDevice.toolsUuid.write(data.codeUnits);
   }
 
   void turnDeviceOn(bool on) async {
     int fun = on ? 1 : 0;
-    String data = '${command(deviceName)}[11]($fun)';
+    String data = '${DeviceManager.getProductCode(deviceName)}[11]($fun)';
     myDevice.toolsUuid.write(data.codeUnits);
-    globalDATA['${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+    globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
         'w_status'] = on;
     saveGlobalData(globalDATA);
     try {
       String topic =
-          'devices_rx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
+          'devices_rx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
       String topic2 =
-          'devices_tx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
+          'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
       String message = jsonEncode({'w_status': on});
       sendMessagemqtt(topic, message);
       sendMessagemqtt(topic2, message);
@@ -325,7 +335,7 @@ class CalefactorPageState extends State<CalefactorPage> {
       // Programar la tarea.
       try {
         showToast('Recuerda tener la ubicación encendida.');
-        String data = '${command(deviceName)}[5](1)';
+        String data = '${DeviceManager.getProductCode(deviceName)}[5](1)';
         myDevice.toolsUuid.write(data.codeUnits);
         List<String> deviceControl = await loadDevicesForDistanceControl();
         deviceControl.add(deviceName);
@@ -354,7 +364,7 @@ class CalefactorPageState extends State<CalefactorPage> {
     } else {
       // Cancelar la tarea.
       showToast('Se cancelo el control por distancia');
-      String data = '${command(deviceName)}[5](0)';
+      String data = '${DeviceManager.getProductCode(deviceName)}[5](0)';
       myDevice.toolsUuid.write(data.codeUnits);
       List<String> deviceControl = await loadDevicesForDistanceControl();
       deviceControl.remove(deviceName);
@@ -823,8 +833,8 @@ class CalefactorPageState extends State<CalefactorPage> {
                                                 'Valor enviado: ${value.round()}');
                                             putDistanceOff(
                                               service,
-                                              command(deviceName),
-                                              extractSerialNumber(deviceName),
+                                              DeviceManager.getProductCode(deviceName),
+                                              DeviceManager.extractSerialNumber(deviceName),
                                               value.toString(),
                                             );
                                           },
@@ -914,8 +924,8 @@ class CalefactorPageState extends State<CalefactorPage> {
                                                 'Valor enviado: ${value.round()}');
                                             putDistanceOn(
                                               service,
-                                              command(deviceName),
-                                              extractSerialNumber(deviceName),
+                                              DeviceManager.getProductCode(deviceName),
+                                              DeviceManager.extractSerialNumber(deviceName),
                                               value.toString(),
                                             );
                                           },
@@ -1081,7 +1091,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                                 fechaSeleccionada = DateTime.now();
                               }),
                             );
-                            String data = '${command(deviceName)} ';
+                            String data = '${DeviceManager.getProductCode(deviceName)} ';
                             myDevice.toolsUuid.write(data.codeUnits);
                           }
                         : null,
@@ -1165,8 +1175,8 @@ class CalefactorPageState extends State<CalefactorPage> {
                             try {
                               putOwner(
                                 service,
-                                command(deviceName),
-                                extractSerialNumber(deviceName),
+                                DeviceManager.getProductCode(deviceName),
+                                DeviceManager.extractSerialNumber(deviceName),
                                 '',
                               );
                               myDevice.device.disconnect();
@@ -1187,8 +1197,8 @@ class CalefactorPageState extends State<CalefactorPage> {
                     try {
                       putOwner(
                         service,
-                        command(deviceName),
-                        extractSerialNumber(deviceName),
+                        DeviceManager.getProductCode(deviceName),
+                        DeviceManager.extractSerialNumber(deviceName),
                         currentUserEmail,
                       );
                       setState(() {
@@ -1504,7 +1514,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                                             ),
                                             onPressed: () async {
                                               String cuerpo =
-                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
+                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
                                               final Uri emailLaunchUri = Uri(
                                                 scheme: 'mailto',
                                                 path:
@@ -1682,7 +1692,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                                                             Expanded(
                                                               child: Text(
                                                                 globalDATA[
-                                                                        '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                                                                     ?['tenant'],
                                                                 style:
                                                                     GoogleFonts
@@ -1701,9 +1711,9 @@ class CalefactorPageState extends State<CalefactorPage> {
                                                                   () async {
                                                                 await saveATData(
                                                                   service,
-                                                                  command(
+                                                                  DeviceManager.getProductCode(
                                                                       deviceName),
-                                                                  extractSerialNumber(
+                                                                  DeviceManager.extractSerialNumber(
                                                                       deviceName),
                                                                   false,
                                                                   '',
@@ -1715,7 +1725,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                                                                   tenantController
                                                                       .clear();
                                                                   globalDATA[
-                                                                          '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                                          '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                                                                       ?[
                                                                       'tenant'] = '';
                                                                   activatedAT =
@@ -1796,9 +1806,9 @@ class CalefactorPageState extends State<CalefactorPage> {
                                                                   .isNotEmpty) {
                                                             saveATData(
                                                               service,
-                                                              command(
+                                                              DeviceManager.getProductCode(
                                                                   deviceName),
-                                                              extractSerialNumber(
+                                                              DeviceManager.extractSerialNumber(
                                                                   deviceName),
                                                               true,
                                                               tenantController
@@ -1815,7 +1825,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                                                             setState(() {
                                                               activatedAT =
                                                                   true;
-                                                              globalDATA['${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                                                                       ?[
                                                                       'tenant'] =
                                                                   tenantController
@@ -1901,7 +1911,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                               ),
                               const SizedBox(height: 10),
                               //! Opción 5 - activar notificación
-                             InkWell(
+                              InkWell(
                                 onTap: () async {
                                   if (discNotfActivated) {
                                     showAlertDialog(
@@ -2113,7 +2123,44 @@ class CalefactorPageState extends State<CalefactorPage> {
                 ),
               ),
               const SizedBox(height: 30),
-
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    if (!quickAccesActivated) {
+                      quickAccess.add(deviceName);
+                      await savequickAccess(quickAccess);
+                      setState(() {
+                        quickAccesActivated = true;
+                      });
+                    } else {
+                      quickAccess.remove(deviceName);
+                      await savequickAccess(quickAccess);
+                      setState(() {
+                        quickAccesActivated = false;
+                      });
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: color0,
+                    backgroundColor: color3,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: Text(
+                    quickAccesActivated
+                        ? 'Desactivar acceso rápido'
+                        : 'Activar acceso rápido',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
               Container(
                 width: MediaQuery.of(context).size.width * 1.5,
                 padding:
@@ -2160,7 +2207,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                             nightMode = value;
                             printLog('Estado: $nightMode');
                             int fun = nightMode ? 1 : 0;
-                            String data = '${command(deviceName)}[9]($fun)';
+                            String data = '${DeviceManager.getProductCode(deviceName)}[9]($fun)';
                             printLog(data);
                             myDevice.toolsUuid.write(data.codeUnits);
                           });

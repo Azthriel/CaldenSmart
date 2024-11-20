@@ -22,15 +22,15 @@ class WifiPageState extends State<WifiPage> {
     super.initState();
     for (String device in previusConnections) {
       // printLog('Voy a cargar los datos de $device');
-      queryItems(service, command(device), extractSerialNumber(device));
+      queryItems(service, DeviceManager.getProductCode(device), DeviceManager.extractSerialNumber(device));
     }
   }
 
   //*-Prender y apagar los equipos-*\\
   void toggleState(String deviceName, bool newState) async {
-    String deviceSerialNumber = extractSerialNumber(deviceName);
-    String productCode = command(deviceName);
-    globalDATA['${command(deviceName)}/$deviceSerialNumber']!['w_status'] =
+    String deviceSerialNumber = DeviceManager.extractSerialNumber(deviceName);
+    String productCode = DeviceManager.getProductCode(deviceName);
+    globalDATA['${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber']!['w_status'] =
         newState;
     saveGlobalData(globalDATA);
     String topic = 'devices_rx/$productCode/$deviceSerialNumber';
@@ -78,7 +78,7 @@ class WifiPageState extends State<WifiPage> {
                   putDevicesForAlexa(
                       service, currentUserEmail, previusConnections);
                   String topic =
-                      'devices_tx/$equipo/${extractSerialNumber(deviceName)}';
+                      'devices_tx/$equipo/${DeviceManager.extractSerialNumber(deviceName)}';
                   unSubToTopicMQTT(topic);
                   topicsToSub.remove(topic);
                   saveTopicList(topicsToSub);
@@ -144,21 +144,21 @@ class WifiPageState extends State<WifiPage> {
                   return Consumer<GlobalDataNotifier>(
                     key: Key(deviceName),
                     builder: (context, notifier, child) {
-                      String equipo = command(deviceName);
+                      String equipo = DeviceManager.getProductCode(deviceName);
                       Map<String, dynamic> topicData = notifier.getData(
-                          '$equipo/${extractSerialNumber(deviceName)}');
+                          '$equipo/${DeviceManager.extractSerialNumber(deviceName)}');
                       printLog(
-                          'Llego un cambio en ${'$equipo/${extractSerialNumber(deviceName)}'}',
+                          'Llego un cambio en ${'$equipo/${DeviceManager.extractSerialNumber(deviceName)}'}',
                           'Magenta');
                       printLog('Y fue el siguiente: $topicData', 'magenta');
                       globalDATA
                           .putIfAbsent(
-                              '$equipo/${extractSerialNumber(deviceName)}',
+                              '$equipo/${DeviceManager.extractSerialNumber(deviceName)}',
                               () => {})
                           .addAll(topicData);
                       saveGlobalData(globalDATA);
                       Map<String, dynamic> deviceDATA = globalDATA[
-                          '$equipo/${extractSerialNumber(deviceName)}']!;
+                          '$equipo/${DeviceManager.extractSerialNumber(deviceName)}']!;
                       // printLog(deviceDATA);
 
                       bool online = deviceDATA['cstate'] ?? false;
@@ -927,12 +927,12 @@ class WifiPageState extends State<WifiPage> {
                                                         onChanged: (value) {
                                                           String
                                                               deviceSerialNumber =
-                                                              extractSerialNumber(
+                                                              DeviceManager.extractSerialNumber(
                                                                   deviceName);
                                                           String topic =
-                                                              'devices_rx/${command(deviceName)}/$deviceSerialNumber';
+                                                              'devices_rx/${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber';
                                                           String topic2 =
-                                                              'devices_tx/${command(deviceName)}/$deviceSerialNumber';
+                                                              'devices_tx/${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber';
                                                           String message =
                                                               jsonEncode({
                                                             'pinType':
@@ -954,7 +954,7 @@ class WifiPageState extends State<WifiPage> {
                                                           });
                                                           globalDATA
                                                               .putIfAbsent(
-                                                                  '${command(deviceName)}/$deviceSerialNumber',
+                                                                  '${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber',
                                                                   () => {})
                                                               .addAll({
                                                             'io$i': message

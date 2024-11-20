@@ -27,9 +27,9 @@ void controlOut(bool value, int index) {
   String fun = '$index#${value ? '1' : '0'}';
   myDevice.ioUuid.write(fun.codeUnits);
   String topic =
-      'devices_rx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
+      'devices_rx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
   String topic2 =
-      'devices_tx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
+      'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
   String message = jsonEncode({
     'pinType': tipo[index] == 'Salida' ? '0' : '1',
     'index': index,
@@ -41,7 +41,7 @@ void controlOut(bool value, int index) {
 
   globalDATA
       .putIfAbsent(
-          '${command(deviceName)}/${extractSerialNumber(deviceName)}', () => {})
+          '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}', () => {})
       .addAll({'io$index': message});
 
   saveGlobalData(globalDATA);
@@ -101,8 +101,17 @@ class DomoticaPageState extends State<DomoticaPage> {
     subToIO();
     processValues(ioValues);
     notificationMap.putIfAbsent(
-        '${command(deviceName)}/${extractSerialNumber(deviceName)}',
+        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
         () => List<bool>.filled(4, false));
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _pageController.dispose();
+    tenantController.dispose();
+    passController.dispose();
+    emailController.dispose();
   }
 
   Future<void> processSelectedPins() async {
@@ -460,8 +469,8 @@ class DomoticaPageState extends State<DomoticaPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..add(email);
 
-      await putSecondaryAdmins(service, command(deviceName),
-          extractSerialNumber(deviceName), updatedAdmins);
+      await putSecondaryAdmins(service, DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
 
       setState(() {
         adminDevices = updatedAdmins;
@@ -479,8 +488,8 @@ class DomoticaPageState extends State<DomoticaPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..remove(email);
 
-      await putSecondaryAdmins(service, command(deviceName),
-          extractSerialNumber(deviceName), updatedAdmins);
+      await putSecondaryAdmins(service, DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
 
       setState(() {
         adminDevices.remove(email);
@@ -703,7 +712,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                               children: [
                                 Text(
                                   notificationMap[
-                                              '${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+                                              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                                           index]
                                       ? '¿Desactivar notificaciones?'
                                       : '¿Activar notificaciones?',
@@ -716,18 +725,18 @@ class DomoticaPageState extends State<DomoticaPage> {
                                 IconButton(
                                   onPressed: () {
                                     bool activated = notificationMap[
-                                            '${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+                                            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                                         index];
                                     setState(() {
                                       activated = !activated;
                                       notificationMap[
-                                              '${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+                                              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                                           index] = activated;
                                     });
                                     saveNotificationMap(notificationMap);
                                   },
                                   icon: notificationMap[
-                                              '${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+                                              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                                           index]
                                       ? Icon(
                                           Icons.notifications_off,
@@ -1140,7 +1149,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                                         IconButton(
                                           onPressed: () {
                                             String data =
-                                                '${command(deviceName)}[14]($i#${common[i] == '1' ? '0' : '1'})';
+                                                '${DeviceManager.getProductCode(deviceName)}[14]($i#${common[i] == '1' ? '0' : '1'})';
                                             printLog(data);
                                             myDevice.toolsUuid
                                                 .write(data.codeUnits);
@@ -1167,7 +1176,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                                       ),
                                       onPressed: () {
                                         String fun =
-                                            '${command(deviceName)}[13]($i#${tipo[i] == 'Entrada' ? '0' : '1'})';
+                                            '${DeviceManager.getProductCode(deviceName)}[13]($i#${tipo[i] == 'Entrada' ? '0' : '1'})';
                                         printLog(fun);
                                         myDevice.toolsUuid.write(fun.codeUnits);
                                       },
@@ -1247,8 +1256,8 @@ class DomoticaPageState extends State<DomoticaPage> {
                             try {
                               putOwner(
                                 service,
-                                command(deviceName),
-                                extractSerialNumber(deviceName),
+                                DeviceManager.getProductCode(deviceName),
+                                DeviceManager.extractSerialNumber(deviceName),
                                 '',
                               );
                               myDevice.device.disconnect();
@@ -1270,8 +1279,8 @@ class DomoticaPageState extends State<DomoticaPage> {
                     try {
                       putOwner(
                         service,
-                        command(deviceName),
-                        extractSerialNumber(deviceName),
+                        DeviceManager.getProductCode(deviceName),
+                        DeviceManager.extractSerialNumber(deviceName),
                         currentUserEmail,
                       );
                       setState(() {
@@ -1588,7 +1597,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                                             ),
                                             onPressed: () async {
                                               String cuerpo =
-                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
+                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
                                               final Uri emailLaunchUri = Uri(
                                                 scheme: 'mailto',
                                                 path:
@@ -1766,7 +1775,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                                                             Expanded(
                                                               child: Text(
                                                                 globalDATA[
-                                                                        '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                                                                     ?['tenant'],
                                                                 style:
                                                                     GoogleFonts
@@ -1785,9 +1794,9 @@ class DomoticaPageState extends State<DomoticaPage> {
                                                                   () async {
                                                                 await saveATData(
                                                                   service,
-                                                                  command(
+                                                                  DeviceManager.getProductCode(
                                                                       deviceName),
-                                                                  extractSerialNumber(
+                                                                  DeviceManager.extractSerialNumber(
                                                                       deviceName),
                                                                   false,
                                                                   '',
@@ -1799,7 +1808,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                                                                   tenantController
                                                                       .clear();
                                                                   globalDATA[
-                                                                          '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                                          '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                                                                       ?[
                                                                       'tenant'] = '';
                                                                   activatedAT =
@@ -1880,9 +1889,9 @@ class DomoticaPageState extends State<DomoticaPage> {
                                                                   .isNotEmpty) {
                                                             saveATData(
                                                               service,
-                                                              command(
+                                                              DeviceManager.getProductCode(
                                                                   deviceName),
-                                                              extractSerialNumber(
+                                                              DeviceManager.extractSerialNumber(
                                                                   deviceName),
                                                               true,
                                                               tenantController
@@ -1899,7 +1908,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                                                             setState(() {
                                                               activatedAT =
                                                                   true;
-                                                              globalDATA['${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                                                                       ?[
                                                                       'tenant'] =
                                                                   tenantController

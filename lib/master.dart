@@ -221,7 +221,7 @@ Map<String, String> pinQuickAccess = {};
 
 // !------------------------------VERSION NUMBER---------------------------------------
 //ACORDATE: Cambia el número de versión en el pubspec.yaml antes de publicar
-String appVersionNumber = '24111401';
+String appVersionNumber = '24111900';
 //ACORDATE: 0 = Caldén Smart
 int app = 0;
 // !------------------------------VERSION NUMBER---------------------------------------
@@ -277,33 +277,6 @@ void printLog(var text, [String? color]) {
   }
 }
 //*-Permite hacer prints seguros, solo en modo debug-*\\
-
-///*-Extrae parametros del equipo-*\\
-String command(String device) {
-  switch (true) {
-    case true when device.contains('Electrico'):
-      return '022000_IOT';
-    case true when device.contains('Gas'):
-      return '027000_IOT';
-    case true when device.contains('Detector'):
-      return '015773_IOT';
-    case true when device.contains('Domotica'):
-      return '020010_IOT';
-    case true when device.contains('Rele'):
-      return '027313_IOT';
-    default:
-      return '';
-  }
-}
-
-String extractSerialNumber(String productName) {
-  RegExp regExp = RegExp(r'(\d{8})');
-
-  Match? match = regExp.firstMatch(productName);
-
-  return match?.group(0) ?? '';
-}
-//*-Extrae parametros del equipo-*\\
 
 //*-Tipo de Aplicación y parametros-*\\
 String nameOfApp(int type) {
@@ -888,29 +861,6 @@ String encodeQueryParameters(Map<String, String> params) {
       .join('&');
 }
 
-String recoverDeviceName(String pc, String sn) {
-  String code = '';
-  switch (pc) {
-    case '015773_IOT':
-      code = 'Detector';
-      break;
-    case '022000_IOT':
-      code = 'Electrico';
-      break;
-    case '027000_IOT':
-      code = 'Gas';
-      break;
-    case '020010_IOT':
-      code = 'Domotica';
-      break;
-    case '041220_IOT':
-      code = 'Radiador';
-      break;
-  }
-
-  return '$code$sn';
-}
-
 void launchWebURL(String url) async {
   var uri = Uri.parse(url);
   if (await canLaunchUrl(uri)) {
@@ -963,7 +913,7 @@ void sendReportError(String cuerpo) async {
 Future<void> sendWifitoBle(String ssid, String pass) async {
   MyDevice myDevice = MyDevice();
   String value = '$ssid#$pass';
-  String deviceCommand = command(deviceName);
+  String deviceCommand = DeviceManager.getProductCode(deviceName);
   printLog(deviceCommand);
   String dataToSend = '$deviceCommand[1]($value)';
   printLog(dataToSend);
@@ -1721,7 +1671,7 @@ Future<void> handleNotifications(RemoteMessage message) async {
     printLog('Llegó esta notif: ${message.data}', 'rojo');
     String product = message.data['pc']!;
     String number = message.data['sn']!;
-    String device = recoverDeviceName(product, number);
+    String device = DeviceManager.recoverDeviceName(product, number);
     String sound = soundOfNotification[product] ?? 'alarm2';
     String caso = message.data['case']!;
 
@@ -1740,8 +1690,9 @@ Future<void> handleNotifications(RemoteMessage message) async {
 
           for (String equipo in equipos) {
             printLog('Apago $equipo');
-            String deviceSerialNumber = extractSerialNumber(equipo);
-            String productCode = command(equipo);
+            String deviceSerialNumber =
+                DeviceManager.extractSerialNumber(equipo);
+            String productCode = DeviceManager.getProductCode(equipo);
             String topic = 'devices_rx/$productCode/$deviceSerialNumber';
             String topic2 = 'devices_tx/$productCode/$deviceSerialNumber';
             String message = jsonEncode({"w_status": false});
@@ -1979,8 +1930,8 @@ void showPaymentTest(bool adm, int vencimiento, BuildContext context) {
           child: const Text('Solicitar extensión'),
           onPressed: () async {
             String cuerpo = adm
-                ? '¡Hola! Me comunico porque busco extender mi beneficio de "Administradores secundarios extra" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner\nVencimiento en: $vencimiento dias'
-                : '¡Hola! Me comunico porque busco extender mi beneficio "Habilitar alquiler temporario" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner\nVencimiento en: $vencimiento dias';
+                ? '¡Hola! Me comunico porque busco extender mi beneficio de "Administradores secundarios extra" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner\nVencimiento en: $vencimiento dias'
+                : '¡Hola! Me comunico porque busco extender mi beneficio "Habilitar alquiler temporario" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner\nVencimiento en: $vencimiento dias';
             final Uri emailLaunchUri = Uri(
               scheme: 'mailto',
               path: 'cobranzas@caldensmart.com',
@@ -2285,8 +2236,8 @@ Future<bool> backFunctionDS() async {
 
     for (int index = 0; index < devicesStored.length; index++) {
       String name = devicesStored[index];
-      String productCode = command(name);
-      String sn = extractSerialNumber(name);
+      String productCode = DeviceManager.getProductCode(name);
+      String sn = DeviceManager.extractSerialNumber(name);
 
       await queryItems(service, productCode, sn);
 
@@ -2426,22 +2377,22 @@ Future<void> backFunctionTrack(List<ScanResult> results) async {
       if (!flag) {
         printLog(
             'Dispositivo $trackedDevice encontrado en el escaneo.', "verde");
-        if (command(trackedDevice) == '020010_IOT') {
+        if (DeviceManager.getProductCode(trackedDevice) == '020010_IOT') {
           List<String> pinToTrack = await loadPinToTrack(trackedDevice);
           printLog('Encontre $pinToTrack');
           for (String pin in pinToTrack) {
             printLog('Voy a mandar al pin $pin');
             globalDATA
                 .putIfAbsent(
-                    '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
+                    '${DeviceManager.getProductCode(trackedDevice)}/${DeviceManager.extractSerialNumber(trackedDevice)}',
                     () => {})
                 .addAll({'io$pin': '0:1:0'});
             saveGlobalData(globalDATA);
             try {
               String topic =
-                  'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                  'devices_rx/${DeviceManager.getProductCode(trackedDevice)}/${DeviceManager.extractSerialNumber(trackedDevice)}';
               String topic2 =
-                  'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                  'devices_tx/${DeviceManager.getProductCode(trackedDevice)}/${DeviceManager.extractSerialNumber(trackedDevice)}';
               String message = jsonEncode({'io$pin': '0:1:0'});
               sendMessagemqtt(topic, message);
               sendMessagemqtt(topic2, message);
@@ -2452,15 +2403,15 @@ Future<void> backFunctionTrack(List<ScanResult> results) async {
         } else {
           globalDATA
               .putIfAbsent(
-                  '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
+                  '${DeviceManager.getProductCode(trackedDevice)}/${DeviceManager.extractSerialNumber(trackedDevice)}',
                   () => {})
               .addAll({'w_status': true});
           saveGlobalData(globalDATA);
           try {
             String topic =
-                'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                'devices_rx/${DeviceManager.getProductCode(trackedDevice)}/${DeviceManager.extractSerialNumber(trackedDevice)}';
             String topic2 =
-                'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                'devices_tx/${DeviceManager.getProductCode(trackedDevice)}/${DeviceManager.extractSerialNumber(trackedDevice)}';
             String message = jsonEncode({'w_status': true});
             sendMessagemqtt(topic, message);
             sendMessagemqtt(topic2, message);
@@ -2476,22 +2427,22 @@ Future<void> backFunctionTrack(List<ScanResult> results) async {
       if (flag) {
         printLog(
             'Dispositivo $trackedDevice NO encontrado en el escaneo.', "verde");
-        if (command(trackedDevice) == '020010_IOT') {
+        if (DeviceManager.getProductCode(trackedDevice) == '020010_IOT') {
           List<String> pinToTrack = await loadPinToTrack(trackedDevice);
           printLog('Encontre $pinToTrack');
           for (String pin in pinToTrack) {
             printLog('Es el pin io$pin');
             globalDATA
                 .putIfAbsent(
-                    '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
+                    '${DeviceManager.getProductCode(trackedDevice)}/${DeviceManager.extractSerialNumber(trackedDevice)}',
                     () => {})
                 .addAll({'io$pin': '0:0:0'});
             saveGlobalData(globalDATA);
             try {
               String topic =
-                  'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                  'devices_rx/${DeviceManager.getProductCode(trackedDevice)}/${DeviceManager.extractSerialNumber(trackedDevice)}';
               String topic2 =
-                  'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                  'devices_tx/${DeviceManager.getProductCode(trackedDevice)}/${DeviceManager.extractSerialNumber(trackedDevice)}';
               String message = jsonEncode({'io$pin': '0:0:0'});
               sendMessagemqtt(topic, message);
               sendMessagemqtt(topic2, message);
@@ -2502,15 +2453,15 @@ Future<void> backFunctionTrack(List<ScanResult> results) async {
         } else {
           globalDATA
               .putIfAbsent(
-                  '${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}',
+                  '${DeviceManager.getProductCode(trackedDevice)}/${DeviceManager.extractSerialNumber(trackedDevice)}',
                   () => {})
               .addAll({'w_status': false});
           saveGlobalData(globalDATA);
           try {
             String topic =
-                'devices_rx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                'devices_rx/${DeviceManager.getProductCode(trackedDevice)}/${DeviceManager.extractSerialNumber(trackedDevice)}';
             String topic2 =
-                'devices_tx/${command(trackedDevice)}/${extractSerialNumber(trackedDevice)}';
+                'devices_tx/${DeviceManager.getProductCode(trackedDevice)}/${DeviceManager.extractSerialNumber(trackedDevice)}';
             String message = jsonEncode({'w_status': false});
             sendMessagemqtt(topic, message);
             sendMessagemqtt(topic2, message);
@@ -2671,13 +2622,13 @@ void showAlertDialog(BuildContext context, bool dismissible, Widget? title,
 //*-Acceso rápido BLE-*\\
 Future<void> controlDeviceBLE(String name, bool newState) async {
   printLog("Voy a ${newState ? 'Encender' : 'Apagar'} el equipo $name", "Rojo");
-  if (command(name) == '020010_IOT') {
+  if (DeviceManager.getProductCode(name) == '020010_IOT') {
     String fun = '${pinQuickAccess[name]!}#${newState ? '1' : '0'}';
     myDevice.ioUuid.write(fun.codeUnits);
     String topic =
-        'devices_rx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
+        'devices_rx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
     String topic2 =
-        'devices_tx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
+        'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
     String message = jsonEncode({
       'index': int.parse(pinQuickAccess[name]!),
       'w_status': newState,
@@ -2687,22 +2638,24 @@ Future<void> controlDeviceBLE(String name, bool newState) async {
 
     globalDATA
         .putIfAbsent(
-            '${command(deviceName)}/${extractSerialNumber(deviceName)}',
+            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
             () => {})
         .addAll({'io${pinQuickAccess[name]!}': message});
 
     saveGlobalData(globalDATA);
   } else {
     int fun = newState ? 1 : 0;
-    String data = '${command(name)}[11]($fun)';
+    String data = '${DeviceManager.getProductCode(name)}[11]($fun)';
     myDevice.toolsUuid.write(data.codeUnits);
-    globalDATA['${command(name)}/${extractSerialNumber(name)}']!['w_status'] =
-        newState;
+    globalDATA[
+            '${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}']![
+        'w_status'] = newState;
     saveGlobalData(globalDATA);
     try {
-      String topic = 'devices_rx/${command(name)}/${extractSerialNumber(name)}';
+      String topic =
+          'devices_rx/${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}';
       String topic2 =
-          'devices_tx/${command(name)}/${extractSerialNumber(name)}';
+          'devices_tx/${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}';
       String message = jsonEncode({'w_status': newState});
       sendMessagemqtt(topic, message);
       sendMessagemqtt(topic2, message);
@@ -2764,10 +2717,12 @@ class MyDevice {
       softwareVersion = partes[2];
       hardwareVersion = partes[3];
       printLog('Device: $deviceType');
-      printLog('Product code: ${command(device.platformName)}');
-      printLog('Serial number: ${extractSerialNumber(device.platformName)}');
+      printLog(
+          'Product code: ${DeviceManager.getProductCode(device.platformName)}');
+      printLog(
+          'Serial number: ${DeviceManager.extractSerialNumber(device.platformName)}');
       globalDATA.putIfAbsent(
-          '${command(device.platformName)}/${extractSerialNumber(device.platformName)}',
+          '${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}',
           () => {});
       saveGlobalData(globalDATA);
 
@@ -3199,8 +3154,8 @@ class CurvedNavigationBarState extends State<CurvedNavigationBar>
 
   @override
   void dispose() {
-    _animationController.dispose();
     super.dispose();
+    _animationController.dispose();
   }
 
   @override
@@ -3524,6 +3479,12 @@ class AnimSearchBarState extends State<AnimSearchBar>
       /// animationDurationInMilli is optional, the default value is 375
       duration: Duration(milliseconds: widget.animationDurationInMilli),
     );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _con.dispose();
   }
 
   unfocusKeyboard() {
@@ -3893,11 +3854,11 @@ class AccessDeniedScreen extends StatelessWidget {
                         recognizer: TapGestureRecognizer()
                           ..onTap = () {
                             String adminActual = globalDATA[
-                                        '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                                     ?['owner'] ??
                                 'Desconocido';
                             String message =
-                                'Hola, te hablo en relación a mi equipo $deviceName.\nEste mismo me dice que no soy dueño.\nDatos del equipo:\nCódigo de producto: ${command(deviceName)}\nNúmero de serie: ${extractSerialNumber(deviceName)}\nDueño actual: $adminActual\n';
+                                'Hola, te hablo en relación a mi equipo $deviceName.\nEste mismo me dice que no soy dueño.\nDatos del equipo:\nCódigo de producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual: $adminActual\n';
 
                             launchEmail(
                               'service@caldensmart.com',
@@ -3918,12 +3879,12 @@ class AccessDeniedScreen extends StatelessWidget {
                             String phoneNumber = '5491162232619';
 
                             String adminActual = globalDATA[
-                                        '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                                     ?['owner'] ??
                                 'Desconocido';
 
                             String message =
-                                'Hola, te hablo en relación a mi equipo $deviceName.\nEste mismo me dice que no soy dueño.\n*Datos del equipo:*\nCódigo de producto: ${command(deviceName)}\nNúmero de serie: ${extractSerialNumber(deviceName)}\nDueño actual: $adminActual\n';
+                                'Hola, te hablo en relación a mi equipo $deviceName.\nEste mismo me dice que no soy dueño.\n*Datos del equipo:*\nCódigo de producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual: $adminActual\n';
 
                             sendWhatsAppMessage(phoneNumber, message);
                           },
@@ -4254,3 +4215,91 @@ class IconThumbSlider extends SliderComponentShape {
   }
 }
 //*- icono en el boton de la slide -*\\
+
+//*- Funciones relacionadas a los equipos*-\\
+class DeviceManager {
+  final List<String> productos = [
+    '015773_IOT',
+    '020010_IOT',
+    '022000_IOT',
+    '024011_IOT',
+    '027000_IOT',
+    '027313_IOT',
+  ];
+
+  ///Extrae el número de serie desde el deviceName
+  static String extractSerialNumber(String productName) {
+    RegExp regExp = RegExp(r'(\d{8})');
+
+    Match? match = regExp.firstMatch(productName);
+
+    return match?.group(0) ?? '';
+  }
+
+  ///Conseguir el código de producto en base al deviceName
+  static String getProductCode(String device) {
+    switch (true) {
+      case true when device.contains('Electrico'):
+        return '022000_IOT';
+      case true when device.contains('Gas'):
+        return '027000_IOT';
+      case true when device.contains('Detector'):
+        return '015773_IOT';
+      case true when device.contains('Domotica'):
+        return '020010_IOT';
+      case true when device.contains('Rele'):
+        return '027313_IOT';
+      case true when device.contains('Roll'):
+        return '024011_IOT';
+      default:
+        return '';
+    }
+  }
+
+  ///Recupera el deviceName en base al productCode y al SerialNumber
+  static String recoverDeviceName(String pc, String sn) {
+    String code = '';
+    switch (pc) {
+      case '015773_IOT':
+        code = 'Detector';
+        break;
+      case '022000_IOT':
+        code = 'Electrico';
+        break;
+      case '027000_IOT':
+        code = 'Gas';
+        break;
+      case '020010_IOT':
+        code = 'Domotica';
+        break;
+      case '027313_IOT':
+        code = 'Rele';
+        break;
+      case '024011_IOT':
+        code = 'Roll';
+        break;
+    }
+
+    return '$code$sn';
+  }
+
+  static String getComercialName(String name) {
+    switch (true) {
+      case true when name.contains('Electrico'):
+        return 'Calefactor Eléctrico';
+      case true when name.contains('Gas'):
+        return 'Calefactor a Gas';
+      case true when name.contains('Detector'):
+        return 'Detector de Gas & CO';
+      case true when name.contains('Domotica'):
+        return 'Domótica 4 IO';
+      case true when name.contains('Rele'):
+        return 'Tecla Smart';
+      case true when name.contains('Roll'):
+        return 'Cortina Roll';
+      default:
+        return '';
+    }
+  }
+}
+//*- Funciones relacionadas a los equipos*-\\

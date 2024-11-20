@@ -59,6 +59,15 @@ class RelayPageState extends State<RelayPage> {
     subscribeTrueStatus();
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+    _pageController.dispose();
+    tenantController.dispose();
+    tenantDistanceOn.dispose();
+    emailController.dispose();
+  }
+
   Future<void> addSecondaryAdmin(String email) async {
     if (!isValidEmail(email)) {
       showToast('Por favor, introduce un correo electrónico válido.');
@@ -73,8 +82,8 @@ class RelayPageState extends State<RelayPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..add(email);
 
-      await putSecondaryAdmins(service, command(deviceName),
-          extractSerialNumber(deviceName), updatedAdmins);
+      await putSecondaryAdmins(service, DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
 
       setState(() {
         adminDevices = updatedAdmins;
@@ -92,8 +101,8 @@ class RelayPageState extends State<RelayPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..remove(email);
 
-      await putSecondaryAdmins(service, command(deviceName),
-          extractSerialNumber(deviceName), updatedAdmins);
+      await putSecondaryAdmins(service, DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
 
       setState(() {
         adminDevices.remove(email);
@@ -201,16 +210,16 @@ class RelayPageState extends State<RelayPage> {
 
   void turnDeviceOn(bool on) async {
     int fun = on ? 1 : 0;
-    String data = '${command(deviceName)}[11]($fun)';
+    String data = '${DeviceManager.getProductCode(deviceName)}[11]($fun)';
     myDevice.toolsUuid.write(data.codeUnits);
-    globalDATA['${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+    globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
         'w_status'] = on;
     saveGlobalData(globalDATA);
     try {
       String topic =
-          'devices_rx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
+          'devices_rx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
       String topic2 =
-          'devices_tx/${command(deviceName)}/${extractSerialNumber(deviceName)}';
+          'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
       String message = jsonEncode({'w_status': on});
       sendMessagemqtt(topic, message);
       sendMessagemqtt(topic2, message);
@@ -239,7 +248,7 @@ class RelayPageState extends State<RelayPage> {
       // Programar la tarea.
       try {
         showToast('Recuerda tener la ubicación encendida.');
-        String data = '${command(deviceName)}[5](1)';
+        String data = '${DeviceManager.getProductCode(deviceName)}[5](1)';
         myDevice.toolsUuid.write(data.codeUnits);
         List<String> deviceControl = await loadDevicesForDistanceControl();
         deviceControl.add(deviceName);
@@ -268,7 +277,7 @@ class RelayPageState extends State<RelayPage> {
     } else {
       // Cancelar la tarea.
       showToast('Se cancelo el control por distancia');
-      String data = '${command(deviceName)}[5](0)';
+      String data = '${DeviceManager.getProductCode(deviceName)}[5](0)';
       myDevice.toolsUuid.write(data.codeUnits);
       List<String> deviceControl = await loadDevicesForDistanceControl();
       deviceControl.remove(deviceName);
@@ -500,8 +509,8 @@ class RelayPageState extends State<RelayPage> {
                                         });
                                         saveNC(
                                           service,
-                                          command(deviceName),
-                                          extractSerialNumber(deviceName),
+                                          DeviceManager.getProductCode(deviceName),
+                                          DeviceManager.extractSerialNumber(deviceName),
                                           false,
                                         );
                                       },
@@ -539,8 +548,8 @@ class RelayPageState extends State<RelayPage> {
                                         });
                                         saveNC(
                                           service,
-                                          command(deviceName),
-                                          extractSerialNumber(deviceName),
+                                          DeviceManager.getProductCode(deviceName),
+                                          DeviceManager.extractSerialNumber(deviceName),
                                           true,
                                         );
                                       },
@@ -911,8 +920,8 @@ class RelayPageState extends State<RelayPage> {
                                                 'Valor enviado: ${value.round()}');
                                             putDistanceOff(
                                               service,
-                                              command(deviceName),
-                                              extractSerialNumber(deviceName),
+                                              DeviceManager.getProductCode(deviceName),
+                                              DeviceManager.extractSerialNumber(deviceName),
                                               value.toString(),
                                             );
                                           },
@@ -1002,8 +1011,8 @@ class RelayPageState extends State<RelayPage> {
                                                 'Valor enviado: ${value.round()}');
                                             putDistanceOn(
                                               service,
-                                              command(deviceName),
-                                              extractSerialNumber(deviceName),
+                                              DeviceManager.getProductCode(deviceName),
+                                              DeviceManager.extractSerialNumber(deviceName),
                                               value.toString(),
                                             );
                                           },
@@ -1080,8 +1089,8 @@ class RelayPageState extends State<RelayPage> {
                             try {
                               putOwner(
                                 service,
-                                command(deviceName),
-                                extractSerialNumber(deviceName),
+                                DeviceManager.getProductCode(deviceName),
+                                DeviceManager.extractSerialNumber(deviceName),
                                 '',
                               );
                               myDevice.device.disconnect();
@@ -1102,8 +1111,8 @@ class RelayPageState extends State<RelayPage> {
                     try {
                       putOwner(
                         service,
-                        command(deviceName),
-                        extractSerialNumber(deviceName),
+                        DeviceManager.getProductCode(deviceName),
+                        DeviceManager.extractSerialNumber(deviceName),
                         currentUserEmail,
                       );
                       setState(() {
@@ -1421,7 +1430,7 @@ class RelayPageState extends State<RelayPage> {
                                             ),
                                             onPressed: () async {
                                               String cuerpo =
-                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${command(deviceName)}\nNúmero de Serie: ${extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
+                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
                                               final Uri emailLaunchUri = Uri(
                                                 scheme: 'mailto',
                                                 path:
@@ -1599,7 +1608,7 @@ class RelayPageState extends State<RelayPage> {
                                                             Expanded(
                                                               child: Text(
                                                                 globalDATA[
-                                                                        '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                                                                     ?['tenant'],
                                                                 style:
                                                                     GoogleFonts
@@ -1618,9 +1627,9 @@ class RelayPageState extends State<RelayPage> {
                                                                   () async {
                                                                 await saveATData(
                                                                   service,
-                                                                  command(
+                                                                  DeviceManager.getProductCode(
                                                                       deviceName),
-                                                                  extractSerialNumber(
+                                                                  DeviceManager.extractSerialNumber(
                                                                       deviceName),
                                                                   false,
                                                                   '',
@@ -1632,7 +1641,7 @@ class RelayPageState extends State<RelayPage> {
                                                                   tenantController
                                                                       .clear();
                                                                   globalDATA[
-                                                                          '${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                                          '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                                                                       ?[
                                                                       'tenant'] = '';
                                                                   activatedAT =
@@ -1713,9 +1722,9 @@ class RelayPageState extends State<RelayPage> {
                                                                   .isNotEmpty) {
                                                             saveATData(
                                                               service,
-                                                              command(
+                                                              DeviceManager.getProductCode(
                                                                   deviceName),
-                                                              extractSerialNumber(
+                                                              DeviceManager.extractSerialNumber(
                                                                   deviceName),
                                                               true,
                                                               tenantController
@@ -1732,7 +1741,7 @@ class RelayPageState extends State<RelayPage> {
                                                             setState(() {
                                                               activatedAT =
                                                                   true;
-                                                              globalDATA['${command(deviceName)}/${extractSerialNumber(deviceName)}']
+                                                              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                                                                       ?[
                                                                       'tenant'] =
                                                                   tenantController

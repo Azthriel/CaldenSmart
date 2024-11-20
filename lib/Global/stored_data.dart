@@ -25,7 +25,7 @@ void loadValues() async {
   pinQuickAccess = await loadpinQuickAccess();
 
   for (String device in previusConnections) {
-    await queryItems(service, command(device), extractSerialNumber(device));
+    await queryItems(service, DeviceManager.getProductCode(device), DeviceManager.extractSerialNumber(device));
   }
 }
 //*-Cargo toda la data-*\\
@@ -34,24 +34,24 @@ void loadValues() async {
 //*-Dispositivos conectados-*\\
 Future<void> saveDeviceList(List<String> listaDispositivos) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setStringList('connectedDevices', listaDispositivos);
+  await prefs.setStringList('CSconnectedDevices', listaDispositivos);
 }
 
 Future<List<String>> loadDeviceList() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList('connectedDevices') ?? [];
+  return prefs.getStringList('CSconnectedDevices') ?? [];
 }
 //*-Dispositivos conectados-*\\
 
 //*-Topics mqtt-*\\
 Future<void> saveTopicList(List<String> listatopics) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setStringList('Topics', listatopics);
+  await prefs.setStringList('CSTopics', listatopics);
 }
 
 Future<List<String>> loadTopicList() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList('Topics') ?? [];
+  return prefs.getStringList('CSTopics') ?? [];
 }
 //*-Topics mqtt-*\\
 
@@ -59,12 +59,12 @@ Future<List<String>> loadTopicList() async {
 Future<void> saveNicknamesMap(Map<String, String> nicknamesMap) async {
   final prefs = await SharedPreferences.getInstance();
   String nicknamesString = json.encode(nicknamesMap);
-  await prefs.setString('nicknamesMap', nicknamesString);
+  await prefs.setString('CSnicknamesMap', nicknamesString);
 }
 
 Future<Map<String, String>> loadNicknamesMap() async {
   final prefs = await SharedPreferences.getInstance();
-  String? nicknamesString = prefs.getString('nicknamesMap');
+  String? nicknamesString = prefs.getString('CSnicknamesMap');
   if (nicknamesString != null) {
     return Map<String, String>.from(json.decode(nicknamesString));
   }
@@ -76,12 +76,12 @@ Future<Map<String, String>> loadNicknamesMap() async {
 Future<void> saveSubNicknamesMap(Map<String, String> nicknamesMap) async {
   final prefs = await SharedPreferences.getInstance();
   String nicknamesString = json.encode(nicknamesMap);
-  await prefs.setString('subNicknamesMap', nicknamesString);
+  await prefs.setString('CSsubNicknamesMap', nicknamesString);
 }
 
 Future<Map<String, String>> loadSubNicknamesMap() async {
   final prefs = await SharedPreferences.getInstance();
-  String? nicknamesString = prefs.getString('subNicknamesMap');
+  String? nicknamesString = prefs.getString('CSsubNicknamesMap');
   if (nicknamesString != null) {
     return Map<String, String>.from(json.decode(nicknamesString));
   }
@@ -96,12 +96,12 @@ Future<void> saveGlobalData(
   Map<String, String> stringMap = globalData.map((key, value) {
     return MapEntry(key, json.encode(value));
   });
-  await prefs.setString('globalData', json.encode(stringMap));
+  await prefs.setString('CSglobalData', json.encode(stringMap));
 }
 
 Future<Map<String, Map<String, dynamic>>> loadGlobalData() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? jsonString = prefs.getString('globalData');
+  String? jsonString = prefs.getString('CSglobalData');
   if (jsonString == null) {
     return {};
   }
@@ -118,12 +118,12 @@ Future<Map<String, Map<String, dynamic>>> loadGlobalData() async {
 Future<void> savePositionLatitude(Map<String, double> latitudeMap) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   String latitude = json.encode(latitudeMap);
-  await prefs.setString('latitude', latitude);
+  await prefs.setString('CSlatitude', latitude);
 }
 
 Future<Map<String, double>> loadLatitude() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? latitude = prefs.getString('latitude');
+  String? latitude = prefs.getString('CSlatitude');
   if (latitude != null) {
     return Map<String, double>.from(json.decode(latitude));
   }
@@ -133,12 +133,12 @@ Future<Map<String, double>> loadLatitude() async {
 Future<void> savePositionLongitud(Map<String, double> longitudMap) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   String longitud = json.encode(longitudMap);
-  await prefs.setString('longitud', longitud);
+  await prefs.setString('CSlongitud', longitud);
 }
 
 Future<Map<String, double>> loadLongitud() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? longitud = prefs.getString('longitud');
+  String? longitud = prefs.getString('CSlongitud');
   if (longitud != null) {
     return Map<String, double>.from(json.decode(longitud));
   }
@@ -150,12 +150,12 @@ Future<Map<String, double>> loadLongitud() async {
 Future<void> saveControlValue(Map<String, bool> taskMap) async {
   final prefs = await SharedPreferences.getInstance();
   String taskMapString = json.encode(taskMap);
-  await prefs.setString('taskMap', taskMapString);
+  await prefs.setString('CStaskMap', taskMapString);
 }
 
 Future<Map<String, bool>> loadControlValue() async {
   final prefs = await SharedPreferences.getInstance();
-  String? taskMapString = prefs.getString('taskMap');
+  String? taskMapString = prefs.getString('CStaskMap');
   if (taskMapString != null) {
     return Map<String, bool>.from(json.decode(taskMapString));
   }
@@ -166,12 +166,12 @@ Future<Map<String, bool>> loadControlValue() async {
 //*-Dispositivos con control por distancia habilitado-*\\
 Future<void> saveDevicesForDistanceControl(List<String> devices) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  prefs.setStringList('DevicesForDistanceControl', devices);
+  prefs.setStringList('CSDevicesForDistanceControl', devices);
 }
 
 Future<List<String>> loadDevicesForDistanceControl() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList('DevicesForDistanceControl') ?? [];
+  return prefs.getStringList('CSDevicesForDistanceControl') ?? [];
 }
 //*-Dispositivos con control por distancia habilitado-*\\
 
@@ -179,12 +179,12 @@ Future<List<String>> loadDevicesForDistanceControl() async {
 Future<void> saveNotificationMap(Map<String, List<bool>> map) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   String jsonString = json.encode(map);
-  await prefs.setString('NotificationMap', jsonString);
+  await prefs.setString('CSNotificationMap', jsonString);
 }
 
 Future<Map<String, List<bool>>> loadNotificationMap() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? jsonString = prefs.getString('NotificationMap');
+  String? jsonString = prefs.getString('CSNotificationMap');
   Map<String, List<bool>> map = jsonString != null
       ? Map.from(json.decode(jsonString)).map((key, value) {
           List<bool> boolList = List<bool>.from(value);
@@ -200,12 +200,12 @@ Future<Map<String, List<bool>>> loadNotificationMap() async {
 Future<void> savequickAccess(List<String> lista) async {
   final prefs = await SharedPreferences.getInstance();
   String devicesList = json.encode(lista);
-  await prefs.setString('quickAccess', devicesList);
+  await prefs.setString('CSquickAccess', devicesList);
 }
 
 Future<List<String>> loadquickAccess() async {
   final prefs = await SharedPreferences.getInstance();
-  String? devicesList = prefs.getString('quickAccess');
+  String? devicesList = prefs.getString('CSquickAccess');
   if (devicesList != null) {
     List<dynamic> decodedList = json.decode(devicesList);
     return decodedList.cast<String>();
@@ -216,12 +216,12 @@ Future<List<String>> loadquickAccess() async {
 Future<void> savepinQuickAccess(Map<String, String> data) async {
   final prefs = await SharedPreferences.getInstance();
   String taskMapString = json.encode(data);
-  await prefs.setString('pinQuickAccess', taskMapString);
+  await prefs.setString('CSpinQuickAccess', taskMapString);
 }
 
 Future<Map<String, String>> loadpinQuickAccess() async {
   final prefs = await SharedPreferences.getInstance();
-  String? dataString = prefs.getString('pinQuickAccess');
+  String? dataString = prefs.getString('CSpinQuickAccess');
   if (dataString != null) {
     return Map<String, String>.from(json.decode(dataString));
   }
@@ -233,12 +233,12 @@ Future<Map<String, String>> loadpinQuickAccess() async {
 Future<void> saveToken(Map<String, String> token) async {
   final prefs = await SharedPreferences.getInstance();
   String tokenString = json.encode(token);
-  await prefs.setString('tokens', tokenString);
+  await prefs.setString('CStokens', tokenString);
 }
 
 Future<Map<String, String>> loadToken() async {
   final prefs = await SharedPreferences.getInstance();
-  String? tokenString = prefs.getString('tokens');
+  String? tokenString = prefs.getString('CStokens');
   if (tokenString != null) {
     return Map<String, String>.from(json.decode(tokenString));
   }
@@ -250,12 +250,12 @@ Future<Map<String, String>> loadToken() async {
 Future<void> saveSounds(Map<String, String> sounds) async {
   final prefs = await SharedPreferences.getInstance();
   String tokenString = json.encode(sounds);
-  await prefs.setString('sounds', tokenString);
+  await prefs.setString('CSsounds', tokenString);
 }
 
 Future<Map<String, String>> loadSounds() async {
   final prefs = await SharedPreferences.getInstance();
-  String? soundsString = prefs.getString('sounds');
+  String? soundsString = prefs.getString('CSsounds');
   if (soundsString != null) {
     return Map<String, String>.from(json.decode(soundsString));
   }
@@ -267,16 +267,16 @@ Future<Map<String, String>> loadSounds() async {
 Future<void> guardarFecha(String device) async {
   DateTime now = DateTime.now();
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setInt('year$device', now.year);
-  await prefs.setInt('month$device', now.month);
-  await prefs.setInt('day$device', now.day);
+  await prefs.setInt('CSyear$device', now.year);
+  await prefs.setInt('CSmonth$device', now.month);
+  await prefs.setInt('CSday$device', now.day);
 }
 
 Future<DateTime?> cargarFechaGuardada(String device) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  int? year = prefs.getInt('year$device');
-  int? month = prefs.getInt('month$device');
-  int? day = prefs.getInt('day$device');
+  int? year = prefs.getInt('CSyear$device');
+  int? month = prefs.getInt('CSmonth$device');
+  int? day = prefs.getInt('CSday$device');
   if (year != null && month != null && day != null) {
     return DateTime(year, month, day);
   } else {
@@ -288,7 +288,7 @@ Future<DateTime?> cargarFechaGuardada(String device) async {
 //*-Imagenes Scan-*\\
 Future<Map<String, String>> loadDeviceImages() async {
   final prefs = await SharedPreferences.getInstance();
-  final jsonString = prefs.getString('deviceImages');
+  final jsonString = prefs.getString('CSdeviceImages');
   if (jsonString != null) {
     return Map<String, String>.from(jsonDecode(jsonString));
   } else {
@@ -302,14 +302,14 @@ Future<void> saveDeviceImage(String deviceId, String imagePath) async {
   deviceImages[deviceId] = imagePath;
 
   final jsonString = jsonEncode(deviceImages);
-  await prefs.setString('deviceImages', jsonString);
+  await prefs.setString('CSdeviceImages', jsonString);
 }
 
 Future<void> removeDeviceImage(String deviceId) async {
   final prefs = await SharedPreferences.getInstance();
   deviceImages.remove(deviceId);
   final jsonString = jsonEncode(deviceImages);
-  await prefs.setString('deviceImages', jsonString);
+  await prefs.setString('CSdeviceImages', jsonString);
 }
 //*-Imagenes Scan-*\\
 
@@ -317,12 +317,12 @@ Future<void> removeDeviceImage(String deviceId) async {
 Future<void> saveDetectorOff(Map<String, List<String>> lista) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   String jsonString = jsonEncode(lista);
-  await prefs.setString('detectorOff', jsonString);
+  await prefs.setString('CSdetectorOff', jsonString);
 }
 
 Future<Map<String, List<String>>> loadDetectorOff() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? jsonString = prefs.getString('detectorOff');
+  String? jsonString = prefs.getString('CSdetectorOff');
   if (jsonString != null) {
     Map<String, dynamic> jsonMap = jsonDecode(jsonString);
     return jsonMap.map((key, value) => MapEntry(key, List<String>.from(value)));
@@ -335,33 +335,33 @@ Future<Map<String, List<String>>> loadDetectorOff() async {
 //*-Omnipresencia-*\\
 Future<void> saveDeviceListToTrack(List<String> listaDispositivos) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setStringList('devicesToTrack', listaDispositivos);
+  await prefs.setStringList('CSdevicesToTrack', listaDispositivos);
 }
 
 Future<List<String>> loadDeviceListToTrack() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList('devicesToTrack') ?? [];
+  return prefs.getStringList('CSdevicesToTrack') ?? [];
 }
 
 Future<void> savePinToTrack(List<String> listaPines, String device) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setStringList('pinsToTrack$device', listaPines);
+  await prefs.setStringList('CSpinsToTrack$device', listaPines);
 }
 
 Future<List<String>> loadPinToTrack(String device) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList('pinsToTrack$device') ?? [];
+  return prefs.getStringList('CSpinsToTrack$device') ?? [];
 }
 
 Future<void> saveMsgFlag(Map<String, bool> msgFlag) async {
   final prefs = await SharedPreferences.getInstance();
   String taskMapString = json.encode(msgFlag);
-  await prefs.setString('msgFlag', taskMapString);
+  await prefs.setString('CSmsgFlag', taskMapString);
 }
 
 Future<Map<String, bool>> loadmsgFlag() async {
   final prefs = await SharedPreferences.getInstance();
-  String? msgFlagString = prefs.getString('msgFlag');
+  String? msgFlagString = prefs.getString('CSmsgFlag');
   if (msgFlagString != null) {
     return Map<String, bool>.from(json.decode(msgFlagString));
   }
@@ -373,12 +373,12 @@ Future<Map<String, bool>> loadmsgFlag() async {
 Future<void> saveconfigNotiDsc(Map<String, int> data) async {
   final prefs = await SharedPreferences.getInstance();
   String taskMapString = json.encode(data);
-  await prefs.setString('configNotiDsc', taskMapString);
+  await prefs.setString('CSconfigNotiDsc', taskMapString);
 }
 
 Future<Map<String, int>> loadconfigNotiDsc() async {
   final prefs = await SharedPreferences.getInstance();
-  String? dataString = prefs.getString('configNotiDsc');
+  String? dataString = prefs.getString('CSconfigNotiDsc');
   if (dataString != null) {
     return Map<String, int>.from(json.decode(dataString));
   }
@@ -389,11 +389,11 @@ Future<Map<String, int>> loadconfigNotiDsc() async {
 //*-Alexa devices -*\\
 Future<void> saveAlexaDevices(List<String> listaDispositivos) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setStringList('AlexaDevices', listaDispositivos);
+  await prefs.setStringList('CSAlexaDevices', listaDispositivos);
 }
 
 Future<List<String>> loadAlexaDevices() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList('AlexaDevices') ?? [];
+  return prefs.getStringList('CSAlexaDevices') ?? [];
 }
 //*-Alexa devices -*\\

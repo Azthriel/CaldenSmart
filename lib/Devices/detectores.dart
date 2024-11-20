@@ -36,9 +36,10 @@ class DetectorPageState extends State<DetectorPage> {
   bool alert = false;
   String _textToShow = 'AIRE PURO';
   bool online =
-      globalDATA['${command(deviceName)}/${extractSerialNumber(deviceName)}']![
+      globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
               'cstate'] ??
           false;
+  final PageController _pageController = PageController();
 
   @override
   void initState() {
@@ -48,6 +49,12 @@ class DetectorPageState extends State<DetectorPage> {
     _subscribeToWorkCharacteristic();
     subscribeToWifiStatus();
     updateWifiValues(toolsValues);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _pageController.dispose();
   }
 
   void updateWifiValues(List<int> data) {
@@ -151,8 +158,6 @@ class DetectorPageState extends State<DetectorPage> {
   }
 
   //*-Funciones de deslizamiento entre pantallas-*\\
-
-  final PageController _pageController = PageController();
 
   void _onItemTapped(int index) {
     _pageController.animateToPage(
@@ -273,7 +278,7 @@ class DetectorPageState extends State<DetectorPage> {
                   ),
                 ],
               );
-              setupToken(command(deviceName), extractSerialNumber(deviceName),
+              setupToken(DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName),
                   deviceName);
             },
             child: Row(
