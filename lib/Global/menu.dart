@@ -20,6 +20,9 @@ class MenuPageState extends State<MenuPage> {
   void initState() {
     super.initState();
     getMail();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      checkForUpdate(context);
+    });
   }
 
   @override

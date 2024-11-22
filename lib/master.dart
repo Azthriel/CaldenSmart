@@ -20,6 +20,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:upgrader/upgrader.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wifi_scan/wifi_scan.dart';
 import 'aws/dynamo/dynamo.dart';
@@ -221,7 +222,7 @@ Map<String, String> pinQuickAccess = {};
 
 // !------------------------------VERSION NUMBER---------------------------------------
 //ACORDATE: Cambia el número de versión en el pubspec.yaml antes de publicar
-String appVersionNumber = '24111900';
+String appVersionNumber = Upgrader().currentInstalledVersion ?? '4.0.4';
 //ACORDATE: 0 = Caldén Smart
 int app = 0;
 // !------------------------------VERSION NUMBER---------------------------------------
@@ -2666,6 +2667,81 @@ Future<void> controlDeviceBLE(String name, bool newState) async {
 }
 //*-Acceso rápido BLE-*\\
 
+//*-Revisión de actualización-*\\
+void checkForUpdate(BuildContext context) async {
+  final upgrader = Upgrader(
+    debugLogging: false,
+    durationUntilAlertAgain: const Duration(seconds: 5),
+  );
+
+  await upgrader.initialize();
+
+  printLog("Vamos a revisar el skibidi toilet", "verde");
+
+  // Verifica si hay una actualización disponible
+  final shouldDisplay = upgrader.shouldDisplayUpgrade();
+
+  printLog("Papu :v $shouldDisplay", "verde");
+
+  if (shouldDisplay) {
+    printLog("Papure papa pure", "verde");
+    final actualVer = upgrader.currentInstalledVersion;
+    final newVer = upgrader.currentAppStoreVersion;
+    showAlertDialog(
+      navigatorKey.currentContext ?? context,
+      false,
+      const Text(
+        '¡Hay una nueva versión de la app disponible!',
+        textAlign: TextAlign.start,
+      ),
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          const Text(
+            'Para que la aplicación pueda funcionar correctamente y puedas disfrutar de todas sus funciones nuevas.\nTe pedimos por favor que actualices la aplicación',
+            textAlign: TextAlign.start,
+          ),
+          if (actualVer != null && newVer != null) ...[
+            const SizedBox(
+              height: 10,
+            ),
+            Text(
+              'Tu versión actual es: $actualVer',
+              textAlign: TextAlign.start,
+            ),
+            Text(
+              'La nueva versión es: $newVer',
+              textAlign: TextAlign.start,
+            ),
+          ]
+        ],
+      ),
+      [
+        TextButton(
+          onPressed: () {
+            navigatorKey.currentState?.pop();
+          },
+          child: const Text(
+            'Más tarde',
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            launchWebURL(
+              android
+                  ? 'https://play.google.com/store/apps/details?id=com.caldensmart.sime'
+                  : 'https://apps.apple.com/gb/app/calden-smart/id6737855207?uo=2',
+            );
+          },
+          child: const Text('Actualizar ahora'),
+        ),
+      ],
+    );
+  }
+}
+//*-Revisión de actualización-*\\
+
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
 //! CLASES !\\
@@ -2793,8 +2869,6 @@ class MyDevice {
               c.uuid ==
               Guid(
                   'ae995fcd-2c7a-4675-84f8-332caf784e9f')); //Ota comandos (Solo notify)
-          break;
-        case '030710':
           break;
       }
 
@@ -4303,3 +4377,7 @@ class DeviceManager {
   }
 }
 //*- Funciones relacionadas a los equipos*-\\
+
+//*-Desplazamiento de texto horizontal*-\\
+
+//*-Desplazamiento de texto horizontal*-\\

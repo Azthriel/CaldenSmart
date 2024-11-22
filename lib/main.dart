@@ -90,6 +90,7 @@ class MyAppState extends State<MyApp> {
       }
     });
     listenToTopics();
+
     printLog('Empezamos');
   }
 

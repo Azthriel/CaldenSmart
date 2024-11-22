@@ -211,6 +211,10 @@ class WelcomePageState extends State<WelcomePage>
       parent: foregroundPositionController,
       curve: Curves.easeInOutCubic,
     ));
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      checkForUpdate(context);
+    });
   }
 
   ///*- Elimina los controladores de animación y texto *-\\\
