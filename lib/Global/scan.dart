@@ -358,7 +358,8 @@ class ScanPageState extends State<ScanPage>
                               ?['owner'] ==
                           null;
                   bool condicion =
-                      DeviceManager.getProductCode(device.platformName) != '015773_IOT' &&
+                      DeviceManager.getProductCode(device.platformName) !=
+                              '015773_IOT' &&
                           owner &&
                           quickAccess.contains(device.platformName);
                   return FadeTransition(
@@ -412,26 +413,42 @@ class ScanPageState extends State<ScanPage>
                                     Positioned(
                                       top: 16,
                                       left: 16,
-                                      child: Text(
-                                        nicknamesMap[device.platformName] ??
-                                            DeviceManager.getComercialName(device.platformName),
-                                        style: GoogleFonts.poppins(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 22,
-                                          color: Colors.white,
-                                          shadows: const [
-                                            Shadow(
-                                                offset: Offset(-1.5, -1.5),
-                                                color: Colors.black),
-                                            Shadow(
-                                                offset: Offset(1.5, -1.5),
-                                                color: Colors.black),
-                                            Shadow(
-                                                offset: Offset(1.5, 1.5),
-                                                color: Colors.black),
-                                            Shadow(
-                                                offset: Offset(-1.5, 1.5),
-                                                color: Colors.black),
+                                      child: SizedBox(
+                                        width: 250,
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: ScrollingText(
+                                                text: nicknamesMap[
+                                                        device.platformName] ??
+                                                    DeviceManager
+                                                        .getComercialName(device
+                                                            .platformName),
+                                                style: GoogleFonts.poppins(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 22,
+                                                  color: Colors.white,
+                                                  shadows: const [
+                                                    Shadow(
+                                                        offset:
+                                                            Offset(-1.5, -1.5),
+                                                        color: Colors.black),
+                                                    Shadow(
+                                                        offset:
+                                                            Offset(1.5, -1.5),
+                                                        color: Colors.black),
+                                                    Shadow(
+                                                        offset:
+                                                            Offset(1.5, 1.5),
+                                                        color: Colors.black),
+                                                    Shadow(
+                                                        offset:
+                                                            Offset(-1.5, 1.5),
+                                                        color: Colors.black),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),

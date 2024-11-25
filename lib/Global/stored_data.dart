@@ -23,9 +23,12 @@ void loadValues() async {
   configNotiDsc = await loadconfigNotiDsc();
   quickAccess = await loadquickAccess();
   pinQuickAccess = await loadpinQuickAccess();
+  labelEncendido = await loadlabelEncendido();
+  labelApagado = await loadlabelApagado();
 
   for (String device in previusConnections) {
-    await queryItems(service, DeviceManager.getProductCode(device), DeviceManager.extractSerialNumber(device));
+    await queryItems(service, DeviceManager.getProductCode(device),
+        DeviceManager.extractSerialNumber(device));
   }
 }
 //*-Cargo toda la data-*\\
@@ -397,3 +400,35 @@ Future<List<String>> loadAlexaDevices() async {
   return prefs.getStringList('CSAlexaDevices') ?? [];
 }
 //*-Alexa devices -*\\
+
+//*- Labels personalizados*-\\
+Future<void> savelabelEncendido(Map<String, String> labels) async {
+  final prefs = await SharedPreferences.getInstance();
+  String labelsString = json.encode(labels);
+  await prefs.setString('CSlabelEncendido', labelsString);
+}
+
+Future<Map<String, String>> loadlabelEncendido() async {
+  final prefs = await SharedPreferences.getInstance();
+  String? labelsString = prefs.getString('CSlabelEncendido');
+  if (labelsString != null) {
+    return Map<String, String>.from(json.decode(labelsString));
+  }
+  return {};
+}
+
+Future<void> savelabelApagado(Map<String, String> labels) async {
+  final prefs = await SharedPreferences.getInstance();
+  String labelsString = json.encode(labels);
+  await prefs.setString('CSlabelApagado', labelsString);
+}
+
+Future<Map<String, String>> loadlabelApagado() async {
+  final prefs = await SharedPreferences.getInstance();
+  String? labelsString = prefs.getString('CSlabelApagado');
+  if (labelsString != null) {
+    return Map<String, String>.from(json.decode(labelsString));
+  }
+  return {};
+}
+//*- Labels personalizados*-\\

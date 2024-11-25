@@ -220,6 +220,11 @@ bool quickAction = false;
 Map<String, String> pinQuickAccess = {};
 //*-Acceso rápido BLE-*\\
 
+//*-Labels personalizados on/off-*\\
+Map<String, String> labelEncendido = {};
+Map<String, String> labelApagado = {};
+//*-Labels personalizados on/off-*\\
+
 // !------------------------------VERSION NUMBER---------------------------------------
 //ACORDATE: Cambia el número de versión en el pubspec.yaml antes de publicar
 String appVersionNumber = Upgrader().currentInstalledVersion ?? '4.0.4';
@@ -1461,8 +1466,9 @@ void wifiText(BuildContext context) {
                     } else {}
                   },
                   style: ButtonStyle(
-                    backgroundColor:
-                        WidgetStateProperty.all<Color>(const Color(0xff1f1d20)),
+                    backgroundColor: WidgetStateProperty.all<Color>(
+                      const Color(0xff1f1d20),
+                    ),
                   ),
                   child: const Text(
                     'Agregar',
@@ -4375,9 +4381,120 @@ class DeviceManager {
         return '';
     }
   }
+
+  static bool isAvailableForAlexa(String name) {
+    final List<String> alexaAvailable = [
+      '022000_IOT',
+      '027000_IOT',
+      '027313_IOT',
+    ];
+    String code = getProductCode(name);
+    return alexaAvailable.contains(code);
+  }
 }
 //*- Funciones relacionadas a los equipos*-\\
 
 //*-Desplazamiento de texto horizontal*-\\
+class ScrollingText extends StatefulWidget {
+  final String text;
+  final TextStyle style;
+  final double scrollSpeed;
 
+  const ScrollingText({
+    super.key,
+    required this.text,
+    required this.style,
+    this.scrollSpeed = 20.0,
+  });
+
+  @override
+  ScrollingTextState createState() => ScrollingTextState();
+}
+
+class ScrollingTextState extends State<ScrollingText> {
+  final ScrollController _scrollController = ScrollController();
+  Timer? _timer;
+  bool _shouldScroll = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkTextWidth());
+  }
+
+  @override
+  void didUpdateWidget(covariant ScrollingText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text) {
+      _timer?.cancel();
+      _scrollController.jumpTo(0.0);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _checkTextWidth());
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _checkTextWidth() {
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      final containerWidth = renderBox.size.width;
+
+      final textPainter = TextPainter(
+        text: TextSpan(text: widget.text, style: widget.style),
+        maxLines: 1,
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      final textWidth = textPainter.size.width;
+
+      if (textWidth > containerWidth) {
+        _shouldScroll = true;
+        _startScrolling();
+      } else {
+        _shouldScroll = false;
+        _timer?.cancel();
+      }
+    }
+  }
+
+  void _startScrolling() {
+    if (_shouldScroll) {
+      _timer?.cancel();
+
+      _timer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
+        final currentPosition = _scrollController.offset;
+        if (currentPosition < _scrollController.position.maxScrollExtent) {
+          _scrollController.jumpTo(currentPosition + (widget.scrollSpeed / 60));
+        } else {
+          _scrollController.jumpTo(0.0);
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          width: constraints.maxWidth,
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            scrollDirection: Axis.horizontal,
+            physics: const NeverScrollableScrollPhysics(),
+            child: Text(
+              widget.text,
+              style: widget.style,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
 //*-Desplazamiento de texto horizontal*-\\

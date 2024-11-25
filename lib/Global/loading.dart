@@ -73,7 +73,7 @@ class LoadState extends State<LoadingPage> {
         subToTopicMQTT(
             'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}');
 
-        if (deviceType != '020010' && deviceType != '015773') {
+        if (DeviceManager.isAvailableForAlexa(deviceName)) {
           alexaDevices.add(deviceName);
           saveAlexaDevices(alexaDevices);
           putDevicesForAlexa(service, currentUserEmail, alexaDevices);

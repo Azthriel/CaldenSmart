@@ -14,7 +14,7 @@ class RollerPage extends StatefulWidget {
 }
 
 class RollerPageState extends State<RollerPage> {
-  int _page = 0;
+  int _selectedIndex = 0;
   int _selectedNotificationOption = 0;
 
   final TextEditingController tenantController = TextEditingController();
@@ -64,6 +64,21 @@ class RollerPageState extends State<RollerPage> {
   }
 
   // FUNCIONES \\
+
+  void _onItemTapped(int index) {
+    if ((index - _selectedIndex).abs() > 1) {
+      _pageController.jumpToPage(index);
+    } else {
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOut,
+      );
+    }
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   void updateWifiValues(List<int> data) {
     var fun =
@@ -141,8 +156,11 @@ class RollerPageState extends State<RollerPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..add(email);
 
-      await putSecondaryAdmins(service, DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
+      await putSecondaryAdmins(
+          service,
+          DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName),
+          updatedAdmins);
 
       setState(() {
         adminDevices = updatedAdmins;
@@ -160,8 +178,11 @@ class RollerPageState extends State<RollerPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..remove(email);
 
-      await putSecondaryAdmins(service, DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
+      await putSecondaryAdmins(
+          service,
+          DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName),
+          updatedAdmins);
 
       setState(() {
         adminDevices.remove(email);
@@ -231,13 +252,15 @@ class RollerPageState extends State<RollerPage> {
   }
 
   void setMotorCurrent(bool run, String value) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[12](${run ? '1' : '0'}#$value)';
+    String data =
+        '${DeviceManager.getProductCode(deviceName)}[12](${run ? '1' : '0'}#$value)';
     printLog(data);
     myDevice.toolsUuid.write(data.codeUnits);
   }
 
   void setFreeWheeling(bool active) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[14](${active ? '1' : '0'})';
+    String data =
+        '${DeviceManager.getProductCode(deviceName)}[14](${active ? '1' : '0'})';
     printLog(data);
     myDevice.toolsUuid.write(data.codeUnits);
   }
@@ -319,7 +342,8 @@ class RollerPageState extends State<RollerPage> {
                   Expanded(
                     child: GestureDetector(
                       onLongPressStart: (LongPressStartDetails a) {
-                        String data = '${DeviceManager.getProductCode(deviceName)}[7](0%)';
+                        String data =
+                            '${DeviceManager.getProductCode(deviceName)}[7](0%)';
                         myDevice.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = 0;
@@ -378,7 +402,8 @@ class RollerPageState extends State<RollerPage> {
                   Expanded(
                     child: GestureDetector(
                       onLongPressStart: (LongPressStartDetails a) {
-                        String data = '${DeviceManager.getProductCode(deviceName)}[7](100%)';
+                        String data =
+                            '${DeviceManager.getProductCode(deviceName)}[7](100%)';
                         myDevice.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = 100;
@@ -1738,10 +1763,12 @@ class RollerPageState extends State<RollerPage> {
                                                                   () async {
                                                                 await saveATData(
                                                                   service,
-                                                                  DeviceManager.getProductCode(
-                                                                      deviceName),
-                                                                  DeviceManager.extractSerialNumber(
-                                                                      deviceName),
+                                                                  DeviceManager
+                                                                      .getProductCode(
+                                                                          deviceName),
+                                                                  DeviceManager
+                                                                      .extractSerialNumber(
+                                                                          deviceName),
                                                                   false,
                                                                   '',
                                                                   '3000',
@@ -1833,10 +1860,12 @@ class RollerPageState extends State<RollerPage> {
                                                                   .isNotEmpty) {
                                                             saveATData(
                                                               service,
-                                                              DeviceManager.getProductCode(
-                                                                  deviceName),
-                                                              DeviceManager.extractSerialNumber(
-                                                                  deviceName),
+                                                              DeviceManager
+                                                                  .getProductCode(
+                                                                      deviceName),
+                                                              DeviceManager
+                                                                  .extractSerialNumber(
+                                                                      deviceName),
                                                               true,
                                                               tenantController
                                                                   .text
@@ -2322,9 +2351,11 @@ class RollerPageState extends State<RollerPage> {
             },
             child: Row(
               children: [
-                Text(
-                  nickname,
-                  style: poppinsStyle.copyWith(color: color0),
+                Expanded(
+                  child: ScrollingText(
+                    text: nickname,
+                    style: poppinsStyle.copyWith(color: color0),
+                  ),
                 ),
                 const SizedBox(width: 3),
                 const Icon(Icons.edit, size: 20, color: color0)
@@ -2384,7 +2415,7 @@ class RollerPageState extends State<RollerPage> {
               controller: _pageController,
               onPageChanged: (index) {
                 setState(() {
-                  _page = index;
+                  _selectedIndex = index;
                 });
               },
               children: pages,
@@ -2394,7 +2425,7 @@ class RollerPageState extends State<RollerPage> {
               right: 0,
               bottom: 0,
               child: CurvedNavigationBar(
-                index: _page,
+                index: _selectedIndex,
                 height: 75.0,
                 items: const <Widget>[
                   Icon(Icons.home, size: 30, color: color0),
@@ -2407,12 +2438,7 @@ class RollerPageState extends State<RollerPage> {
                 animationCurve: Curves.easeInOut,
                 animationDuration: const Duration(milliseconds: 600),
                 onTap: (index) {
-                  setState(() {
-                    _page = index;
-                    _pageController.animateToPage(index,
-                        duration: const Duration(milliseconds: 600),
-                        curve: Curves.easeInOut);
-                  });
+                  _onItemTapped(index);
                 },
                 letIndexChange: (index) => true,
               ),

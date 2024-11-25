@@ -37,7 +37,7 @@ class RelayPageState extends State<RelayPage> {
   bool _showNotificationOptions = false;
   TextEditingController emailController = TextEditingController();
   int _selectedNotificationOption = 0;
-  int _page = 0;
+  int _selectedIndex = 0;
   final PageController _pageController = PageController(initialPage: 0);
   final TextEditingController tenantController = TextEditingController();
   final TextEditingController tenantDistanceOn = TextEditingController();
@@ -68,6 +68,21 @@ class RelayPageState extends State<RelayPage> {
     emailController.dispose();
   }
 
+  void _onItemTapped(int index) {
+    if ((index - _selectedIndex).abs() > 1) {
+      _pageController.jumpToPage(index);
+    } else {
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOut,
+      );
+    }
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
   Future<void> addSecondaryAdmin(String email) async {
     if (!isValidEmail(email)) {
       showToast('Por favor, introduce un correo electrónico válido.');
@@ -82,8 +97,11 @@ class RelayPageState extends State<RelayPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..add(email);
 
-      await putSecondaryAdmins(service, DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
+      await putSecondaryAdmins(
+          service,
+          DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName),
+          updatedAdmins);
 
       setState(() {
         adminDevices = updatedAdmins;
@@ -101,8 +119,11 @@ class RelayPageState extends State<RelayPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..remove(email);
 
-      await putSecondaryAdmins(service, DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
+      await putSecondaryAdmins(
+          service,
+          DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName),
+          updatedAdmins);
 
       setState(() {
         adminDevices.remove(email);
@@ -212,7 +233,8 @@ class RelayPageState extends State<RelayPage> {
     int fun = on ? 1 : 0;
     String data = '${DeviceManager.getProductCode(deviceName)}[11]($fun)';
     myDevice.toolsUuid.write(data.codeUnits);
-    globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+    globalDATA[
+            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
         'w_status'] = on;
     saveGlobalData(globalDATA);
     try {
@@ -426,9 +448,7 @@ class RelayPageState extends State<RelayPage> {
                       duration: const Duration(milliseconds: 500),
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: turnOn
-                            ? (isNC ? Colors.greenAccent : Colors.greenAccent)
-                            : (isNC ? Colors.redAccent : Colors.redAccent),
+                        color: turnOn ? Colors.greenAccent : Colors.redAccent,
                         shape: BoxShape.circle,
                         boxShadow: const [
                           BoxShadow(
@@ -457,14 +477,92 @@ class RelayPageState extends State<RelayPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text(
-                    isNC
-                        ? (turnOn ? 'ABIERTO' : 'CERRADO')
-                        : (turnOn ? 'CERRADO' : 'ABIERTO'),
-                    style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                      color: color3,
+                  GestureDetector(
+                    onTap: () async {
+                      TextEditingController labelController =
+                          TextEditingController(
+                        text: isNC
+                            ? (turnOn
+                                ? labelEncendido[deviceName] ?? 'ABIERTO'
+                                : labelApagado[deviceName] ?? 'CERRADO')
+                            : (turnOn
+                                ? labelEncendido[deviceName] ?? 'CERRADO'
+                                : labelApagado[deviceName] ?? 'ABIERTO'),
+                      );
+                      showAlertDialog(
+                        context,
+                        false,
+                        const Text(
+                          'Editar identificación del estado',
+                          style: TextStyle(color: color0),
+                        ),
+                        TextField(
+                          style: const TextStyle(color: color0),
+                          cursorColor: const Color(0xFFFFFFFF),
+                          controller: labelController,
+                          decoration: const InputDecoration(
+                            hintText:
+                                "Introduce tu nueva identificación del estado",
+                            hintStyle: TextStyle(color: color0),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: color0),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: color0),
+                            ),
+                          ),
+                        ),
+                        <Widget>[
+                          TextButton(
+                            style: ButtonStyle(
+                              foregroundColor: WidgetStateProperty.all(color0),
+                            ),
+                            child: const Text('Cancelar'),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                          TextButton(
+                            style: ButtonStyle(
+                              foregroundColor: WidgetStateProperty.all(color0),
+                            ),
+                            child: const Text('Guardar'),
+                            onPressed: () {
+                              setState(() {
+                                String newLabel = labelController.text;
+                                turnOn
+                                    ? labelEncendido[deviceName] = newLabel
+                                    : labelApagado[deviceName] = newLabel;
+                                turnOn
+                                    ? savelabelEncendido(labelEncendido)
+                                    : savelabelApagado(labelApagado);
+                              });
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          isNC
+                              ? (turnOn
+                                  ? labelEncendido[deviceName] ?? 'ABIERTO'
+                                  : labelApagado[deviceName] ?? 'CERRADO')
+                              : (turnOn
+                                  ? labelEncendido[deviceName] ?? 'CERRADO'
+                                  : labelApagado[deviceName] ?? 'ABIERTO'),
+                          style: GoogleFonts.poppins(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
+                            color: color3,
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        const Icon(Icons.edit, size: 20, color: color3)
+                      ],
                     ),
                   ),
                   const SizedBox(height: 50),
@@ -509,8 +607,10 @@ class RelayPageState extends State<RelayPage> {
                                         });
                                         saveNC(
                                           service,
-                                          DeviceManager.getProductCode(deviceName),
-                                          DeviceManager.extractSerialNumber(deviceName),
+                                          DeviceManager.getProductCode(
+                                              deviceName),
+                                          DeviceManager.extractSerialNumber(
+                                              deviceName),
                                           false,
                                         );
                                       },
@@ -548,8 +648,10 @@ class RelayPageState extends State<RelayPage> {
                                         });
                                         saveNC(
                                           service,
-                                          DeviceManager.getProductCode(deviceName),
-                                          DeviceManager.extractSerialNumber(deviceName),
+                                          DeviceManager.getProductCode(
+                                              deviceName),
+                                          DeviceManager.extractSerialNumber(
+                                              deviceName),
                                           true,
                                         );
                                       },
@@ -920,8 +1022,10 @@ class RelayPageState extends State<RelayPage> {
                                                 'Valor enviado: ${value.round()}');
                                             putDistanceOff(
                                               service,
-                                              DeviceManager.getProductCode(deviceName),
-                                              DeviceManager.extractSerialNumber(deviceName),
+                                              DeviceManager.getProductCode(
+                                                  deviceName),
+                                              DeviceManager.extractSerialNumber(
+                                                  deviceName),
                                               value.toString(),
                                             );
                                           },
@@ -1011,8 +1115,10 @@ class RelayPageState extends State<RelayPage> {
                                                 'Valor enviado: ${value.round()}');
                                             putDistanceOn(
                                               service,
-                                              DeviceManager.getProductCode(deviceName),
-                                              DeviceManager.extractSerialNumber(deviceName),
+                                              DeviceManager.getProductCode(
+                                                  deviceName),
+                                              DeviceManager.extractSerialNumber(
+                                                  deviceName),
                                               value.toString(),
                                             );
                                           },
@@ -1627,10 +1733,12 @@ class RelayPageState extends State<RelayPage> {
                                                                   () async {
                                                                 await saveATData(
                                                                   service,
-                                                                  DeviceManager.getProductCode(
-                                                                      deviceName),
-                                                                  DeviceManager.extractSerialNumber(
-                                                                      deviceName),
+                                                                  DeviceManager
+                                                                      .getProductCode(
+                                                                          deviceName),
+                                                                  DeviceManager
+                                                                      .extractSerialNumber(
+                                                                          deviceName),
                                                                   false,
                                                                   '',
                                                                   '3000',
@@ -1722,10 +1830,12 @@ class RelayPageState extends State<RelayPage> {
                                                                   .isNotEmpty) {
                                                             saveATData(
                                                               service,
-                                                              DeviceManager.getProductCode(
-                                                                  deviceName),
-                                                              DeviceManager.extractSerialNumber(
-                                                                  deviceName),
+                                                              DeviceManager
+                                                                  .getProductCode(
+                                                                      deviceName),
+                                                              DeviceManager
+                                                                  .extractSerialNumber(
+                                                                      deviceName),
                                                               true,
                                                               tenantController
                                                                   .text
@@ -2193,7 +2303,7 @@ class RelayPageState extends State<RelayPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: color3,
+          backgroundColor: const Color.fromRGBO(48, 43, 54, 1),
           title: GestureDetector(
             onTap: () async {
               TextEditingController nicknameController =
@@ -2251,9 +2361,11 @@ class RelayPageState extends State<RelayPage> {
             },
             child: Row(
               children: [
-                Text(
-                  nickname,
-                  style: poppinsStyle.copyWith(color: color0),
+                Expanded(
+                  child: ScrollingText(
+                    text: nickname,
+                    style: poppinsStyle.copyWith(color: color0),
+                  ),
                 ),
                 const SizedBox(width: 3),
                 const Icon(Icons.edit, size: 20, color: color0)
@@ -2313,7 +2425,7 @@ class RelayPageState extends State<RelayPage> {
               controller: _pageController,
               onPageChanged: (index) {
                 setState(() {
-                  _page = index;
+                  _selectedIndex = index;
                 });
               },
               children: pages,
@@ -2323,7 +2435,7 @@ class RelayPageState extends State<RelayPage> {
               right: 0,
               bottom: 0,
               child: CurvedNavigationBar(
-                index: _page,
+                index: _selectedIndex,
                 height: 75.0,
                 items: const <Widget>[
                   Icon(Icons.home, size: 30, color: color0),
@@ -2337,12 +2449,7 @@ class RelayPageState extends State<RelayPage> {
                 animationCurve: Curves.easeInOut,
                 animationDuration: const Duration(milliseconds: 600),
                 onTap: (index) {
-                  setState(() {
-                    _page = index;
-                    _pageController.animateToPage(index,
-                        duration: const Duration(milliseconds: 600),
-                        curve: Curves.easeInOut);
-                  });
+                  _onItemTapped(index);
                 },
                 letIndexChange: (index) => true,
               ),

@@ -41,7 +41,8 @@ void controlOut(bool value, int index) {
 
   globalDATA
       .putIfAbsent(
-          '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}', () => {})
+          '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
+          () => {})
       .addAll({'io$index': message});
 
   saveGlobalData(globalDATA);
@@ -71,7 +72,7 @@ class DomoticaPageState extends State<DomoticaPage> {
   TextEditingController emailController = TextEditingController();
   TextEditingController passController = TextEditingController();
   int _selectedNotificationOption = 0;
-  int _page = 0;
+  int _selectedIndex = 0;
   final PageController _pageController = PageController(initialPage: 0);
   final TextEditingController tenantController = TextEditingController();
 
@@ -112,6 +113,21 @@ class DomoticaPageState extends State<DomoticaPage> {
     tenantController.dispose();
     passController.dispose();
     emailController.dispose();
+  }
+
+  void _onItemTapped(int index) {
+    if ((index - _selectedIndex).abs() > 1) {
+      _pageController.jumpToPage(index);
+    } else {
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOut,
+      );
+    }
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   Future<void> processSelectedPins() async {
@@ -469,8 +485,11 @@ class DomoticaPageState extends State<DomoticaPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..add(email);
 
-      await putSecondaryAdmins(service, DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
+      await putSecondaryAdmins(
+          service,
+          DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName),
+          updatedAdmins);
 
       setState(() {
         adminDevices = updatedAdmins;
@@ -488,8 +507,11 @@ class DomoticaPageState extends State<DomoticaPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..remove(email);
 
-      await putSecondaryAdmins(service, DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
+      await putSecondaryAdmins(
+          service,
+          DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName),
+          updatedAdmins);
 
       setState(() {
         adminDevices.remove(email);
@@ -669,13 +691,17 @@ class DomoticaPageState extends State<DomoticaPage> {
                             ],
                           );
                         },
-                        child: Text(
-                          subNicknamesMap['$deviceName/-/$index'] ??
-                              '${tipo[index]} $index',
-                          style: GoogleFonts.poppins(
-                            color: color0,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                        child: SizedBox(
+                          height: 30,
+                          width: 180,
+                          child: ScrollingText(
+                            text: subNicknamesMap['$deviceName/-/$index'] ??
+                                '${tipo[index]} $index',
+                            style: GoogleFonts.poppins(
+                              color: color0,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -1794,10 +1820,12 @@ class DomoticaPageState extends State<DomoticaPage> {
                                                                   () async {
                                                                 await saveATData(
                                                                   service,
-                                                                  DeviceManager.getProductCode(
-                                                                      deviceName),
-                                                                  DeviceManager.extractSerialNumber(
-                                                                      deviceName),
+                                                                  DeviceManager
+                                                                      .getProductCode(
+                                                                          deviceName),
+                                                                  DeviceManager
+                                                                      .extractSerialNumber(
+                                                                          deviceName),
                                                                   false,
                                                                   '',
                                                                   '3000',
@@ -1889,10 +1917,12 @@ class DomoticaPageState extends State<DomoticaPage> {
                                                                   .isNotEmpty) {
                                                             saveATData(
                                                               service,
-                                                              DeviceManager.getProductCode(
-                                                                  deviceName),
-                                                              DeviceManager.extractSerialNumber(
-                                                                  deviceName),
+                                                              DeviceManager
+                                                                  .getProductCode(
+                                                                      deviceName),
+                                                              DeviceManager
+                                                                  .extractSerialNumber(
+                                                                      deviceName),
                                                               true,
                                                               tenantController
                                                                   .text
@@ -2434,9 +2464,11 @@ class DomoticaPageState extends State<DomoticaPage> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  Text(
-                    nickname,
-                    style: poppinsStyle.copyWith(color: color0),
+                  Expanded(
+                    child: ScrollingText(
+                      text: nickname,
+                      style: poppinsStyle.copyWith(color: color0),
+                    ),
                   ),
                   const SizedBox(width: 3),
                   const Icon(Icons.edit, size: 20, color: color0)
@@ -2497,7 +2529,7 @@ class DomoticaPageState extends State<DomoticaPage> {
               controller: _pageController,
               onPageChanged: (index) {
                 setState(() {
-                  _page = index;
+                  _selectedIndex = index;
                 });
               },
               children: pages,
@@ -2507,7 +2539,7 @@ class DomoticaPageState extends State<DomoticaPage> {
               right: 0,
               bottom: 0,
               child: CurvedNavigationBar(
-                index: _page,
+                index: _selectedIndex,
                 height: 75.0,
                 items: const <Widget>[
                   Icon(Icons.home, size: 30, color: color0),
@@ -2521,12 +2553,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                 animationCurve: Curves.easeInOut,
                 animationDuration: const Duration(milliseconds: 600),
                 onTap: (index) {
-                  setState(() {
-                    _page = index;
-                    _pageController.animateToPage(index,
-                        duration: const Duration(milliseconds: 600),
-                        curve: Curves.easeInOut);
-                  });
+                  _onItemTapped(index);
                 },
                 letIndexChange: (index) => true,
               ),

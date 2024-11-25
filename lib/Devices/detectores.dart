@@ -35,10 +35,10 @@ class DetectorPageState extends State<DetectorPage> {
 
   bool alert = false;
   String _textToShow = 'AIRE PURO';
-  bool online =
-      globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-              'cstate'] ??
-          false;
+  bool online = globalDATA[
+              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+          'cstate'] ??
+      false;
   final PageController _pageController = PageController();
 
   @override
@@ -160,11 +160,15 @@ class DetectorPageState extends State<DetectorPage> {
   //*-Funciones de deslizamiento entre pantallas-*\\
 
   void _onItemTapped(int index) {
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+    if ((index - _selectedIndex).abs() > 1) {
+      _pageController.jumpToPage(index);
+    } else {
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOut,
+      );
+    }
     setState(() {
       _selectedIndex = index;
     });
@@ -183,6 +187,7 @@ class DetectorPageState extends State<DetectorPage> {
 //!Visual
   @override
   Widget build(BuildContext context) {
+    final TextStyle poppinsStyle = GoogleFonts.poppins();
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, A) {
@@ -278,14 +283,16 @@ class DetectorPageState extends State<DetectorPage> {
                   ),
                 ],
               );
-              setupToken(DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName),
-                  deviceName);
+              setupToken(DeviceManager.getProductCode(deviceName),
+                  DeviceManager.extractSerialNumber(deviceName), deviceName);
             },
             child: Row(
               children: [
-                Text(
-                  nickname,
-                  style: const TextStyle(color: color0),
+                Expanded(
+                  child: ScrollingText(
+                    text: nickname,
+                    style: poppinsStyle.copyWith(color: color0),
+                  ),
                 ),
                 const SizedBox(width: 3),
                 const Icon(Icons.edit, size: 20, color: color0)
