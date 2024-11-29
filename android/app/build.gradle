@@ -9,8 +9,12 @@ plugins {
 }
 
 dependencies {
-    implementation 'com.google.android.gms:play-services-auth:20.5.0'
+    // Otras dependencias...
+    implementation 'com.google.firebase:firebase-messaging:23.0.0'  // Asegúrate de usar la versión correcta
+    implementation 'com.google.android.gms:play-services-auth:20.5.0'  // Esta puede estar desactualizada
 }
+
+apply plugin: 'com.google.gms.google-services'
 
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')

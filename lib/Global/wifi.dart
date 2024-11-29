@@ -22,7 +22,8 @@ class WifiPageState extends State<WifiPage> {
     super.initState();
     for (String device in previusConnections) {
       // printLog('Voy a cargar los datos de $device');
-      queryItems(service, DeviceManager.getProductCode(device), DeviceManager.extractSerialNumber(device));
+      queryItems(service, DeviceManager.getProductCode(device),
+          DeviceManager.extractSerialNumber(device));
     }
   }
 
@@ -30,8 +31,9 @@ class WifiPageState extends State<WifiPage> {
   void toggleState(String deviceName, bool newState) async {
     String deviceSerialNumber = DeviceManager.extractSerialNumber(deviceName);
     String productCode = DeviceManager.getProductCode(deviceName);
-    globalDATA['${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber']!['w_status'] =
-        newState;
+    globalDATA[
+            '${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber']![
+        'w_status'] = newState;
     saveGlobalData(globalDATA);
     String topic = 'devices_rx/$productCode/$deviceSerialNumber';
     String topic2 = 'devices_tx/$productCode/$deviceSerialNumber';
@@ -423,7 +425,6 @@ class WifiPageState extends State<WifiPage> {
                         case '027000_IOT':
                           bool estado = deviceDATA['w_status'] ?? false;
                           bool heaterOn = deviceDATA['f_status'] ?? false;
-
                           return Card(
                             color: color3,
                             margin: const EdgeInsets.symmetric(
@@ -538,143 +539,6 @@ class WifiPageState extends State<WifiPage> {
                                                 });
                                               },
                                             ),
-                                          ],
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            HugeIcons.strokeRoundedDelete02,
-                                            color: color0,
-                                            size: 20,
-                                          ),
-                                          onPressed: () {
-                                            _confirmDelete(deviceName, equipo);
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-
-                        case '041220_IOT':
-                          bool estado = deviceDATA['w_status'] ?? false;
-                          bool heaterOn = deviceDATA['f_status'] ?? false;
-
-                          return Card(
-                            color: color3,
-                            margin: const EdgeInsets.symmetric(
-                                vertical: 5, horizontal: 10),
-                            elevation: 2,
-                            child: Theme(
-                              data: Theme.of(context)
-                                  .copyWith(dividerColor: Colors.transparent),
-                              child: ExpansionTile(
-                                tilePadding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0),
-                                iconColor: color6,
-                                collapsedIconColor: color6,
-                                title: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          nicknamesMap[deviceName] ??
-                                              deviceName,
-                                          style: GoogleFonts.poppins(
-                                            color: color0,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        Text(
-                                          online
-                                              ? '● CONECTADO'
-                                              : '● DESCONECTADO',
-                                          style: GoogleFonts.poppins(
-                                            color:
-                                                online ? Colors.green : color6,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                children: <Widget>[
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16.0, vertical: 5.0),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            estado
-                                                ? Row(
-                                                    children: [
-                                                      if (heaterOn) ...[
-                                                        Text(
-                                                          'Calentando',
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                            color: Colors
-                                                                .amber[800],
-                                                            fontSize: 15,
-                                                          ),
-                                                        ),
-                                                        Icon(
-                                                          HugeIcons
-                                                              .strokeRoundedFlash,
-                                                          size: 15,
-                                                          color:
-                                                              Colors.amber[800],
-                                                        ),
-                                                      ] else ...[
-                                                        Text(
-                                                          'Encendido',
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                            color: Colors.green,
-                                                            fontSize: 15,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ],
-                                                  )
-                                                : Text(
-                                                    'Apagado',
-                                                    style: GoogleFonts.poppins(
-                                                        color: color6,
-                                                        fontSize: 15),
-                                                  ),
-                                            const SizedBox(width: 5),
-                                            owner
-                                                ? Switch(
-                                                    activeColor:
-                                                        const Color(0xFF9C9D98),
-                                                    activeTrackColor:
-                                                        const Color(0xFFB2B5AE),
-                                                    inactiveThumbColor:
-                                                        const Color(0xFFB2B5AE),
-                                                    inactiveTrackColor:
-                                                        const Color(0xFF9C9D98),
-                                                    value: estado,
-                                                    onChanged: (newValue) {
-                                                      toggleState(
-                                                          deviceName, newValue);
-                                                      setState(() {
-                                                        estado = newValue;
-                                                      });
-                                                    },
-                                                  )
-                                                : const SizedBox(
-                                                    height: 0, width: 0),
                                           ],
                                         ),
                                         IconButton(
@@ -927,8 +791,9 @@ class WifiPageState extends State<WifiPage> {
                                                         onChanged: (value) {
                                                           String
                                                               deviceSerialNumber =
-                                                              DeviceManager.extractSerialNumber(
-                                                                  deviceName);
+                                                              DeviceManager
+                                                                  .extractSerialNumber(
+                                                                      deviceName);
                                                           String topic =
                                                               'devices_rx/${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber';
                                                           String topic2 =
@@ -1046,7 +911,9 @@ class WifiPageState extends State<WifiPage> {
                                             isNC
                                                 ? estado
                                                     ? Text(
-                                                        'ABIERTO',
+                                                        labelEncendido[
+                                                                deviceName] ??
+                                                            'ABIERTO',
                                                         style:
                                                             GoogleFonts.poppins(
                                                           color: Colors.green,
@@ -1054,15 +921,20 @@ class WifiPageState extends State<WifiPage> {
                                                         ),
                                                       )
                                                     : Text(
-                                                        'CERRADO',
+                                                        labelApagado[
+                                                                deviceName] ??
+                                                            'CERRADO',
                                                         style:
                                                             GoogleFonts.poppins(
-                                                                color: color6,
-                                                                fontSize: 15),
+                                                          color: color6,
+                                                          fontSize: 15,
+                                                        ),
                                                       )
                                                 : estado
                                                     ? Text(
-                                                        'CERRADO',
+                                                        labelEncendido[
+                                                                deviceName] ??
+                                                            'CERRADO',
                                                         style:
                                                             GoogleFonts.poppins(
                                                           color: Colors.green,
@@ -1070,11 +942,14 @@ class WifiPageState extends State<WifiPage> {
                                                         ),
                                                       )
                                                     : Text(
-                                                        'ABIERTO',
+                                                        labelApagado[
+                                                                deviceName] ??
+                                                            'ABIERTO',
                                                         style:
                                                             GoogleFonts.poppins(
-                                                                color: color6,
-                                                                fontSize: 15),
+                                                          color: color6,
+                                                          fontSize: 15,
+                                                        ),
                                                       ),
                                             const SizedBox(width: 5),
                                             owner

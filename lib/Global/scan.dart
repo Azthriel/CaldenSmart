@@ -76,7 +76,7 @@ class ScanPageState extends State<ScanPage>
             'Detector',
             'Domotica',
             'Rele',
-            'Roll'
+            // 'Roll'
           ],
           androidUsesFineLocation: true,
           continuousUpdates: true,
@@ -139,8 +139,6 @@ class ScanPageState extends State<ScanPage>
       await device.connect(timeout: const Duration(seconds: 6));
       deviceName = device.platformName;
       myDeviceid = device.remoteId.toString();
-
-      //TODO: Leche
 
       printLog('Teoricamente estoy conectado');
 
@@ -302,12 +300,12 @@ class ScanPageState extends State<ScanPage>
       body: EasyRefresh(
         controller: _controller,
         header: const ClassicHeader(
-          dragText: 'Desliza para reescanear',
+          dragText: 'Desliza para escanear',
           armedText:
-              'Suelta para reescanear\nO desliza para arriba para cancelar',
-          readyText: 'Reescaneando dispositivos',
-          processingText: 'Reescaneando dispositivos',
-          processedText: 'Reescaneo completo',
+              'Suelta para escanear\nO desliza para arriba para cancelar',
+          readyText: 'Escaneando dispositivos',
+          processingText: 'Escaneando dispositivos',
+          processedText: 'Escaneo completo',
           showMessage: false,
           textStyle: TextStyle(color: color3),
           iconTheme: IconThemeData(color: color3),
@@ -414,7 +412,7 @@ class ScanPageState extends State<ScanPage>
                                       top: 16,
                                       left: 16,
                                       child: SizedBox(
-                                        width: 250,
+                                        width: 270,
                                         child: Row(
                                           children: [
                                             Expanded(

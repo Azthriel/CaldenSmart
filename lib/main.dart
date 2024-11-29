@@ -3,6 +3,7 @@ import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:caldensmart/Devices/relay.dart';
 import 'package:caldensmart/Global/profile.dart';
+import 'package:upgrader/upgrader.dart';
 import 'Devices/domotica.dart';
 import 'Devices/detectores.dart';
 import 'Devices/roller.dart';
@@ -28,6 +29,7 @@ Future<void> main() async {
   //! IOS O ANDROID !\\
   android = Platform.isAndroid;
   //! IOS O ANDROID !\\
+  appVersionNumber = Upgrader().currentInstalledVersion ?? '4.0.4';
 
   // Inicializa Firebase solo si no ha sido inicializado previamente.
   try {

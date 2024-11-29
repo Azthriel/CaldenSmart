@@ -2250,23 +2250,21 @@ class DomoticaPageState extends State<DomoticaPage> {
                       if (selectedPin != null) {
                         pinQuickAccess
                             .addAll({deviceName: selectedPin.toString()});
-                        if (!quickAccesActivated) {
-                          quickAccess.add(deviceName);
-                          await savequickAccess(quickAccess);
-                          await savepinQuickAccess(pinQuickAccess);
-                          setState(() {
-                            quickAccesActivated = true;
-                          });
-                        } else {
-                          quickAccess.remove(deviceName);
-                          pinQuickAccess.remove(deviceName);
-                          await savequickAccess(quickAccess);
-                          await savepinQuickAccess(pinQuickAccess);
-                          setState(() {
-                            quickAccesActivated = false;
-                          });
-                        }
+                        quickAccess.add(deviceName);
+                        await savequickAccess(quickAccess);
+                        await savepinQuickAccess(pinQuickAccess);
+                        setState(() {
+                          quickAccesActivated = true;
+                        });
                       }
+                    } else {
+                      quickAccess.remove(deviceName);
+                      pinQuickAccess.remove(deviceName);
+                      await savequickAccess(quickAccess);
+                      await savepinQuickAccess(pinQuickAccess);
+                      setState(() {
+                        quickAccesActivated = false;
+                      });
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -2460,20 +2458,17 @@ class DomoticaPageState extends State<DomoticaPage> {
                 ],
               );
             },
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ScrollingText(
-                      text: nickname,
-                      style: poppinsStyle.copyWith(color: color0),
-                    ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ScrollingText(
+                    text: nickname,
+                    style: poppinsStyle.copyWith(color: color0),
                   ),
-                  const SizedBox(width: 3),
-                  const Icon(Icons.edit, size: 20, color: color0)
-                ],
-              ),
+                ),
+                const SizedBox(width: 3),
+                const Icon(Icons.edit, size: 20, color: color0)
+              ],
             ),
           ),
           leading: IconButton(

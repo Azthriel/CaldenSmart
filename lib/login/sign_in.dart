@@ -8,10 +8,20 @@ import 'welcome.dart';
 import '/master.dart';
 
 Future<void> signInWithGoogle() async {
-  final GoogleSignIn googleSignIn = GoogleSignIn();
+  final GoogleSignIn googleSignIn = GoogleSignIn(
+    scopes: [
+      'email',
+    ],
+    // hostedDomain: 'https://caldensmart-dev.auth.sa-east-1.amazoncognito.com',
+    // clientId:
+    //     '535358063665-kbf4pk5e7kppuo1402q7r2fnk8gjcjg5.apps.googleusercontent.com',
+    // serverClientId: 'sa-east-1_IVAQfYQAX',
+  );
   try {
     // Inicia sesión con Google
+    printLog('Pruebo a iniciar sesión');
     final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+    printLog('Inicie: $googleUser');
     final GoogleSignInAuthentication googleAuth =
         await googleUser!.authentication;
 

@@ -30,6 +30,12 @@ import 'Global/stored_data.dart';
 
 //! VARIABLES !\\
 
+//*-Informacion crucial app-*\\
+late String appVersionNumber;
+//ACORDATE: 0 = Caldén Smart
+const int app = 0;
+//*-Informacion crucial app-\*\
+
 //*-Base de datos interna app-*\\
 Map<String, Map<String, dynamic>> globalDATA = {};
 //*-Base de datos interna app-*\\
@@ -224,13 +230,6 @@ Map<String, String> pinQuickAccess = {};
 Map<String, String> labelEncendido = {};
 Map<String, String> labelApagado = {};
 //*-Labels personalizados on/off-*\\
-
-// !------------------------------VERSION NUMBER---------------------------------------
-//ACORDATE: Cambia el número de versión en el pubspec.yaml antes de publicar
-String appVersionNumber = Upgrader().currentInstalledVersion ?? '4.0.4';
-//ACORDATE: 0 = Caldén Smart
-int app = 0;
-// !------------------------------VERSION NUMBER---------------------------------------
 
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
@@ -894,7 +893,7 @@ void sendReportError(String cuerpo) async {
   }
 
   String recipients = 'ingenieria@caldensmart.com';
-  String subject = 'Reporte de error $deviceName';
+  String subject = 'Reporte de error';
 
   try {
     final Uri emailLaunchUri = Uri(
@@ -4425,7 +4424,7 @@ class ScrollingTextState extends State<ScrollingText> {
   @override
   void didUpdateWidget(covariant ScrollingText oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.text != widget.text) {
+    if (oldWidget.text != widget.text && context.mounted) {
       _timer?.cancel();
       _scrollController.jumpTo(0.0);
       WidgetsBinding.instance.addPostFrameCallback((_) => _checkTextWidth());
@@ -4440,34 +4439,38 @@ class ScrollingTextState extends State<ScrollingText> {
   }
 
   void _checkTextWidth() {
-    final renderBox = context.findRenderObject() as RenderBox?;
-    if (renderBox != null) {
-      final containerWidth = renderBox.size.width;
+    if (context.mounted) {
+      final renderBox = context.findRenderObject() as RenderBox?;
+      if (renderBox != null) {
+        final containerWidth = renderBox.size.width;
 
-      final textPainter = TextPainter(
-        text: TextSpan(text: widget.text, style: widget.style),
-        maxLines: 1,
-        textDirection: TextDirection.ltr,
-      )..layout();
+        final textPainter = TextPainter(
+          text: TextSpan(text: widget.text, style: widget.style),
+          maxLines: 1,
+          textDirection: TextDirection.ltr,
+        )..layout();
 
-      final textWidth = textPainter.size.width;
+        final textWidth = textPainter.size.width + 10;
 
-      if (textWidth > containerWidth) {
-        _shouldScroll = true;
-        _startScrolling();
-      } else {
-        _shouldScroll = false;
-        _timer?.cancel();
+        printLog("Container width: $containerWidth");
+        printLog("Text width: $textWidth");
+
+        if (textWidth > containerWidth) {
+          _shouldScroll = true;
+          _startScrolling();
+        } else {
+          _shouldScroll = false;
+          _timer?.cancel();
+        }
       }
     }
   }
 
   void _startScrolling() {
-    if (_shouldScroll) {
-      _timer?.cancel();
-
+    if (_shouldScroll && _timer == null && context.mounted) {
       _timer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
         final currentPosition = _scrollController.offset;
+
         if (currentPosition < _scrollController.position.maxScrollExtent) {
           _scrollController.jumpTo(currentPosition + (widget.scrollSpeed / 60));
         } else {

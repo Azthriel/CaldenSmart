@@ -2354,11 +2354,17 @@ class RollerPageState extends State<RollerPage> {
                 Expanded(
                   child: ScrollingText(
                     text: nickname,
-                    style: poppinsStyle.copyWith(color: color0),
+                    style: poppinsStyle.copyWith(
+                      color: color0,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 3),
-                const Icon(Icons.edit, size: 20, color: color0)
+                const Icon(
+                  Icons.edit,
+                  size: 20,
+                  color: color0,
+                )
               ],
             ),
           ),

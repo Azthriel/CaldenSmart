@@ -80,13 +80,13 @@ class LoadState extends State<LoadingPage> {
         }
       }
 
-      setupToken(
-          DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName), deviceName);
+      setupToken(DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName), deviceName);
 
       printLog('Equipo: $deviceType');
 
-      await queryItems(
-          service, DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName));
+      await queryItems(service, DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName));
 
       discNotfActivated = configNotiDsc.keys.toList().contains(deviceName);
 
@@ -120,7 +120,9 @@ class LoadState extends State<LoadingPage> {
             '';
         printLog('Owner actual: $owner');
         adminDevices = await getSecondaryAdmins(
-            service, DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName));
+            service,
+            DeviceManager.getProductCode(deviceName),
+            DeviceManager.extractSerialNumber(deviceName));
         printLog('Administradores: $adminDevices');
 
         if (owner != '') {
@@ -141,8 +143,8 @@ class LoadState extends State<LoadingPage> {
           deviceOwner = true;
         }
 
-        await analizePayment(
-            DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName));
+        await analizePayment(DeviceManager.getProductCode(deviceName),
+            DeviceManager.extractSerialNumber(deviceName));
 
         if (payAT) {
           activatedAT = globalDATA[
@@ -221,7 +223,9 @@ class LoadState extends State<LoadingPage> {
             '';
         printLog('Owner actual: $owner');
         adminDevices = await getSecondaryAdmins(
-            service, DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName));
+            service,
+            DeviceManager.getProductCode(deviceName),
+            DeviceManager.extractSerialNumber(deviceName));
         printLog('Administradores: $adminDevices');
 
         if (owner != '') {
@@ -242,8 +246,8 @@ class LoadState extends State<LoadingPage> {
           deviceOwner = true;
         }
 
-        await analizePayment(
-            DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName));
+        await analizePayment(DeviceManager.getProductCode(deviceName),
+            DeviceManager.extractSerialNumber(deviceName));
 
         if (payAT) {
           activatedAT = globalDATA[
@@ -276,7 +280,9 @@ class LoadState extends State<LoadingPage> {
             '';
         printLog('Owner actual: $owner');
         adminDevices = await getSecondaryAdmins(
-            service, DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName));
+            service,
+            DeviceManager.getProductCode(deviceName),
+            DeviceManager.extractSerialNumber(deviceName));
         printLog('Administradores: $adminDevices');
 
         if (owner != '') {
@@ -297,8 +303,8 @@ class LoadState extends State<LoadingPage> {
           deviceOwner = true;
         }
 
-        await analizePayment(
-            DeviceManager.getProductCode(deviceName), DeviceManager.extractSerialNumber(deviceName));
+        await analizePayment(DeviceManager.getProductCode(deviceName),
+            DeviceManager.extractSerialNumber(deviceName));
 
         if (payAT) {
           activatedAT = globalDATA[
