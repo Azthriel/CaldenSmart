@@ -57,6 +57,12 @@ class RelayPageState extends State<RelayPage> {
     updateWifiValues(toolsValues);
     subscribeToWifiStatus();
     subscribeTrueStatus();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (shouldUpdateDevice) {
+        await showUpdateDialog(context);
+      }
+    });
   }
 
   @override

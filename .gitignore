@@ -17,6 +17,11 @@ lib/easterEgg
 key.properties
 amplify/
 
+.firebaserc
+firebase.json
+firestore.indexes.json
+firestore.rules
+
 
 # IntelliJ related
 *.iml

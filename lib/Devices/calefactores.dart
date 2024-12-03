@@ -42,11 +42,11 @@ class CalefactorPageState extends State<CalefactorPage> {
   bool dOnOk = false;
   bool dOffOk = false;
   bool showOptions = false;
-  String measure = deviceType == '022000' ? 'KW/h' : 'M³/h';
-  IconData powerIconOn = deviceType == '022000'
+  String measure = DeviceManager.getProductCode(deviceName) == '022000_IOT' ? 'KW/h' : 'M³/h';
+  IconData powerIconOn = DeviceManager.getProductCode(deviceName) == '022000_IOT'
       ? Icons.flash_on_rounded
       : HugeIcons.strokeRoundedFire;
-  IconData powerIconOff = deviceType == '022000'
+  IconData powerIconOff = DeviceManager.getProductCode(deviceName) == '022000_IOT'
       ? Icons.flash_off_rounded
       : HugeIcons.strokeRoundedFire;
 
@@ -540,7 +540,8 @@ class CalefactorPageState extends State<CalefactorPage> {
                 child: turnOn
                     ? AnimatedIconWidget(
                         isHeating: trueStatus,
-                        icon: deviceType == '022000'
+                        icon: DeviceManager.getProductCode(deviceName) ==
+                                '022000_IOT'
                             ? Icons.flash_on_rounded
                             : HugeIcons.strokeRoundedFire,
                       )

@@ -36,6 +36,8 @@ class ScanPageState extends State<ScanPage>
     super.initState();
     startBluetoothMonitoring();
     startLocationMonitoring();
+    List<dynamic> lista = fbData['Keywords'] ?? [];
+    keywords = lista.map((item) => item.toString()).toList();
     scan();
 
     searchController.addListener(() {
@@ -44,13 +46,15 @@ class ScanPageState extends State<ScanPage>
       });
     });
 
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    )..forward();
-    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
+    if (context.mounted) {
+      _animationController = AnimationController(
+        vsync: this,
+        duration: const Duration(seconds: 1),
+      )..forward();
+      _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+      );
+    }
   }
 
   @override
@@ -70,14 +74,7 @@ class ScanPageState extends State<ScanPage>
       try {
         FlutterBluePlus.isScanningNow ? FlutterBluePlus.stopScan() : null;
         FlutterBluePlus.startScan(
-          withKeywords: [
-            'Electrico',
-            'Gas',
-            'Detector',
-            'Domotica',
-            'Rele',
-            // 'Roll'
-          ],
+          withKeywords: keywords,
           androidUsesFineLocation: true,
           continuousUpdates: true,
           removeIfGone: const Duration(seconds: 30),
@@ -338,8 +335,7 @@ class ScanPageState extends State<ScanPage>
                 itemCount: filteredDevices.length,
                 itemBuilder: (context, index) {
                   final device = filteredDevices[index];
-                  final deviceName = device.platformName;
-                  final imagePath = deviceImages[deviceName];
+                  final imagePath = deviceImages[device.platformName];
                   List<dynamic> admins = globalDATA[
                               '${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
                           ?['secondary_admin'] ??
@@ -348,7 +344,7 @@ class ScanPageState extends State<ScanPage>
                                   '${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
                               ?['owner'] ==
                           currentUserEmail ||
-                      admins.contains(deviceName) ||
+                      admins.contains(device.platformName) ||
                       globalDATA['${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
                               ?['owner'] ==
                           '' ||
@@ -390,7 +386,8 @@ class ScanPageState extends State<ScanPage>
                                             )
                                           : Image.asset(
                                               ImageManager.rutaDeImagen(
-                                                  device.platformName),
+                                                device.platformName,
+                                              ),
                                               fit: BoxFit.cover,
                                             ),
                                     ),
@@ -416,33 +413,35 @@ class ScanPageState extends State<ScanPage>
                                         child: Row(
                                           children: [
                                             Expanded(
-                                              child: ScrollingText(
-                                                text: nicknamesMap[
+                                              child: Text(
+                                                nicknamesMap[
                                                         device.platformName] ??
                                                     DeviceManager
                                                         .getComercialName(device
                                                             .platformName),
+                                                overflow: TextOverflow.ellipsis,
                                                 style: GoogleFonts.poppins(
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 22,
                                                   color: Colors.white,
                                                   shadows: const [
                                                     Shadow(
-                                                        offset:
-                                                            Offset(-1.5, -1.5),
-                                                        color: Colors.black),
+                                                      offset:
+                                                          Offset(-1.5, -1.5),
+                                                      color: Colors.black,
+                                                    ),
                                                     Shadow(
-                                                        offset:
-                                                            Offset(1.5, -1.5),
-                                                        color: Colors.black),
+                                                      offset: Offset(1.5, -1.5),
+                                                      color: Colors.black,
+                                                    ),
                                                     Shadow(
-                                                        offset:
-                                                            Offset(1.5, 1.5),
-                                                        color: Colors.black),
+                                                      offset: Offset(1.5, 1.5),
+                                                      color: Colors.black,
+                                                    ),
                                                     Shadow(
-                                                        offset:
-                                                            Offset(-1.5, 1.5),
-                                                        color: Colors.black),
+                                                      offset: Offset(-1.5, 1.5),
+                                                      color: Colors.black,
+                                                    ),
                                                   ],
                                                 ),
                                               ),

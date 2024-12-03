@@ -1,22 +1,26 @@
 {
-    "flutter": {
-        "platforms": {
-            "android": {
-                "default": {
-                    "projectId": "caldensmart-65709",
-                    "appId": "1:530535819995:android:59ba1e56e6cd585b12bafe",
-                    "fileOutput": "android/app/google-services.json"
-                }
-            },
-            "dart": {
-                "lib/firebase_options.dart": {
-                    "projectId": "caldensmart-65709",
-                    "configurations": {
-                        "android": "1:530535819995:android:59ba1e56e6cd585b12bafe",
-                        "ios": "1:530535819995:ios:c37635bfdedac48d12bafe"
-                    }
-                }
-            }
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "caldensmart-65709",
+          "appId": "1:530535819995:android:59ba1e56e6cd585b12bafe",
+          "fileOutput": "android/app/google-services.json"
         }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "caldensmart-65709",
+          "configurations": {
+            "android": "1:530535819995:android:59ba1e56e6cd585b12bafe",
+            "ios": "1:530535819995:ios:c37635bfdedac48d12bafe"
+          }
+        }
+      }
     }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
 }

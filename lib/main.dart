@@ -93,6 +93,11 @@ class MyAppState extends State<MyApp> {
     });
     listenToTopics();
 
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      fbData = await fetchDocumentData();
+      printLog(fbData, "rojo");
+    });
+
     printLog('Empezamos');
   }
 
@@ -103,18 +108,18 @@ class MyAppState extends State<MyApp> {
       navigatorKey: navigatorKey,
       title: nameOfApp(app),
       theme: ThemeData(
-        primaryColor: const Color(0xFF302b36),
-        primaryColorLight: const Color(0xFFCFC8BD),
+        primaryColor: color5,
+        primaryColorLight: color6,
         textSelectionTheme: const TextSelectionThemeData(
-          selectionColor: Color(0xFFCFC8BD),
-          selectionHandleColor: Color(0xFFCFC8BD),
+          selectionColor: color1,
+          selectionHandleColor: color1,
         ),
         bottomSheetTheme: const BottomSheetThemeData(
           surfaceTintColor: Colors.transparent,
           backgroundColor: Colors.transparent,
         ),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF302b36),
+          seedColor: color5,
         ),
         useMaterial3: true,
       ),
@@ -130,7 +135,7 @@ class MyAppState extends State<MyApp> {
         '/domotica': (context) => const DomoticaPage(),
         '/profile': (context) => const ProfilePage(),
         '/escenas': (context) => const EscenasPage(),
-        '/relay': (context) => const RelayPage(),
+        '/rele': (context) => const RelayPage(),
         '/roller': (context) => const RollerPage(),
       },
     );

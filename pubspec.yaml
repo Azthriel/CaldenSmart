@@ -12,7 +12,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   permission_handler: ^11.1.0
   fluttertoast: ^8.2.4
-  path_provider: ^2.1.1
+  path_provider: ^2.1.5
   flutter_blue_plus: ^1.33.4
   easy_refresh: ^3.4.0
   geolocator: ^10.1.0
@@ -25,7 +25,7 @@ dependencies:
   firebase_messaging: ^14.7.20
   firebase_core: ^2.27.1
   aws_dynamodb_api: ^2.0.0
-  dio: ^5.4.3+1
+  dio: ^5.7.0
   flutter_background_service: ^5.0.10
   flutter_local_notifications: ^17.1.1
   mobile_scanner: ^5.2.1
@@ -36,6 +36,7 @@ dependencies:
   google_sign_in: ^6.2.2
   image_picker: ^1.1.2
   upgrader: ^11.3.0
+  cloud_firestore: ^4.17.5
 
 dev_dependencies:
   flutter_test:
@@ -77,7 +78,6 @@ flutter:
     - assets/devices/020010.jpg
     - assets/devices/022000.jpg
     - assets/devices/027000.webp
-    - assets/devices/041220.jpg
     - assets/fondo.png
     - assets/google.png
     - assets/Logo_sitio.png

@@ -4,6 +4,8 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 import 'package:amplify_flutter/amplify_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -67,7 +69,6 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 //*-Datos del dispositivo al que te conectaste-*\\
 String deviceName = '';
-String deviceType = '';
 String softwareVersion = '';
 String hardwareVersion = '';
 String owner = '';
@@ -108,6 +109,7 @@ List<int> toolsValues = [];
 List<int> ioValues = [];
 List<int> varsValues = [];
 bool bluetoothOn = true;
+List<String> keywords = [];
 //*-Relacionado al ble-*\\
 
 //*-Topics mqtt-*\\
@@ -230,6 +232,15 @@ Map<String, String> pinQuickAccess = {};
 Map<String, String> labelEncendido = {};
 Map<String, String> labelApagado = {};
 //*-Labels personalizados on/off-*\\
+
+//*-Fetch data from firestore-*\\
+Map<String, dynamic> fbData = {};
+//*-Fetch data from firestore-*\\
+
+//*-Device update-*\\
+String? lastSV;
+bool shouldUpdateDevice = false;
+//*-Device update-*\\
 
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
@@ -919,7 +930,7 @@ Future<void> sendWifitoBle(String ssid, String pass) async {
   MyDevice myDevice = MyDevice();
   String value = '$ssid#$pass';
   String deviceCommand = DeviceManager.getProductCode(deviceName);
-  printLog(deviceCommand);
+  // printLog(deviceCommand);
   String dataToSend = '$deviceCommand[1]($value)';
   printLog(dataToSend);
   try {
@@ -2747,9 +2758,346 @@ void checkForUpdate(BuildContext context) async {
 }
 //*-Revisión de actualización-*\\
 
+//*-Fetch data from firestore-*\\
+Future<Map<String, dynamic>> fetchDocumentData() async {
+  try {
+    DocumentReference document =
+        FirebaseFirestore.instance.collection('Calden Smart').doc('Data');
+
+    DocumentSnapshot snapshot = await document.get();
+
+    if (snapshot.exists) {
+      Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
+
+      return data;
+    } else {
+      throw Exception("El documento no existe");
+    }
+  } catch (e) {
+    printLog("Error al leer Firestore: $e");
+    return {};
+  }
+}
+//*-Fetch data from firestore-*\\
+
+//*-Device update-*\\
+Future<String?> getLastSoftVersion(String pc, String hardV) async {
+  try {
+    DocumentReference document =
+        FirebaseFirestore.instance.collection('Calden Smart').doc('Versiones');
+
+    DocumentSnapshot snapshot = await document.get();
+
+    if (snapshot.exists) {
+      Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
+
+      Map<String, String> versions = (data[pc] as Map<String, dynamic>).map(
+        (key, value) => MapEntry(
+          key,
+          value.toString(),
+        ),
+      );
+
+      printLog("Ultima version: ${versions[hardV]}", "cyan");
+
+      return versions[hardV];
+    } else {
+      throw Exception("El documento no existe");
+    }
+  } catch (e) {
+    printLog("Error al leer Firestore: $e");
+    return null;
+  }
+}
+
+Future<void> showUpdateDialog(BuildContext ctx) {
+  bool updating = false;
+  bool error = false;
+  int porcentaje = 0;
+  return showDialog<void>(
+    barrierDismissible: false,
+    context: ctx,
+    builder: (BuildContext context) {
+      return StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return AlertDialog(
+            backgroundColor: color3,
+            title: Text(
+              'Actualmente tu equipo ${nicknamesMap[deviceName] ?? deviceName} esta desactualizado',
+              style: GoogleFonts.poppins(
+                color: color0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  if (error) ...[
+                    const Icon(
+                      Icons.error,
+                      size: 20,
+                      color: color6,
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    Text(
+                      'Ocurrió un error actualizando el equipo, intentelo de nuevo más tarde...',
+                      style: GoogleFonts.poppins(
+                        color: color0,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                  if (updating && !error) ...[
+                    const CircularProgressIndicator(
+                      color: color0,
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    Text(
+                      '$porcentaje%',
+                      style: GoogleFonts.poppins(
+                        color: color0,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 10,
+                    ),
+                    Text(
+                      'Actualizando equipo...',
+                      style: GoogleFonts.poppins(
+                        color: color0,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 10,
+                    ),
+                    Text(
+                      'Al finalizar la actualización el equipo se reiniciara.',
+                      style: GoogleFonts.poppins(
+                        color: color0,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                  if (!updating && !error) ...[
+                    Text(
+                      'Tu equipo no está actualizado y por lo tanto podría presentar fallas de funcionamiento, se solicita que por favor actualice el equipo.',
+                      style: GoogleFonts.poppins(
+                        color: color0,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: <Widget>[
+              if (error) ...{
+                TextButton(
+                  child: Text(
+                    'Cerrar',
+                    style: GoogleFonts.poppins(color: color6),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                  },
+                ),
+              },
+              if (!updating && !error) ...{
+                TextButton(
+                  child: Text(
+                    'Mas tarde',
+                    style: GoogleFonts.poppins(color: color6),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                  },
+                ),
+                TextButton(
+                  child: Text(
+                    'Actualizar ahora',
+                    style: GoogleFonts.poppins(color: color6),
+                  ),
+                  onPressed: () async {
+                    setState(() => updating = true);
+
+                    String url =
+                        'https://github.com/barberop/sime-domotica/raw/refs/heads/main/${DeviceManager.getProductCode(deviceName)}/OTA_FW/W/hv${hardwareVersion}sv$lastSV.bin';
+
+                    printLog(url);
+
+                    try {
+                      String dir =
+                          (await getApplicationDocumentsDirectory()).path;
+                      File file = File('$dir/firmware.bin');
+
+                      if (await file.exists()) {
+                        await file.delete();
+                      }
+
+                      var req = await Dio().get(url);
+                      var bytes = req.data.toString().codeUnits;
+
+                      await file.writeAsBytes(bytes);
+
+                      var firmware = await file.readAsBytes();
+
+                      printLog(
+                          "Comprobando cosas ${bytes == firmware}", "verde");
+
+                      String data =
+                          '${DeviceManager.getProductCode(deviceName)}[3](${bytes.length})';
+                      printLog(data);
+                      await myDevice.toolsUuid.write(data.codeUnits);
+
+                      try {
+                        int chunk = 255 - 3;
+                        for (int i = 0; i < firmware.length; i += chunk) {
+                          // printLog('Mande chunk');
+                          List<int> subvalue = firmware.sublist(
+                              i, min(i + chunk, firmware.length));
+                          await myDevice.infoUuid
+                              .write(subvalue, withoutResponse: false);
+                          setState(() {
+                            porcentaje = ((i * 100) / firmware.length).round();
+                          });
+                        }
+                        printLog('Acabe');
+                      } catch (e, stackTrace) {
+                        printLog('El error es: $e $stackTrace');
+                        setState(() {
+                          updating = false;
+                          error = true;
+                        });
+                        // handleManualError(e, stackTrace);
+                      }
+                    } catch (e, stackTrace) {
+                      printLog('Error al enviar la OTA $e $stackTrace');
+                      // handleManualError(e, stackTrace);
+                      setState(() {
+                        updating = false;
+                        error = true;
+                      });
+                    }
+                  },
+                ),
+              }
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+//*-Device update-*\\
+
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
 //! CLASES !\\
+
+//*- Funciones relacionadas a los equipos*-\\
+class DeviceManager {
+  final List<String> productos = [
+    '015773_IOT',
+    '020010_IOT',
+    '022000_IOT',
+    '024011_IOT',
+    '027000_IOT',
+    '027313_IOT',
+  ];
+
+  ///Extrae el número de serie desde el deviceName
+  static String extractSerialNumber(String productName) {
+    RegExp regExp = RegExp(r'(\d{8})');
+
+    Match? match = regExp.firstMatch(productName);
+
+    return match?.group(0) ?? '';
+  }
+
+  ///Conseguir el código de producto en base al deviceName
+  static String getProductCode(String device) {
+    Map<String, String> data = (fbData['PC'] as Map<String, dynamic>).map(
+      (key, value) => MapEntry(
+        key,
+        value.toString(),
+      ),
+    );
+    String cmd = '';
+    for (String key in data.keys) {
+      if (device.contains(key)) {
+        cmd = data[key].toString();
+      }
+    }
+    return cmd;
+  }
+
+  ///Recupera el deviceName en base al productCode y al SerialNumber
+  static String recoverDeviceName(String pc, String sn) {
+    String code = '';
+    switch (pc) {
+      case '015773_IOT':
+        code = 'Detector';
+        break;
+      case '022000_IOT':
+        code = 'Electrico';
+        break;
+      case '027000_IOT':
+        code = 'Gas';
+        break;
+      case '020010_IOT':
+        code = 'Domotica';
+        break;
+      case '027313_IOT':
+        code = 'Rele';
+        break;
+      case '024011_IOT':
+        code = 'Roll';
+        break;
+    }
+
+    return '$code$sn';
+  }
+
+  ///Devuelve un nombre común para los usuarios
+  static String getComercialName(String name) {
+    String pc = DeviceManager.getProductCode(name);
+    Map<String, String> data = (fbData['CN'] as Map<String, dynamic>).map(
+      (key, value) => MapEntry(
+        key,
+        value.toString(),
+      ),
+    );
+    String cn = '';
+    for (String key in data.keys) {
+      if (pc.contains(key)) {
+        cn = data[key].toString();
+      }
+    }
+    return cn;
+  }
+
+  ///Devuelve si el equipo esta disponible para Alexa
+  static bool isAvailableForAlexa(String name) {
+    final List<String> alexaAvailable = [
+      '022000_IOT',
+      '027000_IOT',
+      '027313_IOT',
+    ];
+    String code = getProductCode(name);
+    return alexaAvailable.contains(code);
+  }
+}
+//*- Funciones relacionadas a los equipos*-\\
 
 //*-BLE, configuraciones del equipo-*\\
 class MyDevice {
@@ -2793,11 +3141,8 @@ class MyDevice {
       infoValues = await infoUuid.read();
       String str = utf8.decode(infoValues);
       var partes = str.split(':');
-      var fun = partes[0].split('_');
-      deviceType = fun[0];
       softwareVersion = partes[2];
       hardwareVersion = partes[3];
-      printLog('Device: $deviceType');
       printLog(
           'Product code: ${DeviceManager.getProductCode(device.platformName)}');
       printLog(
@@ -2807,8 +3152,8 @@ class MyDevice {
           () => {});
       saveGlobalData(globalDATA);
 
-      switch (deviceType) {
-        case '022000':
+      switch (DeviceManager.getProductCode(device.platformName)) {
+        case '022000_IOT':
           BluetoothService espService = services.firstWhere(
               (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
 
@@ -2817,7 +3162,7 @@ class MyDevice {
               Guid(
                   '52a2f121-a8e3-468c-a5de-45dca9a2a207')); //WorkingTemp:WorkingStatus:EnergyTimer:HeaterOn:NightMode
           break;
-        case '027000':
+        case '027000_IOT':
           BluetoothService espService = services.firstWhere(
               (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
 
@@ -2826,16 +3171,7 @@ class MyDevice {
               Guid(
                   '52a2f121-a8e3-468c-a5de-45dca9a2a207')); //WorkingTemp:WorkingStatus:EnergyTimer:HeaterOn:NightMode
           break;
-        case '041220':
-          BluetoothService espService = services.firstWhere(
-              (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
-
-          varsUuid = espService.characteristics.firstWhere((c) =>
-              c.uuid ==
-              Guid(
-                  '52a2f121-a8e3-468c-a5de-45dca9a2a207')); //WorkingTemp:WorkingStatus:EnergyTimer:HeaterOn:NightMode
-          break;
-        case '015773':
+        case '015773_IOT':
           BluetoothService service = services.firstWhere(
               (s) => s.uuid == Guid('dd249079-0ce8-4d11-8aa9-53de4040aec6'));
 
@@ -2847,13 +3183,13 @@ class MyDevice {
               c.uuid == Guid('12d3c6a1-f86e-4d5b-89b5-22dc3f5c831f')); //No leo
 
           break;
-        case '020010':
+        case '020010_IOT':
           BluetoothService service = services.firstWhere(
               (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
           ioUuid = service.characteristics.firstWhere(
               (c) => c.uuid == Guid('03b1c5d9-534a-4980-aed3-f59615205216'));
           break;
-        case '027313':
+        case '027313_IOT':
           BluetoothService espService = services.firstWhere(
               (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
 
@@ -2862,7 +3198,7 @@ class MyDevice {
               Guid(
                   '52a2f121-a8e3-468c-a5de-45dca9a2a207')); //DistanceControl:W_Status:EnergyTimer:AwsINIT
           break;
-        case '024011':
+        case '024011_IOT':
           BluetoothService espService = services.firstWhere(
               (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
 
@@ -4219,18 +4555,18 @@ class ImageManager {
 
   /// Ruta de imágenes predeterminadas
   static String rutaDeImagen(String device) {
-    if (device.contains('Electrico')) {
-      return 'assets/devices/022000.jpg';
-    } else if (device.contains('Gas')) {
-      return 'assets/devices/027000.webp';
-    } else if (device.contains('Detector')) {
-      return 'assets/devices/015773.jpeg';
-    } else if (device.contains('Radiador')) {
-      return 'assets/devices/041220.jpg';
-    } else if (device.contains('Domotica')) {
-      return 'assets/devices/020010.jpg';
-    } else {
-      return 'assets/Logo.png';
+    String pc = DeviceManager.getProductCode(device);
+    switch (pc) {
+      case '022000_IOT':
+        return 'assets/devices/022000.jpg';
+      case '027000_IOT':
+        return 'assets/devices/027000.webp';
+      case '015773_IOT':
+        return 'assets/devices/015773.jpeg';
+      case '020010_IOT':
+        return 'assets/devices/020010.jpg';
+      default:
+        return 'assets/Logo.png';
     }
   }
 }
@@ -4295,104 +4631,6 @@ class IconThumbSlider extends SliderComponentShape {
 }
 //*- icono en el boton de la slide -*\\
 
-//*- Funciones relacionadas a los equipos*-\\
-class DeviceManager {
-  final List<String> productos = [
-    '015773_IOT',
-    '020010_IOT',
-    '022000_IOT',
-    '024011_IOT',
-    '027000_IOT',
-    '027313_IOT',
-  ];
-
-  ///Extrae el número de serie desde el deviceName
-  static String extractSerialNumber(String productName) {
-    RegExp regExp = RegExp(r'(\d{8})');
-
-    Match? match = regExp.firstMatch(productName);
-
-    return match?.group(0) ?? '';
-  }
-
-  ///Conseguir el código de producto en base al deviceName
-  static String getProductCode(String device) {
-    switch (true) {
-      case true when device.contains('Electrico'):
-        return '022000_IOT';
-      case true when device.contains('Gas'):
-        return '027000_IOT';
-      case true when device.contains('Detector'):
-        return '015773_IOT';
-      case true when device.contains('Domotica'):
-        return '020010_IOT';
-      case true when device.contains('Rele'):
-        return '027313_IOT';
-      case true when device.contains('Roll'):
-        return '024011_IOT';
-      default:
-        return '';
-    }
-  }
-
-  ///Recupera el deviceName en base al productCode y al SerialNumber
-  static String recoverDeviceName(String pc, String sn) {
-    String code = '';
-    switch (pc) {
-      case '015773_IOT':
-        code = 'Detector';
-        break;
-      case '022000_IOT':
-        code = 'Electrico';
-        break;
-      case '027000_IOT':
-        code = 'Gas';
-        break;
-      case '020010_IOT':
-        code = 'Domotica';
-        break;
-      case '027313_IOT':
-        code = 'Rele';
-        break;
-      case '024011_IOT':
-        code = 'Roll';
-        break;
-    }
-
-    return '$code$sn';
-  }
-
-  static String getComercialName(String name) {
-    switch (true) {
-      case true when name.contains('Electrico'):
-        return 'Calefactor Eléctrico';
-      case true when name.contains('Gas'):
-        return 'Calefactor a Gas';
-      case true when name.contains('Detector'):
-        return 'Detector de Gas & CO';
-      case true when name.contains('Domotica'):
-        return 'Domótica 4 IO';
-      case true when name.contains('Rele'):
-        return 'Tecla Smart';
-      case true when name.contains('Roll'):
-        return 'Cortina Roll';
-      default:
-        return '';
-    }
-  }
-
-  static bool isAvailableForAlexa(String name) {
-    final List<String> alexaAvailable = [
-      '022000_IOT',
-      '027000_IOT',
-      '027313_IOT',
-    ];
-    String code = getProductCode(name);
-    return alexaAvailable.contains(code);
-  }
-}
-//*- Funciones relacionadas a los equipos*-\\
-
 //*-Desplazamiento de texto horizontal*-\\
 class ScrollingText extends StatefulWidget {
   final String text;
@@ -4418,7 +4656,9 @@ class ScrollingTextState extends State<ScrollingText> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkTextWidth());
+    if (context.mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _checkTextWidth());
+    }
   }
 
   @override
@@ -4427,7 +4667,9 @@ class ScrollingTextState extends State<ScrollingText> {
     if (oldWidget.text != widget.text && context.mounted) {
       _timer?.cancel();
       _scrollController.jumpTo(0.0);
-      WidgetsBinding.instance.addPostFrameCallback((_) => _checkTextWidth());
+      if (context.mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _checkTextWidth());
+      }
     }
   }
 
@@ -4452,8 +4694,8 @@ class ScrollingTextState extends State<ScrollingText> {
 
         final textWidth = textPainter.size.width + 10;
 
-        printLog("Container width: $containerWidth");
-        printLog("Text width: $textWidth");
+        // printLog("Container width: $containerWidth");
+        // printLog("Text width: $textWidth");
 
         if (textWidth > containerWidth) {
           _shouldScroll = true;
