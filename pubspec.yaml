@@ -1,7 +1,7 @@
 name: caldensmart
 description: "Caldén Smart"
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
-version: 1.0.5+5
+version: 1.0.9+8
 
 environment:
   sdk: ^3.5.1
@@ -64,22 +64,22 @@ flutter_native_splash:
   android: true
   ios: true
 
-
 flutter:
   uses-material-design: true
 
   assets:
-    - assets/Logo.png
-    - assets/dragon.gif
-    - assets/dragon.png
+    - assets/branch/Logo.png
+    - assets/branch/dragon.gif
+    - assets/branch/dragon.png
     - assets/DragonForeground.png
-    - assets/Foreground.png
+    - assets/branch/Foreground.png
     - assets/devices/015773.jpeg
     - assets/devices/020010.jpg
     - assets/devices/022000.jpg
     - assets/devices/027000.webp
-    - assets/fondo.png
-    - assets/google.png
-    - assets/Logo_sitio.png
-    - assets/parteSuperior.png
-    - assets/persiana.jpg
+    - assets/devices/050217.png
+    - assets/misc/fondo.png
+    - assets/misc/google.png
+    - assets/branch/Logo_sitio.png
+    - assets/misc/parteSuperior.png
+    - assets/misc/persiana.jpg

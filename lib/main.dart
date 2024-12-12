@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
+import 'package:caldensmart/Devices/millenium.dart';
 import 'package:caldensmart/Devices/relay.dart';
 import 'package:caldensmart/Global/profile.dart';
 import 'package:upgrader/upgrader.dart';
@@ -31,7 +32,6 @@ Future<void> main() async {
   //! IOS O ANDROID !\\
   appVersionNumber = Upgrader().currentInstalledVersion ?? '4.0.4';
 
-  // Inicializa Firebase solo si no ha sido inicializado previamente.
   try {
     if (Firebase.apps.isEmpty) {
       printLog("Skibidi toilet", "Cyan");
@@ -58,7 +58,9 @@ Future<void> main() async {
 
   FlutterError.onError = (FlutterErrorDetails details) async {
     String errorReport = generateErrorReport(details);
-    sendReportError(errorReport);
+    if (xDebugMode) {
+      sendReportError(errorReport);
+    }
   };
 
   printLog('Todo configurado, iniciando app');
@@ -137,6 +139,7 @@ class MyAppState extends State<MyApp> {
         '/escenas': (context) => const EscenasPage(),
         '/rele': (context) => const RelayPage(),
         '/roller': (context) => const RollerPage(),
+        '/millenium': (context) => const MilleniumPage(),
       },
     );
   }

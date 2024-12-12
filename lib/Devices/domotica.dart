@@ -82,9 +82,9 @@ class DomoticaPageState extends State<DomoticaPage> {
 
     tracking = devicesToTrack.contains(deviceName);
 
-    showOptions = currentUserEmail == owner;
-
     processSelectedPins();
+
+    showOptions = currentUserEmail == owner;
 
     if (deviceOwner) {
       if (vencimientoAdmSec < 10 && vencimientoAdmSec > 0) {
@@ -104,15 +104,21 @@ class DomoticaPageState extends State<DomoticaPage> {
     notificationMap.putIfAbsent(
         '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
         () => List<bool>.filled(4, false));
+
+    // WidgetsBinding.instance.addPostFrameCallback((_) async {
+    //   if (shouldUpdateDevice) {
+    //     await showUpdateDialog(context);
+    //   }
+    // });
   }
 
   @override
   void dispose() {
-    super.dispose();
     _pageController.dispose();
     tenantController.dispose();
     passController.dispose();
     emailController.dispose();
+    super.dispose();
   }
 
   void _onItemTapped(int index) {
@@ -134,11 +140,13 @@ class DomoticaPageState extends State<DomoticaPage> {
     List<String> pins = await loadPinToTrack(deviceName);
     _selectedPins = List<bool>.filled(parts.length, false);
 
-    for (int i = 0; i < pins.length; i++) {
-      pins.contains(i.toString())
-          ? _selectedPins[i] = true
-          : _selectedPins[i] = false;
-    }
+    setState(() {
+      for (int i = 0; i < pins.length; i++) {
+        pins.contains(i.toString())
+            ? _selectedPins[i] = true
+            : _selectedPins[i] = false;
+      }
+    });
   }
 
   void updateWifiValues(List<int> data) {
@@ -589,6 +597,7 @@ class DomoticaPageState extends State<DomoticaPage> {
   @override
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
+    double bottomBarHeight = kBottomNavigationBarHeight;
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
 
@@ -606,12 +615,22 @@ class DomoticaPageState extends State<DomoticaPage> {
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         child: ListView.separated(
-          itemCount: tipo.length,
+          //TODO: le sumo uno
+          itemCount: tipo.length + 1,
+
           separatorBuilder: (context, index) => const SizedBox(height: 20),
           itemBuilder: (context, index) {
+            //TODO si detecta que es la ultima agregue un espacio adicional
+            if (index == tipo.length) {
+              return Padding(
+                padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
+              );
+            }
+
             bool entrada = tipo[index] == 'Entrada';
             bool isOn = estado[index] == '1';
-
+            //TODO funcion para saber si el pin esta siendo trackeado
+            bool isPresenceControlled = _selectedPins[index] && tracking;
             return AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               decoration: BoxDecoration(
@@ -633,64 +652,68 @@ class DomoticaPageState extends State<DomoticaPage> {
                     children: [
                       const SizedBox(width: 6),
                       GestureDetector(
-                        onTap: () async {
-                          TextEditingController nicknameController =
-                              TextEditingController(
-                            text: subNicknamesMap['$deviceName/-/$index'] ??
-                                '${tipo[index]} $index',
-                          );
-
-                          showAlertDialog(
-                            context,
-                            false,
-                            Text(
-                              'Editar Nombre',
-                              style: GoogleFonts.poppins(color: color0),
-                            ),
-                            TextField(
-                              controller: nicknameController,
-                              style: const TextStyle(color: color0),
-                              cursorColor: color0,
-                              decoration: InputDecoration(
-                                hintText:
-                                    "Nuevo nombre para ${tipo[index]} $index",
-                                hintStyle:
-                                    TextStyle(color: color0.withOpacity(0.6)),
-                                enabledBorder: UnderlineInputBorder(
-                                  borderSide: BorderSide(
-                                      color: color0.withOpacity(0.5)),
-                                ),
-                                focusedBorder: const UnderlineInputBorder(
-                                  borderSide: BorderSide(color: color0),
-                                ),
-                              ),
-                            ),
-                            <Widget>[
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text(
-                                  'Cancelar',
-                                  style: TextStyle(color: color0),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  setState(() {
-                                    String newName = nicknameController.text;
-                                    subNicknamesMap['$deviceName/-/$index'] =
-                                        newName;
-                                    saveSubNicknamesMap(subNicknamesMap);
-                                  });
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text('Guardar',
-                                    style: TextStyle(color: color0)),
-                              ),
-                            ],
-                          );
-                        },
+                        //TODO si el pin esta trackeado el boton no hace nada
+                        onTap: isPresenceControlled
+                            ? null
+                            : () async {
+                                TextEditingController nicknameController =
+                                    TextEditingController(
+                                  text:
+                                      subNicknamesMap['$deviceName/-/$index'] ??
+                                          '${tipo[index]} $index',
+                                );
+                                showAlertDialog(
+                                  context,
+                                  false,
+                                  Text(
+                                    'Editar Nombre',
+                                    style: GoogleFonts.poppins(color: color0),
+                                  ),
+                                  TextField(
+                                    controller: nicknameController,
+                                    style: const TextStyle(color: color0),
+                                    cursorColor: color0,
+                                    decoration: InputDecoration(
+                                      hintText:
+                                          "Nuevo nombre para ${tipo[index]} $index",
+                                      hintStyle: TextStyle(
+                                          color: color0.withOpacity(0.6)),
+                                      enabledBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                            color: color0.withOpacity(0.5)),
+                                      ),
+                                      focusedBorder: const UnderlineInputBorder(
+                                        borderSide: BorderSide(color: color0),
+                                      ),
+                                    ),
+                                  ),
+                                  <Widget>[
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: const Text(
+                                        'Cancelar',
+                                        style: TextStyle(color: color0),
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          String newName =
+                                              nicknameController.text;
+                                          subNicknamesMap[
+                                              '$deviceName/-/$index'] = newName;
+                                          saveSubNicknamesMap(subNicknamesMap);
+                                        });
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: const Text('Guardar',
+                                          style: TextStyle(color: color0)),
+                                    ),
+                                  ],
+                                );
+                              },
                         child: SizedBox(
                           height: 30,
                           width: 180,
@@ -787,10 +810,12 @@ class DomoticaPageState extends State<DomoticaPage> {
                             ),
                             GestureDetector(
                               onTap: () {
-                                setState(() {
-                                  controlOut(!isOn, index);
-                                  estado[index] = !isOn ? '1' : '0';
-                                });
+                                isPresenceControlled
+                                    ? null
+                                    : setState(() {
+                                        controlOut(!isOn, index);
+                                        estado[index] = !isOn ? '1' : '0';
+                                      });
                               },
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 300),
@@ -798,9 +823,12 @@ class DomoticaPageState extends State<DomoticaPage> {
                                 height: 30,
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(20),
-                                  color: isOn
-                                      ? Colors.greenAccent.shade400
-                                      : Colors.red.shade300,
+                                  //TODO si esta trackeado se muestra el boton gris
+                                  color: isPresenceControlled
+                                      ? Colors.grey
+                                      : isOn
+                                          ? Colors.greenAccent.shade400
+                                          : Colors.red.shade300,
                                 ),
                                 child: AnimatedAlign(
                                   duration: const Duration(milliseconds: 300),
@@ -824,12 +852,34 @@ class DomoticaPageState extends State<DomoticaPage> {
                             ),
                           ],
                         ),
+                  const SizedBox(height: 20),
+                  //TODO si el pin esta trackeado muestre un mensaje
+                  if (isPresenceControlled) ...{
+                    Container(
+                      decoration: BoxDecoration(
+                        color: color1,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Desactiva control por presencia para utilizar esta función',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: color3,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  },
                 ],
               ),
             );
           },
         ),
       ),
+
       //*- Página 2 trackeo -*\\
       Stack(
         children: [
@@ -1831,7 +1881,6 @@ class DomoticaPageState extends State<DomoticaPage> {
                                                                   '3000',
                                                                   '100',
                                                                 );
-
                                                                 setState(() {
                                                                   tenantController
                                                                       .clear();
@@ -2378,7 +2427,8 @@ class DomoticaPageState extends State<DomoticaPage> {
               backgroundColor: const Color(0xFF252223),
               content: Row(
                 children: [
-                  Image.asset('assets/dragon.gif', width: 100, height: 100),
+                  Image.asset('assets/branch/dragon.gif',
+                      width: 100, height: 100),
                   Container(
                     margin: const EdgeInsets.only(left: 15),
                     child: const Text(
@@ -2483,7 +2533,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                     backgroundColor: const Color(0xFF252223),
                     content: Row(
                       children: [
-                        Image.asset('assets/dragon.gif',
+                        Image.asset('assets/branch/dragon.gif',
                             width: 100, height: 100),
                         Container(
                           margin: const EdgeInsets.only(left: 15),

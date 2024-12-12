@@ -42,13 +42,17 @@ class CalefactorPageState extends State<CalefactorPage> {
   bool dOnOk = false;
   bool dOffOk = false;
   bool showOptions = false;
-  String measure = DeviceManager.getProductCode(deviceName) == '022000_IOT' ? 'KW/h' : 'M³/h';
-  IconData powerIconOn = DeviceManager.getProductCode(deviceName) == '022000_IOT'
-      ? Icons.flash_on_rounded
-      : HugeIcons.strokeRoundedFire;
-  IconData powerIconOff = DeviceManager.getProductCode(deviceName) == '022000_IOT'
-      ? Icons.flash_off_rounded
-      : HugeIcons.strokeRoundedFire;
+  String measure = DeviceManager.getProductCode(deviceName) == '022000_IOT'
+      ? 'KW/h'
+      : 'M³/h';
+  IconData powerIconOn =
+      DeviceManager.getProductCode(deviceName) == '022000_IOT'
+          ? Icons.flash_on_rounded
+          : HugeIcons.strokeRoundedFire;
+  IconData powerIconOff =
+      DeviceManager.getProductCode(deviceName) == '022000_IOT'
+          ? Icons.flash_off_rounded
+          : HugeIcons.strokeRoundedFire;
 
   TextEditingController emailController = TextEditingController();
   final TextEditingController costController = TextEditingController();
@@ -94,12 +98,12 @@ class CalefactorPageState extends State<CalefactorPage> {
 
   @override
   void dispose() {
-    super.dispose();
     _pageController.dispose();
     tenantController.dispose();
     costController.dispose();
     emailController.dispose();
     tenantDistanceOn.dispose();
+    super.dispose();
   }
 
   void _onItemTapped(int index) {
@@ -208,7 +212,7 @@ class CalefactorPageState extends State<CalefactorPage> {
 
         printLog('Calculaciones terminadas');
 
-        if (mounted) {
+        if (context.mounted) {
           setState(() {
             loading = false;
           });
@@ -2340,7 +2344,7 @@ class CalefactorPageState extends State<CalefactorPage> {
               backgroundColor: const Color(0xFF252223),
               content: Row(
                 children: [
-                  Image.asset('assets/dragon.gif', width: 100, height: 100),
+                  Image.asset('assets/branch/dragon.gif', width: 100, height: 100),
                   Container(
                     margin: const EdgeInsets.only(left: 15),
                     child: const Text(
@@ -2445,7 +2449,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                     backgroundColor: const Color(0xFF252223),
                     content: Row(
                       children: [
-                        Image.asset('assets/dragon.gif',
+                        Image.asset('assets/branch/dragon.gif',
                             width: 100, height: 100),
                         Container(
                           margin: const EdgeInsets.only(left: 15),

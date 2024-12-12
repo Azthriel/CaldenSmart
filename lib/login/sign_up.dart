@@ -264,7 +264,7 @@ Widget buildRegisterForm(WelcomePageState state) {
                 //       elevation: 5,
                 //     ),
                 //     icon:
-                //         Image.asset('assets/google.png', width: 24, height: 24),
+                //         Image.asset('assets/misc/google.png', width: 24, height: 24),
                 //     label: const Text(
                 //       'Google',
                 //       style: TextStyle(color: color3, fontSize: 16),

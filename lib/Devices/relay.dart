@@ -58,11 +58,11 @@ class RelayPageState extends State<RelayPage> {
     subscribeToWifiStatus();
     subscribeTrueStatus();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (shouldUpdateDevice) {
-        await showUpdateDialog(context);
-      }
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((_) async {
+    //   if (shouldUpdateDevice) {
+    //     await showUpdateDialog(context);
+    //   }
+    // });
   }
 
   @override
@@ -573,7 +573,6 @@ class RelayPageState extends State<RelayPage> {
                   ),
                   const SizedBox(height: 50),
                   if (deviceOwner || owner == '')
-                    // Solo el propietario ve la tarjeta de NA y NC
                     Card(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
@@ -694,7 +693,7 @@ class RelayPageState extends State<RelayPage> {
               ),
             ),
           ),
-          if (isRegularUser && owner != '' && !tenant)
+          if (isRegularUser && owner != '' && !tenant) ...{
             Container(
               color: Colors.black.withOpacity(0.7),
               child: const Center(
@@ -704,6 +703,19 @@ class RelayPageState extends State<RelayPage> {
                 ),
               ),
             ),
+          },
+          if (tracking) ...{
+            Container(
+              color: Colors.black.withOpacity(0.7),
+              child: const Center(
+                child: Text(
+                  'Desactiva control por presencia para utilizar esta función',
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          },
         ],
       ),
 
@@ -736,7 +748,6 @@ class RelayPageState extends State<RelayPage> {
                               setState(() {
                                 tracking = !tracking;
                               });
-
                               if (tracking) {
                                 devicesToTrack.add(deviceName);
                                 saveDeviceListToTrack(devicesToTrack);
@@ -2285,7 +2296,8 @@ class RelayPageState extends State<RelayPage> {
               backgroundColor: const Color(0xFF252223),
               content: Row(
                 children: [
-                  Image.asset('assets/dragon.gif', width: 100, height: 100),
+                  Image.asset('assets/branch/dragon.gif',
+                      width: 100, height: 100),
                   Container(
                     margin: const EdgeInsets.only(left: 15),
                     child: const Text(
@@ -2390,7 +2402,7 @@ class RelayPageState extends State<RelayPage> {
                     backgroundColor: const Color(0xFF252223),
                     content: Row(
                       children: [
-                        Image.asset('assets/dragon.gif',
+                        Image.asset('assets/branch/dragon.gif',
                             width: 100, height: 100),
                         Container(
                           margin: const EdgeInsets.only(left: 15),

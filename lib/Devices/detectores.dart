@@ -53,8 +53,8 @@ class DetectorPageState extends State<DetectorPage> {
 
   @override
   void dispose() {
-    super.dispose();
     _pageController.dispose();
+    super.dispose();
   }
 
   void updateWifiValues(List<int> data) {
@@ -199,7 +199,7 @@ class DetectorPageState extends State<DetectorPage> {
               backgroundColor: const Color(0xFF252223),
               content: Row(
                 children: [
-                  Image.asset('assets/dragon.gif', width: 100, height: 100),
+                  Image.asset('assets/branch/dragon.gif', width: 100, height: 100),
                   Container(
                     margin: const EdgeInsets.only(left: 15),
                     child: const Text(
@@ -311,7 +311,7 @@ class DetectorPageState extends State<DetectorPage> {
                     backgroundColor: const Color(0xFF252223),
                     content: Row(
                       children: [
-                        Image.asset('assets/dragon.gif',
+                        Image.asset('assets/branch/dragon.gif',
                             width: 100, height: 100),
                         Container(
                           margin: const EdgeInsets.only(left: 15),

@@ -50,11 +50,14 @@ class LoadState extends State<LoadingPage> {
           case '020010_IOT':
             navigatorKey.currentState?.pushReplacementNamed('/domotica');
             break;
-          case '024011':
+          case '024011_IOT':
             navigatorKey.currentState?.pushReplacementNamed('/roller');
             break;
-          case '027313':
+          case '027313_IOT':
             navigatorKey.currentState?.pushReplacementNamed('/rele');
+            break;
+          case '050217_IOT':
+            navigatorKey.currentState?.pushReplacementNamed('/millenium');
             break;
         }
       } else {
@@ -373,6 +376,91 @@ class LoadState extends State<LoadingPage> {
           rollerMoving = parts2[14] == '1';
           awsInit = parts2[15] == '1';
           break;
+        case '050217_IOT':
+          varsValues = await myDevice.varsUuid.read();
+          var parts2 = utf8.decode(varsValues).split(':');
+          printLog('Valores Vars: $parts2');
+          var list = await loadDevicesForDistanceControl();
+          canControlDistance =
+              list.contains(deviceName) ? true : parts2[0] == '0';
+          printLog(
+              'Puede utilizar el control por distancia: $canControlDistance');
+          turnOn = parts2[2] == '1';
+          trueStatus = parts2[4] == '1';
+          // nightMode = parts2[5] == '1';
+          printLog('Estado: $turnOn');
+          lastUser = users;
+          owner = globalDATA[
+                      '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                  'owner'] ??
+              '';
+          printLog('Owner actual: $owner');
+          adminDevices = await getSecondaryAdmins(
+              service,
+              DeviceManager.getProductCode(deviceName),
+              DeviceManager.extractSerialNumber(deviceName));
+          printLog('Administradores: $adminDevices');
+
+          if (owner != '') {
+            if (owner == currentUserEmail) {
+              deviceOwner = true;
+            } else {
+              deviceOwner = false;
+              if (userConnected) {
+              } else {
+                if (adminDevices.contains(currentUserEmail)) {
+                  secondaryAdmin = true;
+                } else {
+                  secondaryAdmin = false;
+                }
+              }
+            }
+          } else {
+            deviceOwner = true;
+          }
+
+          await analizePayment(DeviceManager.getProductCode(deviceName),
+              DeviceManager.extractSerialNumber(deviceName));
+
+          if (payAT) {
+            activatedAT = globalDATA[
+                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                    ?['AT'] ??
+                false;
+            tenant = globalDATA[
+                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                    ?['tenant'] ==
+                currentUserEmail;
+          } else {
+            activatedAT = false;
+            tenant = false;
+          }
+
+          if (canControlDistance) {
+            distOffValue = globalDATA[
+                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                    'distanceOff'] ??
+                100.0;
+            distOnValue = globalDATA[
+                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                    'distanceOn'] ??
+                3000.0;
+            isTaskScheduled = await loadControlValue();
+          }
+
+          globalDATA
+              .putIfAbsent(
+                  '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
+                  () => {})
+              .addAll({"w_status": turnOn});
+          globalDATA
+              .putIfAbsent(
+                  '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
+                  () => {})
+              .addAll({"f_status": trueStatus});
+
+          saveGlobalData(globalDATA);
+          break;
       }
 
       return Future.value(true);
@@ -404,7 +492,7 @@ class LoadState extends State<LoadingPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.asset(
-                  'assets/dragon.gif',
+                  'assets/branch/dragon.gif',
                   width: 150,
                   height: 150,
                 ),

@@ -1,20 +1,9 @@
 plugins {
     id "com.android.application"
-    // START: FlutterFire Configuration
     id 'com.google.gms.google-services'
-    // END: FlutterFire Configuration
     id "kotlin-android"
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
 }
-
-dependencies {
-    // Otras dependencias...
-    implementation 'com.google.firebase:firebase-messaging:23.0.0'  // Asegúrate de usar la versión correcta
-    implementation 'com.google.android.gms:play-services-auth:20.5.0'  // Esta puede estar desactualizada
-}
-
-apply plugin: 'com.google.gms.google-services'
 
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
@@ -24,7 +13,6 @@ if (localPropertiesFile.exists()) {
     }
 }
 
-// Cargar las propiedades del archivo key.properties
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
 if (keystorePropertiesFile.exists()) {
@@ -98,7 +86,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
 
             ndk {
-            debugSymbolLevel 'FULL'
+                debugSymbolLevel 'FULL'
             }
         }
     }

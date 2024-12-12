@@ -493,7 +493,7 @@ class WelcomePageState extends State<WelcomePage>
               child: IgnorePointer(
                 child: Center(
                   child: Image.asset(
-                    'assets/Logo_sitio.png',
+                    'assets/branch/Logo_sitio.png',
                     width: MediaQuery.of(context).size.width - 100,
                     height: 100,
                     fit: BoxFit.contain,

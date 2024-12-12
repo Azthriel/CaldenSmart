@@ -274,7 +274,7 @@ Widget buildLoginForm(WelcomePageState state) {
                 //       elevation: 5,
                 //     ),
                 //     icon: Image.asset(
-                //       'assets/google.png',
+                //       'assets/misc/google.png',
                 //       width: 24,
                 //       height: 24,
                 //     ),

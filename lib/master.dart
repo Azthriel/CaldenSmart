@@ -2600,7 +2600,7 @@ void showAlertDialog(BuildContext context, bool dismissible, Widget? title,
                               radius: 50,
                               backgroundColor: color3,
                               child: Image.asset(
-                                'assets/dragon.png',
+                                'assets/branch/dragon.png',
                                 width: 60,
                                 height: 60,
                               ),
@@ -2814,6 +2814,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
   bool updating = false;
   bool error = false;
   int porcentaje = 0;
+
   return showDialog<void>(
     barrierDismissible: false,
     context: ctx,
@@ -2930,6 +2931,25 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                   onPressed: () async {
                     setState(() => updating = true);
 
+                    await myDevice.otaUuid.setNotifyValue(true);
+
+                    final otaSub = myDevice.otaUuid.onValueReceived
+                        .listen((List<int> event) {
+                      var fun = utf8.decode(event);
+                      fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
+                      printLog(fun);
+                      var parts = fun.split(':');
+                      if (parts[0] == 'OTAPR') {
+                        printLog('Se recibio');
+                        setState(() {
+                          porcentaje = (int.parse(parts[1]) / 100).round();
+                        });
+                        printLog('Progreso: ${parts[1]}');
+                      }
+                    });
+
+                    myDevice.device.cancelWhenDisconnected(otaSub);
+
                     String url =
                         'https://github.com/barberop/sime-domotica/raw/refs/heads/main/${DeviceManager.getProductCode(deviceName)}/OTA_FW/W/hv${hardwareVersion}sv$lastSV.bin';
 
@@ -2951,25 +2971,29 @@ Future<void> showUpdateDialog(BuildContext ctx) {
 
                       var firmware = await file.readAsBytes();
 
-                      printLog(
-                          "Comprobando cosas ${bytes == firmware}", "verde");
+                      // printLog(
+                      //     "Comprobando cosas ${bytes == bytes2}", "verde");
 
                       String data =
                           '${DeviceManager.getProductCode(deviceName)}[3](${bytes.length})';
                       printLog(data);
                       await myDevice.toolsUuid.write(data.codeUnits);
-
+                      printLog("Arranco OTA", "verde");
                       try {
-                        int chunk = 255 - 3;
+                        // int chunk = 255 - 3;
+                        int chunk = 1;
                         for (int i = 0; i < firmware.length; i += chunk) {
                           // printLog('Mande chunk');
                           List<int> subvalue = firmware.sublist(
-                              i, min(i + chunk, firmware.length));
+                            i,
+                            min(i + chunk, firmware.length),
+                          );
                           await myDevice.infoUuid
                               .write(subvalue, withoutResponse: false);
-                          setState(() {
-                            porcentaje = ((i * 100) / firmware.length).round();
-                          });
+                          // recordedData.add([i, subvalue]);
+                          // setState(() {
+                          //   porcentaje = ((i * 100) / firmware.length).round();
+                          // });
                         }
                         printLog('Acabe');
                       } catch (e, stackTrace) {
@@ -3161,6 +3185,10 @@ class MyDevice {
               c.uuid ==
               Guid(
                   '52a2f121-a8e3-468c-a5de-45dca9a2a207')); //WorkingTemp:WorkingStatus:EnergyTimer:HeaterOn:NightMode
+          otaUuid = espService.characteristics.firstWhere((c) =>
+              c.uuid ==
+              Guid(
+                  'ae995fcd-2c7a-4675-84f8-332caf784e9f')); //Ota comandos (Solo notify)
           break;
         case '027000_IOT':
           BluetoothService espService = services.firstWhere(
@@ -3170,6 +3198,10 @@ class MyDevice {
               c.uuid ==
               Guid(
                   '52a2f121-a8e3-468c-a5de-45dca9a2a207')); //WorkingTemp:WorkingStatus:EnergyTimer:HeaterOn:NightMode
+          otaUuid = espService.characteristics.firstWhere((c) =>
+              c.uuid ==
+              Guid(
+                  'ae995fcd-2c7a-4675-84f8-332caf784e9f')); //Ota comandos (Solo notify)
           break;
         case '015773_IOT':
           BluetoothService service = services.firstWhere(
@@ -3181,6 +3213,12 @@ class MyDevice {
                   '6869fe94-c4a2-422a-ac41-b2a7a82803e9')); //Array de datos (ppm,etc)
           lightUuid = service.characteristics.firstWhere((c) =>
               c.uuid == Guid('12d3c6a1-f86e-4d5b-89b5-22dc3f5c831f')); //No leo
+          BluetoothService otaService = services.firstWhere(
+              (s) => s.uuid == Guid('33e3a05a-c397-4bed-81b0-30deb11495c7'));
+          otaUuid = otaService.characteristics.firstWhere((c) =>
+              c.uuid ==
+              Guid(
+                  'ae995fcd-2c7a-4675-84f8-332caf784e9f')); //Ota comandos (Solo notify)
 
           break;
         case '020010_IOT':
@@ -3188,6 +3226,10 @@ class MyDevice {
               (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
           ioUuid = service.characteristics.firstWhere(
               (c) => c.uuid == Guid('03b1c5d9-534a-4980-aed3-f59615205216'));
+          otaUuid = service.characteristics.firstWhere((c) =>
+              c.uuid ==
+              Guid(
+                  'ae995fcd-2c7a-4675-84f8-332caf784e9f')); //Ota comandos (Solo notify)
           break;
         case '027313_IOT':
           BluetoothService espService = services.firstWhere(
@@ -3197,6 +3239,10 @@ class MyDevice {
               c.uuid ==
               Guid(
                   '52a2f121-a8e3-468c-a5de-45dca9a2a207')); //DistanceControl:W_Status:EnergyTimer:AwsINIT
+          otaUuid = espService.characteristics.firstWhere((c) =>
+              c.uuid ==
+              Guid(
+                  'ae995fcd-2c7a-4675-84f8-332caf784e9f')); //Ota comandos (Solo notify)
           break;
         case '024011_IOT':
           BluetoothService espService = services.firstWhere(
@@ -3206,6 +3252,19 @@ class MyDevice {
               c.uuid ==
               Guid(
                   '52a2f121-a8e3-468c-a5de-45dca9a2a207')); //DstCtrl:LargoRoller:InversionGiro:VelocidadMotor:PosicionActual:PosicionTrabajo:RollerMoving:AWSinit
+          otaUuid = espService.characteristics.firstWhere((c) =>
+              c.uuid ==
+              Guid(
+                  'ae995fcd-2c7a-4675-84f8-332caf784e9f')); //Ota comandos (Solo notify)
+          break;
+        case '050217_IOT':
+          BluetoothService espService = services.firstWhere(
+              (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
+
+          varsUuid = espService.characteristics.firstWhere((c) =>
+              c.uuid ==
+              Guid(
+                  '52a2f121-a8e3-468c-a5de-45dca9a2a207')); //WorkingTemp:WorkingStatus:EnergyTimer:HeaterOn:NightMode
           otaUuid = espService.characteristics.firstWhere((c) =>
               c.uuid ==
               Guid(
@@ -3569,8 +3628,8 @@ class CurvedNavigationBarState extends State<CurvedNavigationBar>
 
   @override
   void dispose() {
-    super.dispose();
     _animationController.dispose();
+    super.dispose();
   }
 
   @override
@@ -3898,8 +3957,8 @@ class AnimSearchBarState extends State<AnimSearchBar>
 
   @override
   void dispose() {
-    super.dispose();
     _con.dispose();
+    super.dispose();
   }
 
   unfocusKeyboard() {
@@ -4162,12 +4221,14 @@ class AccessDeniedScreen extends StatelessWidget {
               backgroundColor: const Color(0xFF252223),
               content: Row(
                 children: [
-                  Image.asset('assets/dragon.gif', width: 100, height: 100),
+                  Image.asset('assets/branch/dragon.gif', width: 100, height: 100),
                   Container(
                     margin: const EdgeInsets.only(left: 15),
                     child: const Text(
                       "Desconectando...",
-                      style: TextStyle(color: Color(0xFFFFFFFF)),
+                      style: TextStyle(
+                        color: Color(0xFFFFFFFF),
+                      ),
                     ),
                   ),
                 ],
@@ -4202,13 +4263,15 @@ class AccessDeniedScreen extends StatelessWidget {
                           backgroundColor: const Color(0xFF252223),
                           content: Row(
                             children: [
-                              Image.asset('assets/dragon.gif',
+                              Image.asset('assets/branch/dragon.gif',
                                   width: 100, height: 100),
                               Container(
                                 margin: const EdgeInsets.only(left: 15),
                                 child: const Text(
                                   "Desconectando...",
-                                  style: TextStyle(color: Color(0xFFFFFFFF)),
+                                  style: TextStyle(
+                                    color: Color(0xFFFFFFFF),
+                                  ),
                                 ),
                               ),
                             ],
@@ -4334,7 +4397,7 @@ class DeviceInUseScreen extends StatelessWidget {
               backgroundColor: const Color(0xFF252223),
               content: Row(
                 children: [
-                  Image.asset('assets/dragon.gif', width: 100, height: 100),
+                  Image.asset('assets/branch/dragon.gif', width: 100, height: 100),
                   Container(
                     margin: const EdgeInsets.only(left: 15),
                     child: const Text(
@@ -4374,7 +4437,7 @@ class DeviceInUseScreen extends StatelessWidget {
                           backgroundColor: const Color(0xFF252223),
                           content: Row(
                             children: [
-                              Image.asset('assets/dragon.gif',
+                              Image.asset('assets/branch/dragon.gif',
                                   width: 100, height: 100),
                               Container(
                                 margin: const EdgeInsets.only(left: 15),
@@ -4565,8 +4628,10 @@ class ImageManager {
         return 'assets/devices/015773.jpeg';
       case '020010_IOT':
         return 'assets/devices/020010.jpg';
+      case '050217_IOT':
+        return 'assets/devices/050217.png';
       default:
-        return 'assets/Logo.png';
+        return 'assets/branch/Logo.png';
     }
   }
 }

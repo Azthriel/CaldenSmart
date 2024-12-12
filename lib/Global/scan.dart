@@ -59,11 +59,11 @@ class ScanPageState extends State<ScanPage>
 
   @override
   void dispose() {
-    super.dispose();
     _animationController.dispose();
     searchController.dispose();
     _controller.dispose();
     listener?.cancel();
+    super.dispose();
   }
 
   void scan() {
@@ -417,8 +417,9 @@ class ScanPageState extends State<ScanPage>
                                                 nicknamesMap[
                                                         device.platformName] ??
                                                     DeviceManager
-                                                        .getComercialName(device
-                                                            .platformName),
+                                                        .getComercialName(
+                                                      device.platformName,
+                                                    ),
                                                 overflow: TextOverflow.ellipsis,
                                                 style: GoogleFonts.poppins(
                                                   fontWeight: FontWeight.bold,

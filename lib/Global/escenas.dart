@@ -285,7 +285,7 @@ class EscenasPageState extends State<EscenasPage> {
 
   //*-Función para agregar una nueva escena-*\\
   void crearEscena(Map<String, dynamic> newScene) {
-    if (mounted) {
+    if (context.mounted) {
       setState(() {
         newScene['id'] = sceneIdCounter++;
 

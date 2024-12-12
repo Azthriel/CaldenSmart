@@ -27,8 +27,8 @@ class MenuPageState extends State<MenuPage> {
 
   @override
   void dispose() {
-    super.dispose();
     _pageController.dispose();
+    super.dispose();
   }
 
   void _onPageChanged(int index) {
@@ -133,7 +133,7 @@ class MenuPageState extends State<MenuPage> {
           shape: const CircleBorder(),
           child: ClipOval(
             child: Image.asset(
-              'assets/dragon.png',
+              'assets/branch/dragon.png',
               fit: BoxFit.contain,
               height: 40,
               width: 40,

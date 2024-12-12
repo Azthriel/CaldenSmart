@@ -1,34 +1,37 @@
 import 'dart:convert';
+import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../Global/stored_data.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
-import '../master.dart';
+import '../aws/mqtt/mqtt.dart';
+import '../Global/stored_data.dart';
 
-class RollerPage extends StatefulWidget {
-  const RollerPage({super.key});
+// VARIABLES \\
+
+bool alreadySubTools = false;
+bool trueStatus = false;
+late bool canControlDistance;
+
+// CLASES \\
+
+class MilleniumPage extends StatefulWidget {
+  const MilleniumPage({super.key});
+
   @override
-  RollerPageState createState() => RollerPageState();
+  MilleniumPageState createState() => MilleniumPageState();
 }
 
-class RollerPageState extends State<RollerPage> {
-  int _selectedIndex = 0;
+class MilleniumPageState extends State<MilleniumPage> {
+  List<String> parts2 = utf8.decode(varsValues).split(':');
+  late double tempValue;
+  late bool loading;
   int _selectedNotificationOption = 0;
-
-  final TextEditingController tenantController = TextEditingController();
-  final TextEditingController tenantDistanceOn = TextEditingController();
-  final PageController _pageController = PageController(initialPage: 0);
-
-  TextEditingController rLargeController = TextEditingController();
-  TextEditingController workController = TextEditingController();
-  TextEditingController motorSpeedUpController = TextEditingController();
-  TextEditingController motorSpeedDownController = TextEditingController();
-  TextEditingController contrapulseController = TextEditingController();
-  TextEditingController emailController = TextEditingController();
-
-  bool showOptions = false;
+  double result = 0.0;
   bool _showNotificationOptions = false;
   bool showSecondaryAdminFields = false;
   bool showAddAdminField = false;
@@ -36,34 +39,62 @@ class RollerPageState extends State<RollerPage> {
   bool showSmartResident = false;
   bool dOnOk = false;
   bool dOffOk = false;
+  bool showOptions = false;
+  String measure = 'KW/h';
+  IconData powerIconOn = Icons.water_drop;
+  IconData powerIconOff = Icons.format_color_reset;
+
+  TextEditingController emailController = TextEditingController();
+  final TextEditingController costController = TextEditingController();
+  final TextEditingController tenantController = TextEditingController();
+  final TextEditingController tenantDistanceOn = TextEditingController();
+  DateTime? fechaSeleccionada;
+  bool buttonPressed = false;
+  String tiempo = '';
+
+  //*- Variables para el control de las paginas -*\\
+  int _selectedIndex = 0;
+  final PageController _pageController = PageController(initialPage: 0);
+  //*- Variables para el control de las paginas -*\\
 
   @override
   void initState() {
     super.initState();
+    timeData();
 
-    nickname = nicknamesMap[deviceName] ?? deviceName;
+    if (deviceOwner) {
+      if (vencimientoAdmSec < 10 && vencimientoAdmSec > 0) {
+        showPaymentTest(true, vencimientoAdmSec, navigatorKey.currentContext!);
+      }
+
+      if (vencimientoAT < 10 && vencimientoAT > 0) {
+        showPaymentTest(false, vencimientoAT, navigatorKey.currentContext!);
+      }
+    }
+
     showOptions = currentUserEmail == owner;
 
+    nickname = nicknamesMap[deviceName] ?? deviceName;
+    tempValue = double.parse(parts2[1]);
+
+    printLog('Valor temp: $tempValue');
+    printLog('¿Encendido? $turnOn');
+    printLog('¿Alquiler temporario? $activatedAT');
+    printLog('¿Inquilino? $tenant');
     updateWifiValues(toolsValues);
     subscribeToWifiStatus();
-    subToVars();
+    subscribeTrueStatus();
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     tenantController.dispose();
-    tenantDistanceOn.dispose();
-    rLargeController.dispose();
-    workController.dispose();
-    motorSpeedUpController.dispose();
-    motorSpeedDownController.dispose();
-    contrapulseController.dispose();
+    costController.dispose();
     emailController.dispose();
+    tenantDistanceOn.dispose();
     super.dispose();
   }
-
-  // FUNCIONES \\
 
   void _onItemTapped(int index) {
     if ((index - _selectedIndex).abs() > 1) {
@@ -78,68 +109,6 @@ class RollerPageState extends State<RollerPage> {
     setState(() {
       _selectedIndex = index;
     });
-  }
-
-  void updateWifiValues(List<int> data) {
-    var fun =
-        utf8.decode(data); //Wifi status | wifi ssid | ble status | nickname
-    fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-    printLog(fun);
-    var parts = fun.split(':');
-    if (parts[0] == 'WCS_CONNECTED') {
-      nameOfWifi = parts[1];
-      isWifiConnected = true;
-      printLog('sis $isWifiConnected');
-      setState(() {
-        textState = 'CONECTADO';
-        statusColor = Colors.green;
-        wifiIcon = Icons.wifi;
-      });
-    } else if (parts[0] == 'WCS_DISCONNECTED') {
-      isWifiConnected = false;
-      printLog('non $isWifiConnected');
-
-      setState(() {
-        textState = 'DESCONECTADO';
-        statusColor = Colors.red;
-        wifiIcon = Icons.wifi_off;
-      });
-
-      if (parts[0] == 'WCS_DISCONNECTED' && atemp == true) {
-        //If comes from subscription, parts[1] = reason of error.
-        setState(() {
-          wifiIcon = Icons.warning_amber_rounded;
-        });
-
-        if (parts[1] == '202' || parts[1] == '15') {
-          errorMessage = 'Contraseña incorrecta';
-        } else if (parts[1] == '201') {
-          errorMessage = 'La red especificada no existe';
-        } else if (parts[1] == '1') {
-          errorMessage = 'Error desconocido';
-        } else {
-          errorMessage = parts[1];
-        }
-
-        if (int.tryParse(parts[1]) != null) {
-          errorSintax = getWifiErrorSintax(int.parse(parts[1]));
-        }
-      }
-    }
-
-    setState(() {});
-  }
-
-  void subscribeToWifiStatus() async {
-    printLog('Se subscribio a wifi');
-    await myDevice.toolsUuid.setNotifyValue(true);
-
-    final wifiSub =
-        myDevice.toolsUuid.onValueReceived.listen((List<int> status) {
-      updateWifiValues(status);
-    });
-
-    myDevice.device.cancelWhenDisconnected(wifiSub);
   }
 
   Future<void> addSecondaryAdmin(String email) async {
@@ -195,6 +164,19 @@ class RollerPageState extends State<RollerPage> {
     }
   }
 
+  void timeData() async {
+    fechaSeleccionada = await cargarFechaGuardada(deviceName);
+    List<int> list = await myDevice.varsUuid.read(timeout: 2);
+    List<String> partes = utf8.decode(list).split(':');
+
+    if (partes.length > 2) {
+      tiempo = partes[3];
+      printLog('Tiempo: ${utf8.decode(list).split(':')}');
+    } else {
+      timeData();
+    }
+  }
+
   bool isValidEmail(String email) {
     final RegExp emailRegex = RegExp(
       r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@"
@@ -203,985 +185,974 @@ class RollerPageState extends State<RollerPage> {
     return emailRegex.hasMatch(email);
   }
 
-  void subToVars() async {
+  void makeCompute() async {
+    if (tiempo != '') {
+      if (costController.text.isNotEmpty) {
+        setState(() {
+          buttonPressed = true;
+          loading = true;
+        });
+
+        printLog('Estoy haciendo calculaciones místicas');
+
+        result =
+            double.parse(tiempo) * 2 * double.parse(costController.text.trim());
+
+        await Future.delayed(const Duration(seconds: 1));
+
+        printLog('Calculaciones terminadas');
+
+        if (context.mounted) {
+          setState(() {
+            loading = false;
+          });
+        }
+      } else {
+        showToast('Primero debes ingresar un valor kW/h');
+      }
+    } else {
+      showToast(
+          'Error al hacer el cálculo\nPor favor cierra y vuelve a abrir el menú');
+    }
+  }
+
+  void updateWifiValues(List<int> data) {
+    var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
+    fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
+    printLog(fun);
+    var parts = fun.split(':');
+    final regex = RegExp(r'\((\d+)\)');
+    final match = regex.firstMatch(parts[2]);
+    int users = int.parse(match!.group(1).toString());
+    printLog('Hay $users conectados');
+    userConnected = users > 1;
+    if (parts[0] == 'WCS_CONNECTED') {
+      atemp = false;
+      nameOfWifi = parts[1];
+      isWifiConnected = true;
+      printLog('sis $isWifiConnected');
+      setState(() {
+        textState = 'CONECTADO';
+        statusColor = Colors.green;
+        wifiIcon = Icons.wifi;
+        errorMessage = '';
+        errorSintax = '';
+        werror = false;
+      });
+    } else if (parts[0] == 'WCS_DISCONNECTED') {
+      isWifiConnected = false;
+      printLog('non $isWifiConnected');
+
+      nameOfWifi = '';
+
+      setState(() {
+        textState = 'DESCONECTADO';
+        statusColor = Colors.red;
+        wifiIcon = Icons.wifi_off;
+      });
+
+      if (atemp) {
+        setState(() {
+          wifiIcon = Icons.warning_amber_rounded;
+          werror = true;
+          if (parts[1] == '202' || parts[1] == '15') {
+            errorMessage = 'Contraseña incorrecta';
+          } else if (parts[1] == '201') {
+            errorMessage = 'La red especificada no existe';
+          } else if (parts[1] == '1') {
+            errorMessage = 'Error desconocido';
+          } else {
+            errorMessage = parts[1];
+          }
+
+          errorSintax = getWifiErrorSintax(int.parse(parts[1]));
+        });
+      }
+    }
+
+    setState(() {});
+  }
+
+  void subscribeToWifiStatus() async {
+    printLog('Se subscribio a wifi');
+    await myDevice.toolsUuid.setNotifyValue(true);
+
+    final wifiSub =
+        myDevice.toolsUuid.onValueReceived.listen((List<int> status) {
+      printLog('Llegaron cositas wifi');
+      updateWifiValues(status);
+    });
+
+    myDevice.device.cancelWhenDisconnected(wifiSub);
+  }
+
+  void subscribeTrueStatus() async {
     printLog('Me subscribo a vars');
     await myDevice.varsUuid.setNotifyValue(true);
 
-    final varsSub =
+    final trueStatusSub =
         myDevice.varsUuid.onValueReceived.listen((List<int> status) {
       var parts = utf8.decode(status).split(':');
-      // printLog(parts);
-      if (context.mounted) {
-        setState(() {
-          actualPosition = int.parse(parts[0]);
-          rollerMoving = parts[1] == '1';
-        });
-      }
+      setState(() {
+        if (parts[0] == '1') {
+          trueStatus = true;
+        } else {
+          trueStatus = false;
+        }
+      });
     });
 
-    myDevice.device.cancelWhenDisconnected(varsSub);
+    myDevice.device.cancelWhenDisconnected(trueStatusSub);
   }
 
-  void setRange(int mm) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[7]($mm)';
-    printLog(data);
+  void sendTemperature(int temp) {
+    String data = '${DeviceManager.getProductCode(deviceName)}[7]($temp)';
     myDevice.toolsUuid.write(data.codeUnits);
   }
 
-  void setDistance(int pc) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[7]($pc%)';
-    printLog(data);
+  void turnDeviceOn(bool on) async {
+    int fun = on ? 1 : 0;
+    String data = '${DeviceManager.getProductCode(deviceName)}[11]($fun)';
     myDevice.toolsUuid.write(data.codeUnits);
+    globalDATA[
+            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+        'w_status'] = on;
+    saveGlobalData(globalDATA);
+    try {
+      String topic =
+          'devices_rx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
+      String topic2 =
+          'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
+      String message = jsonEncode({'w_status': on});
+      sendMessagemqtt(topic, message);
+      sendMessagemqtt(topic2, message);
+    } catch (e, s) {
+      printLog('Error al enviar valor a firebase $e $s');
+    }
   }
 
-  void setRollerConfig(int type) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[8]($type)';
-    myDevice.toolsUuid.write(data.codeUnits);
+  Future<Position> _determinePosition() async {
+    bool serviceEnabled;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      showToast('La ubicación esta desactivada\nPor favor enciendala');
+      return Future.error('Los servicios de ubicación están deshabilitados.');
+    }
+    // Cuando los permisos están OK, obtenemos la ubicación actual
+    return await Geolocator.getCurrentPosition();
   }
 
-  void setMotorSpeed(String rpm) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[10]($rpm)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
+  void controlTask(bool value, String device) async {
+    setState(() {
+      isTaskScheduled.addAll({device: value});
+    });
+    if (isTaskScheduled[device]!) {
+      // Programar la tarea.
+      try {
+        showToast('Recuerda tener la ubicación encendida.');
+        String data = '${DeviceManager.getProductCode(deviceName)}[5](1)';
+        myDevice.toolsUuid.write(data.codeUnits);
+        List<String> deviceControl = await loadDevicesForDistanceControl();
+        deviceControl.add(deviceName);
+        saveDevicesForDistanceControl(deviceControl);
+        printLog(
+            'Hay ${deviceControl.length} equipos con el control x distancia');
+        Position position = await _determinePosition();
+        Map<String, double> maplatitude = await loadLatitude();
+        maplatitude.addAll({deviceName: position.latitude});
+        savePositionLatitude(maplatitude);
+        Map<String, double> maplongitude = await loadLongitud();
+        maplongitude.addAll({deviceName: position.longitude});
+        savePositionLongitud(maplongitude);
+
+        if (deviceControl.length == 1) {
+          await initializeService();
+          final backService = FlutterBackgroundService();
+          await backService.startService();
+          backService.invoke('distanceControl');
+          printLog('Servicio iniciado a las ${DateTime.now()}');
+        }
+      } catch (e) {
+        showToast('Error al iniciar control por distancia.');
+        printLog('Error al setear la ubicación $e');
+      }
+    } else {
+      // Cancelar la tarea.
+      showToast('Se cancelo el control por distancia');
+      String data = '${DeviceManager.getProductCode(deviceName)}[5](0)';
+      myDevice.toolsUuid.write(data.codeUnits);
+      List<String> deviceControl = await loadDevicesForDistanceControl();
+      deviceControl.remove(deviceName);
+      saveDevicesForDistanceControl(deviceControl);
+      printLog(
+          'Quedan ${deviceControl.length} equipos con el control x distancia');
+      Map<String, double> maplatitude = await loadLatitude();
+      maplatitude.remove(deviceName);
+      savePositionLatitude(maplatitude);
+      Map<String, double> maplongitude = await loadLongitud();
+      maplongitude.remove(deviceName);
+      savePositionLongitud(maplongitude);
+
+      if (deviceControl.isEmpty) {
+        final backService = FlutterBackgroundService();
+        backService.invoke("stopService");
+        backTimerDS?.cancel();
+        printLog('Servicio apagado');
+      }
+    }
   }
 
-  void setMicroStep(String uStep) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[11]($uStep)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
+  Future<bool> verifyPermission() async {
+    try {
+      var permissionStatus4 = await Permission.locationAlways.status;
+      if (!permissionStatus4.isGranted) {
+        await showDialog<void>(
+          context: navigatorKey.currentContext ?? context,
+          barrierDismissible: false,
+          builder: (BuildContext dialogContext) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF252223),
+              title: const Text(
+                'Habilita la ubicación todo el tiempo',
+                style: TextStyle(color: Color(0xFFFFFFFF)),
+              ),
+              content: Text(
+                '$appName utiliza tu ubicación, incluso cuando la app esta cerrada o en desuso, para poder encender o apagar el calefactor en base a tu distancia con el mismo.',
+                style: const TextStyle(
+                  color: Color(0xFFFFFFFF),
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  style: const ButtonStyle(
+                    foregroundColor: WidgetStatePropertyAll(
+                      Color(0xFFFFFFFF),
+                    ),
+                  ),
+                  child: const Text('Habilitar'),
+                  onPressed: () async {
+                    try {
+                      var permissionStatus4 =
+                          await Permission.locationAlways.request();
+
+                      if (!permissionStatus4.isGranted) {
+                        await Permission.locationAlways.request();
+                      }
+                      permissionStatus4 =
+                          await Permission.locationAlways.status;
+                    } catch (e, s) {
+                      printLog(e);
+                      printLog(s);
+                    }
+                    Navigator.of(navigatorKey.currentContext ?? context)
+                        .pop(); // Cierra el AlertDialog
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      }
+
+      permissionStatus4 = await Permission.locationAlways.status;
+
+      if (permissionStatus4.isGranted) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e, s) {
+      printLog('Error al habilitar la ubi: $e');
+      printLog(s);
+      return false;
+    }
   }
 
-  void setMotorCurrent(bool run, String value) {
-    String data =
-        '${DeviceManager.getProductCode(deviceName)}[12](${run ? '1' : '0'}#$value)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setFreeWheeling(bool active) {
-    String data =
-        '${DeviceManager.getProductCode(deviceName)}[14](${active ? '1' : '0'})';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setTPWMTHRS(String value) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[15]($value)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setTCOOLTHRS(String value) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[16]($value)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setSGTHRS(String value) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[17]($value)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-//! VISUAL
+  //! VISUAL
   @override
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
 
-    bool isRegularUser = !deviceOwner && !secondaryAdmin;
+    bool isOwner = currentUserEmail == owner;
+    bool isSecondaryAdmin = adminDevices.contains(currentUserEmail);
+    bool isRegularUser = !isOwner && !isSecondaryAdmin;
 
     // si hay un usuario conectado al equipo no lo deje ingresar
     if (userConnected && lastUser > 1) {
       return const DeviceInUseScreen();
     }
 
-    // Condición para mostrar la pantalla de acceso restringido
     if (isRegularUser && owner != '' && !tenant) {
       return const AccessDeniedScreen();
     }
 
     final List<Widget> pages = [
-      //*- Página 1 cortina -*\\
-      SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Estado de la cortina',
-                style: GoogleFonts.poppins(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: color3,
-                ),
+      //*- Página 1 - Estado del dispositivo -*\\
+      Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              'Estado del Dispositivo',
+              style: GoogleFonts.poppins(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: color3,
               ),
-              const SizedBox(height: 20),
-
-              CurtainAnimation(
-                position: actualPosition,
-                onTapDown: (details) {
-                  RenderBox box = context.findRenderObject() as RenderBox;
-                  Offset localPosition =
-                      box.globalToLocal(details.globalPosition);
-                  double relativeHeight = (localPosition.dy - 200) / 250;
-                  int newPosition =
-                      (relativeHeight * 100).clamp(0, 100).round();
-
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 40),
+            GestureDetector(
+              onTap: () {
+                if (isOwner || isSecondaryAdmin || owner == '') {
+                  turnDeviceOn(!turnOn);
                   setState(() {
-                    workingPosition = newPosition;
-                    setDistance(newPosition);
+                    turnOn = !turnOn;
                   });
-                },
-              ),
-              const SizedBox(height: 20),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onLongPressStart: (LongPressStartDetails a) {
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[7](0%)';
-                        myDevice.toolsUuid.write(data.codeUnits);
-                        setState(() {
-                          workingPosition = 0;
-                        });
-                        printLog(data);
-                      },
-                      onLongPressEnd: (LongPressEndDetails a) {
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[7]($actualPosition%)';
-                        myDevice.toolsUuid.write(data.codeUnits);
-                        setState(() {
-                          workingPosition = actualPosition;
-                        });
-                        printLog(data);
-                      },
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () {},
-                          borderRadius: BorderRadius.circular(30.0),
-                          splashColor: Colors.white.withOpacity(0.2),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: color3,
-                              borderRadius: BorderRadius.circular(30.0),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black26,
-                                  offset: Offset(0, 4),
-                                  blurRadius: 5.0,
-                                ),
-                              ],
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 15.0),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.arrow_upward, color: color0),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Subir',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: color0,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: GestureDetector(
-                      onLongPressStart: (LongPressStartDetails a) {
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[7](100%)';
-                        myDevice.toolsUuid.write(data.codeUnits);
-                        setState(() {
-                          workingPosition = 100;
-                        });
-                        printLog(data);
-                      },
-                      onLongPressEnd: (LongPressEndDetails a) {
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[7]($actualPosition%)';
-                        myDevice.toolsUuid.write(data.codeUnits);
-                        setState(() {
-                          workingPosition = actualPosition;
-                        });
-                        printLog(data);
-                      },
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () {},
-                          borderRadius: BorderRadius.circular(30.0),
-                          splashColor: Colors.white.withOpacity(0.2),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: color3,
-                              borderRadius: BorderRadius.circular(30.0),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black26,
-                                  offset: Offset(0, 4),
-                                  blurRadius: 5.0,
-                                ),
-                              ],
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 15.0),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.arrow_downward, color: color0),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Bajar',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: color0,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  setRollerConfig(0);
-                  setState(() {
-                    workingPosition = 0;
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: color0,
-                  backgroundColor: color3,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30.0),
-                  ),
-                  elevation: 5,
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(width: 8),
-                    Text(
-                      'Guardar inicio',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                } else {
+                  showToast('No tienes permiso para realizar esta acción');
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: turnOn
+                      ? (trueStatus ? Colors.amber[600] : Colors.greenAccent)
+                      : Colors.redAccent,
+                  shape: BoxShape.circle,
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 10,
+                      offset: Offset(0, 5),
                     ),
                   ],
                 ),
+                child: turnOn
+                    ? AnimatedIconWidget(
+                        isHeating: trueStatus,
+                        icon: powerIconOn,
+                      )
+                    : Icon(powerIconOff, size: 80, color: Colors.white),
               ),
-              const SizedBox(height: 10),
-              //TODO: guardar fin
-              ElevatedButton(
-                onPressed: () {
-                  setRollerConfig(0);
-                  setState(() {
-                    workingPosition = 100;
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: color0,
-                  backgroundColor: color3,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30.0),
-                  ),
-                  elevation: 5,
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(width: 8),
-                    Text(
-                      'Guardar fin',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text.rich(
+                  TextSpan(
+                    text: turnOn
+                        ? (trueStatus ? 'Calentando' : 'Encendido')
+                        : 'Apagado',
+                    style: GoogleFonts.poppins(
+                      color: turnOn
+                          ? (trueStatus ? Colors.amber[600] : Colors.green)
+                          : Colors.red,
+                      fontSize: 30,
+                      fontWeight: FontWeight.w600,
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
 
-      //*- Página 2 -*\\
-      SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  const SizedBox(
-                    width: 10,
+      //*- Pagina 2 - Temperatura de corte -*\\
+      Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              'Temperatura de corte',
+              style: GoogleFonts.poppins(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: color3,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 40),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.thermostat_rounded,
+                  size: 250,
+                  color: Color.lerp(
+                    Colors.blueAccent,
+                    Colors.redAccent,
+                    (tempValue - 10) / 70,
                   ),
-                  Column(
-                    children: [
-                      const Text(
-                        'Largo del Roller:',
-                        style: TextStyle(
-                            fontSize: 20.0,
-                            color: Color(0xfffbe4d8),
-                            fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 20),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8.0),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      const SizedBox(
-                        width: 10,
+                      child: Text(
+                        '${tempValue.round()}°C',
+                        style: GoogleFonts.poppins(
+                          fontSize: 24,
+                          color: color3,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      height: 350,
+                      width: 70,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(40),
+                        color: Colors.grey.withOpacity(0.1),
+                      ),
+                      child: Stack(
+                        alignment: Alignment.bottomCenter,
                         children: [
-                          Text(
-                            rollerlength,
-                            style: const TextStyle(
-                                fontSize: 25.0,
-                                color: Color(0xFFdfb6b2),
-                                fontWeight: FontWeight.bold),
+                          Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Container(
+                              width: 70,
+                              height: (tempValue > 0
+                                  ? (((tempValue - 10) / 70) * 350)
+                                      .clamp(40, 350)
+                                  : 40),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(40),
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Colors.blueAccent,
+                                    Colors.redAccent,
+                                  ],
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.topCenter,
+                                ),
+                              ),
+                            ),
                           ),
-                          const SizedBox(
-                            width: 5,
-                          ),
-                          const Text(
-                            'mm',
-                            style: TextStyle(
-                                fontSize: 20.0,
-                                color: Color(0xfffbe4d8),
-                                fontWeight: FontWeight.normal),
+                          Positioned.fill(
+                            child: SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                trackHeight: 70,
+                                thumbShape: const RoundSliderThumbShape(
+                                  enabledThumbRadius: 0,
+                                ),
+                                overlayShape: SliderComponentShape.noOverlay,
+                                thumbColor: Colors.transparent,
+                                activeTrackColor: Colors.transparent,
+                                inactiveTrackColor: Colors.transparent,
+                              ),
+                              child: RotatedBox(
+                                quarterTurns: 3,
+                                child: Slider(
+                                  value: tempValue,
+                                  min: 10,
+                                  max: 80,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      tempValue = value;
+                                    });
+                                  },
+                                  onChangeEnd: (value) {
+                                    printLog('$value');
+                                    sendTemperature(value.round());
+                                  },
+                                ),
+                              ),
+                            ),
                           ),
                         ],
-                      )
-                    ],
-                  ),
-                  const Spacer(),
-                  ElevatedButton(
-                      onPressed: () {
-                        showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: const Text('Modificar largo (mm)'),
-                                content: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    TextField(
-                                      controller: rLargeController,
-                                      keyboardType: TextInputType.number,
-                                      decoration: const InputDecoration(
-                                          label: Text(
-                                        'Ingresar tamaño:',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.normal),
-                                      )),
-                                      onSubmitted: (value) {
-                                        int? valor =
-                                            int.tryParse(rLargeController.text);
-                                        if (valor != null) {
-                                          setRange(valor);
-                                          setState(() {
-                                            rollerlength = value;
-                                          });
-                                        } else {
-                                          showToast('Valor no permitido');
-                                        }
-                                        rLargeController.clear();
-                                        navigatorKey.currentState?.pop();
-                                      },
-                                    ),
-                                  ],
-                                ),
-                                actions: [
-                                  TextButton(
-                                      onPressed: () {
-                                        int? valor =
-                                            int.tryParse(rLargeController.text);
-                                        if (valor != null) {
-                                          setRange(valor);
-                                          setState(() {
-                                            rollerlength =
-                                                rLargeController.text;
-                                          });
-                                        } else {
-                                          showToast('Valor no permitido');
-                                        }
-                                        rLargeController.clear();
-                                        navigatorKey.currentState?.pop();
-                                      },
-                                      child: const Text('Modificar'))
-                                ],
-                              );
-                            });
-                      },
-                      child: const Text('Modificar')),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Row(
-                children: [
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  const Text(
-                    'Polaridad del Roller:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    rollerPolarity,
-                    style: const TextStyle(
-                        fontSize: 25.0,
-                        color: Color(0xFFdfb6b2),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const Spacer(),
-                  ElevatedButton(
-                      onPressed: () {
-                        setRollerConfig(1);
-                        rollerPolarity == '0'
-                            ? rollerPolarity = '1'
-                            : rollerPolarity = '0';
-                        context.mounted ? setState(() {}) : null;
-                      },
-                      child: const Text('Inver')),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  const Text(
-                    'RPM del motor:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    rollerRPM,
-                    style: const TextStyle(
-                      fontSize: 25.0,
-                      color: Color(0xFFdfb6b2),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  SizedBox(
-                    width: 300,
-                    child: SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 20.0,
-                        thumbColor: const Color(0xfffbe4d8),
-                        thumbShape: const IconThumbSlider(
-                          iconData: Icons.speed,
-                          thumbRadius: 20,
-                        ),
-                      ),
-                      child: Slider(
-                        min: 0,
-                        max: 400,
-                        value: double.parse(rollerRPM),
-                        onChanged: (value) {
-                          setState(() {
-                            rollerRPM = value.round().toString();
-                          });
-                        },
-                        onChangeEnd: (value) {
-                          setMotorSpeed(value.round().toString());
-                        },
                       ),
                     ),
-                  )
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Row(
-                children: [
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  const Text(
-                    'MicroSteps del roller:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    rollerMicroStep,
-                    style: const TextStyle(
-                        fontSize: 25.0,
-                        color: Color(0xFFdfb6b2),
-                        fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              SizedBox(
-                width: 300,
-                child: DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: 'Nuevo valor de microStep:',
-                    labelStyle: TextStyle(
-                      color: Color(0xfffbe4d8),
-                    ),
-                    hintStyle: TextStyle(
-                      color: Color(0xfffbe4d8),
-                    ),
-                    // fillColor: Color(0xfffbe4d8),
-                  ),
-                  dropdownColor: const Color(0xff190019),
-                  items: <String>[
-                    '256',
-                    '128',
-                    '64',
-                    '32',
-                    '16',
-                    '8',
-                    '4',
-                    '2',
-                    '0',
-                  ].map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(
-                        value,
-                        style: const TextStyle(
-                          color: Color(0xfffbe4d8),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setMicroStep(value);
-                      setState(() {
-                        rollerMicroStep = value.toString();
-                      });
-                    }
-                  },
+                  ],
                 ),
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  const Text(
-                    'Run current:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    '${((int.parse(rollerIRMSRUN) * 2100) / 31).round()} mA',
-                    style: const TextStyle(
-                      fontSize: 25.0,
-                      color: Color(0xFFdfb6b2),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  SizedBox(
-                    width: 300,
-                    child: SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 20.0,
-                        thumbColor: const Color(0xfffbe4d8),
-                        thumbShape: const IconThumbSlider(
-                          iconData: Icons.electric_bolt,
-                          thumbRadius: 20,
-                        ),
-                      ),
-                      child: Slider(
-                        min: 0,
-                        max: 31,
-                        value: double.parse(rollerIRMSRUN),
-                        onChanged: (value) {
-                          setState(() {
-                            rollerIRMSRUN = value.round().toString();
-                          });
-                        },
-                        onChangeEnd: (value) {
-                          setMotorCurrent(true, value.round().toString());
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  const Text(
-                    'Hold current:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    '${((int.parse(rollerIRMSHOLD) * 2100) / 31).round()} mA',
-                    style: const TextStyle(
-                      fontSize: 25.0,
-                      color: Color(0xFFdfb6b2),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  SizedBox(
-                    width: 300,
-                    child: SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 20.0,
-                        thumbColor: const Color(0xfffbe4d8),
-                        thumbShape: const IconThumbSlider(
-                          iconData: Icons.electric_bolt,
-                          thumbRadius: 20,
-                        ),
-                      ),
-                      child: Slider(
-                        min: 0,
-                        max: 31,
-                        value: double.parse(rollerIRMSHOLD),
-                        onChanged: (value) {
-                          setState(() {
-                            rollerIRMSHOLD = value.round().toString();
-                          });
-                        },
-                        onChangeEnd: (value) {
-                          setMotorCurrent(false, value.round().toString());
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  const Text(
-                    'Threshold PWM:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    rollerTPWMTHRS,
-                    style: const TextStyle(
-                      fontSize: 25.0,
-                      color: Color(0xFFdfb6b2),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  SizedBox(
-                    width: 300,
-                    child: TextField(
-                      style: const TextStyle(color: Color(0xFFdfb6b2)),
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Modificar:',
-                        labelStyle: TextStyle(
-                            color: Color(0xFFdfb6b2),
-                            fontWeight: FontWeight.bold),
-                      ),
-                      onSubmitted: (value) {
-                        if (int.parse(value) < 1048575 &&
-                            int.parse(value) > 0) {
-                          printLog('Añaseo $value');
-                          setTPWMTHRS(value);
-                        } else {
-                          showToast(
-                              'El valor no esta en el rango\n0 - 1048575');
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  const Text(
-                    'Threshold COOL:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    rollerTCOOLTHRS,
-                    style: const TextStyle(
-                      fontSize: 25.0,
-                      color: Color(0xFFdfb6b2),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  SizedBox(
-                    width: 300,
-                    child: TextField(
-                      style: const TextStyle(color: Color(0xFFdfb6b2)),
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Modificar:',
-                        labelStyle: TextStyle(
-                            color: Color(0xFFdfb6b2),
-                            fontWeight: FontWeight.bold),
-                      ),
-                      onSubmitted: (value) {
-                        if (int.parse(value) < 1048575 &&
-                            int.parse(value) > 1) {
-                          setTCOOLTHRS(value);
-                        } else {
-                          showToast(
-                              'El valor no esta en el rango\n1 - 1048575');
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  const Text(
-                    'SG Threshold:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    rollerSGTHRS,
-                    style: const TextStyle(
-                      fontSize: 25.0,
-                      color: Color(0xFFdfb6b2),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  SizedBox(
-                    width: 300,
-                    child: SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 20.0,
-                        thumbColor: const Color(0xfffbe4d8),
-                        thumbShape: const IconThumbSlider(
-                          iconData: Icons.catching_pokemon,
-                          thumbRadius: 20,
-                        ),
-                      ),
-                      child: Slider(
-                        min: 0,
-                        max: 255,
-                        value: double.parse(rollerSGTHRS),
-                        onChanged: (value) {
-                          setState(() {
-                            rollerSGTHRS = value.round().toString();
-                          });
-                        },
-                        onChangeEnd: (value) {
-                          setSGTHRS(value.round().toString());
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  const Text(
-                    'Free Wheeling:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  SizedBox(
-                    width: 300,
-                    child: Switch(
-                      activeColor: const Color(0xfffbe4d8),
-                      activeTrackColor: const Color(0xff854f6c),
-                      inactiveThumbColor: const Color(0xff854f6c),
-                      inactiveTrackColor: const Color(0xfffbe4d8),
-                      value: rollerFreewheeling,
-                      onChanged: (value) {
-                        setFreeWheeling(value);
-                        setState(() {
-                          rollerFreewheeling = value;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
 
-      //*- Página 3: Gestión del Equipo -*\\
+      //*- Página 3 - Control por distancia -*\\
+
+      Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  'Control por distancia',
+                  style: GoogleFonts.poppins(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: color3,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Activar control por distancia',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                    color: color3,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 30),
+                GestureDetector(
+                  onTap: () {
+                    if (isOwner || owner == '') {
+                      verifyPermission().then((result) {
+                        if (result == true) {
+                          setState(() {
+                            isTaskScheduled[deviceName] =
+                                !(isTaskScheduled[deviceName] ?? false);
+                          });
+                          saveControlValue(isTaskScheduled);
+                          controlTask(
+                              isTaskScheduled[deviceName] ?? false, deviceName);
+                        } else {
+                          showToast(
+                            'Permitir ubicación todo el tiempo\nPara usar el control por distancia',
+                          );
+                          openAppSettings();
+                        }
+                      });
+                    } else {
+                      showToast('No tienes acceso a esta función');
+                    }
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 500),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: isTaskScheduled[deviceName] ?? false
+                          ? Colors.greenAccent
+                          : Colors.redAccent,
+                      shape: BoxShape.circle,
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 10,
+                          offset: Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                        (isTaskScheduled[deviceName] ?? false)
+                            ? Icons.check_circle_outline_rounded
+                            : Icons.cancel_rounded,
+                        size: 80,
+                        color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                AnimatedOpacity(
+                  opacity: isTaskScheduled[deviceName] ?? false ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 500),
+                  child: AnimatedSize(
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeInOut,
+                    child: isTaskScheduled[deviceName] ?? false
+                        ? Column(
+                            children: [
+                              Card(
+                                color: color3.withOpacity(0.9),
+                                elevation: 6,
+                                margin: const EdgeInsets.symmetric(
+                                    vertical: 8.0, horizontal: 20.0),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                  side: BorderSide(
+                                    color: Color.lerp(
+                                        Colors.blueAccent,
+                                        Colors.redAccent,
+                                        (distOffValue - 100) / 200)!,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: Column(
+                                    children: [
+                                      const Text(
+                                        'Distancia de apagado',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: color1,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            distOffValue.round().toString(),
+                                            style: const TextStyle(
+                                              fontSize: 24,
+                                              color: color1,
+                                            ),
+                                          ),
+                                          const Text(
+                                            ' Metros',
+                                            style: TextStyle(
+                                              fontSize: 24,
+                                              color: color1,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SliderTheme(
+                                        data: SliderTheme.of(context).copyWith(
+                                          trackHeight: 20.0,
+                                          thumbColor: color3,
+                                          activeTrackColor: Colors.blueAccent,
+                                          inactiveTrackColor:
+                                              Colors.blueGrey[100],
+                                          thumbShape:
+                                              const RoundSliderThumbShape(
+                                            enabledThumbRadius: 12.0,
+                                            elevation: 0.0,
+                                            pressedElevation: 0.0,
+                                          ),
+                                        ),
+                                        child: Slider(
+                                          activeColor: Colors.white,
+                                          inactiveColor:
+                                              const Color(0xFFBDBDBD),
+                                          value: distOffValue,
+                                          divisions: 20,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              distOffValue = value;
+                                            });
+                                          },
+                                          onChangeEnd: (value) {
+                                            printLog(
+                                                'Valor enviado: ${value.round()}');
+                                            putDistanceOff(
+                                              service,
+                                              DeviceManager.getProductCode(
+                                                  deviceName),
+                                              DeviceManager.extractSerialNumber(
+                                                  deviceName),
+                                              value.toString(),
+                                            );
+                                          },
+                                          min: 100,
+                                          max: 300,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 15),
+                              Card(
+                                color: color3.withOpacity(0.9),
+                                elevation: 6,
+                                margin: const EdgeInsets.symmetric(
+                                    vertical: 8.0, horizontal: 20.0),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                  side: BorderSide(
+                                    color: Color.lerp(
+                                        Colors.blueAccent,
+                                        Colors.redAccent,
+                                        (distOnValue - 3000) / 2000)!,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: Column(
+                                    children: [
+                                      const Text(
+                                        'Distancia de encendido',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: color1,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            distOnValue.round().toString(),
+                                            style: const TextStyle(
+                                              fontSize: 24,
+                                              color: color1,
+                                            ),
+                                          ),
+                                          const Text(
+                                            ' Metros',
+                                            style: TextStyle(
+                                              fontSize: 24,
+                                              color: color1,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SliderTheme(
+                                        data: SliderTheme.of(context).copyWith(
+                                          trackHeight: 20.0,
+                                          thumbColor: color3,
+                                          activeTrackColor: Colors.blueAccent,
+                                          inactiveTrackColor:
+                                              Colors.blueGrey[100],
+                                          thumbShape:
+                                              const RoundSliderThumbShape(
+                                            enabledThumbRadius: 12.0,
+                                            elevation: 0.0,
+                                            pressedElevation: 0.0,
+                                          ),
+                                        ),
+                                        child: Slider(
+                                          activeColor: Colors.white,
+                                          inactiveColor:
+                                              const Color(0xFFBDBDBD),
+                                          value: distOnValue,
+                                          divisions: 20,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              distOnValue = value;
+                                            });
+                                          },
+                                          onChangeEnd: (value) {
+                                            printLog(
+                                                'Valor enviado: ${value.round()}');
+                                            putDistanceOn(
+                                              service,
+                                              DeviceManager.getProductCode(
+                                                  deviceName),
+                                              DeviceManager.extractSerialNumber(
+                                                  deviceName),
+                                              value.toString(),
+                                            );
+                                          },
+                                          min: 3000,
+                                          max: 5000,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : const SizedBox(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (!isOwner && owner != '' && !tenant)
+            Container(
+              color: Colors.black.withOpacity(0.7),
+              child: const Center(
+                child: Text(
+                  'No tienes acceso a esta función',
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              ),
+            ),
+        ],
+      ),
+
+      //*- Página 4 - Nueva funcionalidad con ingreso de valores y cálculo -*\\
+      Stack(
+        children: [
+          SingleChildScrollView(
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Calculadora de Consumo',
+                    style: GoogleFonts.poppins(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: color3,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 50),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20.0, vertical: 10.0),
+                    decoration: BoxDecoration(
+                      color: color3.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: color3, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color3.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      keyboardType: TextInputType.number,
+                      controller: costController,
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                        fontSize: 22,
+                      ),
+                      cursorColor: color3,
+                      decoration: InputDecoration(
+                        labelText: 'Ingresa valor $measure',
+                        labelStyle: GoogleFonts.poppins(
+                          color: color3,
+                          fontSize: 18,
+                        ),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  if (buttonPressed) ...[
+                    Visibility(
+                      visible: loading,
+                      child: const CircularProgressIndicator(
+                        color: color3,
+                        strokeWidth: 4,
+                      ),
+                    ),
+                    Visibility(
+                      visible: !loading,
+                      child: Text(
+                        '\$$result',
+                        style: GoogleFonts.poppins(
+                          fontSize: 50,
+                          color: color3,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              offset: const Offset(0, 3),
+                              blurRadius: 8,
+                              color: color3.withOpacity(0.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 30),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color3,
+                      foregroundColor: color0,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 35, vertical: 20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      shadowColor: color3.withOpacity(0.4),
+                      elevation: 8,
+                    ),
+                    onPressed: (isOwner || owner == '')
+                        ? () {
+                            if (costController.text.isNotEmpty) {
+                              makeCompute();
+                            } else {
+                              showToast('Por favor ingresa un valor');
+                            }
+                          }
+                        : null,
+                    child: Text(
+                      'Hacer cálculo',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color3,
+                      foregroundColor: color0,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 35, vertical: 20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      shadowColor: color3.withOpacity(0.4),
+                      elevation: 8,
+                    ),
+                    onPressed: (isOwner || owner == '')
+                        ? () {
+                            guardarFecha(deviceName).then(
+                              (value) => setState(() {
+                                fechaSeleccionada = DateTime.now();
+                              }),
+                            );
+                            String data =
+                                '${DeviceManager.getProductCode(deviceName)} ';
+                            myDevice.toolsUuid.write(data.codeUnits);
+                          }
+                        : null,
+                    child: Text(
+                      'Reiniciar mes',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 25),
+                  if (fechaSeleccionada != null)
+                    Text(
+                      'Último reinicio: ${fechaSeleccionada!.day}/${fechaSeleccionada!.month}/${fechaSeleccionada!.year}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        color: color3,
+                      ),
+                    )
+                  else
+                    const SizedBox(),
+                ],
+              ),
+            ),
+          ),
+          if (!isOwner && owner != '')
+            Container(
+              color: Colors.black.withOpacity(0.7),
+              child: const Center(
+                child: Text(
+                  'No tienes acceso a esta función',
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              ),
+            ),
+        ],
+      ),
+
+      //*- Página 5: Gestión del Equipo -*\\
       SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
@@ -1201,8 +1172,7 @@ class RollerPageState extends State<RollerPage> {
               //! Opción - Reclamar propiedad del equipo o dejar de ser propietario
               InkWell(
                 onTap: () async {
-                  if (currentUserEmail == owner) {
-                    // Opción para dejar de ser propietario
+                  if (isOwner) {
                     showAlertDialog(
                       context,
                       false,
@@ -1232,6 +1202,7 @@ class RollerPageState extends State<RollerPage> {
                               myDevice.device.disconnect();
                               Navigator.of(context).pop();
                               setState(() {
+                                isOwner = false;
                                 showOptions = false;
                               });
                             } catch (e, s) {
@@ -1243,7 +1214,6 @@ class RollerPageState extends State<RollerPage> {
                       ],
                     );
                   } else if (owner == '') {
-                    // No hay propietario, el usuario puede reclamar
                     try {
                       putOwner(
                         service,
@@ -1253,7 +1223,7 @@ class RollerPageState extends State<RollerPage> {
                       );
                       setState(() {
                         owner = currentUserEmail;
-                        deviceOwner = true;
+                        isOwner = true;
                         showOptions = true;
                       });
                       showToast('Ahora eres el propietario del equipo');
@@ -1262,7 +1232,6 @@ class RollerPageState extends State<RollerPage> {
                       showToast('Error al agregar el administrador.');
                     }
                   } else {
-                    // Ya hay un propietario
                     showToast('El equipo ya esta reclamado');
                   }
                 },
@@ -1283,7 +1252,7 @@ class RollerPageState extends State<RollerPage> {
                     ],
                   ),
                   child: Text(
-                    currentUserEmail == owner
+                    isOwner
                         ? 'Dejar de ser dueño del equipo'
                         : 'Reclamar propiedad del equipo',
                     textAlign: TextAlign.center,
@@ -1307,7 +1276,7 @@ class RollerPageState extends State<RollerPage> {
                       ? Column(
                           children: [
                             //! Opciones adicionales existentes (isOwner)
-                            if (deviceOwner) ...[
+                            if (isOwner) ...[
                               //! Opción 2 - Añadir administradores secundarios
                               InkWell(
                                 onTap: () {
@@ -1535,7 +1504,6 @@ class RollerPageState extends State<RollerPage> {
                                     : const SizedBox(),
                               ),
                               const SizedBox(height: 10),
-
                               //! Opción 4 - Habitante inteligente
                               InkWell(
                                 onTap: () {
@@ -1965,7 +1933,6 @@ class RollerPageState extends State<RollerPage> {
                                       )
                                     : const SizedBox(),
                               ),
-
                               const SizedBox(height: 10),
                               //! Opción 5 - activar notificación
                               InkWell(
@@ -2173,7 +2140,6 @@ class RollerPageState extends State<RollerPage> {
                                       )
                                     : const SizedBox.shrink(),
                               ),
-                              const SizedBox(height: 20),
                             ],
                           ],
                         )
@@ -2181,6 +2147,45 @@ class RollerPageState extends State<RollerPage> {
                 ),
               ),
               const SizedBox(height: 30),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    if (!quickAccesActivated) {
+                      quickAccess.add(deviceName);
+                      await savequickAccess(quickAccess);
+                      setState(() {
+                        quickAccesActivated = true;
+                      });
+                    } else {
+                      quickAccess.remove(deviceName);
+                      await savequickAccess(quickAccess);
+                      setState(() {
+                        quickAccesActivated = false;
+                      });
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: color0,
+                    backgroundColor: color3,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: Text(
+                    quickAccesActivated
+                        ? 'Desactivar acceso rápido'
+                        : 'Activar acceso rápido',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
 
               SizedBox(
                 width: double.infinity,
@@ -2354,17 +2359,11 @@ class RollerPageState extends State<RollerPage> {
                 Expanded(
                   child: ScrollingText(
                     text: nickname,
-                    style: poppinsStyle.copyWith(
-                      color: color0,
-                    ),
+                    style: poppinsStyle.copyWith(color: color0),
                   ),
                 ),
                 const SizedBox(width: 3),
-                const Icon(
-                  Icons.edit,
-                  size: 20,
-                  color: color0,
-                )
+                const Icon(Icons.edit, size: 20, color: color0)
               ],
             ),
           ),
@@ -2435,7 +2434,9 @@ class RollerPageState extends State<RollerPage> {
                 height: 75.0,
                 items: const <Widget>[
                   Icon(Icons.home, size: 30, color: color0),
-                  Icon(Icons.bluetooth, size: 30, color: color0),
+                  Icon(Icons.thermostat, size: 30, color: color0),
+                  Icon(Icons.location_on, size: 30, color: color0),
+                  Icon(Icons.calculate, size: 30, color: color0),
                   Icon(Icons.settings, size: 30, color: color0),
                 ],
                 color: color3,
@@ -2456,68 +2457,68 @@ class RollerPageState extends State<RollerPage> {
   }
 }
 
-//*- Diseño de la cortina -*\\
-class CurtainAnimation extends StatelessWidget {
-  final int position;
-  final Function(TapDownDetails) onTapDown;
+//*- animacion para los iconos al estar calentando-*\\
+class AnimatedIconWidget extends StatefulWidget {
+  final bool isHeating;
+  final IconData icon;
 
-  const CurtainAnimation({
+  const AnimatedIconWidget({
+    required this.isHeating,
+    required this.icon,
     super.key,
-    required this.position,
-    required this.onTapDown,
   });
 
   @override
-  Widget build(BuildContext context) {
-    double curtainHeight = (position / 100) * 250;
+  AnimatedIconWidgetState createState() => AnimatedIconWidgetState();
+}
 
-    return GestureDetector(
-      onTapDown: onTapDown,
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: 300,
-        decoration: const BoxDecoration(
-          color: Colors.transparent,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 10,
-              offset: Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Stack(
-          alignment: Alignment.topCenter,
-          children: [
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 320,
-              child: Image.asset(
-                'assets/misc/parteSuperior.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-            Positioned(
-              top: 19,
-              left: 20,
-              right: 20,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeInOut,
-                height: curtainHeight,
-                child: Image.asset(
-                  'assets/misc/persiana.jpg',
-                  fit: BoxFit.cover,
-                  width: double.infinity,
+class AnimatedIconWidgetState extends State<AnimatedIconWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 700),
+      vsync: this,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.isHeating
+        ? AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              double offsetX = 5.0 * (_controller.value - 0.5);
+              double scale = 1.0 + 0.05 * (_controller.value - 0.5);
+
+              return Transform.translate(
+                offset: Offset(offsetX, 0),
+                child: Transform.scale(
+                  scale: scale,
+                  child: Icon(
+                    widget.icon,
+                    size: 85,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+              );
+            },
+          )
+        : Icon(
+            widget.icon,
+            size: 85,
+            color: Colors.white,
+          );
   }
 }
-//*- Diseño de la cortina -*\\
+//*- animacion para los iconos al estar calentando-*\\
+
