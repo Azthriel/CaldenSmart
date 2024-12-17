@@ -11,12 +11,6 @@ import '../aws/dynamo/dynamo_certificates.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../Global/stored_data.dart';
 
-// VARIABLES \\
-
-bool alreadySubTools = false;
-bool trueStatus = false;
-late bool canControlDistance;
-
 // CLASES \\
 
 class MilleniumPage extends StatefulWidget {

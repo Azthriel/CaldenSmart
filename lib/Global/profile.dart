@@ -118,7 +118,7 @@ class ProfilePageState extends State<ProfilePage> {
                                   '¿Está seguro que quiere eliminar la cuenta?',
                                 ),
                                 const Text(
-                                  'Al presionar aceptar será redirigido al formulario de baja de cuenta',
+                                  'Al presionar aceptar su cuenta será eliminada, está acción no puede revertirse',
                                 ),
                                 [
                                   TextButton(
@@ -139,10 +139,13 @@ class ProfilePageState extends State<ProfilePage> {
                                       ),
                                     ),
                                     child: const Text('Aceptar'),
-                                    onPressed: () {
-                                      launchWebURL(
-                                          linksOfApp(app, 'Borrar Cuenta'));
-                                      Navigator.of(context).pop();
+                                    onPressed: () async {
+                                      await Amplify.Auth.deleteUser();
+                                      // launchWebURL(
+                                      //     linksOfApp(app, 'Borrar Cuenta'));
+                                      if (context.mounted) {
+                                        Navigator.of(context).pop();
+                                      }
                                     },
                                   ),
                                 ],
@@ -521,7 +524,11 @@ class ProfilePageState extends State<ProfilePage> {
                   topicsToSub.clear();
                   saveTopicList(topicsToSub);
                   backTimerDS?.cancel();
-                  Amplify.Auth.signOut();
+                  Amplify.Auth.signOut(
+                    // options: const SignOutOptions(
+                    //   globalSignOut: true,
+                    // ),
+                  );
                   // GoogleSignIn().signOut();
                   Navigator.pop(context);
                   asking();

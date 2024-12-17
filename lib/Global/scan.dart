@@ -141,7 +141,8 @@ class ScanPageState extends State<ScanPage>
 
       MyDevice myDevice = MyDevice();
 
-      device.connectionState.listen((BluetoothConnectionState state) {
+      var conenctionSub =
+          device.connectionState.listen((BluetoothConnectionState state) {
         printLog('Estado de conexión: $state');
         switch (state) {
           case BluetoothConnectionState.disconnected:
@@ -192,6 +193,7 @@ class ScanPageState extends State<ScanPage>
             break;
         }
       });
+      device.cancelWhenDisconnected(conenctionSub, delayed: true);
     } catch (e, stackTrace) {
       if (connectionTry < 3) {
         printLog('Retry');

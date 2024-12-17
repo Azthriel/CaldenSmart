@@ -13,14 +13,6 @@ import '../Global/stored_data.dart';
 
 // VARIABLES \\
 
-List<String> tipo = [];
-List<String> estado = [];
-List<bool> alertIO = [];
-List<String> common = [];
-List<String> valores = [];
-late bool tracking;
-late List<bool> _selectedPins;
-
 // FUNCIONES \\
 
 void controlOut(bool value, int index) {
@@ -75,10 +67,11 @@ class DomoticaPageState extends State<DomoticaPage> {
   int _selectedIndex = 0;
   final PageController _pageController = PageController(initialPage: 0);
   final TextEditingController tenantController = TextEditingController();
-
+  late List<bool> _selectedPins;
   @override
   void initState() {
     super.initState();
+    _selectedPins = List<bool>.filled(parts.length, false);
 
     tracking = devicesToTrack.contains(deviceName);
 
@@ -138,7 +131,6 @@ class DomoticaPageState extends State<DomoticaPage> {
 
   Future<void> processSelectedPins() async {
     List<String> pins = await loadPinToTrack(deviceName);
-    _selectedPins = List<bool>.filled(parts.length, false);
 
     setState(() {
       for (int i = 0; i < pins.length; i++) {
@@ -677,10 +669,12 @@ class DomoticaPageState extends State<DomoticaPage> {
                                       hintText:
                                           "Nuevo nombre para ${tipo[index]} $index",
                                       hintStyle: TextStyle(
-                                          color: color0.withOpacity(0.6)),
+                                        color: color0.withOpacity(0.6),
+                                      ),
                                       enabledBorder: UnderlineInputBorder(
                                         borderSide: BorderSide(
-                                            color: color0.withOpacity(0.5)),
+                                          color: color0.withOpacity(0.5),
+                                        ),
                                       ),
                                       focusedBorder: const UnderlineInputBorder(
                                         borderSide: BorderSide(color: color0),
@@ -708,8 +702,10 @@ class DomoticaPageState extends State<DomoticaPage> {
                                         });
                                         Navigator.of(context).pop();
                                       },
-                                      child: const Text('Guardar',
-                                          style: TextStyle(color: color0)),
+                                      child: const Text(
+                                        'Guardar',
+                                        style: TextStyle(color: color0),
+                                      ),
                                     ),
                                   ],
                                 );
@@ -728,7 +724,11 @@ class DomoticaPageState extends State<DomoticaPage> {
                           ),
                         ),
                       ),
-                      const Icon(Icons.edit, size: 22, color: color0),
+                      const Icon(
+                        Icons.edit,
+                        size: 22,
+                        color: color0,
+                      ),
                       const Spacer(),
                       Text(
                         'Tipo: ${tipo[index]}',
@@ -1001,7 +1001,8 @@ class DomoticaPageState extends State<DomoticaPage> {
                                 context,
                                 false,
                                 const Text(
-                                    '¿Seguro que quiere cancelar el control por presencia?'),
+                                  '¿Seguro que quiere cancelar el control por presencia?',
+                                ),
                                 const Text(
                                   'Deshabilitar hará que puedas controlarlo manualmente.\nSi quieres volver a utilizar control por presencia deberás habilitarlo nuevamente',
                                 ),

@@ -13,11 +13,6 @@ import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
 import '../Global/stored_data.dart';
 
-// VARIABLES \\
-late bool tracking;
-bool isNC = false;
-bool isAgreeChecked = false;
-
 // CLASES \\
 
 class RelayPage extends StatefulWidget {

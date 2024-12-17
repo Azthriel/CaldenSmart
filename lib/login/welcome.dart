@@ -1,4 +1,5 @@
 // welcome.dart
+import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:flutter/material.dart';
 import 'package:caldensmart/master.dart';
 import 'sign_in.dart';
@@ -6,6 +7,45 @@ import 'sign_up.dart';
 import 'verification_code.dart';
 import 'forget_password.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
+
+/// Función para iniciar sesión con Google usando AWS Cognito.
+Future<void> signInWithGoogle(BuildContext context) async {
+  try {
+    await Amplify.Auth.signOut(
+      options: const SignOutOptions(
+        globalSignOut: true,
+      ),
+    );
+    printLog('Sesión anterior cerrada.');
+
+    // Abrir sesión en una ventana privada si el navegador o el sistema operativo lo permite
+    final res = await Amplify.Auth.signInWithWebUI(
+      provider: AuthProvider.google,
+      options: const SignInWithWebUIOptions(
+        pluginOptions: CognitoSignInWithWebUIPluginOptions(
+          isPreferPrivateSession: true,
+          browserPackageName: 'com.android.chrome',
+        ),
+      ),
+    );
+
+    if (res.isSignedIn) {
+      printLog('Inicio de sesión con Google exitoso.');
+      showToast('Inicio de sesión exitoso.');
+
+      if (context.mounted) {
+        Navigator.pushReplacementNamed(context, '/menu');
+      }
+    } else {
+      printLog('El inicio de sesión fue cancelado o falló.');
+      showToast('Inicio de sesión cancelado.');
+    }
+  } catch (e, s) {
+    showToast('Error al iniciar sesión con Google.');
+    printLog('Error al iniciar sesión con Google: $e');
+    printLog('Pila de errores: $s');
+  }
+}
 
 ///*- Widget de estado para la página de bienvenida *-\\\
 class WelcomePage extends StatefulWidget {

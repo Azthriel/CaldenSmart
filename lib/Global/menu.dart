@@ -133,10 +133,10 @@ class MenuPageState extends State<MenuPage> {
           shape: const CircleBorder(),
           child: ClipOval(
             child: Image.asset(
-              'assets/branch/dragon.png',
+              'assets/DragonForeground.png',
               fit: BoxFit.contain,
-              height: 40,
-              width: 40,
+              height: 140,
+              width: 140,
             ),
           ),
         ),

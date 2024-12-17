@@ -16,9 +16,8 @@ lib/amplifyconfiguration.dart
 lib/easterEgg
 key.properties
 amplify/
-
-.firebaserc
 firebase.json
+.firebaserc
 firestore.indexes.json
 firestore.rules
 

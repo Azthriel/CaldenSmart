@@ -190,6 +190,7 @@ List<String> devicesToTrack = [];
 Map<String, DateTime> lastSeenDevices = {};
 Map<String, bool> msgFlag = {};
 Timer? bleScanTimer;
+late bool tracking;
 //*-Omnipresencia-*\\
 
 //*-Notificación Desconexión-*\\
@@ -220,6 +221,41 @@ String rollerTPWMTHRS = '';
 String rollerTCOOLTHRS = '';
 String rollerSGTHRS = '';
 //*- Roller -*\\
+
+//*-Detectores-*\\
+List<int> workValues = [];
+int lastCO = 0;
+int lastCH4 = 0;
+int ppmCO = 0;
+int ppmCH4 = 0;
+int picoMaxppmCO = 0;
+int picoMaxppmCH4 = 0;
+int promedioppmCO = 0;
+int promedioppmCH4 = 0;
+int daysToExpire = 0;
+double brightnessLevel = 50.0;
+bool alert = false;
+//*-Detectores-*\\
+
+//*-Calefactores-*\\
+bool alreadySubTools = false;
+bool trueStatus = false;
+late bool nightMode;
+late bool canControlDistance;
+//*-Calefactores-*\\
+
+//*-Domótica-*\\
+List<String> tipo = [];
+List<String> estado = [];
+List<bool> alertIO = [];
+List<String> common = [];
+List<String> valores = [];
+//*-Domótica-*\\
+
+//*-Relé-*\\
+bool isNC = false;
+bool isAgreeChecked = false;
+//*-Relé-*\\
 
 //*-Acceso rápido BLE-*\\
 List<String> quickAccess = [];
@@ -3112,11 +3148,9 @@ class DeviceManager {
 
   ///Devuelve si el equipo esta disponible para Alexa
   static bool isAvailableForAlexa(String name) {
-    final List<String> alexaAvailable = [
-      '022000_IOT',
-      '027000_IOT',
-      '027313_IOT',
-    ];
+    List<dynamic> lista = fbData['Assistant'] ?? [];
+    final List<String> alexaAvailable =
+        lista.map((item) => item.toString()).toList();
     String code = getProductCode(name);
     return alexaAvailable.contains(code);
   }
@@ -3699,9 +3733,9 @@ class CurvedNavigationBarState extends State<CurvedNavigationBar>
                       right: 0,
                       bottom: 0 - (75.0 - widget.height),
                       child: SizedBox(
-                          height: 100.0,
-                          child: Row(
-                              children: widget.items.map((item) {
+                        height: 100.0,
+                        child: Row(
+                          children: widget.items.map((item) {
                             return NavButton(
                               onTap: _buttonTap,
                               position: _pos,
@@ -3709,7 +3743,9 @@ class CurvedNavigationBarState extends State<CurvedNavigationBar>
                               index: widget.items.indexOf(item),
                               child: Center(child: item),
                             );
-                          }).toList())),
+                          }).toList(),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -4221,7 +4257,8 @@ class AccessDeniedScreen extends StatelessWidget {
               backgroundColor: const Color(0xFF252223),
               content: Row(
                 children: [
-                  Image.asset('assets/branch/dragon.gif', width: 100, height: 100),
+                  Image.asset('assets/branch/dragon.gif',
+                      width: 100, height: 100),
                   Container(
                     margin: const EdgeInsets.only(left: 15),
                     child: const Text(
@@ -4397,7 +4434,8 @@ class DeviceInUseScreen extends StatelessWidget {
               backgroundColor: const Color(0xFF252223),
               content: Row(
                 children: [
-                  Image.asset('assets/branch/dragon.gif', width: 100, height: 100),
+                  Image.asset('assets/branch/dragon.gif',
+                      width: 100, height: 100),
                   Container(
                     margin: const EdgeInsets.only(left: 15),
                     child: const Text(
