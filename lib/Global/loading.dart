@@ -45,7 +45,13 @@ class LoadState extends State<LoadingPage> {
             navigatorKey.currentState?.pushReplacementNamed('/detector');
             break;
           case '020010_IOT':
-            navigatorKey.currentState?.pushReplacementNamed('/domotica');
+            hardwareVersion == '240422A'
+                ? navigatorKey.currentState?.pushReplacementNamed('/domotica')
+                : navigatorKey.currentState
+                    ?.pushReplacementNamed('/domotica4i4o');
+            break;
+          case '020020_IOT':
+            navigatorKey.currentState?.pushReplacementNamed('/modulo');
             break;
           case '024011_IOT':
             navigatorKey.currentState?.pushReplacementNamed('/roller');
@@ -228,7 +234,15 @@ class LoadState extends State<LoadingPage> {
           break;
         case '020010_IOT':
           ioValues = await myDevice.ioUuid.read();
-          printLog('Valores IO: $ioValues');
+          printLog('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
+          varsValues = await myDevice.varsUuid.read();
+          printLog('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
+          var parts = utf8.decode(varsValues).split(':');
+          var list = await loadDevicesForDistanceControl();
+          canControlDistance =
+              list.contains(deviceName) ? true : parts[0] == '0';
+          printLog(
+              'Puede utilizar el control por distancia: $canControlDistance');
 
           owner = globalDATA[
                       '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
@@ -274,6 +288,88 @@ class LoadState extends State<LoadingPage> {
           } else {
             activatedAT = false;
             tenant = false;
+          }
+
+          if (canControlDistance) {
+            distOffValue = globalDATA[
+                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                    'distanceOff'] ??
+                100.0;
+            distOnValue = globalDATA[
+                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                    'distanceOn'] ??
+                3000.0;
+            isTaskScheduled = await loadControlValue();
+          }
+          break;
+        case '020020_IOT':
+          ioValues = await myDevice.ioUuid.read();
+          printLog('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
+          varsValues = await myDevice.varsUuid.read();
+          printLog('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
+          var parts = utf8.decode(varsValues).split(':');
+          var list = await loadDevicesForDistanceControl();
+          canControlDistance =
+              list.contains(deviceName) ? true : parts[0] == '0';
+          printLog(
+              'Puede utilizar el control por distancia: $canControlDistance');
+
+          owner = globalDATA[
+                      '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                  'owner'] ??
+              '';
+          printLog('Owner actual: $owner');
+          adminDevices = await getSecondaryAdmins(
+              service,
+              DeviceManager.getProductCode(deviceName),
+              DeviceManager.extractSerialNumber(deviceName));
+          printLog('Administradores: $adminDevices');
+
+          if (owner != '') {
+            if (owner == currentUserEmail) {
+              deviceOwner = true;
+            } else {
+              deviceOwner = false;
+              if (userConnected) {
+              } else {
+                if (adminDevices.contains(currentUserEmail)) {
+                  secondaryAdmin = true;
+                } else {
+                  secondaryAdmin = false;
+                }
+              }
+            }
+          } else {
+            deviceOwner = true;
+          }
+
+          await analizePayment(DeviceManager.getProductCode(deviceName),
+              DeviceManager.extractSerialNumber(deviceName));
+
+          if (payAT) {
+            activatedAT = globalDATA[
+                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                    ?['AT'] ??
+                false;
+            tenant = globalDATA[
+                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                    ?['tenant'] ==
+                currentUserEmail;
+          } else {
+            activatedAT = false;
+            tenant = false;
+          }
+
+          if (canControlDistance) {
+            distOffValue = globalDATA[
+                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                    'distanceOff'] ??
+                100.0;
+            distOnValue = globalDATA[
+                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                    'distanceOn'] ??
+                3000.0;
+            isTaskScheduled = await loadControlValue();
           }
           break;
         case '027313_IOT':
@@ -524,7 +620,10 @@ class LoadState extends State<LoadingPage> {
                     alignment: Alignment.bottomCenter,
                     child: Text(
                       'Versión $appVersionNumber',
-                      style: const TextStyle(color: color3, fontSize: 12),
+                      style: const TextStyle(
+                        color: color1,
+                        fontSize: 12,
+                      ),
                     )),
                 const SizedBox(height: 20),
               ],

@@ -539,7 +539,9 @@ class ScanPageState extends State<ScanPage>
                                                 });
                                               } else {
                                                 printLog(
-                                                    "Fallecio el sexo", "cyan");
+                                                  "Fallecio el sexo",
+                                                  "cyan",
+                                                );
                                                 showToast(
                                                     "Error con el acceso rápido\nIntente nuevamente");
                                               }

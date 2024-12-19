@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
+import 'package:caldensmart/Devices/domotica4i4o.dart';
 import 'package:caldensmart/Devices/millenium.dart';
+import 'package:caldensmart/Devices/modulo.dart';
 import 'package:caldensmart/Devices/relay.dart';
 import 'package:caldensmart/Global/profile.dart';
 import 'package:upgrader/upgrader.dart';
@@ -140,6 +142,8 @@ class MyAppState extends State<MyApp> {
         '/rele': (context) => const RelayPage(),
         '/roller': (context) => const RollerPage(),
         '/millenium': (context) => const MilleniumPage(),
+        '/domotica4i4o': (context) => const Domotica4i4oPage(),
+        '/modulo': (context) => const ModuloPage(),
       },
     );
   }

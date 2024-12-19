@@ -1,4 +1,5 @@
 import 'package:caldensmart/Global/stored_data.dart';
+import 'package:caldensmart/login/welcome.dart';
 import 'package:flutter/material.dart';
 import 'package:caldensmart/master.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -511,27 +512,43 @@ class ProfilePageState extends State<ProfilePage> {
                   side: const BorderSide(color: color3),
                   padding: const EdgeInsets.symmetric(vertical: 15.0),
                 ),
-                onPressed: () {
-                  showToast('Cerrando sesión...');
+                onPressed: () async {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ClosingSessionScreen(),
+                    ),
+                  );
+
+                  await Future.delayed(const Duration(milliseconds: 500));
+
+                  // Proceso de cierre de sesión
                   previusConnections.clear();
                   saveDeviceList(previusConnections);
                   alexaDevices.clear();
                   saveAlexaDevices(alexaDevices);
                   putDevicesForAlexa(service, currentUserEmail, alexaDevices);
+
                   for (int i = 0; i < topicsToSub.length; i++) {
                     unSubToTopicMQTT(topicsToSub[i]);
                   }
+
                   topicsToSub.clear();
                   saveTopicList(topicsToSub);
                   backTimerDS?.cancel();
-                  Amplify.Auth.signOut(
-                    // options: const SignOutOptions(
-                    //   globalSignOut: true,
-                    // ),
-                  );
-                  // GoogleSignIn().signOut();
-                  Navigator.pop(context);
-                  asking();
+
+                  await Amplify.Auth.signOut();
+                  await Future.delayed(const Duration(seconds: 2));
+
+                  if (context.mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const WelcomePage(),
+                      ),
+                      (route) => false,
+                    );
+                  }
                 },
                 child: Text(
                   "Cerrar sesión",

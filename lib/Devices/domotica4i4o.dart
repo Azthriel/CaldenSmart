@@ -1,23 +1,25 @@
 import 'dart:convert';
+
+import 'package:caldensmart/Global/stored_data.dart';
+import 'package:caldensmart/aws/dynamo/dynamo.dart';
+import 'package:caldensmart/aws/dynamo/dynamo_certificates.dart';
+import 'package:caldensmart/aws/mqtt/mqtt.dart';
+import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../aws/dynamo/dynamo.dart';
-import '../aws/dynamo/dynamo_certificates.dart';
-import '../aws/mqtt/mqtt.dart';
-import '../master.dart';
-import '../Global/stored_data.dart';
 
-class DomoticaPage extends StatefulWidget {
-  const DomoticaPage({super.key});
+class Domotica4i4oPage extends StatefulWidget {
+  const Domotica4i4oPage({super.key});
+
   @override
-  DomoticaPageState createState() => DomoticaPageState();
+  Domotica4i4oPageState createState() => Domotica4i4oPageState();
 }
 
-class DomoticaPageState extends State<DomoticaPage> {
+class Domotica4i4oPageState extends State<Domotica4i4oPage> {
   var parts = utf8.decode(ioValues).split('/');
   bool isChangeModeVisible = false;
   bool showOptions = false;
@@ -38,6 +40,8 @@ class DomoticaPageState extends State<DomoticaPage> {
   final PageController _pageController = PageController(initialPage: 0);
   final TextEditingController tenantController = TextEditingController();
   late List<bool> _selectedPins;
+
+
   @override
   void initState() {
     super.initState();
@@ -66,7 +70,7 @@ class DomoticaPageState extends State<DomoticaPage> {
     processValues(ioValues);
     notificationMap.putIfAbsent(
         '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
-        () => List<bool>.filled(4, false));
+        () => List<bool>.filled(8, false));
 
     // WidgetsBinding.instance.addPostFrameCallback((_) async {
     //   if (shouldUpdateDevice) {
@@ -217,27 +221,23 @@ class DomoticaPageState extends State<DomoticaPage> {
     common.clear();
     alertIO.clear();
 
-    for (int i = 0; i < parts.length; i++) {
-      var equipo = parts[i].split(':');
-      tipo.add(equipo[0] == '0' ? 'Salida' : 'Entrada');
-      estado.add(equipo[1]);
-      common.add(equipo[2]);
-      alertIO.add(estado[i] != common[i]);
+    for (int i = 0; i < 4; i++) {
+      tipo.add('Salida');
+      estado.add(parts[i]);
+      common.add('0');
+      alertIO.add(false);
+    }
 
-      printLog(
-          'En la posición $i el modo es ${tipo[i]} y su estado es ${estado[i]}');
+    for (int j = 4; j < 8; j++) {
+      var equipo = parts[j].split(':');
+      tipo.add('Entrada');
+      estado.add(equipo[0]);
+      common.add(equipo[1]);
+      alertIO.add(estado[j] != common[j]);
+
+      printLog('¿La entrada $j esta en alerta?: ${alertIO[j]}');
     }
     setState(() {});
-    for (int i = 0; i < parts.length; i++) {
-      if (tipo[i] == 'Salida') {
-        String dv = '${deviceName}_$i';
-        if (!alexaDevices.contains(dv)) {
-          alexaDevices.add(dv);
-          saveAlexaDevices(alexaDevices);
-          putDevicesForAlexa(service, currentUserEmail, alexaDevices);
-        }
-      }
-    }
   }
 
   void subToIO() async {
@@ -603,133 +603,333 @@ class DomoticaPageState extends State<DomoticaPage> {
       //*- página 1 entradas/salidas -*\\
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        child: ListView.separated(
-          itemCount: tipo.length + 1,
-          separatorBuilder: (context, index) => const SizedBox(height: 20),
-          itemBuilder: (context, index) {
-            if (index == tipo.length) {
-              return Padding(
-                padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
-              );
-            }
-            bool entrada = tipo[index] == 'Entrada';
-            bool isOn = estado[index] == '1';
-            bool isPresenceControlled = _selectedPins[index] && tracking;
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              decoration: BoxDecoration(
-                color: color3,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const SizedBox(width: 6),
-                      GestureDetector(
-                        onTap: () async {
-                          TextEditingController nicknameController =
-                              TextEditingController(
-                            text: subNicknamesMap['$deviceName/-/$index'] ??
-                                '${tipo[index]} $index',
-                          );
-                          showAlertDialog(
-                            context,
-                            false,
-                            Text(
-                              'Editar Nombre',
-                              style: GoogleFonts.poppins(color: color0),
-                            ),
-                            TextField(
-                              controller: nicknameController,
-                              style: const TextStyle(color: color0),
-                              cursorColor: color0,
-                              decoration: InputDecoration(
-                                hintText:
-                                    "Nuevo nombre para ${tipo[index]} $index",
-                                hintStyle: TextStyle(
-                                  color: color0.withOpacity(0.6),
-                                ),
-                                enabledBorder: UnderlineInputBorder(
-                                  borderSide: BorderSide(
-                                    color: color0.withOpacity(0.5),
-                                  ),
-                                ),
-                                focusedBorder: const UnderlineInputBorder(
-                                  borderSide: BorderSide(color: color0),
-                                ),
-                              ),
-                            ),
-                            <Widget>[
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text(
-                                  'Cancelar',
-                                  style: TextStyle(color: color0),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  setState(() {
-                                    String newName = nicknameController.text;
-                                    subNicknamesMap['$deviceName/-/$index'] =
-                                        newName;
-                                    saveSubNicknamesMap(subNicknamesMap);
-                                  });
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text(
-                                  'Guardar',
-                                  style: TextStyle(color: color0),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                        child: SizedBox(
-                          height: 30,
-                          width: 180,
-                          child: ScrollingText(
-                            text: subNicknamesMap['$deviceName/-/$index'] ??
-                                '${tipo[index]} $index',
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const Icon(
-                        Icons.edit,
-                        size: 22,
-                        color: color0,
-                      ),
-                      const Spacer(),
-                      Text(
-                        'Tipo: ${tipo[index]}',
-                        style: const TextStyle(
-                          color: color0,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (int index = 0; index < 4; index++) ...{
+                //     bool entrada = tipo[index] == 'Entrada'
+                // bool isOn = estado[index] == '1'
+                // bool isPresenceControlled = _selectedPins[index] && tracking
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  decoration: BoxDecoration(
+                    color: color3,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  entrada
-                      ? Column(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            onTap: () async {
+                              TextEditingController nicknameController =
+                                  TextEditingController(
+                                text: subNicknamesMap['$deviceName/-/$index'] ??
+                                    '${tipo[index]} $index',
+                              );
+                              showAlertDialog(
+                                context,
+                                false,
+                                Text(
+                                  'Editar Nombre',
+                                  style: GoogleFonts.poppins(color: color0),
+                                ),
+                                TextField(
+                                  controller: nicknameController,
+                                  style: const TextStyle(color: color0),
+                                  cursorColor: color0,
+                                  decoration: InputDecoration(
+                                    hintText:
+                                        "Nuevo nombre para ${tipo[index]} $index",
+                                    hintStyle: TextStyle(
+                                      color: color0.withOpacity(0.6),
+                                    ),
+                                    enabledBorder: UnderlineInputBorder(
+                                      borderSide: BorderSide(
+                                        color: color0.withOpacity(0.5),
+                                      ),
+                                    ),
+                                    focusedBorder: const UnderlineInputBorder(
+                                      borderSide: BorderSide(color: color0),
+                                    ),
+                                  ),
+                                ),
+                                <Widget>[
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: const Text(
+                                      'Cancelar',
+                                      style: TextStyle(color: color0),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        String newName =
+                                            nicknameController.text;
+                                        subNicknamesMap[
+                                            '$deviceName/-/$index'] = newName;
+                                        saveSubNicknamesMap(subNicknamesMap);
+                                      });
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: const Text(
+                                      'Guardar',
+                                      style: TextStyle(color: color0),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                            child: SizedBox(
+                              height: 30,
+                              width: 180,
+                              child: ScrollingText(
+                                text: subNicknamesMap['$deviceName/-/$index'] ??
+                                    '${tipo[index]} $index',
+                                style: GoogleFonts.poppins(
+                                  color: color0,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const Icon(
+                            Icons.edit,
+                            size: 22,
+                            color: color0,
+                          ),
+                          const Spacer(),
+                          Text(
+                            'Tipo: ${tipo[index]}',
+                            style: const TextStyle(
+                              color: color0,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Icon(
+                            (estado[index] == '1')
+                                ? Icons.check_circle
+                                : Icons.cancel,
+                            color: (estado[index] == '1')
+                                ? Colors.green
+                                : Colors.red,
+                            size: 40,
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              (_selectedPins[index] && tracking)
+                                  ? null
+                                  : setState(() {
+                                      controlOut(
+                                          !(estado[index] == '1'), index);
+                                      estado[index] =
+                                          !(estado[index] == '1') ? '1' : '0';
+                                    });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              width: 55,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                color: (_selectedPins[index] && tracking)
+                                    ? Colors.grey
+                                    : (estado[index] == '1')
+                                        ? Colors.greenAccent.shade400
+                                        : Colors.red.shade300,
+                              ),
+                              child: AnimatedAlign(
+                                duration: const Duration(milliseconds: 300),
+                                alignment: (estado[index] == '1')
+                                    ? Alignment.centerRight
+                                    : Alignment.centerLeft,
+                                curve: Curves.easeInOut,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(3.0),
+                                  child: Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      if (_selectedPins[index] && tracking) ...{
+                        Container(
+                          decoration: BoxDecoration(
+                            color: color1,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Desactiva control por presencia para utilizar esta función',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: color3,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      },
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              },
+              for (int index = 4; index < 9; index++) ...{
+                if (index == 8) ...{
+                  Padding(
+                    padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
+                  ),
+                } else ...{
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    decoration: BoxDecoration(
+                      color: color3,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const SizedBox(width: 6),
+                            GestureDetector(
+                              onTap: () async {
+                                TextEditingController nicknameController =
+                                    TextEditingController(
+                                  text:
+                                      subNicknamesMap['$deviceName/-/$index'] ??
+                                          '${tipo[index]} $index',
+                                );
+                                showAlertDialog(
+                                  context,
+                                  false,
+                                  Text(
+                                    'Editar Nombre',
+                                    style: GoogleFonts.poppins(color: color0),
+                                  ),
+                                  TextField(
+                                    controller: nicknameController,
+                                    style: const TextStyle(color: color0),
+                                    cursorColor: color0,
+                                    decoration: InputDecoration(
+                                      hintText:
+                                          "Nuevo nombre para ${tipo[index]} $index",
+                                      hintStyle: TextStyle(
+                                        color: color0.withOpacity(0.6),
+                                      ),
+                                      enabledBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: color0.withOpacity(0.5),
+                                        ),
+                                      ),
+                                      focusedBorder: const UnderlineInputBorder(
+                                        borderSide: BorderSide(color: color0),
+                                      ),
+                                    ),
+                                  ),
+                                  <Widget>[
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: const Text(
+                                        'Cancelar',
+                                        style: TextStyle(color: color0),
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          String newName =
+                                              nicknameController.text;
+                                          subNicknamesMap[
+                                              '$deviceName/-/$index'] = newName;
+                                          saveSubNicknamesMap(subNicknamesMap);
+                                        });
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: const Text(
+                                        'Guardar',
+                                        style: TextStyle(color: color0),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                              child: SizedBox(
+                                height: 30,
+                                width: 180,
+                                child: ScrollingText(
+                                  text:
+                                      subNicknamesMap['$deviceName/-/$index'] ??
+                                          '${tipo[index]} $index',
+                                  style: GoogleFonts.poppins(
+                                    color: color0,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const Icon(
+                              Icons.edit,
+                              size: 22,
+                              color: color0,
+                            ),
+                            const Spacer(),
+                            Text(
+                              'Tipo: ${tipo[index]}',
+                              style: const TextStyle(
+                                color: color0,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Center(
@@ -787,81 +987,14 @@ class DomoticaPageState extends State<DomoticaPage> {
                             ),
                           ],
                         )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Icon(
-                              isOn ? Icons.check_circle : Icons.cancel,
-                              color: isOn ? Colors.green : Colors.red,
-                              size: 40,
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                isPresenceControlled
-                                    ? null
-                                    : setState(() {
-                                        controlOut(!isOn, index);
-                                        estado[index] = !isOn ? '1' : '0';
-                                      });
-                              },
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 300),
-                                width: 55,
-                                height: 30,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
-                                  color: isPresenceControlled
-                                      ? Colors.grey
-                                      : isOn
-                                          ? Colors.greenAccent.shade400
-                                          : Colors.red.shade300,
-                                ),
-                                child: AnimatedAlign(
-                                  duration: const Duration(milliseconds: 300),
-                                  alignment: isOn
-                                      ? Alignment.centerRight
-                                      : Alignment.centerLeft,
-                                  curve: Curves.easeInOut,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(3.0),
-                                    child: Container(
-                                      width: 24,
-                                      height: 24,
-                                      decoration: const BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                  const SizedBox(height: 20),
-                  if (isPresenceControlled) ...{
-                    Container(
-                      decoration: BoxDecoration(
-                        color: color1,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'Desactiva control por presencia para utilizar esta función',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: color3,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
+                      ],
                     ),
-                  },
-                ],
-              ),
-            );
-          },
+                  ),
+                },
+                const SizedBox(height: 20),
+              },
+            ],
+          ),
         ),
       ),
 
@@ -1154,42 +1287,39 @@ class DomoticaPageState extends State<DomoticaPage> {
                   if (isChangeModeVisible && isPasswordCorrect)
                     Column(
                       children: [
-                        for (var i = 0; i < parts.length; i++) ...[
-                          Card(
-                            color: color3,
-                            elevation: 6,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
+                        for (int i = 4; i < 9; i++) ...[
+                          if (i == 8) ...{
+                            Padding(
+                              padding:
+                                  EdgeInsets.only(bottom: bottomBarHeight + 10),
                             ),
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16.0, vertical: 24.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    subNicknamesMap[
-                                            '$deviceName/-/${parts[i]}'] ??
-                                        '${tipo[i]} $i',
-                                    style: GoogleFonts.poppins(
-                                      color: color0,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
+                          } else ...{
+                            Card(
+                              color: color3,
+                              elevation: 6,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0,
+                                  vertical: 24.0,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      subNicknamesMap[
+                                              '$deviceName/-/${parts[i]}'] ??
+                                          '${tipo[i]} $i',
+                                      style: GoogleFonts.poppins(
+                                        color: color0,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    tipo[i] == 'Entrada'
-                                        ? '¿Cambiar de entrada a salida?'
-                                        : '¿Cambiar de salida a entrada?',
-                                    style: GoogleFonts.poppins(
-                                      color: color0,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  if (tipo[i] == 'Entrada')
+                                    const SizedBox(height: 20),
                                     Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
@@ -1209,57 +1339,43 @@ class DomoticaPageState extends State<DomoticaPage> {
                                             fontSize: 14,
                                           ),
                                         ),
-                                        IconButton(
-                                          onPressed: () {
-                                            String data =
-                                                '${DeviceManager.getProductCode(deviceName)}[14]($i#${common[i] == '1' ? '0' : '1'})';
-                                            printLog(data);
-                                            myDevice.toolsUuid
-                                                .write(data.codeUnits);
-                                          },
-                                          icon: const Icon(
-                                            Icons.change_circle_outlined,
-                                            color: color0,
-                                          ),
-                                        ),
                                       ],
                                     ),
-                                  const SizedBox(height: 12),
-                                  Center(
-                                    child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        foregroundColor: color3,
-                                        backgroundColor: color0,
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 24.0, vertical: 12.0),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
+                                    const SizedBox(height: 12),
+                                    Center(
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          foregroundColor: color3,
+                                          backgroundColor: color0,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 24.0,
+                                            vertical: 12.0,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          String data =
+                                              '${DeviceManager.getProductCode(deviceName)}[14]($i#${common[i] == '1' ? '0' : '1'})';
+                                          printLog(data);
+                                          myDevice.toolsUuid
+                                              .write(data.codeUnits);
+                                        },
+                                        child: const Text(
+                                          'CAMBIAR',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
-                                      onPressed: () {
-                                        String fun =
-                                            '${DeviceManager.getProductCode(deviceName)}[13]($i#${tipo[i] == 'Entrada' ? '0' : '1'})';
-                                        printLog(fun);
-                                        myDevice.toolsUuid.write(fun.codeUnits);
-                                      },
-                                      child: const Text(
-                                        'CAMBIAR',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold),
-                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 20),
-                          if (i == parts.length - 1) ...{
-                            Padding(
-                              padding:
-                                  EdgeInsets.only(bottom: bottomBarHeight + 10),
-                            ),
+                            const SizedBox(height: 20),
                           }
                         ],
                       ],

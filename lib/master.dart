@@ -106,7 +106,6 @@ MaterialColor statusColor = Colors.grey;
 MyDevice myDevice = MyDevice();
 List<int> infoValues = [];
 List<int> toolsValues = [];
-List<int> ioValues = [];
 List<int> varsValues = [];
 bool bluetoothOn = true;
 List<String> keywords = [];
@@ -245,11 +244,11 @@ late bool canControlDistance;
 //*-Calefactores-*\\
 
 //*-Domótica-*\\
+List<int> ioValues = [];
 List<String> tipo = [];
 List<String> estado = [];
 List<bool> alertIO = [];
 List<String> common = [];
-List<String> valores = [];
 //*-Domótica-*\\
 
 //*-Relé-*\\
@@ -3264,6 +3263,20 @@ class MyDevice {
               c.uuid ==
               Guid(
                   'ae995fcd-2c7a-4675-84f8-332caf784e9f')); //Ota comandos (Solo notify)
+          varsUuid = service.characteristics.firstWhere(
+              (c) => c.uuid == Guid('52a2f121-a8e3-468c-a5de-45dca9a2a207'));
+          break;
+        case '020020_IOT':
+          BluetoothService service = services.firstWhere(
+              (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
+          ioUuid = service.characteristics.firstWhere(
+              (c) => c.uuid == Guid('03b1c5d9-534a-4980-aed3-f59615205216'));
+          otaUuid = service.characteristics.firstWhere((c) =>
+              c.uuid ==
+              Guid(
+                  'ae995fcd-2c7a-4675-84f8-332caf784e9f')); //Ota comandos (Solo notify)
+          varsUuid = service.characteristics.firstWhere(
+              (c) => c.uuid == Guid('52a2f121-a8e3-468c-a5de-45dca9a2a207'));
           break;
         case '027313_IOT':
           BluetoothService espService = services.firstWhere(
@@ -4668,6 +4681,8 @@ class ImageManager {
         return 'assets/devices/020010.jpg';
       case '050217_IOT':
         return 'assets/devices/050217.png';
+      case '027313_IOT':
+        return 'assets/devices/027313.webp';
       default:
         return 'assets/branch/Logo.png';
     }
@@ -4846,3 +4861,106 @@ class ScrollingTextState extends State<ScrollingText> {
   }
 }
 //*-Desplazamiento de texto horizontal*-\\
+
+//*- Cerrando sesión -*\\
+class ClosingSessionScreen extends StatefulWidget {
+  const ClosingSessionScreen({super.key});
+
+  @override
+  State<ClosingSessionScreen> createState() => ClosingSessionScreenState();
+}
+
+class ClosingSessionScreenState extends State<ClosingSessionScreen> {
+  String _dots = '';
+  int dot = 0;
+  late Timer _dotTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _dotTimer =
+        Timer.periodic(const Duration(milliseconds: 800), (Timer timer) {
+      setState(
+        () {
+          dot++;
+          if (dot >= 4) dot = 0;
+          _dots = '.' * dot;
+        },
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _dotTimer.cancel();
+    super.dispose();
+  }
+
+//!Visual
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: color3,
+      body: Center(
+        child: Stack(
+          alignment: AlignmentDirectional.center,
+          children: <Widget>[
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/branch/dragon.gif',
+                  width: 150,
+                  height: 150,
+                ),
+                const SizedBox(
+                  height: 20,
+                ),
+                RichText(
+                  text: TextSpan(
+                    text: 'Cerrando sesión',
+                    style: const TextStyle(
+                      color: color1,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    children: <TextSpan>[
+                      TextSpan(
+                        text: _dots,
+                        style: const TextStyle(
+                          color: color1,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Text(
+                      'Versión $appVersionNumber',
+                      style: const TextStyle(
+                        color: color0,
+                        fontSize: 12,
+                      ),
+                    )),
+                const SizedBox(
+                  height: 20,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+//*- Cerrando sesión -*\\
