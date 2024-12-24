@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
@@ -6,6 +7,7 @@ import 'package:caldensmart/Devices/millenium.dart';
 import 'package:caldensmart/Devices/modulo.dart';
 import 'package:caldensmart/Devices/relay.dart';
 import 'package:caldensmart/Global/profile.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:upgrader/upgrader.dart';
 import 'Devices/domotica.dart';
 import 'Devices/detectores.dart';
@@ -65,12 +67,22 @@ Future<void> main() async {
     }
   };
 
+  FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
+
   printLog('Todo configurado, iniciando app');
-  runApp(
-    ChangeNotifierProvider(
-      create: (context) => GlobalDataNotifier(),
-      child: const MyApp(),
-    ),
+
+  runZonedGuarded(
+    () {
+      runApp(
+        ChangeNotifierProvider(
+          create: (context) => GlobalDataNotifier(),
+          child: const MyApp(),
+        ),
+      );
+    },
+    FirebaseCrashlytics.instance.recordError,
   );
 }
 

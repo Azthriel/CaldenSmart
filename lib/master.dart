@@ -1753,6 +1753,7 @@ Future<void> handleNotifications(RemoteMessage message) async {
           }
         }
       } else if (product == '020010_IOT') {
+        notificationMap = await loadNotificationMap();
         final now = DateTime.now();
         String entry = subNicknamesMap['$device/-/${message.data['entry']!}'] ??
             'Entrada${message.data['entry']!}';

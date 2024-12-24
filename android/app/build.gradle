@@ -1,7 +1,8 @@
 plugins {
     id "com.android.application"
-    id 'com.google.gms.google-services'
     id "kotlin-android"
+    id "com.google.gms.google-services"
+    id "com.google.firebase.crashlytics"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -32,7 +33,7 @@ if (flutterVersionName == null) {
 android {
     namespace = "com.caldensmart.sime"
     compileSdkVersion 34
-    ndkVersion = "26.1.10909125"
+    ndkVersion = flutter.ndkVersion
 
     compileOptions {
         coreLibraryDesugaringEnabled true
@@ -42,6 +43,22 @@ android {
 
     kotlinOptions {
         jvmTarget = '17'
+    }
+
+    java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
+    kotlin {
+        jvmToolchain {
+            languageVersion.set(JavaLanguageVersion.of(17))
+        }
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
     }
 
     defaultConfig {
@@ -69,9 +86,11 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            debuggable true
             ndk {
                 debugSymbolLevel 'FULL'
+            }
+            firebaseCrashlytics {
+                mappingFileUploadEnabled false
             }
         }
     }
@@ -83,13 +102,10 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.2.2'
-
-    // Añadir las dependencias de androidx.window y androidx.window.sidecar
     implementation 'androidx.window:window:1.0.0'
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-crashlytics")
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-messaging")
 }
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
-}

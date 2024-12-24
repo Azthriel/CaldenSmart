@@ -486,68 +486,79 @@ class ScanPageState extends State<ScanPage>
                                       Positioned(
                                         bottom: 16,
                                         right: 16,
-                                        child: Transform.scale(
-                                          scale: 1.33,
-                                          child: Switch(
-                                            value: globalDATA[
-                                                        '${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
-                                                    ?['w_status'] ??
-                                                false,
-                                            activeColor: color1,
-                                            onChanged: (bool newValue) async {
-                                              quickAction = true;
-                                              setState(() {
-                                                globalDATA[
-                                                        '${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
-                                                    ?['w_status'] = newValue;
-                                              });
-                                              await device.connect(
-                                                timeout:
-                                                    const Duration(seconds: 6),
-                                              );
-                                              if (device.isConnected) {
-                                                printLog(
-                                                    "Arranca por la derecha la maquina del sexo tilin",
-                                                    "cyan");
-                                                MyDevice myDevice = MyDevice();
-                                                myDevice
-                                                    .setup(device)
-                                                    .then((valor) async {
-                                                  printLog('RETORNASHE $valor');
-                                                  connectionTry = 0;
-                                                  if (valor) {
-                                                    printLog(
-                                                        "Tengo sexo en monopatin",
-                                                        "cyan");
-                                                    await controlDeviceBLE(
-                                                        device.platformName,
-                                                        newValue);
-                                                    await myDevice.device
-                                                        .disconnect();
-                                                    quickAction = false;
-                                                    printLog(
-                                                        "¿Se me cayo la pichula? ${device.isDisconnected}",
-                                                        "cyan");
-                                                  } else {
-                                                    printLog(
-                                                        'Fallo en el setup');
-                                                    showToast(
-                                                        "Error con el acceso rápido\nIntente nuevamente");
-                                                    myDevice.device
-                                                        .disconnect();
-                                                  }
-                                                });
-                                              } else {
-                                                printLog(
-                                                  "Fallecio el sexo",
-                                                  "cyan",
-                                                );
-                                                showToast(
-                                                    "Error con el acceso rápido\nIntente nuevamente");
-                                              }
-                                            },
-                                          ),
-                                        ),
+                                        child: quickAction
+                                            ? const CircularProgressIndicator(
+                                                color: color1,
+                                              )
+                                            : Transform.scale(
+                                                scale: 1.33,
+                                                child: Switch(
+                                                  value: globalDATA[
+                                                              '${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
+                                                          ?['w_status'] ??
+                                                      false,
+                                                  activeColor: color1,
+                                                  onChanged:
+                                                      (bool newValue) async {
+                                                    setState(() {
+                                                      quickAction = true;
+                                                      globalDATA[
+                                                              '${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
+                                                          ?[
+                                                          'w_status'] = newValue;
+                                                    });
+                                                    await device.connect(
+                                                      timeout: const Duration(
+                                                          seconds: 6),
+                                                    );
+                                                    if (device.isConnected) {
+                                                      printLog(
+                                                          "Arranca por la derecha la maquina del sexo tilin",
+                                                          "cyan");
+                                                      MyDevice myDevice =
+                                                          MyDevice();
+                                                      myDevice
+                                                          .setup(device)
+                                                          .then((valor) async {
+                                                        printLog(
+                                                            'RETORNASHE $valor');
+                                                        connectionTry = 0;
+                                                        if (valor) {
+                                                          printLog(
+                                                              "Tengo sexo en monopatin",
+                                                              "cyan");
+                                                          await controlDeviceBLE(
+                                                              device
+                                                                  .platformName,
+                                                              newValue);
+                                                          await myDevice.device
+                                                              .disconnect();
+                                                          setState(() {
+                                                            quickAction = false;
+                                                          });
+                                                          printLog(
+                                                              "¿Se me cayo la pichula? ${device.isDisconnected}",
+                                                              "cyan");
+                                                        } else {
+                                                          printLog(
+                                                              'Fallo en el setup');
+                                                          showToast(
+                                                              "Error con el acceso rápido\nIntente nuevamente");
+                                                          myDevice.device
+                                                              .disconnect();
+                                                        }
+                                                      });
+                                                    } else {
+                                                      printLog(
+                                                        "Fallecio el sexo",
+                                                        "cyan",
+                                                      );
+                                                      showToast(
+                                                          "Error con el acceso rápido\nIntente nuevamente");
+                                                    }
+                                                  },
+                                                ),
+                                              ),
                                       ),
                                     ],
                                   ],

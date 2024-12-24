@@ -318,15 +318,23 @@ class RollerPageState extends State<RollerPage> {
               ),
               const SizedBox(height: 20),
 
-              CurtainAnimation(
+              //TODO Riel center
+              CurtainAnimationRielCenter(
                 position: actualPosition,
                 onTapDown: (details) {
                   RenderBox box = context.findRenderObject() as RenderBox;
                   Offset localPosition =
                       box.globalToLocal(details.globalPosition);
-                  double relativeHeight = (localPosition.dy - 200) / 250;
+
+                  double containerWidth =
+                      MediaQuery.of(context).size.width * 0.8;
+                  double centerX = containerWidth / 2;
+                  double distanceFromCenter = (localPosition.dx - 50) - centerX;
+
+                  double relativePosition =
+                      1.0 - (distanceFromCenter.abs() / centerX);
                   int newPosition =
-                      (relativeHeight * 100).clamp(0, 100).round();
+                      (relativePosition * 100).clamp(0, 100).round();
 
                   setState(() {
                     workingPosition = newPosition;
@@ -334,8 +342,60 @@ class RollerPageState extends State<RollerPage> {
                   });
                 },
               ),
-              const SizedBox(height: 20),
 
+              //TODO riel de izquierda a derecha
+              // CurtainAnimationRielLeft(
+              //   position: actualPosition,
+              //   onTapDown: (details) {
+              //     RenderBox box = context.findRenderObject() as RenderBox;
+              //     Offset localPosition =
+              //         box.globalToLocal(details.globalPosition);
+              //     double relativeWidth = (localPosition.dx - 50) /
+              //         (MediaQuery.of(context).size.width * 0.8);
+              //     int newPosition = (relativeWidth * 100).clamp(0, 100).round();
+
+              //     setState(() {
+              //       workingPosition = newPosition;
+              //       setDistance(newPosition);
+              //     });
+              //   },
+              // ),
+
+              //TODO riel de derecha a izquierda
+              //       CurtainAnimationRielRight(
+              //   position: actualPosition,
+              //   onTapDown: (details) {
+              //     RenderBox box = context.findRenderObject() as RenderBox;
+              //     Offset localPosition = box.globalToLocal(details.globalPosition);
+              //     double relativeWidth = 1.0 - ((localPosition.dx - 50) / (MediaQuery.of(context).size.width * 0.8));
+              //     int newPosition = (relativeWidth * 100).clamp(0, 100).round();
+
+              //     setState(() {
+              //       workingPosition = newPosition;
+              //       setDistance(newPosition);
+              //     });
+              //   },
+              // ),
+
+              //TODO Roll
+              // CurtainAnimation(
+              //   position: actualPosition,
+              //   onTapDown: (details) {
+              //     RenderBox box = context.findRenderObject() as RenderBox;
+              //     Offset localPosition =
+              //         box.globalToLocal(details.globalPosition);
+              //     double relativeHeight = (localPosition.dy - 200) / 250;
+              //     int newPosition =
+              //         (relativeHeight * 100).clamp(0, 100).round();
+
+              //     setState(() {
+              //       workingPosition = newPosition;
+              //       setDistance(newPosition);
+              //     });
+              //   },
+              // ),
+
+              const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -460,721 +520,322 @@ class RollerPageState extends State<RollerPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  setRollerConfig(0);
-                  setState(() {
-                    workingPosition = 0;
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: color0,
-                  backgroundColor: color3,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30.0),
-                  ),
-                  elevation: 5,
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(width: 8),
-                    Text(
-                      'Guardar inicio',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              //TODO: guardar fin
-              ElevatedButton(
-                onPressed: () {
-                  setRollerConfig(0);
-                  setState(() {
-                    workingPosition = 100;
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: color0,
-                  backgroundColor: color3,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30.0),
-                  ),
-                  elevation: 5,
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(width: 8),
-                    Text(
-                      'Guardar fin',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
       ),
 
-      //*- Página 2 -*\\
+      //*- Página 2: Configuración de parametros-*\\
       SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              Row(
-                children: [
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Column(
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15.0),
+                ),
+                color: color3,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Largo del Roller:',
-                        style: TextStyle(
-                            fontSize: 20.0,
-                            color: Color(0xfffbe4d8),
-                            fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            rollerlength,
-                            style: const TextStyle(
-                                fontSize: 25.0,
-                                color: Color(0xFFdfb6b2),
-                                fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(
-                            width: 5,
-                          ),
                           const Text(
-                            'mm',
+                            'Largo del Roller',
                             style: TextStyle(
-                                fontSize: 20.0,
-                                color: Color(0xfffbe4d8),
-                                fontWeight: FontWeight.normal),
+                              fontSize: 18.0,
+                              color: color0,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Text(
+                                rollerlength,
+                                style: const TextStyle(
+                                  fontSize: 28.0,
+                                  color: color0,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              const Text(
+                                'mm',
+                                style: TextStyle(
+                                  fontSize: 16.0,
+                                  color: color0,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
-                      )
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  backgroundColor: color3,
+                                  title: const Text('Modificar largo (mm)',
+                                      style: TextStyle(color: color0)),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      TextField(
+                                        controller: rLargeController,
+                                        keyboardType: TextInputType.number,
+                                        decoration: const InputDecoration(
+                                            label: Text(
+                                          'Ingresar tamaño:',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.normal,
+                                              color: color0),
+                                        )),
+                                        onSubmitted: (value) {
+                                          int? valor = int.tryParse(
+                                              rLargeController.text);
+                                          if (valor != null) {
+                                            setRange(valor);
+                                            setState(() {
+                                              rollerlength = value;
+                                            });
+                                          } else {
+                                            showToast('Valor no permitido');
+                                          }
+                                          rLargeController.clear();
+                                          navigatorKey.currentState?.pop();
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                        onPressed: () {
+                                          int? valor = int.tryParse(
+                                              rLargeController.text);
+                                          if (valor != null) {
+                                            setRange(valor);
+                                            setState(() {
+                                              rollerlength =
+                                                  rLargeController.text;
+                                            });
+                                          } else {
+                                            showToast('Valor no permitido');
+                                          }
+                                          rLargeController.clear();
+                                          navigatorKey.currentState?.pop();
+                                        },
+                                        child: const Text(
+                                          'Modificar',
+                                          style: TextStyle(color: color0),
+                                        ))
+                                  ],
+                                );
+                              });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: color6,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text('Modificar',
+                            style: TextStyle(color: color0)),
+                      ),
                     ],
                   ),
-                  const Spacer(),
-                  ElevatedButton(
-                      onPressed: () {
-                        showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: const Text('Modificar largo (mm)'),
-                                content: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    TextField(
-                                      controller: rLargeController,
-                                      keyboardType: TextInputType.number,
-                                      decoration: const InputDecoration(
-                                          label: Text(
-                                        'Ingresar tamaño:',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.normal),
-                                      )),
-                                      onSubmitted: (value) {
-                                        int? valor =
-                                            int.tryParse(rLargeController.text);
-                                        if (valor != null) {
-                                          setRange(valor);
-                                          setState(() {
-                                            rollerlength = value;
-                                          });
-                                        } else {
-                                          showToast('Valor no permitido');
-                                        }
-                                        rLargeController.clear();
-                                        navigatorKey.currentState?.pop();
-                                      },
-                                    ),
-                                  ],
-                                ),
-                                actions: [
-                                  TextButton(
-                                      onPressed: () {
-                                        int? valor =
-                                            int.tryParse(rLargeController.text);
-                                        if (valor != null) {
-                                          setRange(valor);
-                                          setState(() {
-                                            rollerlength =
-                                                rLargeController.text;
-                                          });
-                                        } else {
-                                          showToast('Valor no permitido');
-                                        }
-                                        rLargeController.clear();
-                                        navigatorKey.currentState?.pop();
-                                      },
-                                      child: const Text('Modificar'))
-                                ],
-                              );
-                            });
-                      },
-                      child: const Text('Modificar')),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Row(
-                children: [
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  const Text(
-                    'Polaridad del Roller:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    rollerPolarity,
-                    style: const TextStyle(
-                        fontSize: 25.0,
-                        color: Color(0xFFdfb6b2),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const Spacer(),
-                  ElevatedButton(
-                      onPressed: () {
-                        setRollerConfig(1);
-                        rollerPolarity == '0'
-                            ? rollerPolarity = '1'
-                            : rollerPolarity = '0';
-                        context.mounted ? setState(() {}) : null;
-                      },
-                      child: const Text('Inver')),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  const Text(
-                    'RPM del motor:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    rollerRPM,
-                    style: const TextStyle(
-                      fontSize: 25.0,
-                      color: Color(0xFFdfb6b2),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  SizedBox(
-                    width: 300,
-                    child: SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 20.0,
-                        thumbColor: const Color(0xfffbe4d8),
-                        thumbShape: const IconThumbSlider(
-                          iconData: Icons.speed,
-                          thumbRadius: 20,
-                        ),
-                      ),
-                      child: Slider(
-                        min: 0,
-                        max: 400,
-                        value: double.parse(rollerRPM),
-                        onChanged: (value) {
-                          setState(() {
-                            rollerRPM = value.round().toString();
-                          });
-                        },
-                        onChangeEnd: (value) {
-                          setMotorSpeed(value.round().toString());
-                        },
-                      ),
-                    ),
-                  )
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Row(
-                children: [
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  const Text(
-                    'MicroSteps del roller:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    rollerMicroStep,
-                    style: const TextStyle(
-                        fontSize: 25.0,
-                        color: Color(0xFFdfb6b2),
-                        fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              SizedBox(
-                width: 300,
-                child: DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: 'Nuevo valor de microStep:',
-                    labelStyle: TextStyle(
-                      color: Color(0xfffbe4d8),
-                    ),
-                    hintStyle: TextStyle(
-                      color: Color(0xfffbe4d8),
-                    ),
-                    // fillColor: Color(0xfffbe4d8),
-                  ),
-                  dropdownColor: const Color(0xff190019),
-                  items: <String>[
-                    '256',
-                    '128',
-                    '64',
-                    '32',
-                    '16',
-                    '8',
-                    '4',
-                    '2',
-                    '0',
-                  ].map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(
-                        value,
-                        style: const TextStyle(
-                          color: Color(0xfffbe4d8),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setMicroStep(value);
-                      setState(() {
-                        rollerMicroStep = value.toString();
-                      });
-                    }
-                  },
                 ),
               ),
-              const SizedBox(
-                height: 10,
+              const SizedBox(height: 20),
+
+              // Polaridad del Roller Section
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15.0),
+                ),
+                color: color3,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Polaridad del Roller',
+                            style: TextStyle(
+                              fontSize: 18.0,
+                              color: color0,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            rollerPolarity,
+                            style: const TextStyle(
+                              fontSize: 28.0,
+                              color: color0,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          setRollerConfig(1);
+                          rollerPolarity == '0'
+                              ? rollerPolarity = '1'
+                              : rollerPolarity = '0';
+                          context.mounted ? setState(() {}) : null;
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: color6,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text('Invertir',
+                            style: TextStyle(color: color0)),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  const Text(
-                    'Run current:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    '${((int.parse(rollerIRMSRUN) * 2100) / 31).round()} mA',
-                    style: const TextStyle(
-                      fontSize: 25.0,
-                      color: Color(0xFFdfb6b2),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  SizedBox(
-                    width: 300,
-                    child: SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 20.0,
-                        thumbColor: const Color(0xfffbe4d8),
-                        thumbShape: const IconThumbSlider(
-                          iconData: Icons.electric_bolt,
-                          thumbRadius: 20,
+              const SizedBox(height: 20),
+
+              // Velocidad del Motor Section
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15.0),
+                ),
+                color: color3,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Velocidad del Motor',
+                        style: TextStyle(
+                          fontSize: 18.0,
+                          color: color0,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      child: Slider(
-                        min: 0,
-                        max: 31,
-                        value: double.parse(rollerIRMSRUN),
-                        onChanged: (value) {
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () {
+                              //TODO Configurar velocidad
+                              rollerRPM = '100';
+                              setMotorSpeed('100');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            child: const Text('Bajo',
+                                style: TextStyle(color: color0)),
+                          ),
+                          const SizedBox(width: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              //TODO Configurar velocidad
+                              rollerRPM = '100';
+                              setMotorSpeed('100');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            child: const Text('Medio',
+                                style: TextStyle(color: color0)),
+                          ),
+                          const SizedBox(width: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              //TODO Configurar velocidad
+                              rollerRPM = '100';
+                              setMotorSpeed('100');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: color5,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            child: const Text('Alto',
+                                style: TextStyle(color: color0)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Configuración del Roller Section
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15.0),
+                ),
+                color: color3,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          setRollerConfig(0);
                           setState(() {
-                            rollerIRMSRUN = value.round().toString();
+                            workingPosition = 0;
                           });
                         },
-                        onChangeEnd: (value) {
-                          setMotorCurrent(true, value.round().toString());
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  const Text(
-                    'Hold current:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    '${((int.parse(rollerIRMSHOLD) * 2100) / 31).round()} mA',
-                    style: const TextStyle(
-                      fontSize: 25.0,
-                      color: Color(0xFFdfb6b2),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  SizedBox(
-                    width: 300,
-                    child: SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 20.0,
-                        thumbColor: const Color(0xfffbe4d8),
-                        thumbShape: const IconThumbSlider(
-                          iconData: Icons.electric_bolt,
-                          thumbRadius: 20,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: color6,
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text(
+                          'Guardar inicio',
+                          style: TextStyle(fontSize: 16, color: color0),
                         ),
                       ),
-                      child: Slider(
-                        min: 0,
-                        max: 31,
-                        value: double.parse(rollerIRMSHOLD),
-                        onChanged: (value) {
-                          setState(() {
-                            rollerIRMSHOLD = value.round().toString();
-                          });
+                      const SizedBox(height: 10),
+                      ElevatedButton(
+                        onPressed: () {
+                          //TODO Guardar fin logica
                         },
-                        onChangeEnd: (value) {
-                          setMotorCurrent(false, value.round().toString());
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  const Text(
-                    'Threshold PWM:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    rollerTPWMTHRS,
-                    style: const TextStyle(
-                      fontSize: 25.0,
-                      color: Color(0xFFdfb6b2),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  SizedBox(
-                    width: 300,
-                    child: TextField(
-                      style: const TextStyle(color: Color(0xFFdfb6b2)),
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Modificar:',
-                        labelStyle: TextStyle(
-                            color: Color(0xFFdfb6b2),
-                            fontWeight: FontWeight.bold),
-                      ),
-                      onSubmitted: (value) {
-                        if (int.parse(value) < 1048575 &&
-                            int.parse(value) > 0) {
-                          printLog('Añaseo $value');
-                          setTPWMTHRS(value);
-                        } else {
-                          showToast(
-                              'El valor no esta en el rango\n0 - 1048575');
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  const Text(
-                    'Threshold COOL:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    rollerTCOOLTHRS,
-                    style: const TextStyle(
-                      fontSize: 25.0,
-                      color: Color(0xFFdfb6b2),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  SizedBox(
-                    width: 300,
-                    child: TextField(
-                      style: const TextStyle(color: Color(0xFFdfb6b2)),
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Modificar:',
-                        labelStyle: TextStyle(
-                            color: Color(0xFFdfb6b2),
-                            fontWeight: FontWeight.bold),
-                      ),
-                      onSubmitted: (value) {
-                        if (int.parse(value) < 1048575 &&
-                            int.parse(value) > 1) {
-                          setTCOOLTHRS(value);
-                        } else {
-                          showToast(
-                              'El valor no esta en el rango\n1 - 1048575');
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  const Text(
-                    'SG Threshold:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    rollerSGTHRS,
-                    style: const TextStyle(
-                      fontSize: 25.0,
-                      color: Color(0xFFdfb6b2),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  SizedBox(
-                    width: 300,
-                    child: SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 20.0,
-                        thumbColor: const Color(0xfffbe4d8),
-                        thumbShape: const IconThumbSlider(
-                          iconData: Icons.catching_pokemon,
-                          thumbRadius: 20,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: color6,
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text(
+                          'Guardar fin',
+                          style: TextStyle(fontSize: 16, color: color0),
                         ),
                       ),
-                      child: Slider(
-                        min: 0,
-                        max: 255,
-                        value: double.parse(rollerSGTHRS),
-                        onChanged: (value) {
-                          setState(() {
-                            rollerSGTHRS = value.round().toString();
-                          });
-                        },
-                        onChangeEnd: (value) {
-                          setSGTHRS(value.round().toString());
-                        },
-                      ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  const Text(
-                    'Free Wheeling:',
-                    style: TextStyle(
-                        fontSize: 20.0,
-                        color: Color(0xfffbe4d8),
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  SizedBox(
-                    width: 300,
-                    child: Switch(
-                      activeColor: const Color(0xfffbe4d8),
-                      activeTrackColor: const Color(0xff854f6c),
-                      inactiveThumbColor: const Color(0xff854f6c),
-                      inactiveTrackColor: const Color(0xfffbe4d8),
-                      value: rollerFreewheeling,
-                      onChanged: (value) {
-                        setFreeWheeling(value);
-                        setState(() {
-                          rollerFreewheeling = value;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(),
-              const SizedBox(
-                height: 10,
+                ),
               ),
             ],
           ),
@@ -2269,7 +1930,8 @@ class RollerPageState extends State<RollerPage> {
               backgroundColor: const Color(0xFF252223),
               content: Row(
                 children: [
-                  Image.asset('assets/branch/dragon.gif', width: 100, height: 100),
+                  Image.asset('assets/branch/dragon.gif',
+                      width: 100, height: 100),
                   Container(
                     margin: const EdgeInsets.only(left: 15),
                     child: const Text(
@@ -2456,7 +2118,7 @@ class RollerPageState extends State<RollerPage> {
   }
 }
 
-//*- Diseño de la cortina -*\\
+//*- Diseño de la cortina Roller-*\\
 class CurtainAnimation extends StatelessWidget {
   final int position;
   final Function(TapDownDetails) onTapDown;
@@ -2520,4 +2182,225 @@ class CurtainAnimation extends StatelessWidget {
     );
   }
 }
-//*- Diseño de la cortina -*\\
+//*- Diseño de la cortina Roller-*\\
+
+//*- Diseño de la cortina Riel Left -*\\
+class CurtainAnimationRielLeft extends StatelessWidget {
+  final int position;
+  final Function(TapDownDetails) onTapDown;
+
+  const CurtainAnimationRielLeft({
+    super.key,
+    required this.position,
+    required this.onTapDown,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    double curtainWidth =
+        (position / 100) * MediaQuery.of(context).size.width * 0.8;
+
+    return GestureDetector(
+      onTapDown: onTapDown,
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.8,
+        height: 300,
+        decoration: const BoxDecoration(
+          color: Colors.transparent,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 10,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.centerLeft,
+          children: [
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 30,
+              child: Image.asset(
+                'assets/misc/barrielRiel.png',
+                fit: BoxFit.cover,
+              ),
+            ),
+            Positioned(
+              top: 13,
+              left: 10,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+                width: curtainWidth,
+                height: 270,
+                child: Image.asset(
+                  'assets/misc/cortinaRiel.jpg',
+                  fit: BoxFit.cover,
+                  height: double.infinity,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+//*- Diseño de la cortina Riel Left -*\\
+
+//*- Diseño de la cortina Riel Right -*\\
+class CurtainAnimationRielRight extends StatelessWidget {
+  final int position;
+  final Function(TapDownDetails) onTapDown;
+
+  const CurtainAnimationRielRight({
+    super.key,
+    required this.position,
+    required this.onTapDown,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    double curtainWidth =
+        (position / 100) * MediaQuery.of(context).size.width * 0.8;
+
+    return GestureDetector(
+      onTapDown: onTapDown,
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.8,
+        height: 300,
+        decoration: const BoxDecoration(
+          color: Colors.transparent,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 10,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.centerRight,
+          children: [
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 30,
+              child: Image.asset(
+                'assets/misc/barrielRiel.png',
+                fit: BoxFit.cover,
+              ),
+            ),
+            Positioned(
+              top: 13,
+              right: 10,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+                width: curtainWidth,
+                height: 270,
+                child: Image.asset(
+                  'assets/misc/cortinaRiel.jpg',
+                  fit: BoxFit.cover,
+                  height: double.infinity,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+//*- Diseño de la cortina Riel Right -*\\
+
+//*- Diseño de la cortina Riel Center -*\\
+class CurtainAnimationRielCenter extends StatelessWidget {
+  final int position;
+  final Function(TapDownDetails) onTapDown;
+
+  const CurtainAnimationRielCenter({
+    super.key,
+    required this.position,
+    required this.onTapDown,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    double curtainWidth = (position / 100) *
+        MediaQuery.of(context).size.width *
+        0.4; // Cada lado ocupa un 40% del ancho
+
+    return GestureDetector(
+      onTapDown: onTapDown,
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.8,
+        height: 300,
+        decoration: const BoxDecoration(
+          color: Colors.transparent,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 10,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 30,
+              child: Image.asset(
+                'assets/misc/barrielRiel.png',
+                fit: BoxFit.cover,
+              ),
+            ),
+            // Cortina izquierda
+            Positioned(
+              top: 13,
+              left: 10,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+                width: curtainWidth,
+                height: 270,
+                child: Image.asset(
+                  'assets/misc/cortinaRiel.jpg',
+                  fit: BoxFit.cover,
+                  height: double.infinity,
+                ),
+              ),
+            ),
+            // Cortina derecha
+            Positioned(
+              top: 13,
+              right: 10,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+                width: curtainWidth,
+                height: 270,
+                child: Image.asset(
+                  'assets/misc/cortinaRiel.jpg',
+                  fit: BoxFit.cover,
+                  height: double.infinity,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+//*- Diseño de la cortina Riel Center -*\\
+

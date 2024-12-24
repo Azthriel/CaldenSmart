@@ -1,7 +1,7 @@
 name: caldensmart
 description: "Caldén Smart"
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
-version: 1.0.12+11
+version: 1.0.15+14
 
 environment:
   sdk: ^3.5.1
@@ -36,6 +36,7 @@ dependencies:
   image_picker: ^1.1.2
   upgrader: ^11.3.0
   cloud_firestore: ^4.17.5
+  firebase_crashlytics: ^3.5.7
 
 dev_dependencies:
   flutter_test:
@@ -83,3 +84,5 @@ flutter:
     - assets/branch/Logo_sitio.png
     - assets/misc/parteSuperior.png
     - assets/misc/persiana.jpg
+    - assets/misc/millenium.png
+    - assets/misc/millenium.gif

@@ -4,14 +4,12 @@ import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.content.Intent
 import android.location.LocationManager
-import android.os.PowerManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "com.caldensmart.sime/native"
-    private var wakeLock: PowerManager.WakeLock? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -45,35 +43,9 @@ class MainActivity: FlutterActivity() {
                         result.success(false)
                     }
                 }
-                "enableWakeLock" -> {
-                    enableWakeLock()
-                    result.success(null)
-                }
-                "disableWakeLock" -> {
-                    disableWakeLock()
-                    result.success(null)
-                }
                 else -> {
                     result.notImplemented()
                 }
-            }
-        }
-    }
-
-    private fun enableWakeLock() {
-        if (wakeLock == null) {
-            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "com.caldensmart::WakelockTag")
-        }
-        if (wakeLock?.isHeld == false) {
-            wakeLock?.acquire()
-        }
-    }
-
-    private fun disableWakeLock() {
-        wakeLock?.let {
-            if (it.isHeld) {
-                it.release()
             }
         }
     }

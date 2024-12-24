@@ -625,7 +625,9 @@ class LoadState extends State<LoadingPage> {
                         fontSize: 12,
                       ),
                     )),
-                const SizedBox(height: 20),
+                const SizedBox(
+                  height: 20,
+                ),
               ],
             ),
           ],

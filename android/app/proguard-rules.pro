@@ -1,6 +1,7 @@
 # Reglas para conservar las clases de androidx.window
 -keep class androidx.window.** { *; }
 -keep class androidx.window.sidecar.** { *; }
+
 # Reglas para suprimir advertencias relacionadas con androidx.window y androidx.window.sidecar
 -dontwarn androidx.window.extensions.WindowExtensions
 -dontwarn androidx.window.extensions.WindowExtensionsProvider
