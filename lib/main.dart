@@ -31,26 +31,33 @@ import 'Global/stored_data.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    printLog("Iniciando Firebase", "Cyan");
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    printLog("Firebase inicializado", "Cyan");
+  } catch (e) {
+    printLog("Error al configurar Firebase: $e");
+  }
+
+  try {
+    printLog("Añadiendo plugin de Amplify", "Cyan");
+    await Amplify.addPlugin(
+      AmplifyAuthCognito(),
+    );
+    printLog("Configurando Amplify", "Cyan");
+    await Amplify.configure(amplifyconfig);
+    printLog("Amplify configurado", "Cyan");
+  } catch (e) {
+    printLog("Error al configurar Amplify: $e");
+  }
+
   //! IOS O ANDROID !\\
   android = Platform.isAndroid;
   //! IOS O ANDROID !\\
   appVersionNumber = Upgrader().currentInstalledVersion ?? '4.0.4';
-
-  try {
-    if (Firebase.apps.isEmpty) {
-      printLog("Skibidi toilet", "Cyan");
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    }
-  } catch (e) {
-    printLog("Firebase ya está inicializado: $e");
-  }
-
-  await Amplify.addPlugin(
-    AmplifyAuthCognito(),
-  );
-  await Amplify.configure(amplifyconfig);
 
   appName = nameOfApp(app);
 
@@ -60,29 +67,17 @@ Future<void> main() async {
 
   FirebaseMessaging.onMessage.listen(handleNotifications);
 
-  FlutterError.onError = (FlutterErrorDetails details) async {
-    String errorReport = generateErrorReport(details);
-    if (xDebugMode) {
-      sendReportError(errorReport);
-    }
-  };
-
   FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
 
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
 
   printLog('Todo configurado, iniciando app');
 
-  runZonedGuarded(
-    () {
-      runApp(
-        ChangeNotifierProvider(
-          create: (context) => GlobalDataNotifier(),
-          child: const MyApp(),
-        ),
-      );
-    },
-    FirebaseCrashlytics.instance.recordError,
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => GlobalDataNotifier(),
+      child: const MyApp(),
+    ),
   );
 }
 

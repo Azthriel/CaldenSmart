@@ -260,7 +260,7 @@ class DomoticaPageState extends State<DomoticaPage> {
       context: context,
       barrierDismissible: false, // Cambiado de true a false
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: Colors.black.withOpacity(0.5),
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (BuildContext context, Animation<double> animation,
           Animation<double> secondaryAnimation) {
@@ -278,7 +278,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                     decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.5),
+                          color: Colors.black.withValues(alpha: 0.5),
                           spreadRadius: 1,
                           blurRadius: 20,
                           offset: const Offset(0, 4),
@@ -396,7 +396,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                             child: Material(
                               elevation: 10,
                               shape: const CircleBorder(),
-                              shadowColor: Colors.black.withOpacity(0.4),
+                              shadowColor: Colors.black.withValues(alpha: 0.4),
                               child: CircleAvatar(
                                 radius: 50,
                                 backgroundColor: color3,
@@ -622,7 +622,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -657,11 +657,11 @@ class DomoticaPageState extends State<DomoticaPage> {
                                 hintText:
                                     "Nuevo nombre para ${tipo[index]} $index",
                                 hintStyle: TextStyle(
-                                  color: color0.withOpacity(0.6),
+                                  color: color0.withValues(alpha: 0.6),
                                 ),
                                 enabledBorder: UnderlineInputBorder(
                                   borderSide: BorderSide(
-                                    color: color0.withOpacity(0.5),
+                                    color: color0.withValues(alpha: 0.5),
                                   ),
                                 ),
                                 focusedBorder: const UnderlineInputBorder(
@@ -1032,7 +1032,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           ),
           if (!deviceOwner && owner != '')
             Container(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               child: const Center(
                 child: Text(
                   'No tienes acceso a esta función',
@@ -1115,14 +1115,14 @@ class DomoticaPageState extends State<DomoticaPage> {
                             decoration: InputDecoration(
                               prefixIcon: Icon(
                                 Icons.key,
-                                color: color0.withOpacity(0.7),
+                                color: color0.withValues(alpha: 0.7),
                               ),
                               hintText: "Contraseña",
-                              hintStyle:
-                                  TextStyle(color: color0.withOpacity(0.6)),
+                              hintStyle: TextStyle(
+                                  color: color0.withValues(alpha: 0.6)),
                               enabledBorder: UnderlineInputBorder(
-                                borderSide:
-                                    BorderSide(color: color0.withOpacity(0.5)),
+                                borderSide: BorderSide(
+                                    color: color0.withValues(alpha: 0.5)),
                               ),
                               focusedBorder: const UnderlineInputBorder(
                                 borderSide: BorderSide(color: color0),
@@ -1270,7 +1270,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           ),
           if (!deviceOwner && owner != '')
             Container(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               child: const Center(
                 child: Text(
                   'No tienes acceso a esta función',
@@ -1911,8 +1911,8 @@ class DomoticaPageState extends State<DomoticaPage> {
                                                   max: 300,
                                                   divisions: 200,
                                                   activeColor: color0,
-                                                  inactiveColor:
-                                                      color0.withOpacity(0.3),
+                                                  inactiveColor: color0
+                                                      .withValues(alpha: 0.3),
                                                   onChanged: (double value) {
                                                     setState(() {
                                                       distOffValue = value;
@@ -1932,8 +1932,8 @@ class DomoticaPageState extends State<DomoticaPage> {
                                                   max: 5000,
                                                   divisions: 200,
                                                   activeColor: color0,
-                                                  inactiveColor:
-                                                      color0.withOpacity(0.3),
+                                                  inactiveColor: color0
+                                                      .withValues(alpha: 0.3),
                                                   onChanged: (double value) {
                                                     setState(() {
                                                       distOnValue = value;

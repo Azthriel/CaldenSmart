@@ -41,7 +41,6 @@ class Domotica4i4oPageState extends State<Domotica4i4oPage> {
   final TextEditingController tenantController = TextEditingController();
   late List<bool> _selectedPins;
 
-
   @override
   void initState() {
     super.initState();
@@ -260,7 +259,7 @@ class Domotica4i4oPageState extends State<Domotica4i4oPage> {
       context: context,
       barrierDismissible: false, // Cambiado de true a false
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: Colors.black.withOpacity(0.5),
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (BuildContext context, Animation<double> animation,
           Animation<double> secondaryAnimation) {
@@ -278,7 +277,7 @@ class Domotica4i4oPageState extends State<Domotica4i4oPage> {
                     decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.5),
+                          color: Colors.black.withValues(alpha: 0.5),
                           spreadRadius: 1,
                           blurRadius: 20,
                           offset: const Offset(0, 4),
@@ -396,7 +395,7 @@ class Domotica4i4oPageState extends State<Domotica4i4oPage> {
                             child: Material(
                               elevation: 10,
                               shape: const CircleBorder(),
-                              shadowColor: Colors.black.withOpacity(0.4),
+                              shadowColor: Colors.black.withValues(alpha: 0.4),
                               child: CircleAvatar(
                                 radius: 50,
                                 backgroundColor: color3,
@@ -618,7 +617,7 @@ class Domotica4i4oPageState extends State<Domotica4i4oPage> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -653,11 +652,11 @@ class Domotica4i4oPageState extends State<Domotica4i4oPage> {
                                     hintText:
                                         "Nuevo nombre para ${tipo[index]} $index",
                                     hintStyle: TextStyle(
-                                      color: color0.withOpacity(0.6),
+                                      color: color0.withValues(alpha: 0.6),
                                     ),
                                     enabledBorder: UnderlineInputBorder(
                                       borderSide: BorderSide(
-                                        color: color0.withOpacity(0.5),
+                                        color: color0.withValues(alpha: 0.5),
                                       ),
                                     ),
                                     focusedBorder: const UnderlineInputBorder(
@@ -820,7 +819,7 @@ class Domotica4i4oPageState extends State<Domotica4i4oPage> {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -856,11 +855,11 @@ class Domotica4i4oPageState extends State<Domotica4i4oPage> {
                                       hintText:
                                           "Nuevo nombre para ${tipo[index]} $index",
                                       hintStyle: TextStyle(
-                                        color: color0.withOpacity(0.6),
+                                        color: color0.withValues(alpha: 0.6),
                                       ),
                                       enabledBorder: UnderlineInputBorder(
                                         borderSide: BorderSide(
-                                          color: color0.withOpacity(0.5),
+                                          color: color0.withValues(alpha: 0.5),
                                         ),
                                       ),
                                       focusedBorder: const UnderlineInputBorder(
@@ -1165,7 +1164,7 @@ class Domotica4i4oPageState extends State<Domotica4i4oPage> {
           ),
           if (!deviceOwner && owner != '')
             Container(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               child: const Center(
                 child: Text(
                   'No tienes acceso a esta función',
@@ -1248,14 +1247,14 @@ class Domotica4i4oPageState extends State<Domotica4i4oPage> {
                             decoration: InputDecoration(
                               prefixIcon: Icon(
                                 Icons.key,
-                                color: color0.withOpacity(0.7),
+                                color: color0.withValues(alpha: 0.7),
                               ),
                               hintText: "Contraseña",
-                              hintStyle:
-                                  TextStyle(color: color0.withOpacity(0.6)),
+                              hintStyle: TextStyle(
+                                  color: color0.withValues(alpha: 0.6)),
                               enabledBorder: UnderlineInputBorder(
-                                borderSide:
-                                    BorderSide(color: color0.withOpacity(0.5)),
+                                borderSide: BorderSide(
+                                    color: color0.withValues(alpha: 0.5)),
                               ),
                               focusedBorder: const UnderlineInputBorder(
                                 borderSide: BorderSide(color: color0),
@@ -1386,7 +1385,7 @@ class Domotica4i4oPageState extends State<Domotica4i4oPage> {
           ),
           if (!deviceOwner && owner != '')
             Container(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               child: const Center(
                 child: Text(
                   'No tienes acceso a esta función',
@@ -2027,8 +2026,8 @@ class Domotica4i4oPageState extends State<Domotica4i4oPage> {
                                                   max: 300,
                                                   divisions: 200,
                                                   activeColor: color0,
-                                                  inactiveColor:
-                                                      color0.withOpacity(0.3),
+                                                  inactiveColor: color0
+                                                      .withValues(alpha: 0.3),
                                                   onChanged: (double value) {
                                                     setState(() {
                                                       distOffValue = value;
@@ -2048,8 +2047,8 @@ class Domotica4i4oPageState extends State<Domotica4i4oPage> {
                                                   max: 5000,
                                                   divisions: 200,
                                                   activeColor: color0,
-                                                  inactiveColor:
-                                                      color0.withOpacity(0.3),
+                                                  inactiveColor: color0
+                                                      .withValues(alpha: 0.3),
                                                   onChanged: (double value) {
                                                     setState(() {
                                                       distOnValue = value;

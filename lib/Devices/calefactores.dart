@@ -605,7 +605,8 @@ class CalefactorPageState extends State<CalefactorPage> {
                     Container(
                       padding: const EdgeInsets.all(8.0),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
+                        // Colors.white.withValues(alpha:0.2),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -623,7 +624,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                       width: 70,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(40),
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.grey.withValues(alpha: 0.1),
                       ),
                       child: Stack(
                         alignment: Alignment.bottomCenter,
@@ -777,7 +778,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                         ? Column(
                             children: [
                               Card(
-                                color: color3.withOpacity(0.9),
+                                color: color3..withValues(alpha: 0.9),
                                 elevation: 6,
                                 margin: const EdgeInsets.symmetric(
                                     vertical: 8.0, horizontal: 20.0),
@@ -870,7 +871,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                               ),
                               const SizedBox(height: 15),
                               Card(
-                                color: color3.withOpacity(0.9),
+                                color: color3..withValues(alpha: 0.9),
                                 elevation: 6,
                                 margin: const EdgeInsets.symmetric(
                                     vertical: 8.0, horizontal: 20.0),
@@ -971,7 +972,7 @@ class CalefactorPageState extends State<CalefactorPage> {
           ),
           if (!isOwner && owner != '' && !tenant)
             Container(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               child: const Center(
                 child: Text(
                   'No tienes acceso a esta función',
@@ -1007,12 +1008,12 @@ class CalefactorPageState extends State<CalefactorPage> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20.0, vertical: 10.0),
                     decoration: BoxDecoration(
-                      color: color3.withOpacity(0.1),
+                      color: color3.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(15),
                       border: Border.all(color: color3, width: 2),
                       boxShadow: [
                         BoxShadow(
-                          color: color3.withOpacity(0.3),
+                          color: color3.withValues(alpha: 0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -1057,7 +1058,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                             Shadow(
                               offset: const Offset(0, 3),
                               blurRadius: 8,
-                              color: color3.withOpacity(0.5),
+                              color: color3.withValues(alpha: 0.5),
                             ),
                           ],
                         ),
@@ -1074,7 +1075,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
-                      shadowColor: color3.withOpacity(0.4),
+                      shadowColor: color3.withValues(alpha: 0.4),
                       elevation: 8,
                     ),
                     onPressed: (isOwner || owner == '')
@@ -1101,11 +1102,13 @@ class CalefactorPageState extends State<CalefactorPage> {
                       backgroundColor: color3,
                       foregroundColor: color0,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 35, vertical: 20),
+                        horizontal: 35,
+                        vertical: 20,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
-                      shadowColor: color3.withOpacity(0.4),
+                      shadowColor: color3.withValues(alpha: 0.4),
                       elevation: 8,
                     ),
                     onPressed: (isOwner || owner == '')
@@ -1146,7 +1149,7 @@ class CalefactorPageState extends State<CalefactorPage> {
           ),
           if (!isOwner && owner != '')
             Container(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               child: const Center(
                 child: Text(
                   'No tienes acceso a esta función',
@@ -1785,8 +1788,8 @@ class CalefactorPageState extends State<CalefactorPage> {
                                                   max: 300,
                                                   divisions: 200,
                                                   activeColor: color0,
-                                                  inactiveColor:
-                                                      color0.withOpacity(0.3),
+                                                  inactiveColor: color0
+                                                      .withValues(alpha: 0.3),
                                                   onChanged: (double value) {
                                                     setState(() {
                                                       distOffValue = value;
@@ -1806,8 +1809,8 @@ class CalefactorPageState extends State<CalefactorPage> {
                                                   max: 5000,
                                                   divisions: 200,
                                                   activeColor: color0,
-                                                  inactiveColor:
-                                                      color0.withOpacity(0.3),
+                                                  inactiveColor: color0
+                                                      .withValues(alpha: 0.3),
                                                   onChanged: (double value) {
                                                     setState(() {
                                                       distOnValue = value;
@@ -2337,7 +2340,8 @@ class CalefactorPageState extends State<CalefactorPage> {
               backgroundColor: const Color(0xFF252223),
               content: Row(
                 children: [
-                  Image.asset('assets/branch/dragon.gif', width: 100, height: 100),
+                  Image.asset('assets/branch/dragon.gif',
+                      width: 100, height: 100),
                   Container(
                     margin: const EdgeInsets.only(left: 15),
                     child: const Text(
@@ -2584,4 +2588,3 @@ class AnimatedIconWidgetState extends State<AnimatedIconWidget>
   }
 }
 //*- animacion para los iconos al estar calentando-*\\
-

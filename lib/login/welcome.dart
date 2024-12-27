@@ -420,7 +420,7 @@ class WelcomePageState extends State<WelcomePage>
             : MediaQuery.of(context).size.height * 0.85,
       ),
       child: Card(
-        color: color0.withOpacity(0.95),
+        color: color0.withValues(alpha: 0.95),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20.0),
         ),
@@ -453,10 +453,10 @@ class WelcomePageState extends State<WelcomePage>
         prefixIcon: Icon(icon, color: color3),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: color1.withOpacity(0.5),
+        fillColor: color1.withValues(alpha: 0.5),
         contentPadding:
             const EdgeInsets.symmetric(vertical: 15.0, horizontal: 20.0),
-        hintStyle: TextStyle(color: color3.withOpacity(0.7)),
+        hintStyle: TextStyle(color: color3.withValues(alpha: 0.7)),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30.0),
           borderSide: BorderSide.none,
@@ -655,13 +655,13 @@ class CirclePainter extends CustomPainter {
     color0,
     color1,
     color2,
-    color4.withOpacity(0.5),
-    color5.withOpacity(0.5),
-    color6.withOpacity(0.5),
-    color0.withOpacity(0.3),
-    color1.withOpacity(0.3),
-    color2.withOpacity(0.3),
-    color4.withOpacity(0.3),
+    color4.withValues(alpha: 0.5),
+    color5.withValues(alpha: 0.5),
+    color6.withValues(alpha: 0.5),
+    color0.withValues(alpha: 0.3),
+    color1.withValues(alpha: 0.3),
+    color2.withValues(alpha: 0.3),
+    color4.withValues(alpha: 0.3),
   ];
 
   CirclePainter(this.animationValue);
@@ -672,7 +672,7 @@ class CirclePainter extends CustomPainter {
     final paint = Paint()..style = PaintingStyle.fill;
 
     for (int i = 0; i < colors.length; i++) {
-      paint.color = colors[i].withOpacity(0.2);
+      paint.color = colors[i].withValues(alpha: 0.2);
       final radius = 50.0 + (animationValue * 40) * ((i % 5) + 1);
       final dx = size.width * (0.1 + (i * 0.15) % 1.0);
       final dy = size.height * (0.1 + ((i * 0.25) % 1.0));

@@ -424,7 +424,7 @@ class RollerPageState extends State<RollerPage> {
                         child: InkWell(
                           onTap: () {},
                           borderRadius: BorderRadius.circular(30.0),
-                          splashColor: Colors.white.withOpacity(0.2),
+                          splashColor: Colors.white.withValues(alpha: 0.2),
                           child: Container(
                             decoration: BoxDecoration(
                               color: color3,
@@ -484,7 +484,7 @@ class RollerPageState extends State<RollerPage> {
                         child: InkWell(
                           onTap: () {},
                           borderRadius: BorderRadius.circular(30.0),
-                          splashColor: Colors.white.withOpacity(0.2),
+                          splashColor: Colors.white.withValues(alpha: 0.2),
                           child: Container(
                             decoration: BoxDecoration(
                               color: color3,
@@ -1473,8 +1473,8 @@ class RollerPageState extends State<RollerPage> {
                                                   max: 300,
                                                   divisions: 200,
                                                   activeColor: color0,
-                                                  inactiveColor:
-                                                      color0.withOpacity(0.3),
+                                                  inactiveColor: color0
+                                                      .withValues(alpha: 0.3),
                                                   onChanged: (double value) {
                                                     setState(() {
                                                       distOffValue = value;
@@ -1494,8 +1494,8 @@ class RollerPageState extends State<RollerPage> {
                                                   max: 5000,
                                                   divisions: 200,
                                                   activeColor: color0,
-                                                  inactiveColor:
-                                                      color0.withOpacity(0.3),
+                                                  inactiveColor: color0
+                                                      .withValues(alpha: 0.3),
                                                   onChanged: (double value) {
                                                     setState(() {
                                                       distOnValue = value;
@@ -2403,4 +2403,3 @@ class CurtainAnimationRielCenter extends StatelessWidget {
 }
 
 //*- Diseño de la cortina Riel Center -*\\
-

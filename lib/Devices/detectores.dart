@@ -1049,7 +1049,7 @@ class DetectorPageState extends State<DetectorPage> {
                       Icons.lightbulb,
                       size: iconSize,
                       color: Colors.yellow
-                          .withOpacity((brightnessLevel + 20) / 120),
+                          .withValues(alpha: (brightnessLevel + 20) / 120),
                     ),
                     const SizedBox(width: 20),
                     // Slider vertical para ajustar el brillo
@@ -1058,7 +1058,7 @@ class DetectorPageState extends State<DetectorPage> {
                       width: 70,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(40),
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.grey.withValues(alpha: 0.1),
                       ),
                       child: Stack(
                         alignment: Alignment.bottomCenter,

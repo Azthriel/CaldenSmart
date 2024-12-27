@@ -922,44 +922,6 @@ void launchWebURL(String url) async {
 }
 //*-Funciones diversas-*\\
 
-//*-Gestión de errores en app-*\\
-String generateErrorReport(FlutterErrorDetails details) {
-  String error =
-      'Error: ${details.exception}\nStacktrace: ${details.stack}\nContexto: ${details.context}';
-  return error;
-}
-
-void sendReportError(String cuerpo) async {
-  printLog(cuerpo);
-  String encodeQueryParameters(Map<String, String> params) {
-    return params.entries
-        .map((e) =>
-            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
-        .join('&');
-  }
-
-  String recipients = 'ingenieria@caldensmart.com';
-  String subject = 'Reporte de error';
-
-  try {
-    final Uri emailLaunchUri = Uri(
-      scheme: 'mailto',
-      path: recipients,
-      query: encodeQueryParameters(
-        <String, String>{'subject': subject, 'body': cuerpo},
-      ),
-    );
-
-    if (await canLaunchUrl(emailLaunchUri)) {
-      await launchUrl(emailLaunchUri);
-    }
-    printLog('Correo enviado');
-  } catch (error) {
-    printLog('Error al enviar el correo: $error');
-  }
-}
-//*-Gestión de errores en app-*\\
-
 //*-Wifi, menú y scanner-*\\
 Future<void> sendWifitoBle(String ssid, String pass) async {
   MyDevice myDevice = MyDevice();
@@ -2537,7 +2499,7 @@ void showAlertDialog(BuildContext context, bool dismissible, Widget? title,
     context: context,
     barrierDismissible: dismissible,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    barrierColor: Colors.black.withOpacity(0.5),
+    barrierColor: Colors.black.withValues(alpha: 0.5),
     transitionDuration: const Duration(milliseconds: 300),
     pageBuilder: (BuildContext context, Animation<double> animation,
         Animation<double> secondaryAnimation) {
@@ -2555,7 +2517,7 @@ void showAlertDialog(BuildContext context, bool dismissible, Widget? title,
                   decoration: BoxDecoration(
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         spreadRadius: 1,
                         blurRadius: 20,
                         offset: const Offset(0, 4),
@@ -2631,7 +2593,7 @@ void showAlertDialog(BuildContext context, bool dismissible, Widget? title,
                           child: Material(
                             elevation: 10,
                             shape: const CircleBorder(),
-                            shadowColor: Colors.black.withOpacity(0.4),
+                            shadowColor: Colors.black.withValues(alpha: 0.4),
                             child: CircleAvatar(
                               radius: 50,
                               backgroundColor: color3,
