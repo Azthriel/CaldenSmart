@@ -38,11 +38,18 @@ class DomoticaPageState extends State<DomoticaPage> {
   final PageController _pageController = PageController(initialPage: 0);
   final TextEditingController tenantController = TextEditingController();
   late List<bool> _selectedPins;
+  late List<bool> _notis;
+
   @override
   void initState() {
     super.initState();
     _selectedPins = List<bool>.filled(parts.length, false);
+    _notis = notificationMap[
+            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}'] ??
+        List<bool>.filled(parts.length, false);
 
+    printLog(_notis, 'amarillo');
+    
     tracking = devicesToTrack.contains(deviceName);
 
     processSelectedPins();
@@ -64,9 +71,9 @@ class DomoticaPageState extends State<DomoticaPage> {
     subscribeToWifiStatus();
     subToIO();
     processValues(ioValues);
-    notificationMap.putIfAbsent(
-        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
-        () => List<bool>.filled(4, false));
+    // notificationMap.putIfAbsent(
+    //     '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
+    //     () => List<bool>.filled(parts.length, false));
 
     // WidgetsBinding.instance.addPostFrameCallback((_) async {
     //   if (shouldUpdateDevice) {
@@ -217,17 +224,80 @@ class DomoticaPageState extends State<DomoticaPage> {
     common.clear();
     alertIO.clear();
 
-    for (int i = 0; i < parts.length; i++) {
-      var equipo = parts[i].split(':');
-      tipo.add(equipo[0] == '0' ? 'Salida' : 'Entrada');
-      estado.add(equipo[1]);
-      common.add(equipo[2]);
-      alertIO.add(estado[i] != common[i]);
+    if (hardwareVersion == '240422A') {
+      for (int i = 0; i < parts.length; i++) {
+        var equipo = parts[i].split(':');
+        tipo.add(equipo[0] == '0' ? 'Salida' : 'Entrada');
+        estado.add(equipo[1]);
+        common.add(equipo[2]);
+        alertIO.add(estado[i] != common[i]);
 
-      printLog(
-          'En la posición $i el modo es ${tipo[i]} y su estado es ${estado[i]}');
+        globalDATA
+            .putIfAbsent(
+                '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
+                () => {})
+            .addAll({
+          'io$i': jsonEncode({
+            'pinType': tipo[i] == 'Salida' ? '0' : '1',
+            'index': i,
+            'w_status': estado[i] == '1',
+            'r_state': common[i],
+          })
+        });
+
+        printLog(
+            'En la posición $i el modo es ${tipo[i]} y su estado es ${estado[i]}');
+      }
+      setState(() {});
+    } else {
+      for (int i = 0; i < 4; i++) {
+        tipo.add('Salida');
+        estado.add(parts[i]);
+        common.add('0');
+        alertIO.add(false);
+
+        globalDATA
+            .putIfAbsent(
+                '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
+                () => {})
+            .addAll({
+          'io$i': jsonEncode({
+            'pinType': tipo[i] == 'Salida' ? '0' : '1',
+            'index': i,
+            'w_status': estado[i] == '1',
+            'r_state': common[i],
+          })
+        });
+      }
+
+      for (int j = 4; j < 8; j++) {
+        var equipo = parts[j].split(':');
+        tipo.add('Entrada');
+        estado.add(equipo[0]);
+        common.add(equipo[1]);
+        alertIO.add(estado[j] != common[j]);
+
+        globalDATA
+            .putIfAbsent(
+                '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
+                () => {})
+            .addAll({
+          'io$j': jsonEncode({
+            'pinType': tipo[j] == 'Salida' ? '0' : '1',
+            'index': j,
+            'w_status': estado[j] == '1',
+            'r_state': common[j],
+          })
+        });
+
+        printLog('¿La entrada $j esta en alerta?: ${alertIO[j]}');
+      }
+
+      setState(() {});
     }
-    setState(() {});
+
+    saveGlobalData(globalDATA);
+
     for (int i = 0; i < parts.length; i++) {
       if (tipo[i] == 'Salida') {
         String dv = '${deviceName}_$i';
@@ -747,9 +817,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  notificationMap[
-                                              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                                          index]
+                                  _notis[index]
                                       ? '¿Desactivar notificaciones?'
                                       : '¿Activar notificaciones?',
                                   style: const TextStyle(
@@ -760,20 +828,17 @@ class DomoticaPageState extends State<DomoticaPage> {
                                 ),
                                 IconButton(
                                   onPressed: () {
-                                    bool activated = notificationMap[
-                                            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                                        index];
+                                    bool activated = _notis[index];
                                     setState(() {
                                       activated = !activated;
-                                      notificationMap[
-                                              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                                          index] = activated;
+                                      _notis[index] = activated;
                                     });
+                                    notificationMap[
+                                            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}'] =
+                                        _notis;
                                     saveNotificationMap(notificationMap);
                                   },
-                                  icon: notificationMap[
-                                              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                                          index]
+                                  icon: _notis[index]
                                       ? Icon(
                                           Icons.notifications_off,
                                           color: Colors.red.shade300,
@@ -1043,243 +1108,247 @@ class DomoticaPageState extends State<DomoticaPage> {
         ],
       ),
 
-      //*- página 3: Cambiar pines -*\\
+      if (hardwareVersion == '240422A') ...{
+        //*- página 3: Cambiar pines -*\\
 
-      Stack(
-        children: [
-          SingleChildScrollView(
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'Cambio de Modo de Pines',
-                    style: GoogleFonts.poppins(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
+        Stack(
+          children: [
+            SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20.0, vertical: 30.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Cambio de Modo de Pines',
+                      style: GoogleFonts.poppins(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: color3,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 40),
+                    Card(
                       color: color3,
+                      elevation: 8,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 500),
+                              child: isPasswordCorrect
+                                  ? const Icon(
+                                      HugeIcons.strokeRoundedSquareUnlock02,
+                                      color: color0,
+                                      size: 40,
+                                      key: ValueKey('open_lock'),
+                                    )
+                                  : const Icon(
+                                      HugeIcons.strokeRoundedSquareLock02,
+                                      color: color0,
+                                      size: 40,
+                                      key: ValueKey('closed_lock'),
+                                    ),
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              'Ingresa la contraseña del módulo ubicada en el manual',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                                fontSize: 18,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            TextField(
+                              controller: modulePassController,
+                              style:
+                                  const TextStyle(color: color0, fontSize: 16),
+                              cursorColor: color0,
+                              obscureText: true,
+                              onChanged: (value) {
+                                setState(() {
+                                  isPasswordCorrect = value == '53494d45';
+                                });
+                              },
+                              decoration: InputDecoration(
+                                prefixIcon: Icon(
+                                  Icons.key,
+                                  color: color0.withValues(alpha: 0.7),
+                                ),
+                                hintText: "Contraseña",
+                                hintStyle: TextStyle(
+                                    color: color0.withValues(alpha: 0.6)),
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                      color: color0.withValues(alpha: 0.5)),
+                                ),
+                                focusedBorder: const UnderlineInputBorder(
+                                  borderSide: BorderSide(color: color0),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 40),
-                  Card(
-                    color: color3,
-                    elevation: 8,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                    const SizedBox(height: 30),
+                    if (isPasswordCorrect)
+                      FloatingActionButton.extended(
+                        onPressed: () {
+                          setState(() {
+                            isChangeModeVisible = !isChangeModeVisible;
+                          });
+                        },
+                        backgroundColor: color3,
+                        foregroundColor: color0,
+                        icon: const Icon(Icons.settings, color: color0),
+                        label: Text(
+                          'Cambiar modo de pines',
+                          style: GoogleFonts.poppins(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    const SizedBox(height: 20),
+                    if (isChangeModeVisible && isPasswordCorrect)
+                      Column(
                         children: [
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 500),
-                            child: isPasswordCorrect
-                                ? const Icon(
-                                    HugeIcons.strokeRoundedSquareUnlock02,
-                                    color: color0,
-                                    size: 40,
-                                    key: ValueKey('open_lock'),
-                                  )
-                                : const Icon(
-                                    HugeIcons.strokeRoundedSquareLock02,
-                                    color: color0,
-                                    size: 40,
-                                    key: ValueKey('closed_lock'),
-                                  ),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            'Ingresa la contraseña del módulo ubicada en el manual',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontSize: 18,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          TextField(
-                            controller: modulePassController,
-                            style: const TextStyle(color: color0, fontSize: 16),
-                            cursorColor: color0,
-                            obscureText: true,
-                            onChanged: (value) {
-                              setState(() {
-                                isPasswordCorrect = value == '53494d45';
-                              });
-                            },
-                            decoration: InputDecoration(
-                              prefixIcon: Icon(
-                                Icons.key,
-                                color: color0.withValues(alpha: 0.7),
+                          for (var i = 0; i < parts.length; i++) ...[
+                            Card(
+                              color: color3,
+                              elevation: 6,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
                               ),
-                              hintText: "Contraseña",
-                              hintStyle: TextStyle(
-                                  color: color0.withValues(alpha: 0.6)),
-                              enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(
-                                    color: color0.withValues(alpha: 0.5)),
-                              ),
-                              focusedBorder: const UnderlineInputBorder(
-                                borderSide: BorderSide(color: color0),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  if (isPasswordCorrect)
-                    FloatingActionButton.extended(
-                      onPressed: () {
-                        setState(() {
-                          isChangeModeVisible = !isChangeModeVisible;
-                        });
-                      },
-                      backgroundColor: color3,
-                      foregroundColor: color0,
-                      icon: const Icon(Icons.settings, color: color0),
-                      label: Text(
-                        'Cambiar modo de pines',
-                        style: GoogleFonts.poppins(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  const SizedBox(height: 20),
-                  if (isChangeModeVisible && isPasswordCorrect)
-                    Column(
-                      children: [
-                        for (var i = 0; i < parts.length; i++) ...[
-                          Card(
-                            color: color3,
-                            elevation: 6,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16.0, vertical: 24.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    subNicknamesMap[
-                                            '$deviceName/-/${parts[i]}'] ??
-                                        '${tipo[i]} $i',
-                                    style: GoogleFonts.poppins(
-                                      color: color0,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    tipo[i] == 'Entrada'
-                                        ? '¿Cambiar de entrada a salida?'
-                                        : '¿Cambiar de salida a entrada?',
-                                    style: GoogleFonts.poppins(
-                                      color: color0,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  if (tipo[i] == 'Entrada')
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'Estado común:',
-                                          style: GoogleFonts.poppins(
-                                            color: color0,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        Text(
-                                          common[i],
-                                          style: GoogleFonts.poppins(
-                                            color: color0,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        IconButton(
-                                          onPressed: () {
-                                            String data =
-                                                '${DeviceManager.getProductCode(deviceName)}[14]($i#${common[i] == '1' ? '0' : '1'})';
-                                            printLog(data);
-                                            myDevice.toolsUuid
-                                                .write(data.codeUnits);
-                                          },
-                                          icon: const Icon(
-                                            Icons.change_circle_outlined,
-                                            color: color0,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  const SizedBox(height: 12),
-                                  Center(
-                                    child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        foregroundColor: color3,
-                                        backgroundColor: color0,
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 24.0, vertical: 12.0),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                      ),
-                                      onPressed: () {
-                                        String fun =
-                                            '${DeviceManager.getProductCode(deviceName)}[13]($i#${tipo[i] == 'Entrada' ? '0' : '1'})';
-                                        printLog(fun);
-                                        myDevice.toolsUuid.write(fun.codeUnits);
-                                      },
-                                      child: const Text(
-                                        'CAMBIAR',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0, vertical: 24.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      subNicknamesMap[
+                                              '$deviceName/-/${parts[i]}'] ??
+                                          '${tipo[i]} $i',
+                                      style: GoogleFonts.poppins(
+                                        color: color0,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      tipo[i] == 'Entrada'
+                                          ? '¿Cambiar de entrada a salida?'
+                                          : '¿Cambiar de salida a entrada?',
+                                      style: GoogleFonts.poppins(
+                                        color: color0,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    if (tipo[i] == 'Entrada')
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'Estado común:',
+                                            style: GoogleFonts.poppins(
+                                              color: color0,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          Text(
+                                            common[i],
+                                            style: GoogleFonts.poppins(
+                                              color: color0,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          IconButton(
+                                            onPressed: () {
+                                              String data =
+                                                  '${DeviceManager.getProductCode(deviceName)}[14]($i#${common[i] == '1' ? '0' : '1'})';
+                                              printLog(data);
+                                              myDevice.toolsUuid
+                                                  .write(data.codeUnits);
+                                            },
+                                            icon: const Icon(
+                                              Icons.change_circle_outlined,
+                                              color: color0,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    const SizedBox(height: 12),
+                                    Center(
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          foregroundColor: color3,
+                                          backgroundColor: color0,
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 24.0, vertical: 12.0),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          String fun =
+                                              '${DeviceManager.getProductCode(deviceName)}[13]($i#${tipo[i] == 'Entrada' ? '0' : '1'})';
+                                          printLog(fun);
+                                          myDevice.toolsUuid
+                                              .write(fun.codeUnits);
+                                        },
+                                        child: const Text(
+                                          'CAMBIAR',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 20),
-                          if (i == parts.length - 1) ...{
-                            Padding(
-                              padding:
-                                  EdgeInsets.only(bottom: bottomBarHeight + 10),
-                            ),
-                          }
+                            const SizedBox(height: 20),
+                            if (i == parts.length - 1) ...{
+                              Padding(
+                                padding: EdgeInsets.only(
+                                    bottom: bottomBarHeight + 10),
+                              ),
+                            }
+                          ],
                         ],
-                      ],
-                    ),
-                ],
-              ),
-            ),
-          ),
-          if (!deviceOwner && owner != '')
-            Container(
-              color: Colors.black.withValues(alpha: 0.7),
-              child: const Center(
-                child: Text(
-                  'No tienes acceso a esta función',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
+                      ),
+                  ],
                 ),
               ),
             ),
-        ],
-      ),
+            if (!deviceOwner && owner != '')
+              Container(
+                color: Colors.black.withValues(alpha: 0.7),
+                child: const Center(
+                  child: Text(
+                    'No tienes acceso a esta función',
+                    style: TextStyle(color: Colors.white, fontSize: 18),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      },
 
       //*- Página 4: Gestión del Equipo -*\\
       SingleChildScrollView(
@@ -2579,11 +2648,13 @@ class DomoticaPageState extends State<DomoticaPage> {
               child: CurvedNavigationBar(
                 index: _selectedIndex,
                 height: 75.0,
-                items: const <Widget>[
-                  Icon(Icons.home, size: 30, color: color0),
-                  Icon(Icons.bluetooth, size: 30, color: color0),
-                  Icon(Icons.input, size: 30, color: color0),
-                  Icon(Icons.settings, size: 30, color: color0),
+                items: <Widget>[
+                  const Icon(Icons.home, size: 30, color: color0),
+                  const Icon(Icons.bluetooth, size: 30, color: color0),
+                  if (hardwareVersion == '240422A') ...{
+                    const Icon(Icons.input, size: 30, color: color0),
+                  },
+                  const Icon(Icons.settings, size: 30, color: color0),
                 ],
                 color: color3,
                 buttonBackgroundColor: color3,

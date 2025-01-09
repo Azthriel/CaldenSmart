@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
-import 'package:caldensmart/Devices/domotica4i4o.dart';
 import 'package:caldensmart/Devices/millenium.dart';
 import 'package:caldensmart/Devices/modulo.dart';
 import 'package:caldensmart/Devices/relay.dart';
@@ -57,7 +56,14 @@ Future<void> main() async {
   //! IOS O ANDROID !\\
   android = Platform.isAndroid;
   //! IOS O ANDROID !\\
-  appVersionNumber = Upgrader().currentInstalledVersion ?? '4.0.4';
+
+  final upgrader = Upgrader(
+    debugLogging: false,
+  );
+
+  await upgrader.initialize();
+
+  appVersionNumber = upgrader.currentInstalledVersion ?? '4.0.4';
 
   appName = nameOfApp(app);
 
@@ -149,7 +155,6 @@ class MyAppState extends State<MyApp> {
         '/rele': (context) => const RelayPage(),
         '/roller': (context) => const RollerPage(),
         '/millenium': (context) => const MilleniumPage(),
-        '/domotica4i4o': (context) => const Domotica4i4oPage(),
         '/modulo': (context) => const ModuloPage(),
       },
     );

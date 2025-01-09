@@ -198,8 +198,9 @@ class CalefactorPageState extends State<CalefactorPage> {
 
         printLog('Estoy haciendo calculaciones místicas');
 
-        result =
-            double.parse(tiempo) * 2 * double.parse(costController.text.trim());
+        result = double.parse(tiempo) *
+            equipmentConsumption(DeviceManager.getProductCode(deviceName)) *
+            double.parse(costController.text.trim());
 
         await Future.delayed(const Duration(seconds: 1));
 

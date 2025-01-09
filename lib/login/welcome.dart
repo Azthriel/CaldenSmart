@@ -544,6 +544,13 @@ class WelcomePageState extends State<WelcomePage>
           ),
         ],
       ),
+      bottomSheet: Text(
+        'Versión $appVersionNumber',
+        style: const TextStyle(
+          color: color3,
+          fontSize: 12,
+        ),
+      ),
     );
   }
 

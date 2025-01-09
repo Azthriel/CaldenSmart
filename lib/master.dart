@@ -1682,6 +1682,9 @@ Future<void> initNotifications() async {
 Future<void> handleNotifications(RemoteMessage message) async {
   android = Platform.isAndroid;
   try {
+    nicknamesMap = await loadNicknamesMap();
+    soundOfNotification = await loadSounds();
+    fbData = await fetchDocumentData();
     printLog('Llegó esta notif: ${message.data}', 'rojo');
     String product = message.data['pc']!;
     String number = message.data['sn']!;
@@ -1716,14 +1719,16 @@ Future<void> handleNotifications(RemoteMessage message) async {
         }
       } else if (product == '020010_IOT') {
         notificationMap = await loadNotificationMap();
+        subNicknamesMap = await loadSubNicknamesMap();
+        List<bool> notis =
+            notificationMap['$product/$number'] ?? List<bool>.filled(8, false);
         final now = DateTime.now();
         String entry = subNicknamesMap['$device/-/${message.data['entry']!}'] ??
             'Entrada${message.data['entry']!}';
         String displayTitle = '¡ALERTA EN ${nicknamesMap[device] ?? device}!';
         String displayMessage =
             'La $entry disparó una alarma.\nA las ${now.hour > 10 ? now.hour : '0${now.hour}'}:${now.minute > 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
-        if (notificationMap['$product/$number']![
-            int.parse(message.data['entry']!)]) {
+        if (notis[int.parse(message.data['entry']!)]) {
           printLog(
               'En la lista: ${notificationMap['$product/$number']!} en la posición ${message.data['entry']!} hay un true');
           showNotification(displayTitle.toUpperCase(), displayMessage, sound);
@@ -3021,6 +3026,21 @@ Future<void> showUpdateDialog(BuildContext ctx) {
   );
 }
 //*-Device update-*\\
+
+//*-Calculo de gasto-*\\
+  double equipmentConsumption(String pc){
+    switch(pc){
+      case '022000_IOT':
+        return 2;
+      case '050217_IOT':
+        return 1.5;
+      case '027000_IOT':
+        return 7;
+      default:
+        return 1;
+    }
+  }
+//*-Calculo de gasto-*\\
 
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 

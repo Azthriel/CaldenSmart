@@ -189,8 +189,9 @@ class MilleniumPageState extends State<MilleniumPage> {
 
         printLog('Estoy haciendo calculaciones místicas');
 
-        result =
-            double.parse(tiempo) * 2 * double.parse(costController.text.trim());
+        result = double.parse(tiempo) *
+            equipmentConsumption(DeviceManager.getProductCode(deviceName)) *
+            double.parse(costController.text.trim());
 
         await Future.delayed(const Duration(seconds: 1));
 
@@ -994,7 +995,9 @@ class MilleniumPageState extends State<MilleniumPage> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20.0, vertical: 10.0),
+                      horizontal: 20.0,
+                      vertical: 10.0,
+                    ),
                     decoration: BoxDecoration(
                       color: color3.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(15),

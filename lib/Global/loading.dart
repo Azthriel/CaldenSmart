@@ -45,10 +45,7 @@ class LoadState extends State<LoadingPage> {
             navigatorKey.currentState?.pushReplacementNamed('/detector');
             break;
           case '020010_IOT':
-            hardwareVersion == '240422A'
-                ? navigatorKey.currentState?.pushReplacementNamed('/domotica')
-                : navigatorKey.currentState
-                    ?.pushReplacementNamed('/domotica4i4o');
+            navigatorKey.currentState?.pushReplacementNamed('/domotica');
             break;
           case '020020_IOT':
             navigatorKey.currentState?.pushReplacementNamed('/modulo');
@@ -617,14 +614,15 @@ class LoadState extends State<LoadingPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Text(
-                      'Versión $appVersionNumber',
-                      style: const TextStyle(
-                        color: color1,
-                        fontSize: 12,
-                      ),
-                    )),
+                  alignment: Alignment.bottomCenter,
+                  child: Text(
+                    'Versión $appVersionNumber',
+                    style: const TextStyle(
+                      color: color1,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
                 const SizedBox(
                   height: 20,
                 ),

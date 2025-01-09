@@ -225,6 +225,19 @@ class ModuloPageState extends State<ModuloPage> {
       estado.add(parts[i]);
       common.add('0');
       alertIO.add(false);
+
+      globalDATA
+          .putIfAbsent(
+              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
+              () => {})
+          .addAll({
+        'io$i': jsonEncode({
+          'pinType': '0',
+          'index': i,
+          'w_status': estado[i] == '1',
+          'r_state': common[i],
+        })
+      });
     }
 
     for (int j = 2; j < 4; j++) {
@@ -234,8 +247,23 @@ class ModuloPageState extends State<ModuloPage> {
       common.add(equipo[1]);
       alertIO.add(estado[j] != common[j]);
 
+      globalDATA
+          .putIfAbsent(
+              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
+              () => {})
+          .addAll({
+        'io$j': jsonEncode({
+          'pinType': '1',
+          'index': j,
+          'w_status': estado[j] == '1',
+          'r_state': common[j],
+        })
+      });
+
       printLog('¿La entrada $j esta en alerta?: ${alertIO[j]}');
     }
+
+    saveGlobalData(globalDATA);
     setState(() {});
   }
 
