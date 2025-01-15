@@ -25,18 +25,33 @@ class ScanPageState extends State<ScanPage>
   int connectionTry = 0;
   final TextEditingController searchController = TextEditingController();
   late AnimationController _animationController;
-  late Animation<double> _animation;
   final EasyRefreshController _controller = EasyRefreshController(
     controlFinishRefresh: true,
   );
   StreamSubscription<List<ScanResult>>? listener;
+  String? _touchedDeviceId;
 
   @override
   void initState() {
     super.initState();
     startBluetoothMonitoring();
     startLocationMonitoring();
-    List<dynamic> lista = fbData['Keywords'] ?? [];
+    List<dynamic> lista = fbData['Keywords'] ??
+        [
+          'Detector',
+          'Domotica',
+          'Domótica',
+          'Electrico',
+          'Eléctrico',
+          'Radiador',
+          'Gas',
+          'Rele',
+          'Relé',
+          'Roll',
+          'Millenium',
+          'Modulo',
+          'Riel'
+        ];
     keywords = lista.map((item) => item.toString()).toList();
     scan();
 
@@ -51,9 +66,6 @@ class ScanPageState extends State<ScanPage>
         vsync: this,
         duration: const Duration(seconds: 1),
       )..forward();
-      _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-      );
     }
   }
 
@@ -338,6 +350,9 @@ class ScanPageState extends State<ScanPage>
                 itemBuilder: (context, index) {
                   final device = filteredDevices[index];
                   final imagePath = deviceImages[device.platformName];
+                  final isTouched =
+                      _touchedDeviceId == device.remoteId.toString();
+
                   List<dynamic> admins = globalDATA[
                               '${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
                           ?['secondary_admin'] ??
@@ -358,211 +373,252 @@ class ScanPageState extends State<ScanPage>
                               '015773_IOT' &&
                           owner &&
                           quickAccess.contains(device.platformName);
+
                   return FadeTransition(
-                    opacity: _animation,
+                    opacity: _animationController
+                        .drive(CurveTween(curve: Curves.easeOut)),
                     child: ScaleTransition(
-                      scale: _animation,
-                      child: Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: AspectRatio(
-                          aspectRatio: 1.5,
-                          child: Card(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15.0),
-                            ),
-                            elevation: 8,
-                            child: InkWell(
-                              onTap: () {
-                                showToast('Intentando conectarse al equipo');
-                                connectToDevice(device);
-                              },
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(15.0),
-                                child: Stack(
-                                  children: [
-                                    Positioned.fill(
-                                      child: imagePath != null
-                                          ? Image.file(
-                                              File(imagePath),
-                                              fit: BoxFit.cover,
-                                            )
-                                          : Image.asset(
-                                              ImageManager.rutaDeImagen(
-                                                device.platformName,
+                      scale: _animationController
+                          .drive(CurveTween(curve: Curves.easeOut)),
+                      child: GestureDetector(
+                        onTapDown: (_) {
+                          setState(() {
+                            _touchedDeviceId = device.remoteId.toString();
+                          });
+                        },
+                        onTap: () {
+                          setState(() {
+                            _touchedDeviceId = device.remoteId.toString();
+                          });
+
+                          Future.delayed(const Duration(milliseconds: 200), () {
+                            setState(() {
+                              _touchedDeviceId = null;
+                            });
+                          });
+
+                          showToast('Intentando conectarse al equipo');
+                          connectToDevice(device);
+                        },
+                        onTapUp: (_) {
+                          Future.delayed(const Duration(milliseconds: 200), () {
+                            setState(() {
+                              _touchedDeviceId = null;
+                            });
+                          });
+                        },
+                        onTapCancel: () {
+                          setState(() {
+                            _touchedDeviceId = null;
+                          });
+                        },
+                        child: AnimatedScale(
+                          scale: isTouched ? 0.95 : 1.0,
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOut,
+                          child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: AspectRatio(
+                              aspectRatio: 1.5,
+                              child: Card(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15.0),
+                                ),
+                                elevation: 8,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(15.0),
+                                  child: Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: imagePath != null
+                                            ? Image.file(
+                                                File(imagePath),
+                                                fit: BoxFit.cover,
+                                              )
+                                            : Image.asset(
+                                                ImageManager.rutaDeImagen(
+                                                  device.platformName,
+                                                ),
+                                                fit: BoxFit.cover,
                                               ),
-                                              fit: BoxFit.cover,
+                                      ),
+                                      Positioned.fill(
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                Colors.transparent,
+                                                Colors.black
+                                                    .withValues(alpha: 0.7),
+                                              ],
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
                                             ),
-                                    ),
-                                    Positioned.fill(
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: [
-                                              Colors.transparent,
-                                              Colors.black
-                                                  .withValues(alpha: 0.7),
-                                            ],
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    Positioned(
-                                      top: 16,
-                                      left: 16,
-                                      child: SizedBox(
-                                        width: 270,
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                nicknamesMap[
-                                                        device.platformName] ??
-                                                    DeviceManager
-                                                        .getComercialName(
-                                                      device.platformName,
-                                                    ),
-                                                overflow: TextOverflow.ellipsis,
-                                                style: GoogleFonts.poppins(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 22,
-                                                  color: Colors.white,
-                                                  shadows: const [
-                                                    Shadow(
-                                                      offset:
-                                                          Offset(-1.5, -1.5),
-                                                      color: Colors.black,
-                                                    ),
-                                                    Shadow(
-                                                      offset: Offset(1.5, -1.5),
-                                                      color: Colors.black,
-                                                    ),
-                                                    Shadow(
-                                                      offset: Offset(1.5, 1.5),
-                                                      color: Colors.black,
-                                                    ),
-                                                    Shadow(
-                                                      offset: Offset(-1.5, 1.5),
-                                                      color: Colors.black,
-                                                    ),
-                                                  ],
+                                      Positioned(
+                                        top: 16,
+                                        left: 16,
+                                        child: SizedBox(
+                                          width: 270,
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  nicknamesMap[device
+                                                          .platformName] ??
+                                                      DeviceManager
+                                                          .getComercialName(
+                                                        device.platformName,
+                                                      ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: GoogleFonts.poppins(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 22,
+                                                    color: Colors.white,
+                                                    shadows: const [
+                                                      Shadow(
+                                                        offset:
+                                                            Offset(-1.5, -1.5),
+                                                        color: Colors.black,
+                                                      ),
+                                                      Shadow(
+                                                        offset:
+                                                            Offset(1.5, -1.5),
+                                                        color: Colors.black,
+                                                      ),
+                                                      Shadow(
+                                                        offset:
+                                                            Offset(1.5, 1.5),
+                                                        color: Colors.black,
+                                                      ),
+                                                      Shadow(
+                                                        offset:
+                                                            Offset(-1.5, 1.5),
+                                                        color: Colors.black,
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    Positioned(
-                                      bottom: 16,
-                                      left: 16,
-                                      right: 16,
-                                      child: Text(
-                                        device.platformName,
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 12,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      top: 16,
-                                      right: 16,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4.0),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.white,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          HugeIcons
-                                              .strokeRoundedBluetoothCircle,
-                                          size: 30,
-                                          color: Colors.black,
-                                        ),
-                                      ),
-                                    ),
-                                    if (condicion) ...[
                                       Positioned(
                                         bottom: 16,
+                                        left: 16,
                                         right: 16,
-                                        child: quickAction
-                                            ? const CircularProgressIndicator(
-                                                color: color1,
-                                              )
-                                            : Transform.scale(
-                                                scale: 1.33,
-                                                child: Switch(
-                                                  value: globalDATA[
-                                                              '${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
-                                                          ?['w_status'] ??
-                                                      false,
-                                                  activeColor: color1,
-                                                  onChanged:
-                                                      (bool newValue) async {
-                                                    setState(() {
-                                                      quickAction = true;
-                                                      globalDATA[
-                                                              '${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
-                                                          ?[
-                                                          'w_status'] = newValue;
-                                                    });
-                                                    await device.connect(
-                                                      timeout: const Duration(
-                                                          seconds: 6),
-                                                    );
-                                                    if (device.isConnected) {
-                                                      printLog(
-                                                          "Arranca por la derecha la maquina del sexo tilin",
-                                                          "cyan");
-                                                      MyDevice myDevice =
-                                                          MyDevice();
-                                                      myDevice
-                                                          .setup(device)
-                                                          .then((valor) async {
-                                                        printLog(
-                                                            'RETORNASHE $valor');
-                                                        connectionTry = 0;
-                                                        if (valor) {
-                                                          printLog(
-                                                              "Tengo sexo en monopatin",
-                                                              "cyan");
-                                                          await controlDeviceBLE(
-                                                              device
-                                                                  .platformName,
-                                                              newValue);
-                                                          await myDevice.device
-                                                              .disconnect();
-                                                          setState(() {
-                                                            quickAction = false;
-                                                          });
-                                                          printLog(
-                                                              "¿Se me cayo la pichula? ${device.isDisconnected}",
-                                                              "cyan");
-                                                        } else {
-                                                          printLog(
-                                                              'Fallo en el setup');
-                                                          showToast(
-                                                              "Error con el acceso rápido\nIntente nuevamente");
-                                                          myDevice.device
-                                                              .disconnect();
-                                                        }
-                                                      });
-                                                    } else {
-                                                      printLog(
-                                                        "Fallecio el sexo",
-                                                        "cyan",
-                                                      );
-                                                      showToast(
-                                                          "Error con el acceso rápido\nIntente nuevamente");
-                                                    }
-                                                  },
-                                                ),
-                                              ),
+                                        child: Text(
+                                          device.platformName,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 12,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                       ),
+                                      Positioned(
+                                        top: 16,
+                                        right: 16,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4.0),
+                                          decoration: const BoxDecoration(
+                                            color: Colors.white,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            HugeIcons
+                                                .strokeRoundedBluetoothCircle,
+                                            size: 30,
+                                            color: Colors.black,
+                                          ),
+                                        ),
+                                      ),
+                                      if (condicion) ...[
+                                        Positioned(
+                                          bottom: 16,
+                                          right: 16,
+                                          child: quickAction
+                                              ? const CircularProgressIndicator(
+                                                  color: color1,
+                                                )
+                                              : Transform.scale(
+                                                  scale: 1.33,
+                                                  child: Switch(
+                                                    value: globalDATA[
+                                                                '${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
+                                                            ?['w_status'] ??
+                                                        false,
+                                                    activeColor: color1,
+                                                    onChanged:
+                                                        (bool newValue) async {
+                                                      setState(() {
+                                                        quickAction = true;
+                                                        globalDATA['${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
+                                                                ?['w_status'] =
+                                                            newValue;
+                                                      });
+                                                      await device.connect(
+                                                        timeout: const Duration(
+                                                            seconds: 6),
+                                                      );
+                                                      if (device.isConnected) {
+                                                        printLog(
+                                                            "Arranca por la derecha la maquina del sexo tilin",
+                                                            "cyan");
+                                                        MyDevice myDevice =
+                                                            MyDevice();
+                                                        myDevice
+                                                            .setup(device)
+                                                            .then(
+                                                                (valor) async {
+                                                          printLog(
+                                                              'RETORNASHE $valor');
+                                                          connectionTry = 0;
+                                                          if (valor) {
+                                                            printLog(
+                                                                "Tengo sexo en monopatin",
+                                                                "cyan");
+                                                            await controlDeviceBLE(
+                                                                device
+                                                                    .platformName,
+                                                                newValue);
+                                                            await myDevice
+                                                                .device
+                                                                .disconnect();
+                                                            setState(() {
+                                                              quickAction =
+                                                                  false;
+                                                            });
+                                                            printLog(
+                                                                "¿Se me cayo la pichula? ${device.isDisconnected}",
+                                                                "cyan");
+                                                          } else {
+                                                            printLog(
+                                                                'Fallo en el setup');
+                                                            showToast(
+                                                                "Error con el acceso rápido\nIntente nuevamente");
+                                                            myDevice.device
+                                                                .disconnect();
+                                                          }
+                                                        });
+                                                      } else {
+                                                        printLog(
+                                                          "Fallecio el sexo",
+                                                          "cyan",
+                                                        );
+                                                        showToast(
+                                                            "Error con el acceso rápido\nIntente nuevamente");
+                                                      }
+                                                    },
+                                                  ),
+                                                ),
+                                        ),
+                                      ],
                                     ],
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),

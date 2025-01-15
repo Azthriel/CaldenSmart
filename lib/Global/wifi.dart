@@ -1437,6 +1437,279 @@ class WifiPageState extends State<WifiPage> {
                               ),
                             ),
                           );
+
+                        case '041220_IOT':
+                          bool estado = deviceDATA['w_status'] ?? false;
+                          bool heaterOn = deviceDATA['f_status'] ?? false;
+
+                          return Card(
+                            color: color3,
+                            margin: const EdgeInsets.symmetric(
+                                vertical: 5, horizontal: 10),
+                            elevation: 2,
+                            child: Theme(
+                              data: Theme.of(context)
+                                  .copyWith(dividerColor: Colors.transparent),
+                              child: ExpansionTile(
+                                tilePadding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0),
+                                iconColor: color6,
+                                collapsedIconColor: color6,
+                                title: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          nicknamesMap[deviceName] ??
+                                              deviceName,
+                                          style: GoogleFonts.poppins(
+                                            color: color0,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          online
+                                              ? '● CONECTADO'
+                                              : '● DESCONECTADO',
+                                          style: GoogleFonts.poppins(
+                                            color:
+                                                online ? Colors.green : color6,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                children: <Widget>[
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16.0, vertical: 5.0),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            estado
+                                                ? Row(
+                                                    children: [
+                                                      if (heaterOn) ...[
+                                                        Text(
+                                                          'Calentando',
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                            color: Colors
+                                                                .amber[800],
+                                                            fontSize: 15,
+                                                          ),
+                                                        ),
+                                                        Icon(
+                                                          HugeIcons
+                                                              .strokeRoundedFlash,
+                                                          size: 15,
+                                                          color:
+                                                              Colors.amber[800],
+                                                        ),
+                                                      ] else ...[
+                                                        Text(
+                                                          'Encendido',
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                            color: Colors.green,
+                                                            fontSize: 15,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ],
+                                                  )
+                                                : Text(
+                                                    'Apagado',
+                                                    style: GoogleFonts.poppins(
+                                                        color: color6,
+                                                        fontSize: 15),
+                                                  ),
+                                            const SizedBox(width: 5),
+                                            owner
+                                                ? Switch(
+                                                    activeColor:
+                                                        const Color(0xFF9C9D98),
+                                                    activeTrackColor:
+                                                        const Color(0xFFB2B5AE),
+                                                    inactiveThumbColor:
+                                                        const Color(0xFFB2B5AE),
+                                                    inactiveTrackColor:
+                                                        const Color(0xFF9C9D98),
+                                                    value: estado,
+                                                    onChanged: (newValue) {
+                                                      toggleState(
+                                                          deviceName, newValue);
+                                                      setState(() {
+                                                        estado = newValue;
+                                                      });
+                                                    },
+                                                  )
+                                                : const SizedBox(
+                                                    height: 0, width: 0),
+                                          ],
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            HugeIcons.strokeRoundedDelete02,
+                                            color: color0,
+                                            size: 20,
+                                          ),
+                                          onPressed: () {
+                                            _confirmDelete(deviceName, equipo);
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+
+                        case '028000_IOT':
+                          bool estado = deviceDATA['w_status'] ?? false;
+                          bool heaterOn = deviceDATA['f_status'] ?? false;
+
+                          return Card(
+                            color: color3,
+                            margin: const EdgeInsets.symmetric(
+                                vertical: 5, horizontal: 10),
+                            elevation: 2,
+                            child: Theme(
+                              data: Theme.of(context)
+                                  .copyWith(dividerColor: Colors.transparent),
+                              child: ExpansionTile(
+                                tilePadding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0),
+                                iconColor: color6,
+                                collapsedIconColor: color6,
+                                title: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          nicknamesMap[deviceName] ??
+                                              deviceName,
+                                          style: GoogleFonts.poppins(
+                                            color: color0,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          online
+                                              ? '● CONECTADO'
+                                              : '● DESCONECTADO',
+                                          style: GoogleFonts.poppins(
+                                            color:
+                                                online ? Colors.green : color6,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                children: <Widget>[
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16.0, vertical: 5.0),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            estado
+                                                ? Row(
+                                                    children: [
+                                                      if (heaterOn) ...[
+                                                        Text(
+                                                          'Enfriando',
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                            color: Colors.lightBlueAccent.shade400,
+                                                            fontSize: 15,
+                                                          ),
+                                                        ),
+                                                        Icon(
+                                                          HugeIcons.strokeRoundedSnow,
+                                                          size: 15,
+                                                          color:
+                                                              Colors.lightBlueAccent.shade400,
+                                                        ),
+                                                      ] else ...[
+                                                        Text(
+                                                          'Encendido',
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                            color: Colors.green,
+                                                            fontSize: 15,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ],
+                                                  )
+                                                : Text(
+                                                    'Apagado',
+                                                    style: GoogleFonts.poppins(
+                                                        color: color6,
+                                                        fontSize: 15),
+                                                  ),
+                                            const SizedBox(width: 5),
+                                            owner
+                                                ? Switch(
+                                                    activeColor:
+                                                        const Color(0xFF9C9D98),
+                                                    activeTrackColor:
+                                                        const Color(0xFFB2B5AE),
+                                                    inactiveThumbColor:
+                                                        const Color(0xFFB2B5AE),
+                                                    inactiveTrackColor:
+                                                        const Color(0xFF9C9D98),
+                                                    value: estado,
+                                                    onChanged: (newValue) {
+                                                      toggleState(
+                                                          deviceName, newValue);
+                                                      setState(() {
+                                                        estado = newValue;
+                                                      });
+                                                    },
+                                                  )
+                                                : const SizedBox(
+                                                    height: 0, width: 0),
+                                          ],
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            HugeIcons.strokeRoundedDelete02,
+                                            color: color0,
+                                            size: 20,
+                                          ),
+                                          onPressed: () {
+                                            _confirmDelete(deviceName, equipo);
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+
                         default:
                           return Container();
                       }

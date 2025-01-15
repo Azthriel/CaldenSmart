@@ -16,15 +16,19 @@ class DetectorPage extends StatefulWidget {
 class DetectorPageState extends State<DetectorPage> {
   int _selectedIndex = 0;
   int _selectedNotificationOption = 0;
-  bool _showNotificationOptions = false;
   double bottomBarHeight = kBottomNavigationBarHeight;
 
+  bool _isAnimating = false;
+  bool _showNotificationOptions = false;
   bool alert = false;
-  String _textToShow = 'AIRE PURO';
+  
   bool online = globalDATA[
               '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
           'cstate'] ??
       false;
+
+  String _textToShow = 'AIRE PURO';
+
   final PageController _pageController = PageController();
 
   @override
@@ -145,19 +149,44 @@ class DetectorPageState extends State<DetectorPage> {
 
   //*-Funciones de deslizamiento entre pantallas-*\\
 
-  void _onItemTapped(int index) {
-    if ((index - _selectedIndex).abs() > 1) {
-      _pageController.jumpToPage(index);
-    } else {
-      _pageController.animateToPage(
+ void onItemChanged(int index) {
+    if (!_isAnimating) {
+      setState(() {
+        _isAnimating = true;
+        _selectedIndex = index;
+      });
+
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          setState(() {
+            _isAnimating = false;
+          });
+        }
+      });
+    }
+  }
+
+  void onItemTapped(int index) {
+    if (_selectedIndex != index && !_isAnimating) {
+      setState(() {
+        _isAnimating = true;
+      });
+
+      _pageController
+          .animateToPage(
         index,
         duration: const Duration(milliseconds: 600),
         curve: Curves.easeInOut,
-      );
+      )
+          .then((_) {
+        if (mounted) {
+          setState(() {
+            _selectedIndex = index;
+            _isAnimating = false;
+          });
+        }
+      });
     }
-    setState(() {
-      _selectedIndex = index;
-    });
   }
 
   void _sendValueToBle(int value) async {
@@ -1593,11 +1622,10 @@ class DetectorPageState extends State<DetectorPage> {
           children: [
             PageView(
               controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _selectedIndex = index;
-                });
-              },
+              physics: _isAnimating
+                  ? const NeverScrollableScrollPhysics()
+                  : const BouncingScrollPhysics(),
+              onPageChanged: onItemChanged,
               children: pages,
             ),
             Positioned(
@@ -1620,9 +1648,7 @@ class DetectorPageState extends State<DetectorPage> {
                 backgroundColor: Colors.transparent,
                 animationCurve: Curves.easeInOut,
                 animationDuration: const Duration(milliseconds: 600),
-                onTap: (index) {
-                  _onItemTapped(index);
-                },
+                onTap: onItemTapped,
                 letIndexChange: (index) => true,
               ),
             ),

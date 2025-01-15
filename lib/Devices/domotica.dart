@@ -19,6 +19,7 @@ class DomoticaPage extends StatefulWidget {
 
 class DomoticaPageState extends State<DomoticaPage> {
   var parts = utf8.decode(ioValues).split('/');
+
   bool isChangeModeVisible = false;
   bool showOptions = false;
   bool showSecondaryAdminFields = false;
@@ -30,16 +31,19 @@ class DomoticaPageState extends State<DomoticaPage> {
   bool _showNotificationOptions = false;
   bool isAgreeChecked = false;
   bool isPasswordCorrect = false;
-  TextEditingController emailController = TextEditingController();
-  TextEditingController passController = TextEditingController();
-  final TextEditingController modulePassController = TextEditingController();
-  int _selectedNotificationOption = 0;
-  int _selectedIndex = 0;
-  final PageController _pageController = PageController(initialPage: 0);
-  final TextEditingController tenantController = TextEditingController();
+  bool _isAnimating = false;
   late List<bool> _selectedPins;
   late List<bool> _notis;
 
+  TextEditingController emailController = TextEditingController();
+  TextEditingController passController = TextEditingController();
+  final TextEditingController modulePassController = TextEditingController();
+  final PageController _pageController = PageController(initialPage: 0);
+  final TextEditingController tenantController = TextEditingController();
+
+  int _selectedNotificationOption = 0;
+  int _selectedIndex = 0;
+  
   @override
   void initState() {
     super.initState();
@@ -92,19 +96,44 @@ class DomoticaPageState extends State<DomoticaPage> {
     super.dispose();
   }
 
-  void _onItemTapped(int index) {
-    if ((index - _selectedIndex).abs() > 1) {
-      _pageController.jumpToPage(index);
-    } else {
-      _pageController.animateToPage(
+   void onItemChanged(int index) {
+    if (!_isAnimating) {
+      setState(() {
+        _isAnimating = true;
+        _selectedIndex = index;
+      });
+
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          setState(() {
+            _isAnimating = false;
+          });
+        }
+      });
+    }
+  }
+
+  void onItemTapped(int index) {
+    if (_selectedIndex != index && !_isAnimating) {
+      setState(() {
+        _isAnimating = true;
+      });
+
+      _pageController
+          .animateToPage(
         index,
         duration: const Duration(milliseconds: 600),
         curve: Curves.easeInOut,
-      );
+      )
+          .then((_) {
+        if (mounted) {
+          setState(() {
+            _selectedIndex = index;
+            _isAnimating = false;
+          });
+        }
+      });
     }
-    setState(() {
-      _selectedIndex = index;
-    });
   }
 
   Future<void> processSelectedPins() async {
@@ -2634,11 +2663,10 @@ class DomoticaPageState extends State<DomoticaPage> {
           children: [
             PageView(
               controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _selectedIndex = index;
-                });
-              },
+              physics: _isAnimating
+                  ? const NeverScrollableScrollPhysics()
+                  : const BouncingScrollPhysics(),
+              onPageChanged: onItemChanged,
               children: pages,
             ),
             Positioned(
@@ -2661,9 +2689,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                 backgroundColor: Colors.transparent,
                 animationCurve: Curves.easeInOut,
                 animationDuration: const Duration(milliseconds: 600),
-                onTap: (index) {
-                  _onItemTapped(index);
-                },
+                onTap: onItemTapped,
                 letIndexChange: (index) => true,
               ),
             ),

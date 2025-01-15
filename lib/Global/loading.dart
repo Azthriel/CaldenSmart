@@ -38,7 +38,7 @@ class LoadState extends State<LoadingPage> {
       if (precharge == true) {
         showToast('Dispositivo conectado exitosamente');
         switch (pc) {
-          case '022000_IOT' || '027000_IOT':
+          case '022000_IOT' || '027000_IOT' || '041220_IOT':
             navigatorKey.currentState?.pushReplacementNamed('/calefactor');
             break;
           case '015773_IOT':
@@ -58,6 +58,9 @@ class LoadState extends State<LoadingPage> {
             break;
           case '050217_IOT':
             navigatorKey.currentState?.pushReplacementNamed('/millenium');
+            break;
+          case '028000_IOT':
+            navigatorKey.currentState?.pushReplacementNamed('/heladera');
             break;
         }
       } else {
@@ -115,7 +118,7 @@ class LoadState extends State<LoadingPage> {
       }
 
       switch (pc) {
-        case '022000_IOT' || '027000_IOT':
+        case '022000_IOT' || '027000_IOT' || '041220_IOT':
           varsValues = await myDevice.varsUuid.read();
           var parts2 = utf8.decode(varsValues).split(':');
           printLog('Valores Vars: $parts2');
@@ -466,7 +469,7 @@ class LoadState extends State<LoadingPage> {
           rollerMoving = parts2[14] == '1';
           awsInit = parts2[15] == '1';
           break;
-        case '050217_IOT':
+        case '050217_IOT' || '028000_IOT':
           varsValues = await myDevice.varsUuid.read();
           var parts2 = utf8.decode(varsValues).split(':');
           printLog('Valores Vars: $parts2');
@@ -477,7 +480,6 @@ class LoadState extends State<LoadingPage> {
               'Puede utilizar el control por distancia: $canControlDistance');
           turnOn = parts2[2] == '1';
           trueStatus = parts2[4] == '1';
-          // nightMode = parts2[5] == '1';
           printLog('Estado: $turnOn');
           lastUser = users;
           owner = globalDATA[

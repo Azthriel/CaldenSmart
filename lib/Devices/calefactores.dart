@@ -23,10 +23,12 @@ class CalefactorPage extends StatefulWidget {
 
 class CalefactorPageState extends State<CalefactorPage> {
   var parts2 = utf8.decode(varsValues).split(':');
+
   late double tempValue;
-  late bool loading;
   int _selectedNotificationOption = 0;
+  int _selectedIndex = 0;
   double result = 0.0;
+
   bool _showNotificationOptions = false;
   bool showSecondaryAdminFields = false;
   bool showAddAdminField = false;
@@ -35,6 +37,10 @@ class CalefactorPageState extends State<CalefactorPage> {
   bool dOnOk = false;
   bool dOffOk = false;
   bool showOptions = false;
+  bool _isAnimating = false;
+  bool buttonPressed = false;
+  late bool loading;
+
   String measure = DeviceManager.getProductCode(deviceName) == '022000_IOT'
       ? 'KW/h'
       : 'M³/h';
@@ -51,13 +57,16 @@ class CalefactorPageState extends State<CalefactorPage> {
   final TextEditingController costController = TextEditingController();
   final TextEditingController tenantController = TextEditingController();
   final TextEditingController tenantDistanceOn = TextEditingController();
+  final PageController _pageController = PageController(initialPage: 0);
+
   DateTime? fechaSeleccionada;
-  bool buttonPressed = false;
+
   String tiempo = '';
 
   //*- Variables para el control de las paginas -*\\
-  int _selectedIndex = 0;
-  final PageController _pageController = PageController(initialPage: 0);
+
+  // esto lo dejo porque THE GAME me encanta romper las bolas
+
   //*- Variables para el control de las paginas -*\\
 
   @override
@@ -99,19 +108,44 @@ class CalefactorPageState extends State<CalefactorPage> {
     super.dispose();
   }
 
-  void _onItemTapped(int index) {
-    if ((index - _selectedIndex).abs() > 1) {
-      _pageController.jumpToPage(index);
-    } else {
-      _pageController.animateToPage(
+  void onItemChanged(int index) {
+    if (!_isAnimating) {
+      setState(() {
+        _isAnimating = true;
+        _selectedIndex = index;
+      });
+
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          setState(() {
+            _isAnimating = false;
+          });
+        }
+      });
+    }
+  }
+
+  void onItemTapped(int index) {
+    if (_selectedIndex != index && !_isAnimating) {
+      setState(() {
+        _isAnimating = true;
+      });
+
+      _pageController
+          .animateToPage(
         index,
         duration: const Duration(milliseconds: 600),
         curve: Curves.easeInOut,
-      );
+      )
+          .then((_) {
+        if (mounted) {
+          setState(() {
+            _selectedIndex = index;
+            _isAnimating = false;
+          });
+        }
+      });
     }
-    setState(() {
-      _selectedIndex = index;
-    });
   }
 
   Future<void> addSecondaryAdmin(String email) async {
@@ -538,10 +572,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                 child: turnOn
                     ? AnimatedIconWidget(
                         isHeating: trueStatus,
-                        icon: DeviceManager.getProductCode(deviceName) ==
-                                '022000_IOT'
-                            ? Icons.flash_on_rounded
-                            : HugeIcons.strokeRoundedFire,
+                        icon: powerIconOn,
                       )
                     : Icon(powerIconOff, size: 80, color: Colors.white),
               ),
@@ -2486,11 +2517,10 @@ class CalefactorPageState extends State<CalefactorPage> {
           children: [
             PageView(
               controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _selectedIndex = index;
-                });
-              },
+              physics: _isAnimating
+                  ? const NeverScrollableScrollPhysics()
+                  : const BouncingScrollPhysics(),
+              onPageChanged: onItemChanged,
               children: pages,
             ),
             Positioned(
@@ -2512,9 +2542,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                 backgroundColor: Colors.transparent,
                 animationCurve: Curves.easeInOut,
                 animationDuration: const Duration(milliseconds: 600),
-                onTap: (index) {
-                  _onItemTapped(index);
-                },
+                onTap: onItemTapped,
                 letIndexChange: (index) => true,
               ),
             ),

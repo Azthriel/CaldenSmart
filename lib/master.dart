@@ -3028,18 +3028,18 @@ Future<void> showUpdateDialog(BuildContext ctx) {
 //*-Device update-*\\
 
 //*-Calculo de gasto-*\\
-  double equipmentConsumption(String pc){
-    switch(pc){
-      case '022000_IOT':
-        return 2;
-      case '050217_IOT':
-        return 1.5;
-      case '027000_IOT':
-        return 7;
-      default:
-        return 1;
-    }
+double equipmentConsumption(String pc) {
+  switch (pc) {
+    case '022000_IOT':
+      return 2;
+    case '050217_IOT':
+      return 1.5;
+    case '027000_IOT':
+      return 7;
+    default:
+      return 1;
   }
+}
 //*-Calculo de gasto-*\\
 
 // // -------------------------------------------------------------------------------------------------------------\\ \\
@@ -3052,9 +3052,13 @@ class DeviceManager {
     '015773_IOT',
     '020010_IOT',
     '022000_IOT',
-    '024011_IOT',
     '027000_IOT',
+    '050217_IOT',
+    '020020_IOT',
+    '041220_IOT',
     '027313_IOT',
+    '027131_IOT',
+    '024011_IOT',
   ];
 
   ///Extrae el número de serie desde el deviceName
@@ -3104,6 +3108,18 @@ class DeviceManager {
         break;
       case '024011_IOT':
         code = 'Roll';
+        break;
+      case '050217_IOT':
+        code = 'Millenium';
+        break;
+      case '020020_IOT':
+        code = 'Modulo';
+        break;
+      case '027131_IOT':
+        code = 'Riel';
+        break;
+      case '041220_IOT':
+        code = 'Radiador';
         break;
     }
 
@@ -3193,20 +3209,11 @@ class MyDevice {
       saveGlobalData(globalDATA);
 
       switch (DeviceManager.getProductCode(device.platformName)) {
-        case '022000_IOT':
-          BluetoothService espService = services.firstWhere(
-              (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
-
-          varsUuid = espService.characteristics.firstWhere((c) =>
-              c.uuid ==
-              Guid(
-                  '52a2f121-a8e3-468c-a5de-45dca9a2a207')); //WorkingTemp:WorkingStatus:EnergyTimer:HeaterOn:NightMode
-          otaUuid = espService.characteristics.firstWhere((c) =>
-              c.uuid ==
-              Guid(
-                  'ae995fcd-2c7a-4675-84f8-332caf784e9f')); //Ota comandos (Solo notify)
-          break;
-        case '027000_IOT':
+        case '022000_IOT' ||
+              '027000_IOT' ||
+              '041220_IOT' ||
+              '050217_IOT' ||
+              '028000_IOT':
           BluetoothService espService = services.firstWhere(
               (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
 
@@ -3282,19 +3289,6 @@ class MyDevice {
               c.uuid ==
               Guid(
                   '52a2f121-a8e3-468c-a5de-45dca9a2a207')); //DstCtrl:LargoRoller:InversionGiro:VelocidadMotor:PosicionActual:PosicionTrabajo:RollerMoving:AWSinit
-          otaUuid = espService.characteristics.firstWhere((c) =>
-              c.uuid ==
-              Guid(
-                  'ae995fcd-2c7a-4675-84f8-332caf784e9f')); //Ota comandos (Solo notify)
-          break;
-        case '050217_IOT':
-          BluetoothService espService = services.firstWhere(
-              (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
-
-          varsUuid = espService.characteristics.firstWhere((c) =>
-              c.uuid ==
-              Guid(
-                  '52a2f121-a8e3-468c-a5de-45dca9a2a207')); //WorkingTemp:WorkingStatus:EnergyTimer:HeaterOn:NightMode
           otaUuid = espService.characteristics.firstWhere((c) =>
               c.uuid ==
               Guid(
@@ -4666,6 +4660,10 @@ class ImageManager {
         return 'assets/devices/050217.png';
       case '027313_IOT':
         return 'assets/devices/027313.webp';
+      case '041220_IOT':
+        return 'assets/devices/041220.jpg';
+      case '028000_IOT':
+        return 'assets/devices/028000.png';
       default:
         return 'assets/branch/Logo.png';
     }

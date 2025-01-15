@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../aws/dynamo/dynamo.dart';
@@ -13,18 +14,21 @@ import '../Global/stored_data.dart';
 
 // CLASES \\
 
-class MilleniumPage extends StatefulWidget {
-  const MilleniumPage({super.key});
+class HeladeraPage extends StatefulWidget {
+  const HeladeraPage({super.key});
 
   @override
-  MilleniumPageState createState() => MilleniumPageState();
+  HeladeraPageState createState() => HeladeraPageState();
 }
 
-class MilleniumPageState extends State<MilleniumPage> {
-  List<String> parts2 = utf8.decode(varsValues).split(':');
-  
-  
-  
+class HeladeraPageState extends State<HeladeraPage> {
+  var parts2 = utf8.decode(varsValues).split(':');
+
+  late double tempValue;
+  int _selectedNotificationOption = 0;
+  int _selectedIndex = 0;
+  double result = 0.0;
+
   bool _showNotificationOptions = false;
   bool showSecondaryAdminFields = false;
   bool showAddAdminField = false;
@@ -37,16 +41,9 @@ class MilleniumPageState extends State<MilleniumPage> {
   bool buttonPressed = false;
   late bool loading;
 
-  String tiempo = '';
   String measure = 'KW/h';
-
-  IconData powerIconOn = Icons.water_drop;
-  IconData powerIconOff = Icons.format_color_reset;
-
-  int _selectedIndex = 0;
-  int _selectedNotificationOption = 0;
-  double result = 0.0;
-  late double tempValue;
+  IconData powerIconOn = HugeIcons.strokeRoundedSnow;
+  IconData powerIconOff = HugeIcons.strokeRoundedSnow;
 
   TextEditingController emailController = TextEditingController();
   final TextEditingController costController = TextEditingController();
@@ -55,7 +52,9 @@ class MilleniumPageState extends State<MilleniumPage> {
   final PageController _pageController = PageController(initialPage: 0);
 
   DateTime? fechaSeleccionada;
-  
+
+  String tiempo = '';
+
   @override
   void initState() {
     super.initState();
@@ -545,7 +544,9 @@ class MilleniumPageState extends State<MilleniumPage> {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: turnOn
-                      ? (trueStatus ? Colors.amber[600] : Colors.greenAccent)
+                      ? (trueStatus
+                          ? Colors.lightBlueAccent.shade400
+                          : Colors.greenAccent)
                       : Colors.redAccent,
                   shape: BoxShape.circle,
                   boxShadow: const [
@@ -558,9 +559,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                 ),
                 child: turnOn
                     ? AnimatedIconWidget(
-                        isHeating: trueStatus,
-                        icon: powerIconOn,
-                      )
+                        isHeating: trueStatus, icon: powerIconOn)
                     : Icon(powerIconOff, size: 80, color: Colors.white),
               ),
             ),
@@ -571,11 +570,13 @@ class MilleniumPageState extends State<MilleniumPage> {
                 Text.rich(
                   TextSpan(
                     text: turnOn
-                        ? (trueStatus ? 'Calentando' : 'Encendido')
+                        ? (trueStatus ? 'Enfriando' : 'Encendido')
                         : 'Apagado',
                     style: GoogleFonts.poppins(
                       color: turnOn
-                          ? (trueStatus ? Colors.amber[600] : Colors.green)
+                          ? (trueStatus
+                              ? Colors.lightBlueAccent.shade400
+                              : Colors.green)
                           : Colors.red,
                       fontSize: 30,
                       fontWeight: FontWeight.w600,
@@ -609,12 +610,12 @@ class MilleniumPageState extends State<MilleniumPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.thermostat_rounded,
+                  HugeIcons.strokeRoundedThermometerCold,
                   size: 250,
                   color: Color.lerp(
                     Colors.blueAccent,
-                    Colors.redAccent,
-                    (tempValue - 10) / 70,
+                    Colors.lightBlueAccent,
+                    (tempValue + 30) / 60,
                   ),
                 ),
                 const SizedBox(width: 20),
@@ -651,8 +652,8 @@ class MilleniumPageState extends State<MilleniumPage> {
                             alignment: Alignment.bottomCenter,
                             child: Container(
                               width: 70,
-                              height: (tempValue > 0
-                                  ? (((tempValue - 10) / 70) * 350)
+                              height: (tempValue > -30
+                                  ? (((tempValue + 30) / 60) * 350)
                                       .clamp(40, 350)
                                   : 40),
                               decoration: BoxDecoration(
@@ -660,7 +661,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                                 gradient: const LinearGradient(
                                   colors: [
                                     Colors.blueAccent,
-                                    Colors.redAccent,
+                                    Colors.lightBlueAccent,
                                   ],
                                   begin: Alignment.bottomCenter,
                                   end: Alignment.topCenter,
@@ -684,8 +685,8 @@ class MilleniumPageState extends State<MilleniumPage> {
                                 quarterTurns: 3,
                                 child: Slider(
                                   value: tempValue,
-                                  min: 10,
-                                  max: 80,
+                                  min: -30,
+                                  max: 30,
                                   onChanged: (value) {
                                     setState(() {
                                       tempValue = value;
@@ -797,7 +798,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                         ? Column(
                             children: [
                               Card(
-                                color: color3.withValues(alpha: 0.9),
+                                color: color3..withValues(alpha: 0.9),
                                 elevation: 6,
                                 margin: const EdgeInsets.symmetric(
                                     vertical: 8.0, horizontal: 20.0),
@@ -890,7 +891,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                               ),
                               const SizedBox(height: 15),
                               Card(
-                                color: color3.withValues(alpha: 0.9),
+                                color: color3..withValues(alpha: 0.9),
                                 elevation: 6,
                                 margin: const EdgeInsets.symmetric(
                                     vertical: 8.0, horizontal: 20.0),
@@ -1025,9 +1026,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 20.0,
-                      vertical: 10.0,
-                    ),
+                        horizontal: 20.0, vertical: 10.0),
                     decoration: BoxDecoration(
                       color: color3.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(15),
@@ -1123,7 +1122,9 @@ class MilleniumPageState extends State<MilleniumPage> {
                       backgroundColor: color3,
                       foregroundColor: color0,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 35, vertical: 20),
+                        horizontal: 35,
+                        vertical: 20,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
@@ -2211,7 +2212,6 @@ class MilleniumPageState extends State<MilleniumPage> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 10),
 
               SizedBox(
@@ -2444,7 +2444,7 @@ class MilleniumPageState extends State<MilleniumPage> {
         resizeToAvoidBottomInset: false,
         body: Stack(
           children: [
-             PageView(
+            PageView(
               controller: _pageController,
               physics: _isAnimating
                   ? const NeverScrollableScrollPhysics()

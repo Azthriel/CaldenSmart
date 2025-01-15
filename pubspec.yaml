@@ -1,7 +1,7 @@
 name: caldensmart
 description: "Caldén Smart"
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
-version: 1.0.19+20
+version: 1.0.20+22
 
 environment:
   sdk: ^3.5.1
@@ -79,6 +79,8 @@ flutter:
     - assets/devices/027000.webp
     - assets/devices/027313.webp
     - assets/devices/050217.png
+    - assets/devices/028000.png
+    - assets/devices/041220.jpg
     - assets/misc/fondo.png
     - assets/misc/google.png
     - assets/branch/Logo_sitio.png

@@ -30,12 +30,15 @@ class RelayPageState extends State<RelayPage> {
   bool dOffOk = false;
   bool showOptions = false;
   bool _showNotificationOptions = false;
-  TextEditingController emailController = TextEditingController();
+  bool _isAnimating = false;
+
   int _selectedNotificationOption = 0;
   int _selectedIndex = 0;
+
   final PageController _pageController = PageController(initialPage: 0);
   final TextEditingController tenantController = TextEditingController();
   final TextEditingController tenantDistanceOn = TextEditingController();
+  TextEditingController emailController = TextEditingController();
 
   @override
   void initState() {
@@ -69,19 +72,44 @@ class RelayPageState extends State<RelayPage> {
     emailController.dispose();
   }
 
-  void _onItemTapped(int index) {
-    if ((index - _selectedIndex).abs() > 1) {
-      _pageController.jumpToPage(index);
-    } else {
-      _pageController.animateToPage(
+void onItemChanged(int index) {
+    if (!_isAnimating) {
+      setState(() {
+        _isAnimating = true;
+        _selectedIndex = index;
+      });
+
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          setState(() {
+            _isAnimating = false;
+          });
+        }
+      });
+    }
+  }
+
+  void onItemTapped(int index) {
+    if (_selectedIndex != index && !_isAnimating) {
+      setState(() {
+        _isAnimating = true;
+      });
+
+      _pageController
+          .animateToPage(
         index,
         duration: const Duration(milliseconds: 600),
         curve: Curves.easeInOut,
-      );
+      )
+          .then((_) {
+        if (mounted) {
+          setState(() {
+            _selectedIndex = index;
+            _isAnimating = false;
+          });
+        }
+      });
     }
-    setState(() {
-      _selectedIndex = index;
-    });
   }
 
   Future<void> addSecondaryAdmin(String email) async {
@@ -2436,11 +2464,10 @@ class RelayPageState extends State<RelayPage> {
           children: [
             PageView(
               controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _selectedIndex = index;
-                });
-              },
+              physics: _isAnimating
+                  ? const NeverScrollableScrollPhysics()
+                  : const BouncingScrollPhysics(),
+              onPageChanged: onItemChanged,
               children: pages,
             ),
             Positioned(
@@ -2461,9 +2488,7 @@ class RelayPageState extends State<RelayPage> {
                 backgroundColor: Colors.transparent,
                 animationCurve: Curves.easeInOut,
                 animationDuration: const Duration(milliseconds: 600),
-                onTap: (index) {
-                  _onItemTapped(index);
-                },
+                onTap: onItemTapped,
                 letIndexChange: (index) => true,
               ),
             ),
