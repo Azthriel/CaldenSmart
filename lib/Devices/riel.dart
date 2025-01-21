@@ -1939,6 +1939,9 @@ void onItemChanged(int index) {
                   ),
                 ),
               ),
+              Padding(
+                padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
+              ),
             ],
           ),
         ),

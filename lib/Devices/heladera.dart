@@ -2284,6 +2284,9 @@ class HeladeraPageState extends State<HeladeraPage> {
                   ),
                 ),
               ),
+              Padding(
+                padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
+              ),
             ],
           ),
         ),

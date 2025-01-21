@@ -1941,6 +1941,9 @@ class RollerPageState extends State<RollerPage> {
                   ),
                 ),
               ),
+              Padding(
+                padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
+              ),
             ],
           ),
         ),

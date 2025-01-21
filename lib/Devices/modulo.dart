@@ -602,7 +602,7 @@ class ModuloPageState extends State<ModuloPage> {
                         ? RadioListTile<int>(
                             title: Text(
                               subNicknamesMap['$deviceName/-/$index'] ??
-                                  'Pin $index',
+                                  'Salida $index',
                               style: GoogleFonts.poppins(
                                 color: color0,
                                 fontSize: 16,
@@ -2576,6 +2576,9 @@ class ModuloPageState extends State<ModuloPage> {
                     ),
                   ),
                 ),
+              ),
+              Padding(
+                padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
               ),
             ],
           ),

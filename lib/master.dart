@@ -277,6 +277,14 @@ String? lastSV;
 bool shouldUpdateDevice = false;
 //*-Device update-*\\
 
+//*- Altura de la bottomAppBar -*\\
+double bottomBarHeight = kBottomNavigationBarHeight;
+//*- Altura de la bottomAppBar -*\\
+
+//*- ultima pagina visitada -*\\
+int? lastPage;
+//*- ultima pagina visitada -*\\
+
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
 //! FUNCIONES !\\
@@ -1699,7 +1707,7 @@ Future<void> handleNotifications(RemoteMessage message) async {
         final now = DateTime.now();
         String displayTitle = '¡ALERTA EN ${nicknamesMap[device] ?? device}!';
         String displayMessage =
-            'El detector disparó una alarma.\nA las ${now.hour > 10 ? now.hour : '0${now.hour}'}:${now.minute > 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+            'El detector disparó una alarma.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
         showNotification(displayTitle.toUpperCase(), displayMessage, sound);
         printLog('Esta el cortito ${detectorOff.keys.contains(device)}');
         if (detectorOff.keys.contains(device)) {
@@ -1727,7 +1735,7 @@ Future<void> handleNotifications(RemoteMessage message) async {
             'Entrada${message.data['entry']!}';
         String displayTitle = '¡ALERTA EN ${nicknamesMap[device] ?? device}!';
         String displayMessage =
-            'La $entry disparó una alarma.\nA las ${now.hour > 10 ? now.hour : '0${now.hour}'}:${now.minute > 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+            'La $entry disparó una alarma.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
         if (notis[int.parse(message.data['entry']!)]) {
           printLog(
               'En la lista: ${notificationMap['$product/$number']!} en la posición ${message.data['entry']!} hay un true');
@@ -1761,7 +1769,7 @@ Future<void> handleNotifications(RemoteMessage message) async {
           String displayTitle =
               '¡El equipo ${nicknamesMap[device] ?? device} se desconecto!';
           String displayMessage =
-              'Se detecto una desconexión a las ${now.hour > 10 ? now.hour : '0${now.hour}'}:${now.minute > 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+              'Se detecto una desconexión a las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
           showNotification(displayTitle, displayMessage, 'noti');
         }
       }
@@ -2652,6 +2660,8 @@ Future<void> controlDeviceBLE(String name, bool newState) async {
     String message = jsonEncode({
       'index': int.parse(pinQuickAccess[name]!),
       'w_status': newState,
+      'r_state': "0",
+      'pinType': 0
     });
     sendMessagemqtt(topic, message);
     sendMessagemqtt(topic2, message);
@@ -3369,6 +3379,72 @@ class NativeService {
   // }
 }
 //*-Metodos, interacción con código Nativo-*\\
+
+//*-Versionador, comparador de versiones-*\\
+class Versioner {
+  ///Compara si la primer versión que le envías salio después que la segunda
+  static bool isPosterior(String myVersion, String versionToCompare) {
+    int year1 = int.parse(myVersion.substring(0, 2));
+    int month1 = int.parse(myVersion.substring(2, 4));
+    int day1 = int.parse(myVersion.substring(4, 6));
+    String letter1 = myVersion.substring(6, 7);
+
+    int year2 = int.parse(versionToCompare.substring(0, 2));
+    int month2 = int.parse(versionToCompare.substring(2, 4));
+    int day2 = int.parse(versionToCompare.substring(4, 6));
+    String letter2 = versionToCompare.substring(6, 7);
+
+    if (year1 > year2) {
+      return true;
+    } else {
+      if (month1 > month2) {
+        return true;
+      } else {
+        if (day1 > day2) {
+          return true;
+        } else {
+          if (letter1.compareTo(letter2) > 0) {
+            return true;
+          } else {
+            return false;
+          }
+        }
+      }
+    }
+  }
+
+  ///Compara si la primer versión que le envías salio antes que la segunda
+  static bool isPrevious(String myVersion, String versionToCompare) {
+    int year1 = int.parse(myVersion.substring(0, 2));
+    int month1 = int.parse(myVersion.substring(2, 4));
+    int day1 = int.parse(myVersion.substring(4, 6));
+    String letter1 = myVersion.substring(6, 7);
+
+    int year2 = int.parse(versionToCompare.substring(0, 2));
+    int month2 = int.parse(versionToCompare.substring(2, 4));
+    int day2 = int.parse(versionToCompare.substring(4, 6));
+    String letter2 = versionToCompare.substring(6, 7);
+
+    if (year1 < year2) {
+      return true;
+    } else {
+      if (month1 < month2) {
+        return true;
+      } else {
+        if (day1 < day2) {
+          return true;
+        } else {
+          if (letter1.compareTo(letter2) < 0) {
+            return true;
+          } else {
+            return false;
+          }
+        }
+      }
+    }
+  }
+}
+//*-Versionador, comparador de versiones-*\\
 
 //*-Provider, actualización de data en un widget-*\\
 class GlobalDataNotifier extends ChangeNotifier {

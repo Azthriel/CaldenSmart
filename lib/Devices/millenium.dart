@@ -2284,6 +2284,9 @@ class MilleniumPageState extends State<MilleniumPage> {
                   ),
                 ),
               ),
+              Padding(
+                padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
+              ),
             ],
           ),
         ),

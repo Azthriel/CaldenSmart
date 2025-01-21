@@ -2355,6 +2355,9 @@ class CalefactorPageState extends State<CalefactorPage> {
                   ),
                 ),
               ),
+              Padding(
+                padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
+              ),
             ],
           ),
         ),

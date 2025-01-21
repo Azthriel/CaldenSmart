@@ -25,6 +25,8 @@ void loadValues() async {
   pinQuickAccess = await loadpinQuickAccess();
   labelEncendido = await loadlabelEncendido();
   labelApagado = await loadlabelApagado();
+  lastPage = await loadLastPage();
+
 
   for (String device in previusConnections) {
     await queryItems(service, DeviceManager.getProductCode(device),
@@ -401,7 +403,7 @@ Future<List<String>> loadAlexaDevices() async {
 }
 //*-Alexa devices -*\\
 
-//*- Labels personalizados*-\\
+//*-Labels personalizados-*\\
 Future<void> savelabelEncendido(Map<String, String> labels) async {
   final prefs = await SharedPreferences.getInstance();
   String labelsString = json.encode(labels);
@@ -431,4 +433,16 @@ Future<Map<String, String>> loadlabelApagado() async {
   }
   return {};
 }
-//*- Labels personalizados*-\\
+//*-Labels personalizados-*\\
+
+//*- Guardar y cargar última página-*\\
+Future<void> saveLastPage(int index) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setInt('CSlastPageIndex', index);
+}
+
+Future<int?> loadLastPage() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getInt('CSlastPageIndex') ?? 0;
+}
+//*- Guardar y cargar última página-*\\

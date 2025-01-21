@@ -19,7 +19,6 @@ class DomoticaPage extends StatefulWidget {
 
 class DomoticaPageState extends State<DomoticaPage> {
   var parts = utf8.decode(ioValues).split('/');
-
   bool isChangeModeVisible = false;
   bool showOptions = false;
   bool showSecondaryAdminFields = false;
@@ -34,16 +33,14 @@ class DomoticaPageState extends State<DomoticaPage> {
   bool _isAnimating = false;
   late List<bool> _selectedPins;
   late List<bool> _notis;
-
   TextEditingController emailController = TextEditingController();
   TextEditingController passController = TextEditingController();
   final TextEditingController modulePassController = TextEditingController();
   final PageController _pageController = PageController(initialPage: 0);
   final TextEditingController tenantController = TextEditingController();
-
   int _selectedNotificationOption = 0;
   int _selectedIndex = 0;
-  
+
   @override
   void initState() {
     super.initState();
@@ -53,7 +50,7 @@ class DomoticaPageState extends State<DomoticaPage> {
         List<bool>.filled(parts.length, false);
 
     printLog(_notis, 'amarillo');
-    
+
     tracking = devicesToTrack.contains(deviceName);
 
     processSelectedPins();
@@ -96,7 +93,7 @@ class DomoticaPageState extends State<DomoticaPage> {
     super.dispose();
   }
 
-   void onItemChanged(int index) {
+  void onItemChanged(int index) {
     if (!_isAnimating) {
       setState(() {
         _isAnimating = true;
@@ -644,7 +641,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                         ? RadioListTile<int>(
                             title: Text(
                               subNicknamesMap['$deviceName/-/$index'] ??
-                                  'Pin $index',
+                                  'Salida $index',
                               style: GoogleFonts.poppins(
                                 color: color0,
                                 fontSize: 16,
@@ -1215,13 +1212,17 @@ class DomoticaPageState extends State<DomoticaPage> {
                                 ),
                                 hintText: "Contraseña",
                                 hintStyle: TextStyle(
-                                    color: color0.withValues(alpha: 0.6)),
+                                  color: color0.withValues(alpha: 0.6),
+                                ),
                                 enabledBorder: UnderlineInputBorder(
                                   borderSide: BorderSide(
-                                      color: color0.withValues(alpha: 0.5)),
+                                    color: color0.withValues(alpha: 0.5),
+                                  ),
                                 ),
                                 focusedBorder: const UnderlineInputBorder(
-                                  borderSide: BorderSide(color: color0),
+                                  borderSide: BorderSide(
+                                    color: color0,
+                                  ),
                                 ),
                               ),
                             ),
@@ -2500,6 +2501,9 @@ class DomoticaPageState extends State<DomoticaPage> {
                     ),
                   ),
                 ),
+              ),
+              Padding(
+                padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
               ),
             ],
           ),

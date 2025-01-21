@@ -1,3 +1,4 @@
+import 'package:caldensmart/Global/stored_data.dart';
 import 'package:flutter/material.dart';
 import '/Global/scan.dart';
 import '/Global/wifi.dart';
@@ -19,8 +20,12 @@ class MenuPageState extends State<MenuPage> {
   @override
   void initState() {
     super.initState();
+    setState(() {
+      _selectedIndex = lastPage ?? 0;
+    });
     getMail();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _pageController.jumpToPage(_selectedIndex);
       checkForUpdate(context);
     });
   }
@@ -35,6 +40,7 @@ class MenuPageState extends State<MenuPage> {
     setState(() {
       _selectedIndex = index;
     });
+    saveLastPage(index);
   }
 
   void _onItemTapped(int index) {
@@ -43,6 +49,7 @@ class MenuPageState extends State<MenuPage> {
     setState(() {
       _selectedIndex = index;
     });
+    saveLastPage(index);
   }
 
   @override
