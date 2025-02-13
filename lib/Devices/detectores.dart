@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../master.dart';
 import '../Global/stored_data.dart';
 
@@ -21,11 +22,6 @@ class DetectorPageState extends State<DetectorPage> {
   bool _isAnimating = false;
   bool _showNotificationOptions = false;
   bool alert = false;
-  
-  bool online = globalDATA[
-              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-          'cstate'] ??
-      false;
 
   String _textToShow = 'AIRE PURO';
 
@@ -39,6 +35,11 @@ class DetectorPageState extends State<DetectorPage> {
     _subscribeToWorkCharacteristic();
     subscribeToWifiStatus();
     updateWifiValues(toolsValues);
+
+    onlineInCloud = globalDATA[
+                '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+            'cstate'] ??
+        false;
   }
 
   @override
@@ -57,36 +58,37 @@ class DetectorPageState extends State<DetectorPage> {
     int users = int.parse(match!.group(1).toString());
     printLog('Hay $users conectados');
     userConnected = users > 1;
+
+    WifiNotifier wifiNotifier =
+        Provider.of<WifiNotifier>(context, listen: false);
+
     if (parts[0] == 'WCS_CONNECTED') {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
-      online = true;
       printLog('sis $isWifiConnected');
-      setState(() {
-        textState = 'CONECTADO';
-        statusColor = Colors.green;
-        wifiIcon = Icons.wifi;
-        errorMessage = '';
-        errorSintax = '';
-        werror = false;
-      });
+      errorMessage = '';
+      errorSintax = '';
+      werror = false;
+      if (parts.length > 3) {
+        signalPower = int.tryParse(parts[3]) ?? -30;
+      } else {
+        signalPower = -30;
+      }
+      wifiNotifier.updateStatus(
+          'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
-      online = false;
       printLog('non $isWifiConnected');
 
       nameOfWifi = '';
-
-      setState(() {
-        textState = 'DESCONECTADO';
-        statusColor = Colors.red;
-        wifiIcon = Icons.wifi_off;
-      });
+wifiNotifier.updateStatus(
+          'DESCONECTADO', Colors.red, Icons.signal_wifi_off);
 
       if (atemp) {
         setState(() {
-          wifiIcon = Icons.warning_amber_rounded;
+          wifiNotifier.updateStatus(
+              'DESCONECTADO', Colors.red, Icons.warning_amber_rounded);
           werror = true;
           if (parts[1] == '202' || parts[1] == '15') {
             errorMessage = 'Contraseña incorrecta';
@@ -149,7 +151,7 @@ class DetectorPageState extends State<DetectorPage> {
 
   //*-Funciones de deslizamiento entre pantallas-*\\
 
- void onItemChanged(int index) {
+  void onItemChanged(int index) {
     if (!_isAnimating) {
       setState(() {
         _isAnimating = true;
@@ -203,6 +205,8 @@ class DetectorPageState extends State<DetectorPage> {
   @override
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
+    WifiNotifier wifiNotifier =
+        Provider.of<WifiNotifier>(context, listen: false);
 
     final List<Widget> pages = [
       //! Página 1: Estado del Aire, Estado de conexión, Caducidad del sensor
@@ -322,8 +326,10 @@ class DetectorPageState extends State<DetectorPage> {
                                     scale: animation, child: child);
                               },
                               child: Icon(
-                                online ? Icons.wifi : Icons.wifi_off_outlined,
-                                key: ValueKey<bool>(online),
+                                onlineInCloud
+                                    ? Icons.wifi
+                                    : Icons.wifi_off_outlined,
+                                key: ValueKey<bool>(onlineInCloud),
                                 color: const Color(0xFF10BB96),
                                 size: 50,
                               ),
@@ -343,9 +349,9 @@ class DetectorPageState extends State<DetectorPage> {
                                     ),
                                   ),
                                   Text(
-                                    online ? 'En Línea' : 'Desconectado',
+                                    onlineInCloud ? 'En Línea' : 'Desconectado',
                                     style: TextStyle(
-                                      color: online
+                                      color: onlineInCloud
                                           ? const Color(0xFF10BB96)
                                           : Colors.red,
                                       fontSize: 24,
@@ -1609,7 +1615,7 @@ class DetectorPageState extends State<DetectorPage> {
           ),
           actions: [
             IconButton(
-              icon: Icon(wifiIcon, color: color0),
+              icon: Icon(wifiNotifier.wifiIcon, color: color0),
               onPressed: () {
                 wifiText(context);
               },

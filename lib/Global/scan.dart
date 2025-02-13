@@ -100,6 +100,7 @@ class ScanPageState extends State<ScanPage>
                 if (navigatorKey.currentContext?.mounted ?? context.mounted) {
                   setState(() {
                     devices.add(result.device);
+
                     devices.sort(
                       (a, b) => a.platformName.compareTo(b.platformName),
                     );

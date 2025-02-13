@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../Global/stored_data.dart';
 import '../aws/dynamo/dynamo.dart';
@@ -18,7 +19,6 @@ class RollerPageState extends State<RollerPage> {
   int _selectedNotificationOption = 0;
 
   final TextEditingController tenantController = TextEditingController();
-  final TextEditingController tenantDistanceOn = TextEditingController();
   final PageController _pageController = PageController(initialPage: 0);
 
   TextEditingController rLargeController = TextEditingController();
@@ -36,7 +36,6 @@ class RollerPageState extends State<RollerPage> {
   bool showSmartResident = false;
   bool dOnOk = false;
   bool dOffOk = false;
-  //TODO variable nueva
   bool _isAnimating = false;
 
   @override
@@ -55,7 +54,6 @@ class RollerPageState extends State<RollerPage> {
   void dispose() {
     _pageController.dispose();
     tenantController.dispose();
-    tenantDistanceOn.dispose();
     rLargeController.dispose();
     workController.dispose();
     motorSpeedUpController.dispose();
@@ -67,7 +65,6 @@ class RollerPageState extends State<RollerPage> {
 
   // FUNCIONES \\
 
-  //TODO funciones para el master asi funciona la barra 
   void onItemChanged(int index) {
     if (!_isAnimating) {
       setState(() {
@@ -109,49 +106,59 @@ class RollerPageState extends State<RollerPage> {
   }
 
   void updateWifiValues(List<int> data) {
-    var fun =
-        utf8.decode(data); //Wifi status | wifi ssid | ble status | nickname
+    var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
     printLog(fun);
     var parts = fun.split(':');
+    final regex = RegExp(r'\((\d+)\)');
+    final match = regex.firstMatch(parts[2]);
+    int users = int.parse(match!.group(1).toString());
+    printLog('Hay $users conectados');
+    userConnected = users > 1;
+
+    WifiNotifier wifiNotifier =
+        Provider.of<WifiNotifier>(context, listen: false);
+
     if (parts[0] == 'WCS_CONNECTED') {
+      atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
       printLog('sis $isWifiConnected');
-      setState(() {
-        textState = 'CONECTADO';
-        statusColor = Colors.green;
-        wifiIcon = Icons.wifi;
-      });
+      errorMessage = '';
+      errorSintax = '';
+      werror = false;
+      if (parts.length > 3) {
+        signalPower = int.tryParse(parts[3]) ?? -30;
+      } else {
+        signalPower = -30;
+      }
+      wifiNotifier.updateStatus(
+          'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
       printLog('non $isWifiConnected');
 
-      setState(() {
-        textState = 'DESCONECTADO';
-        statusColor = Colors.red;
-        wifiIcon = Icons.wifi_off;
-      });
+      nameOfWifi = '';
+wifiNotifier.updateStatus(
+          'DESCONECTADO', Colors.red, Icons.signal_wifi_off);
 
-      if (parts[0] == 'WCS_DISCONNECTED' && atemp == true) {
-        //If comes from subscription, parts[1] = reason of error.
+      if (atemp) {
         setState(() {
-          wifiIcon = Icons.warning_amber_rounded;
-        });
+          wifiNotifier.updateStatus(
+              'DESCONECTADO', Colors.red, Icons.warning_amber_rounded);
+          werror = true;
+          if (parts[1] == '202' || parts[1] == '15') {
+            errorMessage = 'Contraseña incorrecta';
+          } else if (parts[1] == '201') {
+            errorMessage = 'La red especificada no existe';
+          } else if (parts[1] == '1') {
+            errorMessage = 'Error desconocido';
+          } else {
+            errorMessage = parts[1];
+          }
 
-        if (parts[1] == '202' || parts[1] == '15') {
-          errorMessage = 'Contraseña incorrecta';
-        } else if (parts[1] == '201') {
-          errorMessage = 'La red especificada no existe';
-        } else if (parts[1] == '1') {
-          errorMessage = 'Error desconocido';
-        } else {
-          errorMessage = parts[1];
-        }
-
-        if (int.tryParse(parts[1]) != null) {
           errorSintax = getWifiErrorSintax(int.parse(parts[1]));
-        }
+        });
       }
     }
 
@@ -250,6 +257,28 @@ class RollerPageState extends State<RollerPage> {
     myDevice.device.cancelWhenDisconnected(varsSub);
   }
 
+  void processValues(List<int> values) {
+    List<String> partes = utf8.decode(values).split(':');
+
+    distanceControlActive = partes[0] == '1';
+    rollerlength = partes[1];
+    rollerPolarity = partes[2];
+    rollerRPM = partes[3];
+    // rollerMicroStep = partes[4];
+    // rollerIMAX = partes[5];
+    // rollerIRMSRUN = partes[6];
+    // rollerIRMSHOLD = partes[7];
+    rollerFreewheeling = partes[8] == '1';
+    // rollerTPWMTHRS = partes[9];
+    // rollerTCOOLTHRS = partes[10];
+    // rollerSGTHRS = partes[11];
+    actualPositionGrades = int.parse(partes[12]);
+    actualPosition = int.parse(partes[13]);
+    workingPosition = int.parse(partes[14]);
+    rollerMoving = partes[15] == '1';
+    // awsInit = partes[16] == '1';
+  }
+
   void setRange(int mm) {
     String data = '${DeviceManager.getProductCode(deviceName)}[7]($mm)';
     printLog(data);
@@ -315,6 +344,8 @@ class RollerPageState extends State<RollerPage> {
   @override
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
+    WifiNotifier wifiNotifier =
+        Provider.of<WifiNotifier>(context, listen: false);
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
 
@@ -345,24 +376,15 @@ class RollerPageState extends State<RollerPage> {
                 ),
               ),
               const SizedBox(height: 20),
-
-              //TODO Riel center
-              CurtainAnimationRielCenter(
+              CurtainAnimation(
                 position: actualPosition,
                 onTapDown: (details) {
                   RenderBox box = context.findRenderObject() as RenderBox;
                   Offset localPosition =
                       box.globalToLocal(details.globalPosition);
-
-                  double containerWidth =
-                      MediaQuery.of(context).size.width * 0.8;
-                  double centerX = containerWidth / 2;
-                  double distanceFromCenter = (localPosition.dx - 50) - centerX;
-
-                  double relativePosition =
-                      1.0 - (distanceFromCenter.abs() / centerX);
+                  double relativeHeight = (localPosition.dy - 200) / 250;
                   int newPosition =
-                      (relativePosition * 100).clamp(0, 100).round();
+                      (relativeHeight * 100).clamp(0, 100).round();
 
                   setState(() {
                     workingPosition = newPosition;
@@ -370,59 +392,6 @@ class RollerPageState extends State<RollerPage> {
                   });
                 },
               ),
-
-              //TODO riel de izquierda a derecha
-              // CurtainAnimationRielLeft(
-              //   position: actualPosition,
-              //   onTapDown: (details) {
-              //     RenderBox box = context.findRenderObject() as RenderBox;
-              //     Offset localPosition =
-              //         box.globalToLocal(details.globalPosition);
-              //     double relativeWidth = (localPosition.dx - 50) /
-              //         (MediaQuery.of(context).size.width * 0.8);
-              //     int newPosition = (relativeWidth * 100).clamp(0, 100).round();
-
-              //     setState(() {
-              //       workingPosition = newPosition;
-              //       setDistance(newPosition);
-              //     });
-              //   },
-              // ),
-
-              //TODO riel de derecha a izquierda
-              //       CurtainAnimationRielRight(
-              //   position: actualPosition,
-              //   onTapDown: (details) {
-              //     RenderBox box = context.findRenderObject() as RenderBox;
-              //     Offset localPosition = box.globalToLocal(details.globalPosition);
-              //     double relativeWidth = 1.0 - ((localPosition.dx - 50) / (MediaQuery.of(context).size.width * 0.8));
-              //     int newPosition = (relativeWidth * 100).clamp(0, 100).round();
-
-              //     setState(() {
-              //       workingPosition = newPosition;
-              //       setDistance(newPosition);
-              //     });
-              //   },
-              // ),
-
-              //TODO Roll
-              // CurtainAnimation(
-              //   position: actualPosition,
-              //   onTapDown: (details) {
-              //     RenderBox box = context.findRenderObject() as RenderBox;
-              //     Offset localPosition =
-              //         box.globalToLocal(details.globalPosition);
-              //     double relativeHeight = (localPosition.dy - 200) / 250;
-              //     int newPosition =
-              //         (relativeHeight * 100).clamp(0, 100).round();
-
-              //     setState(() {
-              //       workingPosition = newPosition;
-              //       setDistance(newPosition);
-              //     });
-              //   },
-              // ),
-
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -762,9 +731,8 @@ class RollerPageState extends State<RollerPage> {
                         children: [
                           ElevatedButton(
                             onPressed: () {
-                              //TODO Configurar velocidad
-                              rollerRPM = '100';
-                              setMotorSpeed('100');
+                              rollerRPM = '50';
+                              setMotorSpeed('50');
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.green,
@@ -772,15 +740,16 @@ class RollerPageState extends State<RollerPage> {
                                 borderRadius: BorderRadius.circular(30),
                               ),
                             ),
-                            child: const Text('Bajo',
-                                style: TextStyle(color: color0)),
+                            child: const Text(
+                              'Bajo',
+                              style: TextStyle(color: color0),
+                            ),
                           ),
                           const SizedBox(width: 10),
                           ElevatedButton(
                             onPressed: () {
-                              //TODO Configurar velocidad
-                              rollerRPM = '100';
-                              setMotorSpeed('100');
+                              rollerRPM = '150';
+                              setMotorSpeed('150');
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.orange,
@@ -788,15 +757,16 @@ class RollerPageState extends State<RollerPage> {
                                 borderRadius: BorderRadius.circular(30),
                               ),
                             ),
-                            child: const Text('Medio',
-                                style: TextStyle(color: color0)),
+                            child: const Text(
+                              'Medio',
+                              style: TextStyle(color: color0),
+                            ),
                           ),
                           const SizedBox(width: 10),
                           ElevatedButton(
                             onPressed: () {
-                              //TODO Configurar velocidad
-                              rollerRPM = '100';
-                              setMotorSpeed('100');
+                              rollerRPM = '250';
+                              setMotorSpeed('250');
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: color5,
@@ -804,8 +774,10 @@ class RollerPageState extends State<RollerPage> {
                                 borderRadius: BorderRadius.circular(30),
                               ),
                             ),
-                            child: const Text('Alto',
-                                style: TextStyle(color: color0)),
+                            child: const Text(
+                              'Alto',
+                              style: TextStyle(color: color0),
+                            ),
                           ),
                         ],
                       ),
@@ -1591,15 +1563,16 @@ class RollerPageState extends State<RollerPage> {
                                                           padding:
                                                               const EdgeInsets
                                                                   .symmetric(
-                                                                  horizontal:
-                                                                      30,
-                                                                  vertical: 15),
+                                                            horizontal: 30,
+                                                            vertical: 15,
+                                                          ),
                                                           shape:
                                                               RoundedRectangleBorder(
                                                             borderRadius:
                                                                 BorderRadius
                                                                     .circular(
-                                                                        15),
+                                                              15,
+                                                            ),
                                                           ),
                                                         ),
                                                         child: Text(
@@ -1625,15 +1598,16 @@ class RollerPageState extends State<RollerPage> {
                                                           padding:
                                                               const EdgeInsets
                                                                   .symmetric(
-                                                                  horizontal:
-                                                                      30,
-                                                                  vertical: 15),
+                                                            horizontal: 30,
+                                                            vertical: 15,
+                                                          ),
                                                           shape:
                                                               RoundedRectangleBorder(
                                                             borderRadius:
                                                                 BorderRadius
                                                                     .circular(
-                                                                        15),
+                                                              15,
+                                                            ),
                                                           ),
                                                         ),
                                                         child: Text(
@@ -1747,8 +1721,7 @@ class RollerPageState extends State<RollerPage> {
                                   ),
                                 ),
                               ),
-
-// Tarjeta de opciones de notificación
+                              // Tarjeta de opciones de notificación
                               AnimatedSize(
                                 duration: const Duration(milliseconds: 600),
                                 curve: Curves.easeInOut,
@@ -2099,7 +2072,7 @@ class RollerPageState extends State<RollerPage> {
           ),
           actions: [
             IconButton(
-              icon: Icon(wifiIcon, color: color0),
+              icon: Icon(wifiNotifier.wifiIcon, color: color0),
               onPressed: () {
                 wifiText(context);
               },
@@ -2110,7 +2083,6 @@ class RollerPageState extends State<RollerPage> {
         resizeToAvoidBottomInset: false,
         body: Stack(
           children: [
-            //TODO el pageView
             PageView(
               controller: _pageController,
               physics: _isAnimating
@@ -2136,7 +2108,6 @@ class RollerPageState extends State<RollerPage> {
                 backgroundColor: Colors.transparent,
                 animationCurve: Curves.easeInOut,
                 animationDuration: const Duration(milliseconds: 600),
-                //TODO agrego la funcion
                 onTap: onItemTapped,
                 letIndexChange: (index) => true,
               ),
@@ -2213,223 +2184,3 @@ class CurtainAnimation extends StatelessWidget {
   }
 }
 //*- Diseño de la cortina Roller-*\\
-
-//*- Diseño de la cortina Riel Left -*\\
-class CurtainAnimationRielLeft extends StatelessWidget {
-  final int position;
-  final Function(TapDownDetails) onTapDown;
-
-  const CurtainAnimationRielLeft({
-    super.key,
-    required this.position,
-    required this.onTapDown,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    double curtainWidth =
-        (position / 100) * MediaQuery.of(context).size.width * 0.8;
-
-    return GestureDetector(
-      onTapDown: onTapDown,
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: 300,
-        decoration: const BoxDecoration(
-          color: Colors.transparent,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 10,
-              offset: Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Stack(
-          alignment: Alignment.centerLeft,
-          children: [
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 30,
-              child: Image.asset(
-                'assets/misc/barrielRiel.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-            Positioned(
-              top: 13,
-              left: 10,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeInOut,
-                width: curtainWidth,
-                height: 270,
-                child: Image.asset(
-                  'assets/misc/cortinaRiel.jpg',
-                  fit: BoxFit.cover,
-                  height: double.infinity,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-//*- Diseño de la cortina Riel Left -*\\
-
-//*- Diseño de la cortina Riel Right -*\\
-class CurtainAnimationRielRight extends StatelessWidget {
-  final int position;
-  final Function(TapDownDetails) onTapDown;
-
-  const CurtainAnimationRielRight({
-    super.key,
-    required this.position,
-    required this.onTapDown,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    double curtainWidth =
-        (position / 100) * MediaQuery.of(context).size.width * 0.8;
-
-    return GestureDetector(
-      onTapDown: onTapDown,
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: 300,
-        decoration: const BoxDecoration(
-          color: Colors.transparent,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 10,
-              offset: Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Stack(
-          alignment: Alignment.centerRight,
-          children: [
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 30,
-              child: Image.asset(
-                'assets/misc/barrielRiel.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-            Positioned(
-              top: 13,
-              right: 10,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeInOut,
-                width: curtainWidth,
-                height: 270,
-                child: Image.asset(
-                  'assets/misc/cortinaRiel.jpg',
-                  fit: BoxFit.cover,
-                  height: double.infinity,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-//*- Diseño de la cortina Riel Right -*\\
-
-//*- Diseño de la cortina Riel Center -*\\
-class CurtainAnimationRielCenter extends StatelessWidget {
-  final int position;
-  final Function(TapDownDetails) onTapDown;
-
-  const CurtainAnimationRielCenter({
-    super.key,
-    required this.position,
-    required this.onTapDown,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    double curtainWidth = (position / 100) *
-        MediaQuery.of(context).size.width *
-        0.4; // Cada lado ocupa un 40% del ancho
-
-    return GestureDetector(
-      onTapDown: onTapDown,
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: 300,
-        decoration: const BoxDecoration(
-          color: Colors.transparent,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 10,
-              offset: Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 30,
-              child: Image.asset(
-                'assets/misc/barrielRiel.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-            // Cortina izquierda
-            Positioned(
-              top: 13,
-              left: 10,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeInOut,
-                width: curtainWidth,
-                height: 270,
-                child: Image.asset(
-                  'assets/misc/cortinaRiel.jpg',
-                  fit: BoxFit.cover,
-                  height: double.infinity,
-                ),
-              ),
-            ),
-            // Cortina derecha
-            Positioned(
-              top: 13,
-              right: 10,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeInOut,
-                width: curtainWidth,
-                height: 270,
-                child: Image.asset(
-                  'assets/misc/cortinaRiel.jpg',
-                  fit: BoxFit.cover,
-                  height: double.infinity,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-//*- Diseño de la cortina Riel Center -*\\

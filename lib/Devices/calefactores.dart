@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
@@ -28,6 +29,7 @@ class CalefactorPageState extends State<CalefactorPage> {
   int _selectedNotificationOption = 0;
   int _selectedIndex = 0;
   double result = 0.0;
+  double? valueConsuption;
 
   bool _showNotificationOptions = false;
   bool showSecondaryAdminFields = false;
@@ -40,6 +42,7 @@ class CalefactorPageState extends State<CalefactorPage> {
   bool _isAnimating = false;
   bool buttonPressed = false;
   late bool loading;
+  bool ignite = false;
 
   String measure = DeviceManager.getProductCode(deviceName) == '022000_IOT'
       ? 'KW/h'
@@ -56,8 +59,8 @@ class CalefactorPageState extends State<CalefactorPage> {
   TextEditingController emailController = TextEditingController();
   final TextEditingController costController = TextEditingController();
   final TextEditingController tenantController = TextEditingController();
-  final TextEditingController tenantDistanceOn = TextEditingController();
   final PageController _pageController = PageController(initialPage: 0);
+  final TextEditingController consuptionController = TextEditingController();
 
   DateTime? fechaSeleccionada;
 
@@ -89,6 +92,9 @@ class CalefactorPageState extends State<CalefactorPage> {
     nickname = nicknamesMap[deviceName] ?? deviceName;
     tempValue = double.parse(parts2[1]);
 
+    valueConsuption =
+        equipmentConsumption(DeviceManager.getProductCode(deviceName));
+
     printLog('Valor temp: $tempValue');
     printLog('¿Encendido? $turnOn');
     printLog('¿Alquiler temporario? $activatedAT');
@@ -104,7 +110,7 @@ class CalefactorPageState extends State<CalefactorPage> {
     tenantController.dispose();
     costController.dispose();
     emailController.dispose();
-    tenantDistanceOn.dispose();
+    consuptionController.dispose();
     super.dispose();
   }
 
@@ -232,9 +238,15 @@ class CalefactorPageState extends State<CalefactorPage> {
 
         printLog('Estoy haciendo calculaciones místicas');
 
-        result = double.parse(tiempo) *
-            equipmentConsumption(DeviceManager.getProductCode(deviceName)) *
-            double.parse(costController.text.trim());
+        if (valueConsuption != null) {
+          result = double.parse(tiempo) *
+              valueConsuption! *
+              double.parse(costController.text.trim());
+        } else {
+          result = double.parse(tiempo) *
+              double.parse(consuptionController.text.trim()) *
+              double.parse(costController.text.trim());
+        }
 
         await Future.delayed(const Duration(seconds: 1));
 
@@ -264,34 +276,39 @@ class CalefactorPageState extends State<CalefactorPage> {
     int users = int.parse(match!.group(1).toString());
     printLog('Hay $users conectados');
     userConnected = users > 1;
+
+    WifiNotifier wifiNotifier =
+        Provider.of<WifiNotifier>(context, listen: false);
+
     if (parts[0] == 'WCS_CONNECTED') {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
       printLog('sis $isWifiConnected');
-      setState(() {
-        textState = 'CONECTADO';
-        statusColor = Colors.green;
-        wifiIcon = Icons.wifi;
-        errorMessage = '';
-        errorSintax = '';
-        werror = false;
-      });
+      errorMessage = '';
+      errorSintax = '';
+      werror = false;
+      if (parts.length > 3) {
+        signalPower = int.tryParse(parts[3]) ?? -30;
+      } else {
+        signalPower = -30;
+      }
+
+      wifiNotifier.updateStatus(
+          'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
       printLog('non $isWifiConnected');
 
       nameOfWifi = '';
 
-      setState(() {
-        textState = 'DESCONECTADO';
-        statusColor = Colors.red;
-        wifiIcon = Icons.wifi_off;
-      });
+      wifiNotifier.updateStatus(
+          'DESCONECTADO', Colors.red, Icons.signal_wifi_off);
 
       if (atemp) {
         setState(() {
-          wifiIcon = Icons.warning_amber_rounded;
+          wifiNotifier.updateStatus(
+              'DESCONECTADO', Colors.red, Icons.warning_amber_rounded);
           werror = true;
           if (parts[1] == '202' || parts[1] == '15') {
             errorMessage = 'Contraseña incorrecta';
@@ -512,6 +529,9 @@ class CalefactorPageState extends State<CalefactorPage> {
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
 
+    WifiNotifier wifiNotifier =
+        Provider.of<WifiNotifier>(context, listen: false);
+
     bool isOwner = currentUserEmail == owner;
     bool isSecondaryAdmin = adminDevices.contains(currentUserEmail);
     bool isRegularUser = !isOwner && !isSecondaryAdmin;
@@ -597,6 +617,62 @@ class CalefactorPageState extends State<CalefactorPage> {
                 ),
               ],
             ),
+            if (DeviceManager.getProductCode(deviceName) == '027000_IOT') ...{
+              const SizedBox(
+                height: 30,
+              ),
+              GestureDetector(
+                onLongPressStart: (LongPressStartDetails a) async {
+                  setState(() {
+                    ignite = true;
+                  });
+                  while (ignite) {
+                    await Future.delayed(const Duration(milliseconds: 500));
+                    if (!ignite) break;
+                    String data = '027000_IOT[15](1)';
+                    myDevice.toolsUuid.write(data.codeUnits);
+                    printLog(data);
+                  }
+                },
+                onLongPressEnd: (LongPressEndDetails a) {
+                  setState(() {
+                    ignite = false;
+                  });
+                  String data = '027000_IOT[15](0)';
+                  myDevice.toolsUuid.write(data.codeUnits);
+                  printLog(data);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 500),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.yellow[600],
+                    shape: BoxShape.circle,
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 10,
+                        offset: Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome,
+                    size: 30,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              const Text(
+                'Chispero',
+                style: TextStyle(
+                  color: Colors.black,
+                ),
+              )
+            }
           ],
         ),
       ),
@@ -724,7 +800,6 @@ class CalefactorPageState extends State<CalefactorPage> {
       ),
 
       //*- Página 3 - Control por distancia -*\\
-
       Stack(
         children: [
           Center(
@@ -1069,8 +1144,45 @@ class CalefactorPageState extends State<CalefactorPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 30),
+                  if (valueConsuption == null) ...[
+                    const SizedBox(height: 30),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20.0, vertical: 10.0),
+                      decoration: BoxDecoration(
+                        color: color3.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: color3, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: color3.withValues(alpha: 0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: TextField(
+                        keyboardType: TextInputType.number,
+                        controller: consuptionController,
+                        style: GoogleFonts.poppins(
+                          color: color3,
+                          fontSize: 22,
+                        ),
+                        cursorColor: color3,
+                        decoration: InputDecoration(
+                          labelText: 'Ingresa consumo del equipo',
+                          labelStyle: GoogleFonts.poppins(
+                            color: color3,
+                            fontSize: 18,
+                          ),
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                  ],
                   if (buttonPressed) ...[
+                    const SizedBox(height: 30),
                     Visibility(
                       visible: loading,
                       child: const CircularProgressIndicator(
@@ -1112,10 +1224,20 @@ class CalefactorPageState extends State<CalefactorPage> {
                     ),
                     onPressed: (isOwner || owner == '')
                         ? () {
-                            if (costController.text.isNotEmpty) {
-                              makeCompute();
+                            if (valueConsuption != null) {
+                              if (costController.text.isNotEmpty) {
+                                makeCompute();
+                              } else {
+                                showToast('Por favor ingresa un valor');
+                              }
                             } else {
-                              showToast('Por favor ingresa un valor');
+                              if (costController.text.isNotEmpty &&
+                                  consuptionController.text.isNotEmpty) {
+                                makeCompute();
+                              } else {
+                                showToast(
+                                    'Por favor ingresa valores en ambos campos');
+                              }
                             }
                           }
                         : null,
@@ -2507,7 +2629,7 @@ class CalefactorPageState extends State<CalefactorPage> {
           ),
           actions: [
             IconButton(
-              icon: Icon(wifiIcon, color: color0),
+              icon: Icon(wifiNotifier.wifiIcon, color: color0),
               onPressed: () {
                 wifiText(context);
               },
@@ -2555,68 +2677,3 @@ class CalefactorPageState extends State<CalefactorPage> {
     );
   }
 }
-
-//*- animacion para los iconos al estar calentando-*\\
-class AnimatedIconWidget extends StatefulWidget {
-  final bool isHeating;
-  final IconData icon;
-
-  const AnimatedIconWidget({
-    required this.isHeating,
-    required this.icon,
-    super.key,
-  });
-
-  @override
-  AnimatedIconWidgetState createState() => AnimatedIconWidgetState();
-}
-
-class AnimatedIconWidgetState extends State<AnimatedIconWidget>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 700),
-      vsync: this,
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return widget.isHeating
-        ? AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              double offsetX = 5.0 * (_controller.value - 0.5);
-              double scale = 1.0 + 0.05 * (_controller.value - 0.5);
-
-              return Transform.translate(
-                offset: Offset(offsetX, 0),
-                child: Transform.scale(
-                  scale: scale,
-                  child: Icon(
-                    widget.icon,
-                    size: 85,
-                    color: Colors.white,
-                  ),
-                ),
-              );
-            },
-          )
-        : Icon(
-            widget.icon,
-            size: 85,
-            color: Colors.white,
-          );
-  }
-}
-//*- animacion para los iconos al estar calentando-*\\

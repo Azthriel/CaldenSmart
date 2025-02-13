@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
@@ -37,7 +37,6 @@ class RelayPageState extends State<RelayPage> {
 
   final PageController _pageController = PageController(initialPage: 0);
   final TextEditingController tenantController = TextEditingController();
-  final TextEditingController tenantDistanceOn = TextEditingController();
   TextEditingController emailController = TextEditingController();
 
   @override
@@ -56,6 +55,11 @@ class RelayPageState extends State<RelayPage> {
     subscribeToWifiStatus();
     subscribeTrueStatus();
 
+    if (!oldRelay.contains(deviceName)) {
+      oldRelay.add(deviceName);
+      saveOldRelay(oldRelay);
+    }
+
     // WidgetsBinding.instance.addPostFrameCallback((_) async {
     //   if (shouldUpdateDevice) {
     //     await showUpdateDialog(context);
@@ -68,11 +72,10 @@ class RelayPageState extends State<RelayPage> {
     super.dispose();
     _pageController.dispose();
     tenantController.dispose();
-    tenantDistanceOn.dispose();
     emailController.dispose();
   }
 
-void onItemChanged(int index) {
+  void onItemChanged(int index) {
     if (!_isAnimating) {
       setState(() {
         _isAnimating = true;
@@ -183,34 +186,37 @@ void onItemChanged(int index) {
     int users = int.parse(match!.group(1).toString());
     printLog('Hay $users conectados');
     userConnected = users > 1;
+
+    WifiNotifier wifiNotifier =
+        Provider.of<WifiNotifier>(context, listen: false);
+
     if (parts[0] == 'WCS_CONNECTED') {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
       printLog('sis $isWifiConnected');
-      setState(() {
-        textState = 'CONECTADO';
-        statusColor = Colors.green;
-        wifiIcon = Icons.wifi;
-        errorMessage = '';
-        errorSintax = '';
-        werror = false;
-      });
+      errorMessage = '';
+      errorSintax = '';
+      werror = false;
+      if (parts.length > 3) {
+        signalPower = int.tryParse(parts[3]) ?? -30;
+      } else {
+        signalPower = -30;
+      }
+      wifiNotifier.updateStatus(
+          'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
       printLog('non $isWifiConnected');
 
       nameOfWifi = '';
-
-      setState(() {
-        textState = 'DESCONECTADO';
-        statusColor = Colors.red;
-        wifiIcon = Icons.wifi_off;
-      });
+wifiNotifier.updateStatus(
+          'DESCONECTADO', Colors.red, Icons.signal_wifi_off);
 
       if (atemp) {
         setState(() {
-          wifiIcon = Icons.warning_amber_rounded;
+          wifiNotifier.updateStatus(
+              'DESCONECTADO', Colors.red, Icons.warning_amber_rounded);
           werror = true;
           if (parts[1] == '202' || parts[1] == '15') {
             errorMessage = 'Contraseña incorrecta';
@@ -424,6 +430,8 @@ void onItemChanged(int index) {
   @override
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
+    WifiNotifier wifiNotifier =
+        Provider.of<WifiNotifier>(context, listen: false);
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
 
@@ -506,92 +514,12 @@ void onItemChanged(int index) {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  GestureDetector(
-                    onTap: () async {
-                      TextEditingController labelController =
-                          TextEditingController(
-                        text: isNC
-                            ? (turnOn
-                                ? labelEncendido[deviceName] ?? 'ABIERTO'
-                                : labelApagado[deviceName] ?? 'CERRADO')
-                            : (turnOn
-                                ? labelEncendido[deviceName] ?? 'CERRADO'
-                                : labelApagado[deviceName] ?? 'ABIERTO'),
-                      );
-                      showAlertDialog(
-                        context,
-                        false,
-                        const Text(
-                          'Editar identificación del estado',
-                          style: TextStyle(color: color0),
-                        ),
-                        TextField(
-                          style: const TextStyle(color: color0),
-                          cursorColor: const Color(0xFFFFFFFF),
-                          controller: labelController,
-                          decoration: const InputDecoration(
-                            hintText:
-                                "Introduce tu nueva identificación del estado",
-                            hintStyle: TextStyle(color: color0),
-                            enabledBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: color0),
-                            ),
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: color0),
-                            ),
-                          ),
-                        ),
-                        <Widget>[
-                          TextButton(
-                            style: ButtonStyle(
-                              foregroundColor: WidgetStateProperty.all(color0),
-                            ),
-                            child: const Text('Cancelar'),
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                          TextButton(
-                            style: ButtonStyle(
-                              foregroundColor: WidgetStateProperty.all(color0),
-                            ),
-                            child: const Text('Guardar'),
-                            onPressed: () {
-                              setState(() {
-                                String newLabel = labelController.text;
-                                turnOn
-                                    ? labelEncendido[deviceName] = newLabel
-                                    : labelApagado[deviceName] = newLabel;
-                                turnOn
-                                    ? savelabelEncendido(labelEncendido)
-                                    : savelabelApagado(labelApagado);
-                              });
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          isNC
-                              ? (turnOn
-                                  ? labelEncendido[deviceName] ?? 'ABIERTO'
-                                  : labelApagado[deviceName] ?? 'CERRADO')
-                              : (turnOn
-                                  ? labelEncendido[deviceName] ?? 'CERRADO'
-                                  : labelApagado[deviceName] ?? 'ABIERTO'),
-                          style: GoogleFonts.poppins(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w600,
-                            color: color3,
-                          ),
-                        ),
-                        const SizedBox(width: 3),
-                        const Icon(Icons.edit, size: 20, color: color3)
-                      ],
+                  Text(
+                    turnOn ? 'ENCENDIDO' : 'APAGADO',
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: color3,
                     ),
                   ),
                   const SizedBox(height: 50),
@@ -608,7 +536,7 @@ void onItemChanged(int index) {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(
-                              'Puedes cambiar entre Normal Abierto (NO) y Normal Cerrado (NC). Selecciona una opción:',
+                              'Puedes cambiar entre Normal Abierto (NA) y Normal Cerrado (NC). Selecciona una opción:',
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 color: color0,
@@ -743,161 +671,164 @@ void onItemChanged(int index) {
       ),
 
       //*- Página 2: Trackeo Bluetooth -*\\
-      Stack(
-        children: [
-          SingleChildScrollView(
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'Control por presencia',
-                    style: GoogleFonts.poppins(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: color3,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 40),
-                  GestureDetector(
-                    onTap: () {
-                      if (deviceOwner || owner == '') {
-                        if (isAgreeChecked) {
-                          verifyPermission().then((accepted) async {
-                            if (accepted) {
-                              setState(() {
-                                tracking = !tracking;
-                              });
-                              if (tracking) {
-                                devicesToTrack.add(deviceName);
-                                saveDeviceListToTrack(devicesToTrack);
 
-                                SharedPreferences prefs =
-                                    await SharedPreferences.getInstance();
-                                bool hasInitService =
-                                    prefs.getBool('hasInitService') ?? false;
+      //TODO se quita temporalmente
 
-                                if (!hasInitService) {
-                                  await initializeService();
-                                  await prefs.setBool('hasInitService', true);
-                                }
+      // Stack(
+      //   children: [
+      //     SingleChildScrollView(
+      //       child: Padding(
+      //         padding:
+      //             const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
+      //         child: Column(
+      //           crossAxisAlignment: CrossAxisAlignment.center,
+      //           children: [
+      //             Text(
+      //               'Control por presencia',
+      //               style: GoogleFonts.poppins(
+      //                 fontSize: 28,
+      //                 fontWeight: FontWeight.bold,
+      //                 color: color3,
+      //               ),
+      //               textAlign: TextAlign.center,
+      //             ),
+      //             const SizedBox(height: 40),
+      //             GestureDetector(
+      //               onTap: () {
+      //                 if (deviceOwner || owner == '') {
+      //                   if (isAgreeChecked) {
+      //                     verifyPermission().then((accepted) async {
+      //                       if (accepted) {
+      //                         setState(() {
+      //                           tracking = !tracking;
+      //                         });
+      //                         if (tracking) {
+      //                           devicesToTrack.add(deviceName);
+      //                           saveDeviceListToTrack(devicesToTrack);
 
-                                await Future.delayed(
-                                    const Duration(seconds: 30));
+      //                           SharedPreferences prefs =
+      //                               await SharedPreferences.getInstance();
+      //                           bool hasInitService =
+      //                               prefs.getBool('hasInitService') ?? false;
 
-                                printLog("Achi");
+      //                           if (!hasInitService) {
+      //                             await initializeService();
+      //                             await prefs.setBool('hasInitService', true);
+      //                           }
 
-                                final backService = FlutterBackgroundService();
-                                backService.invoke('presenceControl');
-                              } else {
-                                devicesToTrack.remove(deviceName);
-                                saveDeviceListToTrack(devicesToTrack);
-                                if (devicesToTrack.isEmpty) {
-                                  final backService =
-                                      FlutterBackgroundService();
-                                  backService.invoke('CancelpresenceControl');
-                                }
-                              }
-                            } else {
-                              showToast(
-                                  'Debes habilitar la ubicación constante\npara el uso del\ncontrol por presencia');
-                            }
-                          });
-                        } else {
-                          showToast(
-                              'Debes aceptar el uso de control por presencia');
-                        }
-                      } else {
-                        showToast(
-                            'No tienes permiso para realizar esta acción');
-                      }
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 500),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: tracking ? Colors.greenAccent : Colors.redAccent,
-                        shape: BoxShape.circle,
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 10,
-                            offset: Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.directions_walk,
-                        size: 80,
-                        color: tracking ? Colors.white : Colors.grey[300],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 70),
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: 5,
-                    color: color3,
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Habilitar esta función hará que la aplicación use más recursos de lo común, si a pesar de esto decides utilizarlo es bajo tu responsabilidad.',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              color: color0,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          CheckboxListTile(
-                            title: Text(
-                              'Sí, estoy de acuerdo',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                color: color0,
-                              ),
-                            ),
-                            value: isAgreeChecked,
-                            activeColor: color0,
-                            onChanged: (bool? value) {
-                              setState(() {
-                                isAgreeChecked = value ?? false;
-                                if (!isAgreeChecked && tracking) {
-                                  tracking = false;
-                                  devicesToTrack.remove(deviceName);
-                                  saveDeviceListToTrack(devicesToTrack);
-                                }
-                              });
-                            },
-                            controlAffinity: ListTileControlAffinity.leading,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (!deviceOwner && owner != '')
-            Container(
-              color: Colors.black.withValues(alpha: 0.7),
-              child: const Center(
-                child: Text(
-                  'No tienes acceso a esta función',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-              ),
-            ),
-        ],
-      ),
+      //                           await Future.delayed(
+      //                               const Duration(seconds: 30));
+
+      //                           printLog("Achi");
+
+      //                           final backService = FlutterBackgroundService();
+      //                           backService.invoke('presenceControl');
+      //                         } else {
+      //                           devicesToTrack.remove(deviceName);
+      //                           saveDeviceListToTrack(devicesToTrack);
+      //                           if (devicesToTrack.isEmpty) {
+      //                             final backService =
+      //                                 FlutterBackgroundService();
+      //                             backService.invoke('CancelpresenceControl');
+      //                           }
+      //                         }
+      //                       } else {
+      //                         showToast(
+      //                             'Debes habilitar la ubicación constante\npara el uso del\ncontrol por presencia');
+      //                       }
+      //                     });
+      //                   } else {
+      //                     showToast(
+      //                         'Debes aceptar el uso de control por presencia');
+      //                   }
+      //                 } else {
+      //                   showToast(
+      //                       'No tienes permiso para realizar esta acción');
+      //                 }
+      //               },
+      //               child: AnimatedContainer(
+      //                 duration: const Duration(milliseconds: 500),
+      //                 padding: const EdgeInsets.all(20),
+      //                 decoration: BoxDecoration(
+      //                   color: tracking ? Colors.greenAccent : Colors.redAccent,
+      //                   shape: BoxShape.circle,
+      //                   boxShadow: const [
+      //                     BoxShadow(
+      //                       color: Colors.black26,
+      //                       blurRadius: 10,
+      //                       offset: Offset(0, 5),
+      //                     ),
+      //                   ],
+      //                 ),
+      //                 child: Icon(
+      //                   Icons.directions_walk,
+      //                   size: 80,
+      //                   color: tracking ? Colors.white : Colors.grey[300],
+      //                 ),
+      //               ),
+      //             ),
+      //             const SizedBox(height: 70),
+      //             Card(
+      //               shape: RoundedRectangleBorder(
+      //                 borderRadius: BorderRadius.circular(20),
+      //               ),
+      //               elevation: 5,
+      //               color: color3,
+      //               child: Padding(
+      //                 padding: const EdgeInsets.all(20.0),
+      //                 child: Column(
+      //                   crossAxisAlignment: CrossAxisAlignment.start,
+      //                   children: [
+      //                     Text(
+      //                       'Habilitar esta función hará que la aplicación use más recursos de lo común, si a pesar de esto decides utilizarlo es bajo tu responsabilidad.',
+      //                       style: GoogleFonts.poppins(
+      //                         fontSize: 16,
+      //                         color: color0,
+      //                       ),
+      //                     ),
+      //                     const SizedBox(height: 10),
+      //                     CheckboxListTile(
+      //                       title: Text(
+      //                         'Sí, estoy de acuerdo',
+      //                         style: GoogleFonts.poppins(
+      //                           fontSize: 16,
+      //                           color: color0,
+      //                         ),
+      //                       ),
+      //                       value: isAgreeChecked,
+      //                       activeColor: color0,
+      //                       onChanged: (bool? value) {
+      //                         setState(() {
+      //                           isAgreeChecked = value ?? false;
+      //                           if (!isAgreeChecked && tracking) {
+      //                             tracking = false;
+      //                             devicesToTrack.remove(deviceName);
+      //                             saveDeviceListToTrack(devicesToTrack);
+      //                           }
+      //                         });
+      //                       },
+      //                       controlAffinity: ListTileControlAffinity.leading,
+      //                     ),
+      //                   ],
+      //                 ),
+      //               ),
+      //             ),
+      //           ],
+      //         ),
+      //       ),
+      //     ),
+      //     if (!deviceOwner && owner != '')
+      //       Container(
+      //         color: Colors.black.withValues(alpha: 0.7),
+      //         child: const Center(
+      //           child: Text(
+      //             'No tienes acceso a esta función',
+      //             style: TextStyle(color: Colors.white, fontSize: 18),
+      //           ),
+      //         ),
+      //       ),
+      //   ],
+      // ),
 
       //*- Página 3 - Control por distancia -*\\
       Stack(
@@ -2069,7 +2000,7 @@ void onItemChanged(int index) {
                                 ),
                               ),
 
-// Tarjeta de opciones de notificación
+                              // Tarjeta de opciones de notificación
                               AnimatedSize(
                                 duration: const Duration(milliseconds: 600),
                                 curve: Curves.easeInOut,
@@ -2454,7 +2385,7 @@ void onItemChanged(int index) {
           ),
           actions: [
             IconButton(
-              icon: Icon(wifiIcon, color: color0),
+              icon: Icon(wifiNotifier.wifiIcon, color: color0),
               onPressed: () {
                 wifiText(context);
               },
@@ -2482,7 +2413,7 @@ void onItemChanged(int index) {
                 height: 75.0,
                 items: const <Widget>[
                   Icon(Icons.home, size: 30, color: color0),
-                  Icon(Icons.bluetooth, size: 30, color: color0),
+                  //Icon(Icons.bluetooth, size: 30, color: color0),
                   Icon(Icons.location_on, size: 30, color: color0),
                   Icon(Icons.settings, size: 30, color: color0),
                 ],

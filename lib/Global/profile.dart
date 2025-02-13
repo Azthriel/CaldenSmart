@@ -34,6 +34,29 @@ class ProfilePageState extends State<ProfilePage> {
   bool isSocialOpen = false;
 
   @override
+  void dispose() {
+    NativeService.stopNativeSound();
+    super.dispose();
+  }
+
+  int getAlarmDelay(String alarmName) {
+    switch (alarmName) {
+      case 'alarm1':
+        return 2300;
+      case 'alarm2':
+        return 2000;
+      case 'alarm3':
+        return 1200;
+      case 'alarm4':
+        return 1000;
+      case 'alarm5':
+        return 2300;
+      default:
+        return 2000;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -304,6 +327,9 @@ class ProfilePageState extends State<ProfilePage> {
                                   printLog('Elegí alarma${value! + 1}');
                                   soundOfNotification['020010_IOT'] =
                                       'alarm${value + 1}';
+                                  NativeService().playNativeSound(
+                                      'alarm${value + 1}',
+                                      getAlarmDelay('alarm${value + 1}'));
                                 }
                               });
                             },
@@ -317,8 +343,10 @@ class ProfilePageState extends State<ProfilePage> {
                   ),
                   const Divider(color: color3),
                   ListTile(
-                    leading: const Icon(HugeIcons.strokeRoundedHotspot,
-                        color: color3),
+                    leading: const Icon(
+                      HugeIcons.strokeRoundedHotspot,
+                      color: color3,
+                    ),
                     title: Text(
                       "Detector",
                       style: GoogleFonts.poppins(
@@ -377,6 +405,9 @@ class ProfilePageState extends State<ProfilePage> {
                                   printLog('Elegí alarma${value! + 1}');
                                   soundOfNotification['015773_IOT'] =
                                       'alarm${value + 1}';
+                                  NativeService().playNativeSound(
+                                      'alarm${value + 1}',
+                                      getAlarmDelay('alarm${value + 1}'));
                                 }
                               });
                             },
@@ -491,6 +522,19 @@ class ProfilePageState extends State<ProfilePage> {
                             ),
                             onTap: () {
                               launchWebURL(linksOfApp(app, 'Facebook'));
+                            },
+                          ),
+                          ListTile(
+                            leading: const Icon(HugeIcons.strokeRoundedInternet,
+                                color: color3),
+                            title: Text(
+                              'Sitio web',
+                              style: GoogleFonts.poppins(
+                                color: color3,
+                              ),
+                            ),
+                            onTap: () {
+                              launchWebURL(linksOfApp(app, 'Web'));
                             },
                           ),
                         ],

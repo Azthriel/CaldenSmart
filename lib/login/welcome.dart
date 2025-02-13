@@ -175,8 +175,8 @@ class WelcomePageState extends State<WelcomePage>
     )..repeat(reverse: true);
 
     welcomeTextController = AnimationController(
+      duration: const Duration(milliseconds: 800),
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
     );
     welcomeFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -200,7 +200,7 @@ class WelcomePageState extends State<WelcomePage>
 
     welcomeToLoginController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 200),
     );
 
     welcomeSlideAnimation = Tween<Offset>(
@@ -381,9 +381,12 @@ class WelcomePageState extends State<WelcomePage>
         showIngresarButton = false;
         currentForm = FormType.login;
       });
-      welcomeToLoginController.forward().then((_) {
-        loginFormController.forward();
-        foregroundPositionController.forward();
+      //TODO esperar a que desaparezca el texto de ingresar
+      welcomeTextController.reverse().then((_) {
+        welcomeToLoginController.forward().then((_) {
+          loginFormController.forward();
+          foregroundPositionController.forward();
+        });
       });
     });
   }
@@ -565,7 +568,7 @@ class WelcomePageState extends State<WelcomePage>
             FadeTransition(
               opacity: welcomeFadeAnimation,
               child: const Text(
-                'Bienvenido',
+                'Bienvenidos',
                 style: TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.bold,

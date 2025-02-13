@@ -54,7 +54,12 @@ class LoadState extends State<LoadingPage> {
             navigatorKey.currentState?.pushReplacementNamed('/roller');
             break;
           case '027313_IOT':
-            navigatorKey.currentState?.pushReplacementNamed('/rele');
+            if (Versioner.isPosterior(hardwareVersion, '241220A')) {
+              navigatorKey.currentState?.pushReplacementNamed('/rele1i1o');
+            } else {
+              navigatorKey.currentState?.pushReplacementNamed('/rele');
+            }
+
             break;
           case '050217_IOT':
             navigatorKey.currentState?.pushReplacementNamed('/millenium');
@@ -373,10 +378,36 @@ class LoadState extends State<LoadingPage> {
           }
           break;
         case '027313_IOT':
-          varsValues = await myDevice.varsUuid.read();
-          var parts2 = utf8.decode(varsValues).split(':');
-          printLog('Valores vars: $parts2');
-          turnOn = parts2[1] == '1';
+          if (Versioner.isPosterior(hardwareVersion, '241220A')) {
+            ioValues = await myDevice.ioUuid.read();
+            printLog('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
+            varsValues = await myDevice.varsUuid.read();
+            printLog('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
+          } else {
+            varsValues = await myDevice.varsUuid.read();
+            printLog('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
+            var parts2 = utf8.decode(varsValues).split(':');
+            turnOn = parts2[1] == '1';
+          }
+          var parts = utf8.decode(varsValues).split(':');
+
+          var list = await loadDevicesForDistanceControl();
+          canControlDistance =
+              list.contains(deviceName) ? true : parts[0] == '0';
+          printLog(
+              'Puede utilizar el control por distancia: $canControlDistance');
+
+          if (canControlDistance) {
+            distOffValue = globalDATA[
+                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                    'distanceOff'] ??
+                100.0;
+            distOnValue = globalDATA[
+                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                    'distanceOn'] ??
+                3000.0;
+            isTaskScheduled = await loadControlValue();
+          }
 
           isNC = globalDATA[
                       '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
@@ -429,11 +460,61 @@ class LoadState extends State<LoadingPage> {
             tenant = false;
           }
 
+          break;
+        case '024011_IOT':
+          varsValues = await myDevice.varsUuid.read();
+          printLog('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
+          var parts = utf8.decode(varsValues).split(':');
           var list = await loadDevicesForDistanceControl();
           canControlDistance =
-              list.contains(deviceName) ? true : parts2[0] == '0';
+              list.contains(deviceName) ? true : parts[0] == '0';
           printLog(
               'Puede utilizar el control por distancia: $canControlDistance');
+          owner = globalDATA[
+                      '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                  'owner'] ??
+              '';
+          printLog('Owner actual: $owner');
+          adminDevices = await getSecondaryAdmins(
+              service,
+              DeviceManager.getProductCode(deviceName),
+              DeviceManager.extractSerialNumber(deviceName));
+          printLog('Administradores: $adminDevices');
+
+          if (owner != '') {
+            if (owner == currentUserEmail) {
+              deviceOwner = true;
+            } else {
+              deviceOwner = false;
+              if (userConnected) {
+              } else {
+                if (adminDevices.contains(currentUserEmail)) {
+                  secondaryAdmin = true;
+                } else {
+                  secondaryAdmin = false;
+                }
+              }
+            }
+          } else {
+            deviceOwner = true;
+          }
+
+          await analizePayment(DeviceManager.getProductCode(deviceName),
+              DeviceManager.extractSerialNumber(deviceName));
+
+          if (payAT) {
+            activatedAT = globalDATA[
+                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                    ?['AT'] ??
+                false;
+            tenant = globalDATA[
+                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                    ?['tenant'] ==
+                currentUserEmail;
+          } else {
+            activatedAT = false;
+            tenant = false;
+          }
 
           if (canControlDistance) {
             distOffValue = globalDATA[
@@ -446,28 +527,6 @@ class LoadState extends State<LoadingPage> {
                 3000.0;
             isTaskScheduled = await loadControlValue();
           }
-          break;
-        case '024011_IOT':
-          varsValues = await myDevice.varsUuid.read();
-          var parts2 = utf8.decode(varsValues).split(':');
-          printLog('Valores vars: $parts2');
-
-          distanceControlActive = parts2[0] == '1';
-          rollerlength = parts2[1];
-          rollerPolarity = parts2[2];
-          rollerRPM = parts2[3];
-          rollerMicroStep = parts2[4];
-          rollerIMAX = parts2[5];
-          rollerIRMSRUN = parts2[6];
-          rollerIRMSHOLD = parts2[7];
-          rollerFreewheeling = parts2[8] == '1';
-          rollerTPWMTHRS = parts2[9];
-          rollerTCOOLTHRS = parts2[10];
-          rollerSGTHRS = parts2[11];
-          actualPosition = int.parse(parts2[12]);
-          workingPosition = int.parse(parts2[13]);
-          rollerMoving = parts2[14] == '1';
-          awsInit = parts2[15] == '1';
           break;
         case '050217_IOT' || '028000_IOT':
           varsValues = await myDevice.varsUuid.read();

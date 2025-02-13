@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../aws/dynamo/dynamo.dart';
@@ -180,49 +181,50 @@ class DomoticaPageState extends State<DomoticaPage> {
     int users = int.parse(match!.group(1).toString());
     printLog('Hay $users conectados');
     userConnected = users > 1;
+
+    WifiNotifier wifiNotifier =
+        Provider.of<WifiNotifier>(context, listen: false);
+
     if (parts[0] == 'WCS_CONNECTED') {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
       printLog('sis $isWifiConnected');
-      setState(() {
-        textState = 'CONECTADO';
-        statusColor = Colors.green;
-        wifiIcon = Icons.wifi;
-        errorMessage = '';
-        errorSintax = '';
-        werror = false;
-      });
+      errorMessage = '';
+      errorSintax = '';
+      werror = false;
+      if (parts.length > 3) {
+        signalPower = int.tryParse(parts[3]) ?? -30;
+      } else {
+        signalPower = -30;
+      }
+      wifiNotifier.updateStatus(
+          'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
       printLog('non $isWifiConnected');
 
       nameOfWifi = '';
-
-      setState(() {
-        textState = 'DESCONECTADO';
-        statusColor = Colors.red;
-        wifiIcon = Icons.wifi_off;
-      });
+wifiNotifier.updateStatus(
+          'DESCONECTADO', Colors.red, Icons.signal_wifi_off);
 
       if (atemp) {
         setState(() {
-          wifiIcon = Icons.warning_amber_rounded;
+          wifiNotifier.updateStatus(
+              'DESCONECTADO', Colors.red, Icons.warning_amber_rounded);
+          werror = true;
+          if (parts[1] == '202' || parts[1] == '15') {
+            errorMessage = 'Contraseña incorrecta';
+          } else if (parts[1] == '201') {
+            errorMessage = 'La red especificada no existe';
+          } else if (parts[1] == '1') {
+            errorMessage = 'Error desconocido';
+          } else {
+            errorMessage = parts[1];
+          }
+
+          errorSintax = getWifiErrorSintax(int.parse(parts[1]));
         });
-
-        werror = true;
-
-        if (parts[1] == '202' || parts[1] == '15') {
-          errorMessage = 'Contraseña incorrecta';
-        } else if (parts[1] == '201') {
-          errorMessage = 'La red especificada no existe';
-        } else if (parts[1] == '1') {
-          errorMessage = 'Error desconocido';
-        } else {
-          errorMessage = parts[1];
-        }
-
-        errorSintax = getWifiErrorSintax(int.parse(parts[1]));
       }
     }
 
@@ -497,7 +499,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                                 radius: 50,
                                 backgroundColor: color3,
                                 child: Image.asset(
-                                  'assets/dragon.png',
+                                  'assets/branch/dragon.png',
                                   width: 60,
                                   height: 60,
                                 ),
@@ -637,6 +639,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                 child: ListBody(
                   children: List.generate(parts.length, (index) {
                     var equipo = parts[index].split(':');
+                    printLog(equipo);
                     return equipo[0] == '0'
                         ? RadioListTile<int>(
                             title: Text(
@@ -683,6 +686,8 @@ class DomoticaPageState extends State<DomoticaPage> {
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
     double bottomBarHeight = kBottomNavigationBarHeight;
+    WifiNotifier wifiNotifier =
+        Provider.of<WifiNotifier>(context, listen: false);
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
 
@@ -793,24 +798,94 @@ class DomoticaPageState extends State<DomoticaPage> {
                             ],
                           );
                         },
-                        child: SizedBox(
-                          height: 30,
-                          width: 180,
-                          child: ScrollingText(
-                            text: subNicknamesMap['$deviceName/-/$index'] ??
-                                '${tipo[index]} $index',
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 160,
+                              child: ScrollingText(
+                                text: subNicknamesMap['$deviceName/-/$index'] ??
+                                    '${tipo[index]} $index',
+                                style: GoogleFonts.poppins(
+                                  color: color0,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                // overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.edit,
+                                size: 22,
+                                color: color0,
+                              ),
+                              onPressed: () {
+                                TextEditingController nicknameController =
+                                    TextEditingController(
+                                  text:
+                                      subNicknamesMap['$deviceName/-/$index'] ??
+                                          '${tipo[index]} $index',
+                                );
+                                showAlertDialog(
+                                  context,
+                                  false,
+                                  Text(
+                                    'Editar Nombre',
+                                    style: GoogleFonts.poppins(color: color0),
+                                  ),
+                                  TextField(
+                                    controller: nicknameController,
+                                    style: const TextStyle(color: color0),
+                                    cursorColor: color0,
+                                    decoration: InputDecoration(
+                                      hintText:
+                                          "Nuevo nombre para ${tipo[index]} $index",
+                                      hintStyle: TextStyle(
+                                        color: color0.withValues(alpha: 0.6),
+                                      ),
+                                      enabledBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: color0.withValues(alpha: 0.5),
+                                        ),
+                                      ),
+                                      focusedBorder: const UnderlineInputBorder(
+                                        borderSide: BorderSide(color: color0),
+                                      ),
+                                    ),
+                                  ),
+                                  <Widget>[
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: const Text(
+                                        'Cancelar',
+                                        style: TextStyle(color: color0),
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          String newName =
+                                              nicknameController.text;
+                                          subNicknamesMap[
+                                              '$deviceName/-/$index'] = newName;
+                                          saveSubNicknamesMap(subNicknamesMap);
+                                        });
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: const Text(
+                                        'Guardar',
+                                        style: TextStyle(color: color0),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ],
                         ),
-                      ),
-                      const Icon(
-                        Icons.edit,
-                        size: 22,
-                        color: color0,
                       ),
                       const Spacer(),
                       Text(
@@ -957,426 +1032,627 @@ class DomoticaPageState extends State<DomoticaPage> {
       ),
 
       //*- Página 2 trackeo -*\\
-      Stack(
-        children: [
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  tracking
-                      ? 'Control por presencia iniciado'
-                      : 'Control por presencia desactivado',
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: color3,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 40),
-                GestureDetector(
-                  onTap: isAgreeChecked
-                      ? () {
-                          if (tracking) {
-                            showAlertDialog(
-                              context,
-                              false,
-                              const Text(
-                                  '¿Seguro que quiere cancelar el control por presencia?'),
-                              const Text(
-                                  'Deshabilitar hará que puedas controlarlo manualmente.\nSi quieres volver a utilizar control por presencia deberás habilitarlo nuevamente'),
-                              [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                  },
-                                  child: const Text('Cancelar'),
-                                ),
-                                TextButton(
-                                  onPressed: () async {
-                                    setState(() {
-                                      tracking = false;
-                                    });
-                                    devicesToTrack.remove(deviceName);
-                                    saveDeviceListToTrack(devicesToTrack);
-                                    List<String> jijeo = [];
-                                    savePinToTrack(jijeo, deviceName);
-                                    context.mounted
-                                        ? Navigator.of(context).pop()
-                                        : printLog("Contextn't");
-                                  },
-                                  child: const Text('Aceptar'),
-                                ),
-                              ],
-                            );
-                          } else {
-                            openTrackingDialog();
-                            setState(() {
-                              tracking = true;
-                            });
-                          }
-                        }
-                      : null,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 500),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: tracking ? Colors.greenAccent : Colors.redAccent,
-                      shape: BoxShape.circle,
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 10,
-                          offset: Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.directions_walk,
-                      size: 80,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 60),
-                Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  elevation: 5,
-                  color: color3,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Habilitar esta función hará que la aplicación use más recursos de lo común. Si decides utilizarla, es bajo tu responsabilidad.',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            color: color0,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        CheckboxListTile(
-                          title: Text(
-                            'Sí, estoy de acuerdo',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              color: color0,
-                            ),
-                          ),
-                          value: isAgreeChecked,
-                          activeColor: color0,
-                          onChanged: (bool? value) {
-                            if (value == false && tracking) {
-                              // Mostrar el diálogo de confirmación si el usuario intenta desmarcar mientras el trackeo está activado
-                              showAlertDialog(
-                                context,
-                                false,
-                                const Text(
-                                  '¿Seguro que quiere cancelar el control por presencia?',
-                                ),
-                                const Text(
-                                  'Deshabilitar hará que puedas controlarlo manualmente.\nSi quieres volver a utilizar control por presencia deberás habilitarlo nuevamente',
-                                ),
-                                [
-                                  TextButton(
-                                    onPressed: () {
-                                      // Cerrar el diálogo sin cambiar el estado del checkbox
-                                      Navigator.pop(context);
-                                    },
-                                    child: const Text('Cancelar'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      // Confirmación: desmarcar checkbox y detener el trackeo
-                                      setState(() {
-                                        isAgreeChecked = false;
-                                        tracking = false;
-                                      });
-                                      devicesToTrack.remove(deviceName);
-                                      saveDeviceListToTrack(devicesToTrack);
-                                      Navigator.pop(context);
-                                    },
-                                    child: const Text('Aceptar'),
-                                  ),
-                                ],
-                              );
-                            } else {
-                              // Permitir el cambio si el checkbox se está marcando o si el trackeo está desactivado
-                              setState(() {
-                                isAgreeChecked = value ?? false;
-                              });
-                            }
-                          },
-                          controlAffinity: ListTileControlAffinity.leading,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (!deviceOwner && owner != '')
-            Container(
-              color: Colors.black.withValues(alpha: 0.7),
-              child: const Center(
-                child: Text(
-                  'No tienes acceso a esta función',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-              ),
-            ),
-        ],
-      ),
+
+      //TODO se quita temporalmente
+      // Stack(
+      //   children: [
+      //     Center(
+      //       child: Column(
+      //         mainAxisAlignment: MainAxisAlignment.center,
+      //         crossAxisAlignment: CrossAxisAlignment.center,
+      //         children: [
+      //           Text(
+      //             tracking
+      //                 ? 'Control por presencia iniciado'
+      //                 : 'Control por presencia desactivado',
+      //             style: GoogleFonts.poppins(
+      //               fontSize: 28,
+      //               fontWeight: FontWeight.bold,
+      //               color: color3,
+      //             ),
+      //             textAlign: TextAlign.center,
+      //           ),
+      //           const SizedBox(height: 40),
+      //           GestureDetector(
+      //             onTap: isAgreeChecked
+      //                 ? () {
+      //                     if (tracking) {
+      //                       showAlertDialog(
+      //                         context,
+      //                         false,
+      //                         const Text(
+      //                             '¿Seguro que quiere cancelar el control por presencia?'),
+      //                         const Text(
+      //                             'Deshabilitar hará que puedas controlarlo manualmente.\nSi quieres volver a utilizar control por presencia deberás habilitarlo nuevamente'),
+      //                         [
+      //                           TextButton(
+      //                             onPressed: () {
+      //                               Navigator.pop(context);
+      //                             },
+      //                             child: const Text('Cancelar'),
+      //                           ),
+      //                           TextButton(
+      //                             onPressed: () async {
+      //                               setState(() {
+      //                                 tracking = false;
+      //                               });
+      //                               devicesToTrack.remove(deviceName);
+      //                               saveDeviceListToTrack(devicesToTrack);
+      //                               List<String> jijeo = [];
+      //                               savePinToTrack(jijeo, deviceName);
+      //                               context.mounted
+      //                                   ? Navigator.of(context).pop()
+      //                                   : printLog("Contextn't");
+      //                             },
+      //                             child: const Text('Aceptar'),
+      //                           ),
+      //                         ],
+      //                       );
+      //                     } else {
+      //                       openTrackingDialog();
+      //                       setState(() {
+      //                         tracking = true;
+      //                       });
+      //                     }
+      //                   }
+      //                 : null,
+      //             child: AnimatedContainer(
+      //               duration: const Duration(milliseconds: 500),
+      //               padding: const EdgeInsets.all(20),
+      //               decoration: BoxDecoration(
+      //                 color: tracking ? Colors.greenAccent : Colors.redAccent,
+      //                 shape: BoxShape.circle,
+      //                 boxShadow: const [
+      //                   BoxShadow(
+      //                     color: Colors.black26,
+      //                     blurRadius: 10,
+      //                     offset: Offset(0, 5),
+      //                   ),
+      //                 ],
+      //               ),
+      //               child: const Icon(
+      //                 Icons.directions_walk,
+      //                 size: 80,
+      //                 color: Colors.white,
+      //               ),
+      //             ),
+      //           ),
+      //           const SizedBox(height: 60),
+      //           Card(
+      //             shape: RoundedRectangleBorder(
+      //               borderRadius: BorderRadius.circular(20),
+      //             ),
+      //             elevation: 5,
+      //             color: color3,
+      //             child: Padding(
+      //               padding: const EdgeInsets.all(20.0),
+      //               child: Column(
+      //                 crossAxisAlignment: CrossAxisAlignment.start,
+      //                 children: [
+      //                   Text(
+      //                     'Habilitar esta función hará que la aplicación use más recursos de lo común. Si decides utilizarla, es bajo tu responsabilidad.',
+      //                     style: GoogleFonts.poppins(
+      //                       fontSize: 16,
+      //                       color: color0,
+      //                     ),
+      //                   ),
+      //                   const SizedBox(height: 10),
+      //                   CheckboxListTile(
+      //                     title: Text(
+      //                       'Sí, estoy de acuerdo',
+      //                       style: GoogleFonts.poppins(
+      //                         fontSize: 16,
+      //                         color: color0,
+      //                       ),
+      //                     ),
+      //                     value: isAgreeChecked,
+      //                     activeColor: color0,
+      //                     onChanged: (bool? value) {
+      //                       if (value == false && tracking) {
+      //                         // Mostrar el diálogo de confirmación si el usuario intenta desmarcar mientras el trackeo está activado
+      //                         showAlertDialog(
+      //                           context,
+      //                           false,
+      //                           const Text(
+      //                             '¿Seguro que quiere cancelar el control por presencia?',
+      //                           ),
+      //                           const Text(
+      //                             'Deshabilitar hará que puedas controlarlo manualmente.\nSi quieres volver a utilizar control por presencia deberás habilitarlo nuevamente',
+      //                           ),
+      //                           [
+      //                             TextButton(
+      //                               onPressed: () {
+      //                                 // Cerrar el diálogo sin cambiar el estado del checkbox
+      //                                 Navigator.pop(context);
+      //                               },
+      //                               child: const Text('Cancelar'),
+      //                             ),
+      //                             TextButton(
+      //                               onPressed: () {
+      //                                 // Confirmación: desmarcar checkbox y detener el trackeo
+      //                                 setState(() {
+      //                                   isAgreeChecked = false;
+      //                                   tracking = false;
+      //                                 });
+      //                                 devicesToTrack.remove(deviceName);
+      //                                 saveDeviceListToTrack(devicesToTrack);
+      //                                 Navigator.pop(context);
+      //                               },
+      //                               child: const Text('Aceptar'),
+      //                             ),
+      //                           ],
+      //                         );
+      //                       } else {
+      //                         // Permitir el cambio si el checkbox se está marcando o si el trackeo está desactivado
+      //                         setState(() {
+      //                           isAgreeChecked = value ?? false;
+      //                         });
+      //                       }
+      //                     },
+      //                     controlAffinity: ListTileControlAffinity.leading,
+      //                   ),
+      //                 ],
+      //               ),
+      //             ),
+      //           ),
+      //         ],
+      //       ),
+      //     ),
+      //     if (!deviceOwner && owner != '')
+      //       Container(
+      //         color: Colors.black.withValues(alpha: 0.7),
+      //         child: const Center(
+      //           child: Text(
+      //             'No tienes acceso a esta función',
+      //             style: TextStyle(color: Colors.white, fontSize: 18),
+      //           ),
+      //         ),
+      //       ),
+      //   ],
+      // ),
 
       if (hardwareVersion == '240422A') ...{
         //*- página 3: Cambiar pines -*\\
 
-        Stack(
-          children: [
-            SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20.0, vertical: 30.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Cambio de Modo de Pines',
-                      style: GoogleFonts.poppins(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: color3,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 40),
-                    Card(
-                      color: color3,
-                      elevation: 8,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 500),
-                              child: isPasswordCorrect
-                                  ? const Icon(
-                                      HugeIcons.strokeRoundedSquareUnlock02,
-                                      color: color0,
-                                      size: 40,
-                                      key: ValueKey('open_lock'),
-                                    )
-                                  : const Icon(
-                                      HugeIcons.strokeRoundedSquareLock02,
-                                      color: color0,
-                                      size: 40,
-                                      key: ValueKey('closed_lock'),
-                                    ),
-                            ),
-                            const SizedBox(height: 20),
-                            Text(
-                              'Ingresa la contraseña del módulo ubicada en el manual',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.poppins(
-                                color: color0,
-                                fontSize: 18,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            TextField(
-                              controller: modulePassController,
-                              style:
-                                  const TextStyle(color: color0, fontSize: 16),
-                              cursorColor: color0,
-                              obscureText: true,
-                              onChanged: (value) {
-                                setState(() {
-                                  isPasswordCorrect = value == '53494d45';
-                                });
-                              },
-                              decoration: InputDecoration(
-                                prefixIcon: Icon(
-                                  Icons.key,
-                                  color: color0.withValues(alpha: 0.7),
-                                ),
-                                hintText: "Contraseña",
-                                hintStyle: TextStyle(
-                                  color: color0.withValues(alpha: 0.6),
-                                ),
-                                enabledBorder: UnderlineInputBorder(
-                                  borderSide: BorderSide(
-                                    color: color0.withValues(alpha: 0.5),
-                                  ),
-                                ),
-                                focusedBorder: const UnderlineInputBorder(
-                                  borderSide: BorderSide(
-                                    color: color0,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    if (isPasswordCorrect)
-                      FloatingActionButton.extended(
-                        onPressed: () {
-                          setState(() {
-                            isChangeModeVisible = !isChangeModeVisible;
-                          });
-                        },
-                        backgroundColor: color3,
-                        foregroundColor: color0,
-                        icon: const Icon(Icons.settings, color: color0),
-                        label: Text(
-                          'Cambiar modo de pines',
+        SingleChildScrollView(
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.8,
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20.0, vertical: 30.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Cambio de Modo de Pines',
                           style: GoogleFonts.poppins(
-                              fontSize: 16, fontWeight: FontWeight.bold),
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: color3,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                      ),
-                    const SizedBox(height: 20),
-                    if (isChangeModeVisible && isPasswordCorrect)
-                      Column(
-                        children: [
-                          for (var i = 0; i < parts.length; i++) ...[
-                            Card(
-                              color: color3,
-                              elevation: 6,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0, vertical: 24.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      subNicknamesMap[
-                                              '$deviceName/-/${parts[i]}'] ??
-                                          '${tipo[i]} $i',
-                                      style: GoogleFonts.poppins(
-                                        color: color0,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      tipo[i] == 'Entrada'
-                                          ? '¿Cambiar de entrada a salida?'
-                                          : '¿Cambiar de salida a entrada?',
-                                      style: GoogleFonts.poppins(
-                                        color: color0,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    if (tipo[i] == 'Entrada')
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            'Estado común:',
-                                            style: GoogleFonts.poppins(
-                                              color: color0,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                          Text(
-                                            common[i],
-                                            style: GoogleFonts.poppins(
-                                              color: color0,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                          IconButton(
-                                            onPressed: () {
-                                              String data =
-                                                  '${DeviceManager.getProductCode(deviceName)}[14]($i#${common[i] == '1' ? '0' : '1'})';
-                                              printLog(data);
-                                              myDevice.toolsUuid
-                                                  .write(data.codeUnits);
-                                            },
-                                            icon: const Icon(
-                                              Icons.change_circle_outlined,
-                                              color: color0,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    const SizedBox(height: 12),
-                                    Center(
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          foregroundColor: color3,
-                                          backgroundColor: color0,
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 24.0, vertical: 12.0),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
+                        const SizedBox(height: 40),
+                        Card(
+                          color: color3,
+                          elevation: 8,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 500),
+                                  child: isPasswordCorrect
+                                      ? const Icon(
+                                          HugeIcons.strokeRoundedSquareUnlock02,
+                                          color: color0,
+                                          size: 40,
+                                          key: ValueKey('open_lock'),
+                                        )
+                                      : const Icon(
+                                          HugeIcons.strokeRoundedSquareLock02,
+                                          color: color0,
+                                          size: 40,
+                                          key: ValueKey('closed_lock'),
                                         ),
-                                        onPressed: () {
-                                          String fun =
-                                              '${DeviceManager.getProductCode(deviceName)}[13]($i#${tipo[i] == 'Entrada' ? '0' : '1'})';
-                                          printLog(fun);
-                                          myDevice.toolsUuid
-                                              .write(fun.codeUnits);
-                                        },
-                                        child: const Text(
-                                          'CAMBIAR',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
                                 ),
-                              ),
+                                const SizedBox(height: 20),
+                                Text(
+                                  'Ingresa la contraseña del módulo ubicada en el manual',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.poppins(
+                                    color: color0,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                TextField(
+                                  controller: modulePassController,
+                                  style: const TextStyle(
+                                      color: color0, fontSize: 16),
+                                  cursorColor: color0,
+                                  obscureText: true,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      isPasswordCorrect = value == '53494d45';
+                                    });
+                                  },
+                                  decoration: InputDecoration(
+                                    prefixIcon: Icon(
+                                      Icons.key,
+                                      color: color0.withValues(alpha: 0.7),
+                                    ),
+                                    hintText: "Contraseña",
+                                    hintStyle: TextStyle(
+                                      color: color0.withValues(alpha: 0.6),
+                                    ),
+                                    enabledBorder: UnderlineInputBorder(
+                                      borderSide: BorderSide(
+                                        color: color0.withValues(alpha: 0.5),
+                                      ),
+                                    ),
+                                    focusedBorder: const UnderlineInputBorder(
+                                      borderSide: BorderSide(
+                                        color: color0,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 20),
-                            if (i == parts.length - 1) ...{
-                              Padding(
-                                padding: EdgeInsets.only(
-                                    bottom: bottomBarHeight + 10),
-                              ),
-                            }
-                          ],
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            if (!deviceOwner && owner != '')
-              Container(
-                color: Colors.black.withValues(alpha: 0.7),
-                child: const Center(
-                  child: Text(
-                    'No tienes acceso a esta función',
-                    style: TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                        if (isPasswordCorrect)
+                          FloatingActionButton.extended(
+                            onPressed: () {
+                              setState(() {
+                                isChangeModeVisible = !isChangeModeVisible;
+                              });
+                            },
+                            backgroundColor: color3,
+                            foregroundColor: color0,
+                            icon: const Icon(Icons.settings, color: color0),
+                            label: Text(
+                              'Cambiar modo de pines',
+                              style: GoogleFonts.poppins(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        const SizedBox(height: 20),
+                        if (isChangeModeVisible && isPasswordCorrect)
+                          Column(
+                            children: [
+                              for (var i = 0; i < parts.length; i++) ...[
+                                Card(
+                                  color: color3,
+                                  elevation: 6,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16.0, vertical: 24.0),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          subNicknamesMap[
+                                                  '$deviceName/-/${parts[i]}'] ??
+                                              '${tipo[i]} $i',
+                                          style: GoogleFonts.poppins(
+                                            color: color0,
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        if (tipo[i] == 'Salida') ...{
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Alternar entre Normal Abierto y Normal Cerrado',
+                                                style: GoogleFonts.poppins(
+                                                  color: color0,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 12),
+                                              Container(
+                                                height: 40,
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          30.0),
+                                                  border: Border.all(
+                                                    color: color0,
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: GestureDetector(
+                                                        onTap: () {
+                                                          // NORMAL Abierto
+
+                                                          String message =
+                                                              jsonEncode({
+                                                            'pinType': '0',
+                                                            'index': i,
+                                                            'w_status':
+                                                                estado[i] ==
+                                                                    '1',
+                                                            'r_state': 0,
+                                                          });
+
+                                                          // Envías por MQTT
+                                                          String topicRx =
+                                                              'devices_rx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
+                                                          String topicTx =
+                                                              'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
+                                                          sendMessagemqtt(
+                                                              topicRx, message);
+                                                          sendMessagemqtt(
+                                                              topicTx, message);
+
+                                                          // Guardas en globalDATA
+                                                          globalDATA
+                                                              .putIfAbsent(
+                                                            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
+                                                            () => {},
+                                                          )
+                                                              .addAll({
+                                                            'io$i': message
+                                                          });
+                                                          saveGlobalData(
+                                                              globalDATA);
+
+                                                          setState(() {
+                                                            common[i] = '0';
+                                                          });
+                                                        },
+                                                        child: Container(
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: common[i] ==
+                                                                    '0'
+                                                                ? color0
+                                                                : Colors
+                                                                    .transparent,
+                                                            borderRadius:
+                                                                const BorderRadius
+                                                                    .only(
+                                                              topLeft: Radius
+                                                                  .circular(28),
+                                                              bottomLeft: Radius
+                                                                  .circular(28),
+                                                            ),
+                                                          ),
+                                                          child: Center(
+                                                            child: Text(
+                                                              'Normal Abierto',
+                                                              style: GoogleFonts
+                                                                  .poppins(
+                                                                fontSize: 14,
+                                                                color:
+                                                                    common[i] ==
+                                                                            '0'
+                                                                        ? color3
+                                                                        : color0,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Container(
+                                                      width: 2,
+                                                      color: color0,
+                                                    ),
+                                                    Expanded(
+                                                      child: GestureDetector(
+                                                        onTap: () {
+                                                          // NORMAL Cerrado
+
+                                                          // pones los valores
+                                                          String message =
+                                                              jsonEncode({
+                                                            'pinType': '0',
+                                                            'index': i,
+                                                            'w_status':
+                                                                estado[i] ==
+                                                                    '1',
+                                                            'r_state': '1',
+                                                          });
+
+                                                          // Envías por MQTT
+                                                          String topicRx =
+                                                              'devices_rx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
+                                                          String topicTx =
+                                                              'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
+                                                          sendMessagemqtt(
+                                                              topicRx, message);
+                                                          sendMessagemqtt(
+                                                              topicTx, message);
+
+                                                          // Guardas globalDATA
+                                                          globalDATA
+                                                              .putIfAbsent(
+                                                            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
+                                                            () => {},
+                                                          )
+                                                              .addAll({
+                                                            'io$i': message
+                                                          });
+                                                          saveGlobalData(
+                                                              globalDATA);
+
+                                                          setState(() {
+                                                            common[i] = '1';
+                                                          });
+                                                        },
+                                                        child: Container(
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: common[i] ==
+                                                                    '1'
+                                                                ? color0
+                                                                : Colors
+                                                                    .transparent,
+                                                            borderRadius:
+                                                                const BorderRadius
+                                                                    .only(
+                                                              topRight: Radius
+                                                                  .circular(28),
+                                                              bottomRight:
+                                                                  Radius
+                                                                      .circular(
+                                                                          28),
+                                                            ),
+                                                          ),
+                                                          child: Center(
+                                                            child: Text(
+                                                              'Normal Cerrado',
+                                                              style: GoogleFonts
+                                                                  .poppins(
+                                                                fontSize: 14,
+                                                                color:
+                                                                    common[i] ==
+                                                                            '1'
+                                                                        ? color3
+                                                                        : color0,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 20),
+                                        },
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          tipo[i] == 'Entrada'
+                                              ? '¿Cambiar de entrada a salida?'
+                                              : '¿Cambiar de salida a entrada?',
+                                          style: GoogleFonts.poppins(
+                                            color: color0,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        if (tipo[i] == 'Entrada')
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                'Estado común:',
+                                                style: GoogleFonts.poppins(
+                                                  color: color0,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                              Text(
+                                                common[i],
+                                                style: GoogleFonts.poppins(
+                                                  color: color0,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                              IconButton(
+                                                onPressed: () {
+                                                  String data =
+                                                      '${DeviceManager.getProductCode(deviceName)}[14]($i#${common[i] == '1' ? '0' : '1'})';
+                                                  printLog(data);
+                                                  myDevice.toolsUuid
+                                                      .write(data.codeUnits);
+                                                },
+                                                icon: const Icon(
+                                                  Icons.change_circle_outlined,
+                                                  color: color0,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        const SizedBox(height: 12),
+                                        Center(
+                                          child: ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              foregroundColor: color3,
+                                              backgroundColor: color0,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 24.0,
+                                                      vertical: 12.0),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                            onPressed: () {
+                                              String fun =
+                                                  '${DeviceManager.getProductCode(deviceName)}[13]($i#${tipo[i] == 'Entrada' ? '0' : '1'})';
+                                              printLog(fun);
+                                              myDevice.toolsUuid
+                                                  .write(fun.codeUnits);
+                                            },
+                                            child: const Text(
+                                              'CAMBIAR',
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                if (i == parts.length - 1) ...{
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                        bottom: bottomBarHeight + 10),
+                                  ),
+                                }
+                              ],
+                            ],
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-          ],
+                if (!deviceOwner && owner != '')
+                  Container(
+                    color: Colors.black.withValues(alpha: 0.7),
+                    child: const Center(
+                      child: Text(
+                        'No tienes acceso a esta función',
+                        style: TextStyle(color: Colors.white, fontSize: 18),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       },
 
@@ -2256,7 +2532,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                                 ),
                               ),
 
-// Tarjeta de opciones de notificación
+                              // Tarjeta de opciones de notificación
                               AnimatedSize(
                                 duration: const Duration(milliseconds: 600),
                                 curve: Curves.easeInOut,
@@ -2654,7 +2930,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           ),
           actions: [
             IconButton(
-              icon: Icon(wifiIcon, color: color0),
+              icon: Icon(wifiNotifier.wifiIcon, color: color0),
               onPressed: () {
                 wifiText(context);
               },
@@ -2682,7 +2958,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                 height: 75.0,
                 items: <Widget>[
                   const Icon(Icons.home, size: 30, color: color0),
-                  const Icon(Icons.bluetooth, size: 30, color: color0),
+                  //const Icon(Icons.bluetooth, size: 30, color: color0),
                   if (hardwareVersion == '240422A') ...{
                     const Icon(Icons.input, size: 30, color: color0),
                   },

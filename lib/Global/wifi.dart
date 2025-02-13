@@ -212,15 +212,32 @@ class WifiPageState extends State<WifiPage> {
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        Text(
-                                          online
-                                              ? '● CONECTADO'
-                                              : '● DESCONECTADO',
-                                          style: GoogleFonts.poppins(
-                                            color:
-                                                online ? Colors.green : color6,
-                                            fontSize: 12,
-                                          ),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                              spacing: 10,
+                                          children: [
+                                            Text(
+                                              online
+                                                  ? '● CONECTADO'
+                                                  : '● DESCONECTADO',
+                                              style: GoogleFonts.poppins(
+                                                color: online
+                                                    ? Colors.green
+                                                    : color6,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                            Icon(
+                                              online
+                                                  ? Icons.cloud
+                                                  : Icons.cloud_off,
+                                              color: online
+                                                  ? Colors.green
+                                                  : color6,
+                                              size: 15,
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
@@ -322,15 +339,32 @@ class WifiPageState extends State<WifiPage> {
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        Text(
-                                          online
-                                              ? '● CONECTADO'
-                                              : '● DESCONECTADO',
-                                          style: GoogleFonts.poppins(
-                                            color:
-                                                online ? Colors.green : color6,
-                                            fontSize: 12,
-                                          ),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                              spacing: 10,
+                                          children: [
+                                            Text(
+                                              online
+                                                  ? '● CONECTADO'
+                                                  : '● DESCONECTADO',
+                                              style: GoogleFonts.poppins(
+                                                color: online
+                                                    ? Colors.green
+                                                    : color6,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                            Icon(
+                                              online
+                                                  ? Icons.cloud
+                                                  : Icons.cloud_off,
+                                              color: online
+                                                  ? Colors.green
+                                                  : color6,
+                                              size: 15,
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
@@ -458,15 +492,32 @@ class WifiPageState extends State<WifiPage> {
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        Text(
-                                          online
-                                              ? '● CONECTADO'
-                                              : '● DESCONECTADO',
-                                          style: GoogleFonts.poppins(
-                                            color:
-                                                online ? Colors.green : color6,
-                                            fontSize: 12,
-                                          ),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                              spacing: 10,
+                                          children: [
+                                            Text(
+                                              online
+                                                  ? '● CONECTADO'
+                                                  : '● DESCONECTADO',
+                                              style: GoogleFonts.poppins(
+                                                color: online
+                                                    ? Colors.green
+                                                    : color6,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                            Icon(
+                                              online
+                                                  ? Icons.cloud
+                                                  : Icons.cloud_off,
+                                              color: online
+                                                  ? Colors.green
+                                                  : color6,
+                                              size: 15,
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
@@ -596,15 +647,32 @@ class WifiPageState extends State<WifiPage> {
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        Text(
-                                          online
-                                              ? '● CONECTADO'
-                                              : '● DESCONECTADO',
-                                          style: GoogleFonts.poppins(
-                                            color:
-                                                online ? Colors.green : color6,
-                                            fontSize: 12,
-                                          ),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                              spacing: 10,
+                                          children: [
+                                            Text(
+                                              online
+                                                  ? '● CONECTADO'
+                                                  : '● DESCONECTADO',
+                                              style: GoogleFonts.poppins(
+                                                color: online
+                                                    ? Colors.green
+                                                    : color6,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                            Icon(
+                                              online
+                                                  ? Icons.cloud
+                                                  : Icons.cloud_off,
+                                              color: online
+                                                  ? Colors.green
+                                                  : color6,
+                                              size: 15,
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
@@ -868,7 +936,7 @@ class WifiPageState extends State<WifiPage> {
                           );
                         case '027313_IOT':
                           bool estado = deviceDATA['w_status'] ?? false;
-                          bool isNC = deviceDATA['isNC'] ?? false;
+                          // bool isNC = deviceDATA['isNC'] ?? false;
 
                           return Card(
                             color: color3,
@@ -899,110 +967,357 @@ class WifiPageState extends State<WifiPage> {
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        Text(
-                                          online
-                                              ? '● CONECTADO'
-                                              : '● DESCONECTADO',
-                                          style: GoogleFonts.poppins(
-                                            color:
-                                                online ? Colors.green : color6,
-                                            fontSize: 12,
-                                          ),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                              spacing: 10,
+                                          children: [
+                                            Text(
+                                              online
+                                                  ? '● CONECTADO'
+                                                  : '● DESCONECTADO',
+                                              style: GoogleFonts.poppins(
+                                                color: online
+                                                    ? Colors.green
+                                                    : color6,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                            Icon(
+                                              online
+                                                  ? Icons.cloud
+                                                  : Icons.cloud_off,
+                                              color: online
+                                                  ? Colors.green
+                                                  : color6,
+                                              size: 15,
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
                                   ],
                                 ),
                                 children: <Widget>[
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16.0, vertical: 5.0),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            isNC
-                                                ? estado
-                                                    ? Text(
-                                                        labelEncendido[
-                                                                deviceName] ??
-                                                            'ABIERTO',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          color: Colors.green,
-                                                          fontSize: 15,
-                                                        ),
-                                                      )
-                                                    : Text(
-                                                        labelApagado[
-                                                                deviceName] ??
-                                                            'CERRADO',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          color: color6,
-                                                          fontSize: 15,
-                                                        ),
-                                                      )
-                                                : estado
-                                                    ? Text(
-                                                        labelEncendido[
-                                                                deviceName] ??
-                                                            'CERRADO',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          color: Colors.green,
-                                                          fontSize: 15,
-                                                        ),
-                                                      )
-                                                    : Text(
-                                                        labelApagado[
-                                                                deviceName] ??
-                                                            'ABIERTO',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          color: color6,
-                                                          fontSize: 15,
-                                                        ),
+                                  if (oldRelay.contains(deviceName)) ...{
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16.0, vertical: 5.0),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              estado
+                                                  ? Text(
+                                                      'ENCENDIDO',
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        color: Colors.green,
+                                                        fontSize: 15,
                                                       ),
-                                            const SizedBox(width: 5),
-                                            owner
-                                                ? Switch(
-                                                    activeColor:
-                                                        const Color(0xFF9C9D98),
-                                                    activeTrackColor:
-                                                        const Color(0xFFB2B5AE),
-                                                    inactiveThumbColor:
-                                                        const Color(0xFFB2B5AE),
-                                                    inactiveTrackColor:
-                                                        const Color(0xFF9C9D98),
-                                                    value: estado,
-                                                    onChanged: (newValue) {
-                                                      toggleState(
-                                                          deviceName, newValue);
-                                                      setState(() {
-                                                        estado = newValue;
-                                                      });
-                                                    },
-                                                  )
-                                                : const SizedBox(
-                                                    height: 0, width: 0),
-                                          ],
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            HugeIcons.strokeRoundedDelete02,
-                                            color: color0,
-                                            size: 20,
+                                                    )
+                                                  : Text(
+                                                      'APAGADO',
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        color: color6,
+                                                        fontSize: 15,
+                                                      ),
+                                                    ),
+                                              const SizedBox(width: 5),
+                                              owner
+                                                  ? Switch(
+                                                      activeColor: const Color(
+                                                          0xFF9C9D98),
+                                                      activeTrackColor:
+                                                          const Color(
+                                                              0xFFB2B5AE),
+                                                      inactiveThumbColor:
+                                                          const Color(
+                                                              0xFFB2B5AE),
+                                                      inactiveTrackColor:
+                                                          const Color(
+                                                              0xFF9C9D98),
+                                                      value: estado,
+                                                      onChanged: (newValue) {
+                                                        toggleState(deviceName,
+                                                            newValue);
+                                                        setState(() {
+                                                          estado = newValue;
+                                                        });
+                                                      },
+                                                    )
+                                                  : const SizedBox(
+                                                      height: 0, width: 0),
+                                            ],
                                           ),
-                                          onPressed: () {
-                                            _confirmDelete(deviceName, equipo);
-                                          },
-                                        ),
-                                      ],
+                                          IconButton(
+                                            icon: const Icon(
+                                              HugeIcons.strokeRoundedDelete02,
+                                              color: color0,
+                                              size: 20,
+                                            ),
+                                            onPressed: () {
+                                              _confirmDelete(
+                                                  deviceName, equipo);
+                                            },
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
+                                  } else ...{
+                                    Column(
+                                      children: List.generate(
+                                        2,
+                                        (i) {
+                                          if (deviceDATA['io$i'] == null) {
+                                            return ListTile(
+                                              title: Text(
+                                                'Error en el equipo',
+                                                style: GoogleFonts.poppins(
+                                                  color: color0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              subtitle: Text(
+                                                'Se solucionara automaticamente en poco tiempo...',
+                                                style: GoogleFonts.poppins(
+                                                  color: color0,
+                                                  fontWeight: FontWeight.normal,
+                                                ),
+                                              ),
+                                            );
+                                          } else {
+                                            Map<String, dynamic> equipo =
+                                                jsonDecode(deviceDATA['io$i']);
+                                            printLog(
+                                                'Voy a realizar el cambio: $equipo',
+                                                'amarillo');
+                                            String tipoWifi =
+                                                equipo['pinType'].toString() ==
+                                                        '0'
+                                                    ? 'Salida'
+                                                    : 'Entrada';
+                                            bool estadoWifi =
+                                                equipo['w_status'];
+                                            String comunWifi =
+                                                (equipo['r_state'] ?? '0')
+                                                    .toString();
+                                            bool entradaWifi =
+                                                tipoWifi == 'Entrada';
+                                            return ListTile(
+                                              title: Row(
+                                                children: [
+                                                  Text(
+                                                    subNicknamesMap[
+                                                            '$deviceName/-/$i'] ??
+                                                        '$tipoWifi $i',
+                                                    style: GoogleFonts.poppins(
+                                                      color: color0,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 5),
+                                                ],
+                                              ),
+                                              subtitle: Align(
+                                                alignment: AlignmentDirectional
+                                                    .centerStart,
+                                                child: Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.start,
+                                                  children: [
+                                                    entradaWifi
+                                                        ? estadoWifi
+                                                            ? comunWifi == '1'
+                                                                ? Text(
+                                                                    'Cerrado',
+                                                                    style: GoogleFonts
+                                                                        .poppins(
+                                                                      color: Colors
+                                                                          .green,
+                                                                      fontSize:
+                                                                          15,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                    ),
+                                                                  )
+                                                                : Text(
+                                                                    'Abierto',
+                                                                    style: GoogleFonts
+                                                                        .poppins(
+                                                                      color:
+                                                                          color6,
+                                                                      fontSize:
+                                                                          15,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                    ),
+                                                                  )
+                                                            : comunWifi == '1'
+                                                                ? Text(
+                                                                    'Abierto',
+                                                                    style: GoogleFonts
+                                                                        .poppins(
+                                                                      color:
+                                                                          color6,
+                                                                      fontSize:
+                                                                          15,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                    ),
+                                                                  )
+                                                                : Text(
+                                                                    'Cerrado',
+                                                                    style: GoogleFonts
+                                                                        .poppins(
+                                                                      color: Colors
+                                                                          .green,
+                                                                      fontSize:
+                                                                          15,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                    ),
+                                                                  )
+                                                        : estadoWifi
+                                                            ? Text(
+                                                                'Encendido',
+                                                                style:
+                                                                    GoogleFonts
+                                                                        .poppins(
+                                                                  color: Colors
+                                                                      .green,
+                                                                  fontSize: 15,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                ),
+                                                              )
+                                                            : Text(
+                                                                'Apagado',
+                                                                style:
+                                                                    GoogleFonts
+                                                                        .poppins(
+                                                                  color: color6,
+                                                                  fontSize: 15,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                ),
+                                                              ),
+                                                  ],
+                                                ),
+                                              ),
+                                              trailing: owner
+                                                  ? entradaWifi
+                                                      ? estadoWifi
+                                                          ? comunWifi == '1'
+                                                              ? const Icon(
+                                                                  Icons
+                                                                      .new_releases,
+                                                                  color: Color(
+                                                                      0xff9b9b9b),
+                                                                )
+                                                              : const Icon(
+                                                                  Icons
+                                                                      .new_releases,
+                                                                  color: color6,
+                                                                )
+                                                          : comunWifi == '1'
+                                                              ? const Icon(
+                                                                  Icons
+                                                                      .new_releases,
+                                                                  color: color6,
+                                                                )
+                                                              : const Icon(
+                                                                  Icons
+                                                                      .new_releases,
+                                                                  color: Color(
+                                                                      0xff9b9b9b),
+                                                                )
+                                                      : Switch(
+                                                          activeColor:
+                                                              const Color(
+                                                                  0xFF9C9D98),
+                                                          activeTrackColor:
+                                                              const Color(
+                                                                  0xFFB2B5AE),
+                                                          inactiveThumbColor:
+                                                              const Color(
+                                                                  0xFFB2B5AE),
+                                                          inactiveTrackColor:
+                                                              const Color(
+                                                                  0xFF9C9D98),
+                                                          value: estadoWifi,
+                                                          onChanged: (value) {
+                                                            String
+                                                                deviceSerialNumber =
+                                                                DeviceManager
+                                                                    .extractSerialNumber(
+                                                                        deviceName);
+                                                            String topic =
+                                                                'devices_rx/${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber';
+                                                            String topic2 =
+                                                                'devices_tx/${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber';
+                                                            String message =
+                                                                jsonEncode({
+                                                              'pinType':
+                                                                  tipoWifi ==
+                                                                          'Salida'
+                                                                      ? 0
+                                                                      : 1,
+                                                              'index': i,
+                                                              'w_status': value,
+                                                              'r_state':
+                                                                  comunWifi,
+                                                            });
+                                                            sendMessagemqtt(
+                                                                topic, message);
+                                                            sendMessagemqtt(
+                                                                topic2,
+                                                                message);
+                                                            setState(() {
+                                                              estadoWifi =
+                                                                  value;
+                                                            });
+                                                            globalDATA
+                                                                .putIfAbsent(
+                                                                    '${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber',
+                                                                    () => {})
+                                                                .addAll({
+                                                              'io$i': message
+                                                            });
+                                                            saveGlobalData(
+                                                                globalDATA);
+                                                          },
+                                                        )
+                                                  : null,
+                                            );
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          HugeIcons.strokeRoundedDelete02,
+                                          color: color0,
+                                          size: 20,
+                                        ),
+                                        onPressed: () {
+                                          _confirmDelete(deviceName, equipo);
+                                        },
+                                      ),
+                                    ),
+                                  }
                                 ],
                               ),
                             ),
@@ -1041,15 +1356,32 @@ class WifiPageState extends State<WifiPage> {
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        Text(
-                                          online
-                                              ? '● CONECTADO'
-                                              : '● DESCONECTADO',
-                                          style: GoogleFonts.poppins(
-                                            color:
-                                                online ? Colors.green : color6,
-                                            fontSize: 12,
-                                          ),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                              spacing: 10,
+                                          children: [
+                                            Text(
+                                              online
+                                                  ? '● CONECTADO'
+                                                  : '● DESCONECTADO',
+                                              style: GoogleFonts.poppins(
+                                                color: online
+                                                    ? Colors.green
+                                                    : color6,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                            Icon(
+                                              online
+                                                  ? Icons.cloud
+                                                  : Icons.cloud_off,
+                                              color: online
+                                                  ? Colors.green
+                                                  : color6,
+                                              size: 15,
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
@@ -1175,15 +1507,32 @@ class WifiPageState extends State<WifiPage> {
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        Text(
-                                          online
-                                              ? '● CONECTADO'
-                                              : '● DESCONECTADO',
-                                          style: GoogleFonts.poppins(
-                                            color:
-                                                online ? Colors.green : color6,
-                                            fontSize: 12,
-                                          ),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                              spacing: 10,
+                                          children: [
+                                            Text(
+                                              online
+                                                  ? '● CONECTADO'
+                                                  : '● DESCONECTADO',
+                                              style: GoogleFonts.poppins(
+                                                color: online
+                                                    ? Colors.green
+                                                    : color6,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                            Icon(
+                                              online
+                                                  ? Icons.cloud
+                                                  : Icons.cloud_off,
+                                              color: online
+                                                  ? Colors.green
+                                                  : color6,
+                                              size: 15,
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
@@ -1471,15 +1820,32 @@ class WifiPageState extends State<WifiPage> {
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        Text(
-                                          online
-                                              ? '● CONECTADO'
-                                              : '● DESCONECTADO',
-                                          style: GoogleFonts.poppins(
-                                            color:
-                                                online ? Colors.green : color6,
-                                            fontSize: 12,
-                                          ),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                              spacing: 10,
+                                          children: [
+                                            Text(
+                                              online
+                                                  ? '● CONECTADO'
+                                                  : '● DESCONECTADO',
+                                              style: GoogleFonts.poppins(
+                                                color: online
+                                                    ? Colors.green
+                                                    : color6,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                            Icon(
+                                              online
+                                                  ? Icons.cloud
+                                                  : Icons.cloud_off,
+                                              color: online
+                                                  ? Colors.green
+                                                  : color6,
+                                              size: 15,
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
@@ -1608,15 +1974,32 @@ class WifiPageState extends State<WifiPage> {
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        Text(
-                                          online
-                                              ? '● CONECTADO'
-                                              : '● DESCONECTADO',
-                                          style: GoogleFonts.poppins(
-                                            color:
-                                                online ? Colors.green : color6,
-                                            fontSize: 12,
-                                          ),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                              spacing: 10,
+                                          children: [
+                                            Text(
+                                              online
+                                                  ? '● CONECTADO'
+                                                  : '● DESCONECTADO',
+                                              style: GoogleFonts.poppins(
+                                                color: online
+                                                    ? Colors.green
+                                                    : color6,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                            Icon(
+                                              online
+                                                  ? Icons.cloud
+                                                  : Icons.cloud_off,
+                                              color: online
+                                                  ? Colors.green
+                                                  : color6,
+                                              size: 15,
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
@@ -1640,15 +2023,19 @@ class WifiPageState extends State<WifiPage> {
                                                           'Enfriando',
                                                           style: GoogleFonts
                                                               .poppins(
-                                                            color: Colors.lightBlueAccent.shade400,
+                                                            color: Colors
+                                                                .lightBlueAccent
+                                                                .shade400,
                                                             fontSize: 15,
                                                           ),
                                                         ),
                                                         Icon(
-                                                          HugeIcons.strokeRoundedSnow,
+                                                          HugeIcons
+                                                              .strokeRoundedSnow,
                                                           size: 15,
-                                                          color:
-                                                              Colors.lightBlueAccent.shade400,
+                                                          color: Colors
+                                                              .lightBlueAccent
+                                                              .shade400,
                                                         ),
                                                       ] else ...[
                                                         Text(

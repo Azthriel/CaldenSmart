@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -35,7 +36,6 @@ class ModuloPageState extends State<ModuloPage> {
   bool isPasswordCorrect = false;
   bool _isAnimating = false;
   late List<bool> _selectedPins;
-
 
   TextEditingController emailController = TextEditingController();
   TextEditingController passController = TextEditingController();
@@ -93,7 +93,7 @@ class ModuloPageState extends State<ModuloPage> {
     super.dispose();
   }
 
-   void onItemChanged(int index) {
+  void onItemChanged(int index) {
     if (!_isAnimating) {
       setState(() {
         _isAnimating = true;
@@ -180,49 +180,50 @@ class ModuloPageState extends State<ModuloPage> {
     int users = int.parse(match!.group(1).toString());
     printLog('Hay $users conectados');
     userConnected = users > 1;
+
+    WifiNotifier wifiNotifier =
+        Provider.of<WifiNotifier>(context, listen: false);
+
     if (parts[0] == 'WCS_CONNECTED') {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
       printLog('sis $isWifiConnected');
-      setState(() {
-        textState = 'CONECTADO';
-        statusColor = Colors.green;
-        wifiIcon = Icons.wifi;
-        errorMessage = '';
-        errorSintax = '';
-        werror = false;
-      });
+      errorMessage = '';
+      errorSintax = '';
+      werror = false;
+      if (parts.length > 3) {
+        signalPower = int.tryParse(parts[3]) ?? -30;
+      } else {
+        signalPower = -30;
+      }
+      wifiNotifier.updateStatus(
+          'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
       printLog('non $isWifiConnected');
 
       nameOfWifi = '';
-
-      setState(() {
-        textState = 'DESCONECTADO';
-        statusColor = Colors.red;
-        wifiIcon = Icons.wifi_off;
-      });
+wifiNotifier.updateStatus(
+          'DESCONECTADO', Colors.red, Icons.signal_wifi_off);
 
       if (atemp) {
         setState(() {
-          wifiIcon = Icons.warning_amber_rounded;
+          wifiNotifier.updateStatus(
+              'DESCONECTADO', Colors.red, Icons.warning_amber_rounded);
+          werror = true;
+          if (parts[1] == '202' || parts[1] == '15') {
+            errorMessage = 'Contraseña incorrecta';
+          } else if (parts[1] == '201') {
+            errorMessage = 'La red especificada no existe';
+          } else if (parts[1] == '1') {
+            errorMessage = 'Error desconocido';
+          } else {
+            errorMessage = parts[1];
+          }
+
+          errorSintax = getWifiErrorSintax(int.parse(parts[1]));
         });
-
-        werror = true;
-
-        if (parts[1] == '202' || parts[1] == '15') {
-          errorMessage = 'Contraseña incorrecta';
-        } else if (parts[1] == '201') {
-          errorMessage = 'La red especificada no existe';
-        } else if (parts[1] == '1') {
-          errorMessage = 'Error desconocido';
-        } else {
-          errorMessage = parts[1];
-        }
-
-        errorSintax = getWifiErrorSintax(int.parse(parts[1]));
       }
     }
 
@@ -458,7 +459,7 @@ class ModuloPageState extends State<ModuloPage> {
                                 radius: 50,
                                 backgroundColor: color3,
                                 child: Image.asset(
-                                  'assets/dragon.png',
+                                  'assets/branch/dragon.png',
                                   width: 60,
                                   height: 60,
                                 ),
@@ -597,8 +598,7 @@ class ModuloPageState extends State<ModuloPage> {
               content: SingleChildScrollView(
                 child: ListBody(
                   children: List.generate(parts.length, (index) {
-                    var equipo = parts[index].split(':');
-                    return equipo[0] == '0'
+                    return tipo[index] == 'Salida'
                         ? RadioListTile<int>(
                             title: Text(
                               subNicknamesMap['$deviceName/-/$index'] ??
@@ -644,6 +644,8 @@ class ModuloPageState extends State<ModuloPage> {
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
     double bottomBarHeight = kBottomNavigationBarHeight;
+    WifiNotifier wifiNotifier =
+        Provider.of<WifiNotifier>(context, listen: false);
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
 
@@ -748,24 +750,102 @@ class ModuloPageState extends State<ModuloPage> {
                                 ],
                               );
                             },
-                            child: SizedBox(
-                              height: 30,
-                              width: 180,
-                              child: ScrollingText(
-                                text: subNicknamesMap['$deviceName/-/$index'] ??
-                                    '${tipo[index]} $index',
-                                style: GoogleFonts.poppins(
-                                  color: color0,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  width: 160,
+                                  child: ScrollingText(
+                                    text: subNicknamesMap[
+                                            '$deviceName/-/$index'] ??
+                                        '${tipo[index]} $index',
+                                    style: GoogleFonts.poppins(
+                                      color: color0,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    // overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.edit,
+                                    size: 22,
+                                    color: color0,
+                                  ),
+                                  onPressed: () {
+                                    TextEditingController nicknameController =
+                                        TextEditingController(
+                                      text: subNicknamesMap[
+                                              '$deviceName/-/$index'] ??
+                                          '${tipo[index]} $index',
+                                    );
+                                    showAlertDialog(
+                                      context,
+                                      false,
+                                      Text(
+                                        'Editar Nombre',
+                                        style:
+                                            GoogleFonts.poppins(color: color0),
+                                      ),
+                                      TextField(
+                                        controller: nicknameController,
+                                        style: const TextStyle(color: color0),
+                                        cursorColor: color0,
+                                        decoration: InputDecoration(
+                                          hintText:
+                                              "Nuevo nombre para ${tipo[index]} $index",
+                                          hintStyle: TextStyle(
+                                            color:
+                                                color0.withValues(alpha: 0.6),
+                                          ),
+                                          enabledBorder: UnderlineInputBorder(
+                                            borderSide: BorderSide(
+                                              color:
+                                                  color0.withValues(alpha: 0.5),
+                                            ),
+                                          ),
+                                          focusedBorder:
+                                              const UnderlineInputBorder(
+                                            borderSide:
+                                                BorderSide(color: color0),
+                                          ),
+                                        ),
+                                      ),
+                                      <Widget>[
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                          child: const Text(
+                                            'Cancelar',
+                                            style: TextStyle(color: color0),
+                                          ),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              String newName =
+                                                  nicknameController.text;
+                                              subNicknamesMap[
+                                                      '$deviceName/-/$index'] =
+                                                  newName;
+                                              saveSubNicknamesMap(
+                                                  subNicknamesMap);
+                                            });
+                                            Navigator.of(context).pop();
+                                          },
+                                          child: const Text(
+                                            'Guardar',
+                                            style: TextStyle(color: color0),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
-                          ),
-                          const Icon(
-                            Icons.edit,
-                            size: 22,
-                            color: color0,
                           ),
                           const Spacer(),
                           Text(
@@ -1053,182 +1133,184 @@ class ModuloPageState extends State<ModuloPage> {
       ),
 
       //*- Página 2 trackeo -*\\
-      Stack(
-        children: [
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  tracking
-                      ? 'Control por presencia iniciado'
-                      : 'Control por presencia desactivado',
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: color3,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 40),
-                GestureDetector(
-                  onTap: isAgreeChecked
-                      ? () {
-                          if (tracking) {
-                            showAlertDialog(
-                              context,
-                              false,
-                              const Text(
-                                  '¿Seguro que quiere cancelar el control por presencia?'),
-                              const Text(
-                                  'Deshabilitar hará que puedas controlarlo manualmente.\nSi quieres volver a utilizar control por presencia deberás habilitarlo nuevamente'),
-                              [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                  },
-                                  child: const Text('Cancelar'),
-                                ),
-                                TextButton(
-                                  onPressed: () async {
-                                    setState(() {
-                                      tracking = false;
-                                    });
-                                    devicesToTrack.remove(deviceName);
-                                    saveDeviceListToTrack(devicesToTrack);
-                                    List<String> jijeo = [];
-                                    savePinToTrack(jijeo, deviceName);
-                                    context.mounted
-                                        ? Navigator.of(context).pop()
-                                        : printLog("Contextn't");
-                                  },
-                                  child: const Text('Aceptar'),
-                                ),
-                              ],
-                            );
-                          } else {
-                            openTrackingDialog();
-                            setState(() {
-                              tracking = true;
-                            });
-                          }
-                        }
-                      : null,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 500),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: tracking ? Colors.greenAccent : Colors.redAccent,
-                      shape: BoxShape.circle,
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 10,
-                          offset: Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.directions_walk,
-                      size: 80,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 60),
-                Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  elevation: 5,
-                  color: color3,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Habilitar esta función hará que la aplicación use más recursos de lo común. Si decides utilizarla, es bajo tu responsabilidad.',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            color: color0,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        CheckboxListTile(
-                          title: Text(
-                            'Sí, estoy de acuerdo',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              color: color0,
-                            ),
-                          ),
-                          value: isAgreeChecked,
-                          activeColor: color0,
-                          onChanged: (bool? value) {
-                            if (value == false && tracking) {
-                              // Mostrar el diálogo de confirmación si el usuario intenta desmarcar mientras el trackeo está activado
-                              showAlertDialog(
-                                context,
-                                false,
-                                const Text(
-                                  '¿Seguro que quiere cancelar el control por presencia?',
-                                ),
-                                const Text(
-                                  'Deshabilitar hará que puedas controlarlo manualmente.\nSi quieres volver a utilizar control por presencia deberás habilitarlo nuevamente',
-                                ),
-                                [
-                                  TextButton(
-                                    onPressed: () {
-                                      // Cerrar el diálogo sin cambiar el estado del checkbox
-                                      Navigator.pop(context);
-                                    },
-                                    child: const Text('Cancelar'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      // Confirmación: desmarcar checkbox y detener el trackeo
-                                      setState(() {
-                                        isAgreeChecked = false;
-                                        tracking = false;
-                                      });
-                                      devicesToTrack.remove(deviceName);
-                                      saveDeviceListToTrack(devicesToTrack);
-                                      Navigator.pop(context);
-                                    },
-                                    child: const Text('Aceptar'),
-                                  ),
-                                ],
-                              );
-                            } else {
-                              // Permitir el cambio si el checkbox se está marcando o si el trackeo está desactivado
-                              setState(() {
-                                isAgreeChecked = value ?? false;
-                              });
-                            }
-                          },
-                          controlAffinity: ListTileControlAffinity.leading,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (!deviceOwner && owner != '')
-            Container(
-              color: Colors.black.withValues(alpha: 0.7),
-              child: const Center(
-                child: Text(
-                  'No tienes acceso a esta función',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-              ),
-            ),
-        ],
-      ),
+
+      //TODO se quita temporalmente
+      // Stack(
+      //   children: [
+      //     Center(
+      //       child: Column(
+      //         mainAxisAlignment: MainAxisAlignment.center,
+      //         crossAxisAlignment: CrossAxisAlignment.center,
+      //         children: [
+      //           Text(
+      //             tracking
+      //                 ? 'Control por presencia iniciado'
+      //                 : 'Control por presencia desactivado',
+      //             style: GoogleFonts.poppins(
+      //               fontSize: 28,
+      //               fontWeight: FontWeight.bold,
+      //               color: color3,
+      //             ),
+      //             textAlign: TextAlign.center,
+      //           ),
+      //           const SizedBox(height: 40),
+      //           GestureDetector(
+      //             onTap: isAgreeChecked
+      //                 ? () {
+      //                     if (tracking) {
+      //                       showAlertDialog(
+      //                         context,
+      //                         false,
+      //                         const Text(
+      //                             '¿Seguro que quiere cancelar el control por presencia?'),
+      //                         const Text(
+      //                             'Deshabilitar hará que puedas controlarlo manualmente.\nSi quieres volver a utilizar control por presencia deberás habilitarlo nuevamente'),
+      //                         [
+      //                           TextButton(
+      //                             onPressed: () {
+      //                               Navigator.pop(context);
+      //                             },
+      //                             child: const Text('Cancelar'),
+      //                           ),
+      //                           TextButton(
+      //                             onPressed: () async {
+      //                               setState(() {
+      //                                 tracking = false;
+      //                               });
+      //                               devicesToTrack.remove(deviceName);
+      //                               saveDeviceListToTrack(devicesToTrack);
+      //                               List<String> jijeo = [];
+      //                               savePinToTrack(jijeo, deviceName);
+      //                               context.mounted
+      //                                   ? Navigator.of(context).pop()
+      //                                   : printLog("Contextn't");
+      //                             },
+      //                             child: const Text('Aceptar'),
+      //                           ),
+      //                         ],
+      //                       );
+      //                     } else {
+      //                       openTrackingDialog();
+      //                       setState(() {
+      //                         tracking = true;
+      //                       });
+      //                     }
+      //                   }
+      //                 : null,
+      //             child: AnimatedContainer(
+      //               duration: const Duration(milliseconds: 500),
+      //               padding: const EdgeInsets.all(20),
+      //               decoration: BoxDecoration(
+      //                 color: tracking ? Colors.greenAccent : Colors.redAccent,
+      //                 shape: BoxShape.circle,
+      //                 boxShadow: const [
+      //                   BoxShadow(
+      //                     color: Colors.black26,
+      //                     blurRadius: 10,
+      //                     offset: Offset(0, 5),
+      //                   ),
+      //                 ],
+      //               ),
+      //               child: const Icon(
+      //                 Icons.directions_walk,
+      //                 size: 80,
+      //                 color: Colors.white,
+      //               ),
+      //             ),
+      //           ),
+      //           const SizedBox(height: 60),
+      //           Card(
+      //             shape: RoundedRectangleBorder(
+      //               borderRadius: BorderRadius.circular(20),
+      //             ),
+      //             elevation: 5,
+      //             color: color3,
+      //             child: Padding(
+      //               padding: const EdgeInsets.all(20.0),
+      //               child: Column(
+      //                 crossAxisAlignment: CrossAxisAlignment.start,
+      //                 children: [
+      //                   Text(
+      //                     'Habilitar esta función hará que la aplicación use más recursos de lo común. Si decides utilizarla, es bajo tu responsabilidad.',
+      //                     style: GoogleFonts.poppins(
+      //                       fontSize: 16,
+      //                       color: color0,
+      //                     ),
+      //                   ),
+      //                   const SizedBox(height: 10),
+      //                   CheckboxListTile(
+      //                     title: Text(
+      //                       'Sí, estoy de acuerdo',
+      //                       style: GoogleFonts.poppins(
+      //                         fontSize: 16,
+      //                         color: color0,
+      //                       ),
+      //                     ),
+      //                     value: isAgreeChecked,
+      //                     activeColor: color0,
+      //                     onChanged: (bool? value) {
+      //                       if (value == false && tracking) {
+      //                         // Mostrar el diálogo de confirmación si el usuario intenta desmarcar mientras el trackeo está activado
+      //                         showAlertDialog(
+      //                           context,
+      //                           false,
+      //                           const Text(
+      //                             '¿Seguro que quiere cancelar el control por presencia?',
+      //                           ),
+      //                           const Text(
+      //                             'Deshabilitar hará que puedas controlarlo manualmente.\nSi quieres volver a utilizar control por presencia deberás habilitarlo nuevamente',
+      //                           ),
+      //                           [
+      //                             TextButton(
+      //                               onPressed: () {
+      //                                 // Cerrar el diálogo sin cambiar el estado del checkbox
+      //                                 Navigator.pop(context);
+      //                               },
+      //                               child: const Text('Cancelar'),
+      //                             ),
+      //                             TextButton(
+      //                               onPressed: () {
+      //                                 // Confirmación: desmarcar checkbox y detener el trackeo
+      //                                 setState(() {
+      //                                   isAgreeChecked = false;
+      //                                   tracking = false;
+      //                                 });
+      //                                 devicesToTrack.remove(deviceName);
+      //                                 saveDeviceListToTrack(devicesToTrack);
+      //                                 Navigator.pop(context);
+      //                               },
+      //                               child: const Text('Aceptar'),
+      //                             ),
+      //                           ],
+      //                         );
+      //                       } else {
+      //                         // Permitir el cambio si el checkbox se está marcando o si el trackeo está desactivado
+      //                         setState(() {
+      //                           isAgreeChecked = value ?? false;
+      //                         });
+      //                       }
+      //                     },
+      //                     controlAffinity: ListTileControlAffinity.leading,
+      //                   ),
+      //                 ],
+      //               ),
+      //             ),
+      //           ),
+      //         ],
+      //       ),
+      //     ),
+      //     if (!deviceOwner && owner != '')
+      //       Container(
+      //         color: Colors.black.withValues(alpha: 0.7),
+      //         child: const Center(
+      //           child: Text(
+      //             'No tienes acceso a esta función',
+      //             style: TextStyle(color: Colors.white, fontSize: 18),
+      //           ),
+      //         ),
+      //       ),
+      //   ],
+      // ),
 
       //*- página 3: Cambiar pines -*\\
 
@@ -2729,7 +2811,7 @@ class ModuloPageState extends State<ModuloPage> {
           ),
           actions: [
             IconButton(
-              icon: Icon(wifiIcon, color: color0),
+              icon: Icon(wifiNotifier.wifiIcon, color: color0),
               onPressed: () {
                 wifiText(context);
               },
@@ -2757,7 +2839,7 @@ class ModuloPageState extends State<ModuloPage> {
                 height: 75.0,
                 items: const <Widget>[
                   Icon(Icons.home, size: 30, color: color0),
-                  Icon(Icons.bluetooth, size: 30, color: color0),
+                  //Icon(Icons.bluetooth, size: 30, color: color0),
                   Icon(Icons.input, size: 30, color: color0),
                   Icon(Icons.settings, size: 30, color: color0),
                 ],

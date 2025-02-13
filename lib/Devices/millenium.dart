@@ -5,6 +5,7 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
@@ -22,9 +23,7 @@ class MilleniumPage extends StatefulWidget {
 
 class MilleniumPageState extends State<MilleniumPage> {
   List<String> parts2 = utf8.decode(varsValues).split(':');
-  
-  
-  
+
   bool _showNotificationOptions = false;
   bool showSecondaryAdminFields = false;
   bool showAddAdminField = false;
@@ -46,16 +45,18 @@ class MilleniumPageState extends State<MilleniumPage> {
   int _selectedIndex = 0;
   int _selectedNotificationOption = 0;
   double result = 0.0;
+  double? valueConsuption;
+
   late double tempValue;
 
   TextEditingController emailController = TextEditingController();
   final TextEditingController costController = TextEditingController();
   final TextEditingController tenantController = TextEditingController();
-  final TextEditingController tenantDistanceOn = TextEditingController();
   final PageController _pageController = PageController(initialPage: 0);
+  final TextEditingController consuptionController = TextEditingController();
 
   DateTime? fechaSeleccionada;
-  
+
   @override
   void initState() {
     super.initState();
@@ -76,6 +77,9 @@ class MilleniumPageState extends State<MilleniumPage> {
     nickname = nicknamesMap[deviceName] ?? deviceName;
     tempValue = double.parse(parts2[1]);
 
+    valueConsuption =
+        equipmentConsumption(DeviceManager.getProductCode(deviceName));
+
     printLog('Valor temp: $tempValue');
     printLog('¿Encendido? $turnOn');
     printLog('¿Alquiler temporario? $activatedAT');
@@ -91,7 +95,7 @@ class MilleniumPageState extends State<MilleniumPage> {
     tenantController.dispose();
     costController.dispose();
     emailController.dispose();
-    tenantDistanceOn.dispose();
+    consuptionController.dispose();
     super.dispose();
   }
 
@@ -219,9 +223,15 @@ class MilleniumPageState extends State<MilleniumPage> {
 
         printLog('Estoy haciendo calculaciones místicas');
 
-        result = double.parse(tiempo) *
-            equipmentConsumption(DeviceManager.getProductCode(deviceName)) *
-            double.parse(costController.text.trim());
+        if (valueConsuption != null) {
+          result = double.parse(tiempo) *
+              valueConsuption! *
+              double.parse(costController.text.trim());
+        } else {
+          result = double.parse(tiempo) *
+              double.parse(consuptionController.text.trim()) *
+              double.parse(costController.text.trim());
+        }
 
         await Future.delayed(const Duration(seconds: 1));
 
@@ -251,34 +261,37 @@ class MilleniumPageState extends State<MilleniumPage> {
     int users = int.parse(match!.group(1).toString());
     printLog('Hay $users conectados');
     userConnected = users > 1;
+
+    WifiNotifier wifiNotifier =
+        Provider.of<WifiNotifier>(context, listen: false);
+
     if (parts[0] == 'WCS_CONNECTED') {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
       printLog('sis $isWifiConnected');
-      setState(() {
-        textState = 'CONECTADO';
-        statusColor = Colors.green;
-        wifiIcon = Icons.wifi;
-        errorMessage = '';
-        errorSintax = '';
-        werror = false;
-      });
+      errorMessage = '';
+      errorSintax = '';
+      werror = false;
+      if (parts.length > 3) {
+        signalPower = int.tryParse(parts[3]) ?? -30;
+      } else {
+        signalPower = -30;
+      }
+      wifiNotifier.updateStatus(
+          'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
       printLog('non $isWifiConnected');
 
       nameOfWifi = '';
-
-      setState(() {
-        textState = 'DESCONECTADO';
-        statusColor = Colors.red;
-        wifiIcon = Icons.wifi_off;
-      });
+wifiNotifier.updateStatus(
+          'DESCONECTADO', Colors.red, Icons.signal_wifi_off);
 
       if (atemp) {
         setState(() {
-          wifiIcon = Icons.warning_amber_rounded;
+          wifiNotifier.updateStatus(
+              'DESCONECTADO', Colors.red, Icons.warning_amber_rounded);
           werror = true;
           if (parts[1] == '202' || parts[1] == '15') {
             errorMessage = 'Contraseña incorrecta';
@@ -498,6 +511,8 @@ class MilleniumPageState extends State<MilleniumPage> {
   @override
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
+    WifiNotifier wifiNotifier =
+        Provider.of<WifiNotifier>(context, listen: false);
 
     bool isOwner = currentUserEmail == owner;
     bool isSecondaryAdmin = adminDevices.contains(currentUserEmail);
@@ -614,7 +629,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                   color: Color.lerp(
                     Colors.blueAccent,
                     Colors.redAccent,
-                    (tempValue - 10) / 70,
+                    (tempValue + 4) / 79,
                   ),
                 ),
                 const SizedBox(width: 20),
@@ -651,8 +666,8 @@ class MilleniumPageState extends State<MilleniumPage> {
                             alignment: Alignment.bottomCenter,
                             child: Container(
                               width: 70,
-                              height: (tempValue > 0
-                                  ? (((tempValue - 10) / 70) * 350)
+                              height: (tempValue > -4
+                                  ? (((tempValue + 4) / 79) * 350)
                                       .clamp(40, 350)
                                   : 40),
                               decoration: BoxDecoration(
@@ -684,8 +699,8 @@ class MilleniumPageState extends State<MilleniumPage> {
                                 quarterTurns: 3,
                                 child: Slider(
                                   value: tempValue,
-                                  min: 10,
-                                  max: 80,
+                                  min: -4,
+                                  max: 75,
                                   onChanged: (value) {
                                     setState(() {
                                       tempValue = value;
@@ -710,299 +725,7 @@ class MilleniumPageState extends State<MilleniumPage> {
         ),
       ),
 
-      //*- Página 3 - Control por distancia -*\\
-
-      Stack(
-        children: [
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  'Control por distancia',
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: color3,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Activar control por distancia',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w500,
-                    color: color3,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 30),
-                GestureDetector(
-                  onTap: () {
-                    if (isOwner || owner == '') {
-                      verifyPermission().then((result) {
-                        if (result == true) {
-                          setState(() {
-                            isTaskScheduled[deviceName] =
-                                !(isTaskScheduled[deviceName] ?? false);
-                          });
-                          saveControlValue(isTaskScheduled);
-                          controlTask(
-                              isTaskScheduled[deviceName] ?? false, deviceName);
-                        } else {
-                          showToast(
-                            'Permitir ubicación todo el tiempo\nPara usar el control por distancia',
-                          );
-                          openAppSettings();
-                        }
-                      });
-                    } else {
-                      showToast('No tienes acceso a esta función');
-                    }
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 500),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: isTaskScheduled[deviceName] ?? false
-                          ? Colors.greenAccent
-                          : Colors.redAccent,
-                      shape: BoxShape.circle,
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 10,
-                          offset: Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                        (isTaskScheduled[deviceName] ?? false)
-                            ? Icons.check_circle_outline_rounded
-                            : Icons.cancel_rounded,
-                        size: 80,
-                        color: Colors.white),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                AnimatedOpacity(
-                  opacity: isTaskScheduled[deviceName] ?? false ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 500),
-                  child: AnimatedSize(
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.easeInOut,
-                    child: isTaskScheduled[deviceName] ?? false
-                        ? Column(
-                            children: [
-                              Card(
-                                color: color3.withValues(alpha: 0.9),
-                                elevation: 6,
-                                margin: const EdgeInsets.symmetric(
-                                    vertical: 8.0, horizontal: 20.0),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  side: BorderSide(
-                                    color: Color.lerp(
-                                        Colors.blueAccent,
-                                        Colors.redAccent,
-                                        (distOffValue - 100) / 200)!,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(10.0),
-                                  child: Column(
-                                    children: [
-                                      const Text(
-                                        'Distancia de apagado',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: color1,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            distOffValue.round().toString(),
-                                            style: const TextStyle(
-                                              fontSize: 24,
-                                              color: color1,
-                                            ),
-                                          ),
-                                          const Text(
-                                            ' Metros',
-                                            style: TextStyle(
-                                              fontSize: 24,
-                                              color: color1,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      SliderTheme(
-                                        data: SliderTheme.of(context).copyWith(
-                                          trackHeight: 20.0,
-                                          thumbColor: color3,
-                                          activeTrackColor: Colors.blueAccent,
-                                          inactiveTrackColor:
-                                              Colors.blueGrey[100],
-                                          thumbShape:
-                                              const RoundSliderThumbShape(
-                                            enabledThumbRadius: 12.0,
-                                            elevation: 0.0,
-                                            pressedElevation: 0.0,
-                                          ),
-                                        ),
-                                        child: Slider(
-                                          activeColor: Colors.white,
-                                          inactiveColor:
-                                              const Color(0xFFBDBDBD),
-                                          value: distOffValue,
-                                          divisions: 20,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              distOffValue = value;
-                                            });
-                                          },
-                                          onChangeEnd: (value) {
-                                            printLog(
-                                                'Valor enviado: ${value.round()}');
-                                            putDistanceOff(
-                                              service,
-                                              DeviceManager.getProductCode(
-                                                  deviceName),
-                                              DeviceManager.extractSerialNumber(
-                                                  deviceName),
-                                              value.toString(),
-                                            );
-                                          },
-                                          min: 100,
-                                          max: 300,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 15),
-                              Card(
-                                color: color3.withValues(alpha: 0.9),
-                                elevation: 6,
-                                margin: const EdgeInsets.symmetric(
-                                    vertical: 8.0, horizontal: 20.0),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  side: BorderSide(
-                                    color: Color.lerp(
-                                        Colors.blueAccent,
-                                        Colors.redAccent,
-                                        (distOnValue - 3000) / 2000)!,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(10.0),
-                                  child: Column(
-                                    children: [
-                                      const Text(
-                                        'Distancia de encendido',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: color1,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            distOnValue.round().toString(),
-                                            style: const TextStyle(
-                                              fontSize: 24,
-                                              color: color1,
-                                            ),
-                                          ),
-                                          const Text(
-                                            ' Metros',
-                                            style: TextStyle(
-                                              fontSize: 24,
-                                              color: color1,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      SliderTheme(
-                                        data: SliderTheme.of(context).copyWith(
-                                          trackHeight: 20.0,
-                                          thumbColor: color3,
-                                          activeTrackColor: Colors.blueAccent,
-                                          inactiveTrackColor:
-                                              Colors.blueGrey[100],
-                                          thumbShape:
-                                              const RoundSliderThumbShape(
-                                            enabledThumbRadius: 12.0,
-                                            elevation: 0.0,
-                                            pressedElevation: 0.0,
-                                          ),
-                                        ),
-                                        child: Slider(
-                                          activeColor: Colors.white,
-                                          inactiveColor:
-                                              const Color(0xFFBDBDBD),
-                                          value: distOnValue,
-                                          divisions: 20,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              distOnValue = value;
-                                            });
-                                          },
-                                          onChangeEnd: (value) {
-                                            printLog(
-                                                'Valor enviado: ${value.round()}');
-                                            putDistanceOn(
-                                              service,
-                                              DeviceManager.getProductCode(
-                                                  deviceName),
-                                              DeviceManager.extractSerialNumber(
-                                                  deviceName),
-                                              value.toString(),
-                                            );
-                                          },
-                                          min: 3000,
-                                          max: 5000,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          )
-                        : const SizedBox(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (!isOwner && owner != '' && !tenant)
-            Container(
-              color: Colors.black.withValues(alpha: 0.7),
-              child: const Center(
-                child: Text(
-                  'No tienes acceso a esta función',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-              ),
-            ),
-        ],
-      ),
-
-      //*- Página 4 - Nueva funcionalidad con ingreso de valores y cálculo -*\\
+      //*- Página 3 - Nueva funcionalidad con ingreso de valores y cálculo -*\\
       Stack(
         children: [
           SingleChildScrollView(
@@ -1025,9 +748,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 20.0,
-                      vertical: 10.0,
-                    ),
+                        horizontal: 20.0, vertical: 10.0),
                     decoration: BoxDecoration(
                       color: color3.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(15),
@@ -1058,8 +779,45 @@ class MilleniumPageState extends State<MilleniumPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 30),
+                  if (valueConsuption == null) ...[
+                    const SizedBox(height: 30),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20.0, vertical: 10.0),
+                      decoration: BoxDecoration(
+                        color: color3.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: color3, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: color3.withValues(alpha: 0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: TextField(
+                        keyboardType: TextInputType.number,
+                        controller: consuptionController,
+                        style: GoogleFonts.poppins(
+                          color: color3,
+                          fontSize: 22,
+                        ),
+                        cursorColor: color3,
+                        decoration: InputDecoration(
+                          labelText: 'Ingresa consumo del equipo',
+                          labelStyle: GoogleFonts.poppins(
+                            color: color3,
+                            fontSize: 18,
+                          ),
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                  ],
                   if (buttonPressed) ...[
+                    const SizedBox(height: 30),
                     Visibility(
                       visible: loading,
                       child: const CircularProgressIndicator(
@@ -1101,10 +859,20 @@ class MilleniumPageState extends State<MilleniumPage> {
                     ),
                     onPressed: (isOwner || owner == '')
                         ? () {
-                            if (costController.text.isNotEmpty) {
-                              makeCompute();
+                            if (valueConsuption != null) {
+                              if (costController.text.isNotEmpty) {
+                                makeCompute();
+                              } else {
+                                showToast('Por favor ingresa un valor');
+                              }
                             } else {
-                              showToast('Por favor ingresa un valor');
+                              if (costController.text.isNotEmpty &&
+                                  consuptionController.text.isNotEmpty) {
+                                makeCompute();
+                              } else {
+                                showToast(
+                                    'Por favor ingresa valores en ambos campos');
+                              }
                             }
                           }
                         : null,
@@ -1123,7 +891,9 @@ class MilleniumPageState extends State<MilleniumPage> {
                       backgroundColor: color3,
                       foregroundColor: color0,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 35, vertical: 20),
+                        horizontal: 35,
+                        vertical: 20,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
@@ -1179,7 +949,7 @@ class MilleniumPageState extends State<MilleniumPage> {
         ],
       ),
 
-      //*- Página 5: Gestión del Equipo -*\\
+      //*- Página 4: Gestión del Equipo -*\\
       SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
@@ -1795,50 +1565,6 @@ class MilleniumPageState extends State<MilleniumPage> {
 
                                                 const SizedBox(height: 10),
 
-                                                // Distancia de apagado y encendido sliders
-                                                Text(
-                                                  'Distancia de apagado (${distOffValue.round()} metros)',
-                                                  style: GoogleFonts.poppins(
-                                                      color: color0),
-                                                ),
-                                                Slider(
-                                                  value: distOffValue,
-                                                  min: 100,
-                                                  max: 300,
-                                                  divisions: 200,
-                                                  activeColor: color0,
-                                                  inactiveColor: color0
-                                                      .withValues(alpha: 0.3),
-                                                  onChanged: (double value) {
-                                                    setState(() {
-                                                      distOffValue = value;
-                                                      dOffOk = true;
-                                                    });
-                                                  },
-                                                ),
-                                                const SizedBox(height: 10),
-                                                Text(
-                                                  'Distancia de encendido (${distOnValue.round()} metros)',
-                                                  style: GoogleFonts.poppins(
-                                                      color: color0),
-                                                ),
-                                                Slider(
-                                                  value: distOnValue,
-                                                  min: 3000,
-                                                  max: 5000,
-                                                  divisions: 200,
-                                                  activeColor: color0,
-                                                  inactiveColor: color0
-                                                      .withValues(alpha: 0.3),
-                                                  onChanged: (double value) {
-                                                    setState(() {
-                                                      distOnValue = value;
-                                                      dOnOk = true;
-                                                    });
-                                                  },
-                                                ),
-                                                const SizedBox(height: 20),
-
                                                 // Botones de Activar y Cancelar
                                                 Center(
                                                   child: Row(
@@ -1865,14 +1591,9 @@ class MilleniumPageState extends State<MilleniumPage> {
                                                               tenantController
                                                                   .text
                                                                   .trim(),
-                                                              distOnValue
-                                                                  .round()
-                                                                  .toString(),
-                                                              distOffValue
-                                                                  .round()
-                                                                  .toString(),
+                                                              '3000',
+                                                              '100',
                                                             );
-
                                                             setState(() {
                                                               activatedAT =
                                                                   true;
@@ -2053,7 +1774,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                                 ),
                               ),
 
-// Tarjeta de opciones de notificación
+                              // Tarjeta de opciones de notificación
                               AnimatedSize(
                                 duration: const Duration(milliseconds: 600),
                                 curve: Curves.easeInOut,
@@ -2234,6 +1955,53 @@ class MilleniumPageState extends State<MilleniumPage> {
                   ),
                   child: const Text(
                     'Cambiar imagen del dispositivo',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    showAlertDialog(
+                      context,
+                      true,
+                      Text(
+                        'Beneficios',
+                        style: GoogleFonts.poppins(color: color0),
+                      ),
+                      Text(
+                        '- Encendio rapido y sencillo al alcance de tu mano\n- Configura tu temperatura ideal\n- Mayor eficiencia energética\n- Control de consumo inmediato\n- Mayor comodidad\n- Seguridad corte automático sobre temperatura superior a la establecida\n- Programación de encendido por dias o por franjas horarias\n- Mayor durabilidad',
+                        style: GoogleFonts.poppins(color: color0),
+                      ),
+                      [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: Text(
+                            'Cerrar',
+                            style: GoogleFonts.poppins(color: color0),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: color0,
+                    backgroundColor: color3,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: const Text(
+                    'Beneficios de Termotanque Smart',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -2436,7 +2204,7 @@ class MilleniumPageState extends State<MilleniumPage> {
           ),
           actions: [
             IconButton(
-              icon: Icon(wifiIcon, color: color0),
+              icon: Icon(wifiNotifier.wifiIcon, color: color0),
               onPressed: () {
                 wifiText(context);
               },
@@ -2447,7 +2215,7 @@ class MilleniumPageState extends State<MilleniumPage> {
         resizeToAvoidBottomInset: false,
         body: Stack(
           children: [
-             PageView(
+            PageView(
               controller: _pageController,
               physics: _isAnimating
                   ? const NeverScrollableScrollPhysics()
@@ -2465,7 +2233,6 @@ class MilleniumPageState extends State<MilleniumPage> {
                 items: const <Widget>[
                   Icon(Icons.home, size: 30, color: color0),
                   Icon(Icons.thermostat, size: 30, color: color0),
-                  Icon(Icons.location_on, size: 30, color: color0),
                   Icon(Icons.calculate, size: 30, color: color0),
                   Icon(Icons.settings, size: 30, color: color0),
                 ],
@@ -2484,68 +2251,3 @@ class MilleniumPageState extends State<MilleniumPage> {
     );
   }
 }
-
-//*- animacion para los iconos al estar calentando-*\\
-class AnimatedIconWidget extends StatefulWidget {
-  final bool isHeating;
-  final IconData icon;
-
-  const AnimatedIconWidget({
-    required this.isHeating,
-    required this.icon,
-    super.key,
-  });
-
-  @override
-  AnimatedIconWidgetState createState() => AnimatedIconWidgetState();
-}
-
-class AnimatedIconWidgetState extends State<AnimatedIconWidget>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 700),
-      vsync: this,
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return widget.isHeating
-        ? AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              double offsetX = 5.0 * (_controller.value - 0.5);
-              double scale = 1.0 + 0.05 * (_controller.value - 0.5);
-
-              return Transform.translate(
-                offset: Offset(offsetX, 0),
-                child: Transform.scale(
-                  scale: scale,
-                  child: Icon(
-                    widget.icon,
-                    size: 85,
-                    color: Colors.white,
-                  ),
-                ),
-              );
-            },
-          )
-        : Icon(
-            widget.icon,
-            size: 85,
-            color: Colors.white,
-          );
-  }
-}
-//*- animacion para los iconos al estar calentando-*\\

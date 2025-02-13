@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:caldensmart/Devices/heladera.dart';
 import 'package:caldensmart/Devices/millenium.dart';
 import 'package:caldensmart/Devices/modulo.dart';
 import 'package:caldensmart/Devices/relay.dart';
+import 'package:caldensmart/Devices/rele1i1o.dart';
 import 'package:caldensmart/Global/profile.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:upgrader/upgrader.dart';
 import 'Devices/domotica.dart';
 import 'Devices/detectores.dart';
@@ -70,6 +73,8 @@ Future<void> main() async {
 
   await initNotifications();
 
+  DeviceManager.init();
+
   FirebaseMessaging.onBackgroundMessage(handleNotifications);
 
   FirebaseMessaging.onMessage.listen(handleNotifications);
@@ -78,11 +83,23 @@ Future<void> main() async {
 
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
 
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
+
   printLog('Todo configurado, iniciando app');
 
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => GlobalDataNotifier(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (context) => GlobalDataNotifier(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => WifiNotifier(),
+        ),
+      ],
       child: const MyApp(),
     ),
   );
@@ -111,11 +128,6 @@ class MyAppState extends State<MyApp> {
     });
     listenToTopics();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      fbData = await fetchDocumentData();
-      printLog(fbData, "rojo");
-    });
-
     printLog('Empezamos');
   }
 
@@ -126,6 +138,7 @@ class MyAppState extends State<MyApp> {
       navigatorKey: navigatorKey,
       title: nameOfApp(app),
       theme: ThemeData(
+        textTheme: GoogleFonts.poppinsTextTheme(),
         primaryColor: color5,
         primaryColorLight: color6,
         textSelectionTheme: const TextSelectionThemeData(
@@ -157,7 +170,8 @@ class MyAppState extends State<MyApp> {
         '/roller': (context) => const RollerPage(),
         '/millenium': (context) => const MilleniumPage(),
         '/modulo': (context) => const ModuloPage(),
-        '/heladera':(context) => const HeladeraPage(),
+        '/heladera': (context) => const HeladeraPage(),
+        '/rele1i1o': (context) => const Rele1i1oPage(),
       },
     );
   }

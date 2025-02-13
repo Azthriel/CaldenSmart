@@ -1,69 +1,101 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../Global/stored_data.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
+import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
+import '../Global/stored_data.dart';
 
-class RollerPage extends StatefulWidget {
-  const RollerPage({super.key});
+// CLASES \\
+
+class Rele1i1oPage extends StatefulWidget {
+  const Rele1i1oPage({super.key});
   @override
-  RollerPageState createState() => RollerPageState();
+  Rele1i1oPageState createState() => Rele1i1oPageState();
 }
 
-class RollerPageState extends State<RollerPage> {
-  int _selectedIndex = 0;
-  int _selectedNotificationOption = 0;
-
-  final TextEditingController tenantController = TextEditingController();
-  final PageController _pageController = PageController(initialPage: 0);
-
-  TextEditingController rLargeController = TextEditingController();
-  TextEditingController workController = TextEditingController();
-  TextEditingController motorSpeedUpController = TextEditingController();
-  TextEditingController motorSpeedDownController = TextEditingController();
-  TextEditingController contrapulseController = TextEditingController();
-  TextEditingController emailController = TextEditingController();
-
+class Rele1i1oPageState extends State<Rele1i1oPage> {
+  var parts = utf8.decode(ioValues).split('/');
+  bool isChangeModeVisible = false;
   bool showOptions = false;
-  bool _showNotificationOptions = false;
   bool showSecondaryAdminFields = false;
   bool showAddAdminField = false;
   bool showSecondaryAdminList = false;
   bool showSmartResident = false;
   bool dOnOk = false;
   bool dOffOk = false;
+  bool _showNotificationOptions = false;
+  bool isAgreeChecked = false;
+  bool isPasswordCorrect = false;
   bool _isAnimating = false;
-
+  late List<bool> _selectedPins;
+  late List<bool> _notis;
+  TextEditingController emailController = TextEditingController();
+  TextEditingController passController = TextEditingController();
+  final TextEditingController modulePassController = TextEditingController();
+  final PageController _pageController = PageController(initialPage: 0);
+  final TextEditingController tenantController = TextEditingController();
+  int _selectedNotificationOption = 0;
+  int _selectedIndex = 0;
   @override
   void initState() {
     super.initState();
+    _selectedPins = List<bool>.filled(parts.length, false);
+    _notis = notificationMap[
+            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}'] ??
+        List<bool>.filled(parts.length, false);
 
-    nickname = nicknamesMap[deviceName] ?? deviceName;
+    printLog(_notis, 'amarillo');
+
+    tracking = devicesToTrack.contains(deviceName);
+
+    processSelectedPins();
+
     showOptions = currentUserEmail == owner;
 
+    if (deviceOwner) {
+      if (vencimientoAdmSec < 10 && vencimientoAdmSec > 0) {
+        showPaymentTest(true, vencimientoAdmSec, navigatorKey.currentContext!);
+      }
+
+      if (vencimientoAT < 10 && vencimientoAT > 0) {
+        showPaymentTest(false, vencimientoAT, navigatorKey.currentContext!);
+      }
+    }
+
+    nickname = nicknamesMap[deviceName] ?? deviceName;
     updateWifiValues(toolsValues);
     subscribeToWifiStatus();
-    subToVars();
+    subToIO();
+    processValues(ioValues);
+    // notificationMap.putIfAbsent(
+    //     '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
+    //     () => List<bool>.filled(parts.length, false));
+
+    // WidgetsBinding.instance.addPostFrameCallback((_) async {
+    //   if (shouldUpdateDevice) {
+    //     await showUpdateDialog(context);
+    //   }
+    // });
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     tenantController.dispose();
-    rLargeController.dispose();
-    workController.dispose();
-    motorSpeedUpController.dispose();
-    motorSpeedDownController.dispose();
-    contrapulseController.dispose();
+    passController.dispose();
     emailController.dispose();
+    modulePassController.dispose();
     super.dispose();
   }
-
-  // FUNCIONES \\
 
   void onItemChanged(int index) {
     if (!_isAnimating) {
@@ -105,6 +137,43 @@ class RollerPageState extends State<RollerPage> {
     }
   }
 
+  Future<void> processSelectedPins() async {
+    List<String> pins = await loadPinToTrack(deviceName);
+
+    setState(() {
+      for (int i = 0; i < pins.length; i++) {
+        pins.contains(i.toString())
+            ? _selectedPins[i] = true
+            : _selectedPins[i] = false;
+      }
+    });
+  }
+
+  void controlOut(bool value, int index) {
+    String fun = '$index#${value ? '1' : '0'}';
+    myDevice.ioUuid.write(fun.codeUnits);
+    String topic =
+        'devices_rx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
+    String topic2 =
+        'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
+    String message = jsonEncode({
+      'pinType': tipo[index] == 'Salida' ? '0' : '1',
+      'index': index,
+      'w_status': value,
+      'r_state': common[index],
+    });
+    sendMessagemqtt(topic, message);
+    sendMessagemqtt(topic2, message);
+
+    globalDATA
+        .putIfAbsent(
+            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
+            () => {})
+        .addAll({'io$index': message});
+
+    saveGlobalData(globalDATA);
+  }
+
   void updateWifiValues(List<int> data) {
     var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
@@ -139,7 +208,8 @@ class RollerPageState extends State<RollerPage> {
       printLog('non $isWifiConnected');
 
       nameOfWifi = '';
-wifiNotifier.updateStatus(
+
+      wifiNotifier.updateStatus(
           'DESCONECTADO', Colors.red, Icons.signal_wifi_off);
 
       if (atemp) {
@@ -175,6 +245,285 @@ wifiNotifier.updateStatus(
     });
 
     myDevice.device.cancelWhenDisconnected(wifiSub);
+  }
+
+  void processValues(List<int> values) {
+    ioValues = values;
+    var parts = utf8.decode(values).split('/');
+    printLog('Valores: $parts', "Amarillo");
+    tipo.clear();
+    estado.clear();
+    common.clear();
+    alertIO.clear();
+
+    tipo.add('Salida');
+    estado.add(parts[0]);
+    common.add('0');
+    alertIO.add(false);
+
+    var equipo = parts[1].split(':');
+    tipo.add('Entrada');
+    estado.add(equipo[0]);
+    common.add(equipo[1]);
+    alertIO.add(estado[1] != common[1]);
+
+    for (int i = 0; i < 2; i++) {
+      globalDATA
+          .putIfAbsent(
+              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
+              () => {})
+          .addAll({
+        'io$i': jsonEncode({
+          'pinType': tipo[i] == 'Salida' ? '0' : '1',
+          'index': i,
+          'w_status': estado[i] == '1',
+          'r_state': common[i],
+        })
+      });
+    }
+
+    saveGlobalData(globalDATA);
+
+    for (int i = 0; i < parts.length; i++) {
+      if (tipo[i] == 'Salida') {
+        String dv = '${deviceName}_$i';
+        if (!alexaDevices.contains(dv)) {
+          alexaDevices.add(dv);
+          saveAlexaDevices(alexaDevices);
+          putDevicesForAlexa(service, currentUserEmail, alexaDevices);
+        }
+      }
+    }
+
+    setState(() {});
+  }
+
+  void subToIO() async {
+    await myDevice.ioUuid.setNotifyValue(true);
+    printLog('Subscrito a IO');
+
+    var ioSub = myDevice.ioUuid.onValueReceived.listen((event) {
+      printLog('Cambio en IO');
+      processValues(event);
+    });
+
+    myDevice.device.cancelWhenDisconnected(ioSub);
+  }
+
+  Future<void> openTrackingDialog() async {
+    bool fun = false;
+    List<bool> tempSelectedPins = List<bool>.from(_selectedPins);
+
+    await showGeneralDialog(
+      context: context,
+      barrierDismissible: false, // Cambiado de true a false
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (BuildContext context, Animation<double> animation,
+          Animation<double> secondaryAnimation) {
+        double screenWidth = MediaQuery.of(context).size.width;
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minWidth: 300.0,
+                  maxWidth: screenWidth - 20,
+                ),
+                child: IntrinsicWidth(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          spreadRadius: 1,
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Card(
+                      color: color3,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30.0),
+                      ),
+                      elevation: 24,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.topCenter,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 70, 20, 20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Center(
+                                  child: DefaultTextStyle(
+                                    style: GoogleFonts.poppins(
+                                      color: color0,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    child: const Text(
+                                      'Selecciona los pines para trackear',
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Center(
+                                  child: SingleChildScrollView(
+                                    child: ListBody(
+                                      children:
+                                          List.generate(parts.length, (index) {
+                                        return CheckboxListTile(
+                                          title: Text(
+                                            subNicknamesMap[
+                                                    '$deviceName/-/$index'] ??
+                                                'Pin $index',
+                                            style: GoogleFonts.poppins(
+                                              color: color0,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          value: tempSelectedPins[index],
+                                          activeColor: color6,
+                                          onChanged: (bool? value) {
+                                            setState(() {
+                                              tempSelectedPins[index] =
+                                                  value ?? false;
+                                            });
+                                          },
+                                        );
+                                      }),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 30),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    // *** Eliminado el botón "Cancelar" ***
+                                    TextButton(
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: color0,
+                                        backgroundColor: color3,
+                                      ),
+                                      onPressed: () async {
+                                        if (tempSelectedPins.contains(true)) {
+                                          List<String> pins =
+                                              await loadPinToTrack(deviceName);
+                                          setState(() {
+                                            _selectedPins = List<bool>.from(
+                                                tempSelectedPins);
+
+                                            for (int i = 0;
+                                                i < _selectedPins.length;
+                                                i++) {
+                                              if (_selectedPins[i] &&
+                                                  !pins
+                                                      .contains(i.toString())) {
+                                                pins.add(i.toString());
+                                              }
+                                            }
+                                          });
+                                          await savePinToTrack(
+                                              pins, deviceName);
+
+                                          printLog(
+                                              'When haces tus momos en flutter :v');
+                                          fun = true;
+                                          context.mounted
+                                              ? Navigator.of(context).pop()
+                                              : printLog("Contextn't");
+                                        } else {
+                                          showToast(
+                                              'Por favor, selecciona al menos una opción.');
+                                        }
+                                      },
+                                      child: const Text('Guardar'),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          Positioned(
+                            top: -50,
+                            child: Material(
+                              elevation: 10,
+                              shape: const CircleBorder(),
+                              shadowColor: Colors.black.withValues(alpha: 0.4),
+                              child: CircleAvatar(
+                                radius: 50,
+                                backgroundColor: color3,
+                                child: Image.asset(
+                                  'assets/branch/dragon.png',
+                                  width: 60,
+                                  height: 60,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          ),
+          child: ScaleTransition(
+            scale: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOut,
+            ),
+            child: child,
+          ),
+        );
+      },
+    );
+
+    printLog('ME WHEN YOUR MOM WHEN ME WHEN YOUR MOM $fun');
+    if (fun) {
+      printLog('Pov: Sos re onichan mal');
+      setState(() {
+        tracking = true;
+      });
+      devicesToTrack.add(deviceName);
+      await saveDeviceListToTrack(devicesToTrack);
+      printLog('Equipo $devicesToTrack');
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      bool hasInitService = prefs.getBool('hasInitService') ?? false;
+      printLog('Se inició el servicio? $hasInitService');
+      if (!hasInitService) {
+        printLog('Empiezo');
+        await initializeService();
+        printLog('Acabe');
+      }
+
+      await Future.delayed(const Duration(seconds: 30));
+      final backService = FlutterBackgroundService();
+      printLog('Xd');
+      backService.invoke('presenceControl');
+    }
+  }
+
+  bool isValidEmail(String email) {
+    final RegExp emailRegex = RegExp(
+      r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@"
+      r"[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$",
+    );
+    return emailRegex.hasMatch(email);
   }
 
   Future<void> addSecondaryAdmin(String email) async {
@@ -230,95 +579,208 @@ wifiNotifier.updateStatus(
     }
   }
 
-  bool isValidEmail(String email) {
-    final RegExp emailRegex = RegExp(
-      r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@"
-      r"[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$",
+  Future<int?> showPinSelectionDialog(BuildContext context) async {
+    int? selectedPin;
+    return showDialog<int>(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              backgroundColor: color3,
+              title: Text(
+                'Selecciona un pin',
+                style: GoogleFonts.poppins(
+                  color: color0,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: SingleChildScrollView(
+                child: ListBody(
+                  children: List.generate(parts.length, (index) {
+                    return tipo[index] == 'Salida'
+                        ? RadioListTile<int>(
+                            title: Text(
+                              subNicknamesMap['$deviceName/-/$index'] ??
+                                  'Salida $index',
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                                fontSize: 16,
+                              ),
+                            ),
+                            value: index,
+                            groupValue: selectedPin,
+                            activeColor: color6,
+                            onChanged: (int? value) {
+                              setState(() {
+                                selectedPin = value;
+                              });
+                            },
+                          )
+                        : const SizedBox.shrink();
+                  }),
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: Text(
+                    'Aceptar',
+                    style: GoogleFonts.poppins(color: color6),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop(selectedPin);
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
-    return emailRegex.hasMatch(email);
   }
 
-  void subToVars() async {
-    printLog('Me subscribo a vars');
-    await myDevice.varsUuid.setNotifyValue(true);
+  Future<Position> _determinePosition() async {
+    bool serviceEnabled;
 
-    final varsSub =
-        myDevice.varsUuid.onValueReceived.listen((List<int> status) {
-      var parts = utf8.decode(status).split(':');
-      // printLog(parts);
-      if (context.mounted) {
-        setState(() {
-          actualPosition = int.parse(parts[0]);
-          rollerMoving = parts[1] == '1';
-        });
-      }
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      showToast('La ubicación esta desactivada\nPor favor enciendala');
+      return Future.error('Los servicios de ubicación están deshabilitados.');
+    }
+    // Cuando los permisos están OK, obtenemos la ubicación actual
+    return await Geolocator.getCurrentPosition();
+  }
+
+  void controlTask(bool value, String device) async {
+    setState(() {
+      isTaskScheduled.addAll({device: value});
     });
+    if (isTaskScheduled[device]!) {
+      // Programar la tarea.
+      try {
+        showToast('Recuerda tener la ubicación encendida.');
+        String data = '${DeviceManager.getProductCode(deviceName)}[5](1)';
+        myDevice.toolsUuid.write(data.codeUnits);
+        List<String> deviceControl = await loadDevicesForDistanceControl();
+        deviceControl.add(deviceName);
+        saveDevicesForDistanceControl(deviceControl);
+        printLog(
+            'Hay ${deviceControl.length} equipos con el control x distancia');
+        Position position = await _determinePosition();
+        Map<String, double> maplatitude = await loadLatitude();
+        maplatitude.addAll({deviceName: position.latitude});
+        savePositionLatitude(maplatitude);
+        Map<String, double> maplongitude = await loadLongitud();
+        maplongitude.addAll({deviceName: position.longitude});
+        savePositionLongitud(maplongitude);
 
-    myDevice.device.cancelWhenDisconnected(varsSub);
+        if (deviceControl.length == 1) {
+          await initializeService();
+          final backService = FlutterBackgroundService();
+          await backService.startService();
+          backService.invoke('distanceControl');
+          printLog('Servicio iniciado a las ${DateTime.now()}');
+        }
+      } catch (e) {
+        showToast('Error al iniciar control por distancia.');
+        printLog('Error al setear la ubicación $e');
+      }
+    } else {
+      // Cancelar la tarea.
+      showToast('Se cancelo el control por distancia');
+      String data = '${DeviceManager.getProductCode(deviceName)}[5](0)';
+      myDevice.toolsUuid.write(data.codeUnits);
+      List<String> deviceControl = await loadDevicesForDistanceControl();
+      deviceControl.remove(deviceName);
+      saveDevicesForDistanceControl(deviceControl);
+      printLog(
+          'Quedan ${deviceControl.length} equipos con el control x distancia');
+      Map<String, double> maplatitude = await loadLatitude();
+      maplatitude.remove(deviceName);
+      savePositionLatitude(maplatitude);
+      Map<String, double> maplongitude = await loadLongitud();
+      maplongitude.remove(deviceName);
+      savePositionLongitud(maplongitude);
+
+      if (deviceControl.isEmpty) {
+        final backService = FlutterBackgroundService();
+        backService.invoke("stopService");
+        backTimerDS?.cancel();
+        printLog('Servicio apagado');
+      }
+    }
   }
 
-  void setRange(int mm) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[7]($mm)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
+  Future<bool> verifyPermission() async {
+    try {
+      var permissionStatus4 = await Permission.locationAlways.status;
+      if (!permissionStatus4.isGranted) {
+        // Usamos un Completer para esperar a que el diálogo se cierre
+        final completer = Completer<void>();
+
+        showAlertDialog(
+          navigatorKey.currentContext ?? context,
+          false,
+          const Text(
+            'Habilita la ubicación todo el tiempo',
+            style: TextStyle(color: Color(0xFFFFFFFF)),
+          ),
+          Text(
+            '$appName utiliza tu ubicación, incluso cuando la app está cerrada o en desuso, para poder encender o apagar el calefactor en base a tu distancia con el mismo.',
+            style: const TextStyle(
+              color: Color(0xFFFFFFFF),
+            ),
+          ),
+          <Widget>[
+            TextButton(
+              style: const ButtonStyle(
+                foregroundColor: WidgetStatePropertyAll(Color(0xFFFFFFFF)),
+              ),
+              child: const Text('Habilitar'),
+              onPressed: () async {
+                try {
+                  var permissionStatus4 =
+                      await Permission.locationAlways.request();
+
+                  if (!permissionStatus4.isGranted) {
+                    await Permission.locationAlways.request();
+                  }
+                  permissionStatus4 = await Permission.locationAlways.status;
+
+                  // Completa el Completer una vez que el permiso ha sido manejado
+                  completer.complete();
+                  Navigator.of(navigatorKey.currentContext ?? context).pop();
+                } catch (e, s) {
+                  printLog(e);
+                  printLog(s);
+                  completer.completeError(
+                      e); // Completa con error si ocurre una excepción
+                }
+              },
+            ),
+          ],
+        );
+
+        // Espera a que el Completer se complete
+        await completer.future;
+      }
+
+      // Vuelve a verificar el estado del permiso
+      permissionStatus4 = await Permission.locationAlways.status;
+
+      if (permissionStatus4.isGranted) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e, s) {
+      printLog('Error al habilitar la ubicación: $e');
+      printLog(s);
+      return false;
+    }
   }
 
-  void setDistance(int pc) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[7]($pc%)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setRollerConfig(int type) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[8]($type)';
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setMotorSpeed(String rpm) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[10]($rpm)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setMicroStep(String uStep) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[11]($uStep)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setMotorCurrent(bool run, String value) {
-    String data =
-        '${DeviceManager.getProductCode(deviceName)}[12](${run ? '1' : '0'}#$value)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setFreeWheeling(bool active) {
-    String data =
-        '${DeviceManager.getProductCode(deviceName)}[14](${active ? '1' : '0'})';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setTPWMTHRS(String value) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[15]($value)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setTCOOLTHRS(String value) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[16]($value)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setSGTHRS(String value) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[17]($value)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-//! VISUAL
+  //! VISUAL
   @override
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
@@ -338,548 +800,823 @@ wifiNotifier.updateStatus(
     }
 
     final List<Widget> pages = [
-      //*- Página 1 cortina -*\\
-      SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
+      //*- Página 1: Estado del Dispositivo -*\\
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Estado de la cortina',
-                style: GoogleFonts.poppins(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: color3,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              //TODO Riel center
-              CurtainAnimationRielCenter(
-                position: actualPosition,
-                onTapDown: (details) {
-                  RenderBox box = context.findRenderObject() as RenderBox;
-                  Offset localPosition =
-                      box.globalToLocal(details.globalPosition);
-
-                  double containerWidth =
-                      MediaQuery.of(context).size.width * 0.8;
-                  double centerX = containerWidth / 2;
-                  double distanceFromCenter = (localPosition.dx - 50) - centerX;
-
-                  double relativePosition =
-                      1.0 - (distanceFromCenter.abs() / centerX);
-                  int newPosition =
-                      (relativePosition * 100).clamp(0, 100).round();
-
-                  setState(() {
-                    workingPosition = newPosition;
-                    setDistance(newPosition);
-                  });
-                },
-              ),
-
-              //TODO riel de izquierda a derecha
-              // CurtainAnimationRielLeft(
-              //   position: actualPosition,
-              //   onTapDown: (details) {
-              //     RenderBox box = context.findRenderObject() as RenderBox;
-              //     Offset localPosition =
-              //         box.globalToLocal(details.globalPosition);
-              //     double relativeWidth = (localPosition.dx - 50) /
-              //         (MediaQuery.of(context).size.width * 0.8);
-              //     int newPosition = (relativeWidth * 100).clamp(0, 100).round();
-
-              //     setState(() {
-              //       workingPosition = newPosition;
-              //       setDistance(newPosition);
-              //     });
-              //   },
-              // ),
-
-              //TODO riel de derecha a izquierda
-              //       CurtainAnimationRielRight(
-              //   position: actualPosition,
-              //   onTapDown: (details) {
-              //     RenderBox box = context.findRenderObject() as RenderBox;
-              //     Offset localPosition = box.globalToLocal(details.globalPosition);
-              //     double relativeWidth = 1.0 - ((localPosition.dx - 50) / (MediaQuery.of(context).size.width * 0.8));
-              //     int newPosition = (relativeWidth * 100).clamp(0, 100).round();
-
-              //     setState(() {
-              //       workingPosition = newPosition;
-              //       setDistance(newPosition);
-              //     });
-              //   },
-              // ),
-
-              //TODO Roll
-              // CurtainAnimation(
-              //   position: actualPosition,
-              //   onTapDown: (details) {
-              //     RenderBox box = context.findRenderObject() as RenderBox;
-              //     Offset localPosition =
-              //         box.globalToLocal(details.globalPosition);
-              //     double relativeHeight = (localPosition.dy - 200) / 250;
-              //     int newPosition =
-              //         (relativeHeight * 100).clamp(0, 100).round();
-
-              //     setState(() {
-              //       workingPosition = newPosition;
-              //       setDistance(newPosition);
-              //     });
-              //   },
-              // ),
-
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onLongPressStart: (LongPressStartDetails a) {
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[7](0%)';
-                        myDevice.toolsUuid.write(data.codeUnits);
-                        setState(() {
-                          workingPosition = 0;
-                        });
-                        printLog(data);
-                      },
-                      onLongPressEnd: (LongPressEndDetails a) {
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[7]($actualPosition%)';
-                        myDevice.toolsUuid.write(data.codeUnits);
-                        setState(() {
-                          workingPosition = actualPosition;
-                        });
-                        printLog(data);
-                      },
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () {},
-                          borderRadius: BorderRadius.circular(30.0),
-                          splashColor: Colors.white.withValues(alpha: 0.2),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: color3,
-                              borderRadius: BorderRadius.circular(30.0),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black26,
-                                  offset: Offset(0, 4),
-                                  blurRadius: 5.0,
-                                ),
-                              ],
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 15.0),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.arrow_upward, color: color0),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Subir',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: color0,
-                                  ),
-                                ),
-                              ],
-                            ),
+            children: List.generate(
+              tipo.length + 1,
+              (index) {
+                if (index == tipo.length) {
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
+                  );
+                }
+                bool entrada = tipo[index] == 'Entrada';
+                bool isOn = estado[index] == '1';
+                bool isPresenceControlled = _selectedPins[index] && tracking;
+                return Column(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      decoration: BoxDecoration(
+                        color: color3,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
+                        ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: GestureDetector(
-                      onLongPressStart: (LongPressStartDetails a) {
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[7](100%)';
-                        myDevice.toolsUuid.write(data.codeUnits);
-                        setState(() {
-                          workingPosition = 100;
-                        });
-                        printLog(data);
-                      },
-                      onLongPressEnd: (LongPressEndDetails a) {
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[7]($actualPosition%)';
-                        myDevice.toolsUuid.write(data.codeUnits);
-                        setState(() {
-                          workingPosition = actualPosition;
-                        });
-                        printLog(data);
-                      },
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () {},
-                          borderRadius: BorderRadius.circular(30.0),
-                          splashColor: Colors.white.withValues(alpha: 0.2),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: color3,
-                              borderRadius: BorderRadius.circular(30.0),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black26,
-                                  offset: Offset(0, 4),
-                                  blurRadius: 5.0,
-                                ),
-                              ],
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 15.0),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.arrow_downward, color: color0),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Bajar',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: color0,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-
-      //*- Página 2: Configuración de parametros-*\\
-      SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15.0),
-                ),
-                color: color3,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
+                      padding: const EdgeInsets.all(18),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Largo del Roller',
-                            style: TextStyle(
-                              fontSize: 18.0,
-                              color: color0,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
                           Row(
                             children: [
-                              Text(
-                                rollerlength,
-                                style: const TextStyle(
-                                  fontSize: 28.0,
-                                  color: color0,
-                                  fontWeight: FontWeight.bold,
+                              const SizedBox(width: 6),
+                              GestureDetector(
+                                onTap: () async {
+                                  TextEditingController nicknameController =
+                                      TextEditingController(
+                                    text: subNicknamesMap[
+                                            '$deviceName/-/$index'] ??
+                                        '${tipo[index]} $index',
+                                  );
+                                  showAlertDialog(
+                                    context,
+                                    false,
+                                    Text(
+                                      'Editar Nombre',
+                                      style: GoogleFonts.poppins(color: color0),
+                                    ),
+                                    TextField(
+                                      controller: nicknameController,
+                                      style: const TextStyle(color: color0),
+                                      cursorColor: color0,
+                                      decoration: InputDecoration(
+                                        hintText:
+                                            "Nuevo nombre para ${tipo[index]} $index",
+                                        hintStyle: TextStyle(
+                                          color: color0.withValues(alpha: 0.6),
+                                        ),
+                                        enabledBorder: UnderlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color:
+                                                color0.withValues(alpha: 0.5),
+                                          ),
+                                        ),
+                                        focusedBorder:
+                                            const UnderlineInputBorder(
+                                          borderSide: BorderSide(color: color0),
+                                        ),
+                                      ),
+                                    ),
+                                    <Widget>[
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: const Text(
+                                          'Cancelar',
+                                          style: TextStyle(color: color0),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            String newName =
+                                                nicknameController.text;
+                                            subNicknamesMap[
+                                                    '$deviceName/-/$index'] =
+                                                newName;
+                                            saveSubNicknamesMap(
+                                                subNicknamesMap);
+                                          });
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: const Text(
+                                          'Guardar',
+                                          style: TextStyle(color: color0),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      width: 160,
+                                      child: ScrollingText(
+                                        text: subNicknamesMap[
+                                                '$deviceName/-/$index'] ??
+                                            '${tipo[index]} $index',
+                                        style: GoogleFonts.poppins(
+                                          color: color0,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        // overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.edit,
+                                        size: 22,
+                                        color: color0,
+                                      ),
+                                      onPressed: () {
+                                        TextEditingController
+                                            nicknameController =
+                                            TextEditingController(
+                                          text: subNicknamesMap[
+                                                  '$deviceName/-/$index'] ??
+                                              '${tipo[index]} $index',
+                                        );
+                                        showAlertDialog(
+                                          context,
+                                          false,
+                                          Text(
+                                            'Editar Nombre',
+                                            style: GoogleFonts.poppins(
+                                                color: color0),
+                                          ),
+                                          TextField(
+                                            controller: nicknameController,
+                                            style:
+                                                const TextStyle(color: color0),
+                                            cursorColor: color0,
+                                            decoration: InputDecoration(
+                                              hintText:
+                                                  "Nuevo nombre para ${tipo[index]} $index",
+                                              hintStyle: TextStyle(
+                                                color: color0.withValues(
+                                                    alpha: 0.6),
+                                              ),
+                                              enabledBorder:
+                                                  UnderlineInputBorder(
+                                                borderSide: BorderSide(
+                                                  color: color0.withValues(
+                                                      alpha: 0.5),
+                                                ),
+                                              ),
+                                              focusedBorder:
+                                                  const UnderlineInputBorder(
+                                                borderSide:
+                                                    BorderSide(color: color0),
+                                              ),
+                                            ),
+                                          ),
+                                          <Widget>[
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                              child: const Text(
+                                                'Cancelar',
+                                                style: TextStyle(color: color0),
+                                              ),
+                                            ),
+                                            TextButton(
+                                              onPressed: () {
+                                                setState(() {
+                                                  String newName =
+                                                      nicknameController.text;
+                                                  subNicknamesMap[
+                                                          '$deviceName/-/$index'] =
+                                                      newName;
+                                                  saveSubNicknamesMap(
+                                                      subNicknamesMap);
+                                                });
+                                                Navigator.of(context).pop();
+                                              },
+                                              child: const Text(
+                                                'Guardar',
+                                                style: TextStyle(color: color0),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(width: 5),
-                              const Text(
-                                'mm',
-                                style: TextStyle(
-                                  fontSize: 16.0,
+                              const Spacer(),
+                              Text(
+                                'Tipo: ${tipo[index]}',
+                                style: const TextStyle(
                                   color: color0,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  backgroundColor: color3,
-                                  title: const Text('Modificar largo (mm)',
-                                      style: TextStyle(color: color0)),
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      TextField(
-                                        controller: rLargeController,
-                                        keyboardType: TextInputType.number,
-                                        decoration: const InputDecoration(
-                                            label: Text(
-                                          'Ingresar tamaño:',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.normal,
-                                              color: color0),
-                                        )),
-                                        onSubmitted: (value) {
-                                          int? valor = int.tryParse(
-                                              rLargeController.text);
-                                          if (valor != null) {
-                                            setRange(valor);
-                                            setState(() {
-                                              rollerlength = value;
-                                            });
-                                          } else {
-                                            showToast('Valor no permitido');
-                                          }
-                                          rLargeController.clear();
-                                          navigatorKey.currentState?.pop();
-                                        },
+                          const SizedBox(height: 12),
+                          entrada
+                              ? Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Center(
+                                      child: Icon(
+                                        alertIO[index]
+                                            ? Icons.new_releases
+                                            : Icons.new_releases,
+                                        color: alertIO[index]
+                                            ? Colors.red
+                                            : Colors.grey,
+                                        size: 40,
                                       ),
-                                    ],
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                        onPressed: () {
-                                          int? valor = int.tryParse(
-                                              rLargeController.text);
-                                          if (valor != null) {
-                                            setRange(valor);
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          _notis[index]
+                                              ? '¿Desactivar notificaciones?'
+                                              : '¿Activar notificaciones?',
+                                          style: const TextStyle(
+                                            color: color0,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        IconButton(
+                                          onPressed: () {
+                                            bool activated = _notis[index];
                                             setState(() {
-                                              rollerlength =
-                                                  rLargeController.text;
+                                              activated = !activated;
+                                              _notis[index] = activated;
                                             });
-                                          } else {
-                                            showToast('Valor no permitido');
-                                          }
-                                          rLargeController.clear();
-                                          navigatorKey.currentState?.pop();
-                                        },
-                                        child: const Text(
-                                          'Modificar',
-                                          style: TextStyle(color: color0),
-                                        ))
+                                            notificationMap[
+                                                    '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}'] =
+                                                _notis;
+                                            saveNotificationMap(
+                                                notificationMap);
+                                          },
+                                          icon: _notis[index]
+                                              ? Icon(
+                                                  Icons.notifications_off,
+                                                  color: Colors.red.shade300,
+                                                )
+                                              : const Icon(
+                                                  Icons
+                                                      .notification_add_rounded,
+                                                  color: Colors.green,
+                                                ),
+                                        ),
+                                      ],
+                                    ),
                                   ],
-                                );
-                              });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: color6,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: const Text('Modificar',
-                            style: TextStyle(color: color0)),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Polaridad del Roller Section
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15.0),
-                ),
-                color: color3,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Polaridad del Roller',
-                            style: TextStyle(
-                              fontSize: 18.0,
-                              color: color0,
-                              fontWeight: FontWeight.bold,
+                                )
+                              : Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Icon(
+                                      isOn ? Icons.check_circle : Icons.cancel,
+                                      color: isOn ? Colors.green : Colors.red,
+                                      size: 40,
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        isPresenceControlled
+                                            ? null
+                                            : setState(() {
+                                                controlOut(!isOn, index);
+                                                estado[index] =
+                                                    !isOn ? '1' : '0';
+                                              });
+                                      },
+                                      child: AnimatedContainer(
+                                        duration:
+                                            const Duration(milliseconds: 300),
+                                        width: 55,
+                                        height: 30,
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          color: isPresenceControlled
+                                              ? Colors.grey
+                                              : isOn
+                                                  ? Colors.greenAccent.shade400
+                                                  : Colors.red.shade300,
+                                        ),
+                                        child: AnimatedAlign(
+                                          duration:
+                                              const Duration(milliseconds: 300),
+                                          alignment: isOn
+                                              ? Alignment.centerRight
+                                              : Alignment.centerLeft,
+                                          curve: Curves.easeInOut,
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(3.0),
+                                            child: Container(
+                                              width: 24,
+                                              height: 24,
+                                              decoration: const BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                          const SizedBox(height: 20),
+                          if (isPresenceControlled) ...{
+                            Container(
+                              decoration: BoxDecoration(
+                                color: color1,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Desactiva control por presencia para utilizar esta función',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: color3,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            rollerPolarity,
-                            style: const TextStyle(
-                              fontSize: 28.0,
-                              color: color0,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          },
                         ],
                       ),
-                      ElevatedButton(
-                        onPressed: () {
-                          setRollerConfig(1);
-                          rollerPolarity == '0'
-                              ? rollerPolarity = '1'
-                              : rollerPolarity = '0';
-                          context.mounted ? setState(() {}) : null;
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: color6,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: const Text('Invertir',
-                            style: TextStyle(color: color0)),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Velocidad del Motor Section
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15.0),
-                ),
-                color: color3,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'Velocidad del Motor',
-                        style: TextStyle(
-                          fontSize: 18.0,
-                          color: color0,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () {
-                              //TODO Configurar velocidad
-                              rollerRPM = '100';
-                              setMotorSpeed('100');
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: const Text('Bajo',
-                                style: TextStyle(color: color0)),
-                          ),
-                          const SizedBox(width: 10),
-                          ElevatedButton(
-                            onPressed: () {
-                              //TODO Configurar velocidad
-                              rollerRPM = '100';
-                              setMotorSpeed('100');
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: const Text('Medio',
-                                style: TextStyle(color: color0)),
-                          ),
-                          const SizedBox(width: 10),
-                          ElevatedButton(
-                            onPressed: () {
-                              //TODO Configurar velocidad
-                              rollerRPM = '100';
-                              setMotorSpeed('100');
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: color5,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: const Text('Alto',
-                                style: TextStyle(color: color0)),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Configuración del Roller Section
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15.0),
-                ),
-                color: color3,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          setRollerConfig(0);
-                          setState(() {
-                            workingPosition = 0;
-                          });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: color6,
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: const Text(
-                          'Guardar inicio',
-                          style: TextStyle(fontSize: 16, color: color0),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: () {
-                          //TODO Guardar fin logica
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: color6,
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: const Text(
-                          'Guardar fin',
-                          style: TextStyle(fontSize: 16, color: color0),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+                    ),
+                    const SizedBox(height: 16.0),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
 
-      //*- Página 3: Gestión del Equipo -*\\
+      //*- Página 2: Trackeo Bluetooth -*\\
+
+      // Stack(
+      //   children: [
+      //     SingleChildScrollView(
+      //       child: Padding(
+      //         padding:
+      //             const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
+      //         child: Column(
+      //           crossAxisAlignment: CrossAxisAlignment.center,
+      //           children: [
+      //             Text(
+      //               'Control por presencia',
+      //               style: GoogleFonts.poppins(
+      //                 fontSize: 28,
+      //                 fontWeight: FontWeight.bold,
+      //                 color: color3,
+      //               ),
+      //               textAlign: TextAlign.center,
+      //             ),
+      //             const SizedBox(height: 40),
+      //             GestureDetector(
+      //               onTap: () {
+      //                 if (deviceOwner || owner == '') {
+      //                   if (isAgreeChecked) {
+      //                     verifyPermission().then((accepted) async {
+      //                       if (accepted) {
+      //                         setState(() {
+      //                           tracking = !tracking;
+      //                         });
+      //                         if (tracking) {
+      //                           devicesToTrack.add(deviceName);
+      //                           saveDeviceListToTrack(devicesToTrack);
+
+      //                           SharedPreferences prefs =
+      //                               await SharedPreferences.getInstance();
+      //                           bool hasInitService =
+      //                               prefs.getBool('hasInitService') ?? false;
+
+      //                           if (!hasInitService) {
+      //                             await initializeService();
+      //                             await prefs.setBool('hasInitService', true);
+      //                           }
+
+      //                           await Future.delayed(
+      //                               const Duration(seconds: 30));
+
+      //                           printLog("Achi");
+
+      //                           final backService = FlutterBackgroundService();
+      //                           backService.invoke('presenceControl');
+      //                         } else {
+      //                           devicesToTrack.remove(deviceName);
+      //                           saveDeviceListToTrack(devicesToTrack);
+      //                           if (devicesToTrack.isEmpty) {
+      //                             final backService =
+      //                                 FlutterBackgroundService();
+      //                             backService.invoke('CancelpresenceControl');
+      //                           }
+      //                         }
+      //                       } else {
+      //                         showToast(
+      //                             'Debes habilitar la ubicación constante\npara el uso del\ncontrol por presencia');
+      //                       }
+      //                     });
+      //                   } else {
+      //                     showToast(
+      //                         'Debes aceptar el uso de control por presencia');
+      //                   }
+      //                 } else {
+      //                   showToast(
+      //                       'No tienes permiso para realizar esta acción');
+      //                 }
+      //               },
+      //               child: AnimatedContainer(
+      //                 duration: const Duration(milliseconds: 500),
+      //                 padding: const EdgeInsets.all(20),
+      //                 decoration: BoxDecoration(
+      //                   color: tracking ? Colors.greenAccent : Colors.redAccent,
+      //                   shape: BoxShape.circle,
+      //                   boxShadow: const [
+      //                     BoxShadow(
+      //                       color: Colors.black26,
+      //                       blurRadius: 10,
+      //                       offset: Offset(0, 5),
+      //                     ),
+      //                   ],
+      //                 ),
+      //                 child: Icon(
+      //                   Icons.directions_walk,
+      //                   size: 80,
+      //                   color: tracking ? Colors.white : Colors.grey[300],
+      //                 ),
+      //               ),
+      //             ),
+      //             const SizedBox(height: 70),
+      //             Card(
+      //               shape: RoundedRectangleBorder(
+      //                 borderRadius: BorderRadius.circular(20),
+      //               ),
+      //               elevation: 5,
+      //               color: color3,
+      //               child: Padding(
+      //                 padding: const EdgeInsets.all(20.0),
+      //                 child: Column(
+      //                   crossAxisAlignment: CrossAxisAlignment.start,
+      //                   children: [
+      //                     Text(
+      //                       'Habilitar esta función hará que la aplicación use más recursos de lo común, si a pesar de esto decides utilizarlo es bajo tu responsabilidad.',
+      //                       style: GoogleFonts.poppins(
+      //                         fontSize: 16,
+      //                         color: color0,
+      //                       ),
+      //                     ),
+      //                     const SizedBox(height: 10),
+      //                     CheckboxListTile(
+      //                       title: Text(
+      //                         'Sí, estoy de acuerdo',
+      //                         style: GoogleFonts.poppins(
+      //                           fontSize: 16,
+      //                           color: color0,
+      //                         ),
+      //                       ),
+      //                       value: isAgreeChecked,
+      //                       activeColor: color0,
+      //                       onChanged: (bool? value) {
+      //                         setState(() {
+      //                           isAgreeChecked = value ?? false;
+      //                           if (!isAgreeChecked && tracking) {
+      //                             tracking = false;
+      //                             devicesToTrack.remove(deviceName);
+      //                             saveDeviceListToTrack(devicesToTrack);
+      //                           }
+      //                         });
+      //                       },
+      //                       controlAffinity: ListTileControlAffinity.leading,
+      //                     ),
+      //                   ],
+      //                 ),
+      //               ),
+      //             ),
+      //           ],
+      //         ),
+      //       ),
+      //     ),
+      //     if (!deviceOwner && owner != '')
+      //       Container(
+      //         color: Colors.black.withValues(alpha: 0.7),
+      //         child: const Center(
+      //           child: Text(
+      //             'No tienes acceso a esta función',
+      //             style: TextStyle(color: Colors.white, fontSize: 18),
+      //           ),
+      //         ),
+      //       ),
+      //   ],
+      // ),
+
+      //*- Página 3 - Control por distancia -*\\
+      Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  'Control por distancia',
+                  style: GoogleFonts.poppins(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: color3,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Activar control por distancia',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                    color: color3,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 30),
+                GestureDetector(
+                  onTap: () {
+                    if (deviceOwner || owner == '' || tenant) {
+                      verifyPermission().then((result) {
+                        if (result == true) {
+                          setState(() {
+                            isTaskScheduled[deviceName] =
+                                !(isTaskScheduled[deviceName] ?? false);
+                          });
+                          saveControlValue(isTaskScheduled);
+                          controlTask(
+                              isTaskScheduled[deviceName] ?? false, deviceName);
+                        } else {
+                          showToast(
+                            'Permitir ubicación todo el tiempo\nPara usar el control por distancia',
+                          );
+                          openAppSettings();
+                        }
+                      });
+                    } else {
+                      showToast('No tienes acceso a esta función');
+                    }
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 500),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: isTaskScheduled[deviceName] ?? false
+                          ? Colors.greenAccent
+                          : Colors.redAccent,
+                      shape: BoxShape.circle,
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 10,
+                          offset: Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                        (isTaskScheduled[deviceName] ?? false)
+                            ? Icons.check_circle_outline_rounded
+                            : Icons.cancel_rounded,
+                        size: 80,
+                        color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                AnimatedOpacity(
+                  opacity: isTaskScheduled[deviceName] ?? false ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 500),
+                  child: AnimatedSize(
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeInOut,
+                    child: isTaskScheduled[deviceName] ?? false
+                        ? Column(
+                            children: [
+                              // Tarjeta de Distancia de apagado
+                              Card(
+                                color: color3.withValues(alpha: 0.9),
+                                elevation: 6,
+                                margin: const EdgeInsets.symmetric(
+                                    vertical: 8.0, horizontal: 20.0),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                  side: BorderSide(
+                                    color: Color.lerp(
+                                        Colors.blueAccent,
+                                        Colors.redAccent,
+                                        (distOffValue - 100) / 200)!,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: Column(
+                                    children: [
+                                      const Text(
+                                        'Distancia de apagado',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: color1,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            distOffValue.round().toString(),
+                                            style: const TextStyle(
+                                              fontSize: 24,
+                                              color: color1,
+                                            ),
+                                          ),
+                                          const Text(
+                                            ' Metros',
+                                            style: TextStyle(
+                                              fontSize: 24,
+                                              color: color1,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SliderTheme(
+                                        data: SliderTheme.of(context).copyWith(
+                                          trackHeight: 20.0,
+                                          thumbColor: color3,
+                                          activeTrackColor: Colors.blueAccent,
+                                          inactiveTrackColor:
+                                              Colors.blueGrey[100],
+                                          thumbShape:
+                                              const RoundSliderThumbShape(
+                                            enabledThumbRadius: 12.0,
+                                            elevation: 0.0,
+                                            pressedElevation: 0.0,
+                                          ),
+                                        ),
+                                        child: Slider(
+                                          activeColor: Colors.white,
+                                          inactiveColor:
+                                              const Color(0xFFBDBDBD),
+                                          value: distOffValue,
+                                          divisions: 20,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              distOffValue = value;
+                                            });
+                                          },
+                                          onChangeEnd: (value) {
+                                            printLog(
+                                                'Valor enviado: ${value.round()}');
+                                            putDistanceOff(
+                                              service,
+                                              DeviceManager.getProductCode(
+                                                  deviceName),
+                                              DeviceManager.extractSerialNumber(
+                                                  deviceName),
+                                              value.toString(),
+                                            );
+                                          },
+                                          min: 100,
+                                          max: 300,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 15),
+                              Card(
+                                color: color3.withValues(alpha: 0.9),
+                                elevation: 6,
+                                margin: const EdgeInsets.symmetric(
+                                    vertical: 8.0, horizontal: 20.0),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                  side: BorderSide(
+                                    color: Color.lerp(
+                                        Colors.blueAccent,
+                                        Colors.redAccent,
+                                        (distOnValue - 3000) / 2000)!,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: Column(
+                                    children: [
+                                      const Text(
+                                        'Distancia de encendido',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: color1,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            distOnValue.round().toString(),
+                                            style: const TextStyle(
+                                              fontSize: 24,
+                                              color: color1,
+                                            ),
+                                          ),
+                                          const Text(
+                                            ' Metros',
+                                            style: TextStyle(
+                                              fontSize: 24,
+                                              color: color1,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SliderTheme(
+                                        data: SliderTheme.of(context).copyWith(
+                                          trackHeight: 20.0,
+                                          thumbColor: color3,
+                                          activeTrackColor: Colors.blueAccent,
+                                          inactiveTrackColor:
+                                              Colors.blueGrey[100],
+                                          thumbShape:
+                                              const RoundSliderThumbShape(
+                                            enabledThumbRadius: 12.0,
+                                            elevation: 0.0,
+                                            pressedElevation: 0.0,
+                                          ),
+                                        ),
+                                        child: Slider(
+                                          activeColor: Colors.white,
+                                          inactiveColor:
+                                              const Color(0xFFBDBDBD),
+                                          value: distOnValue,
+                                          divisions: 20,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              distOnValue = value;
+                                            });
+                                          },
+                                          onChangeEnd: (value) {
+                                            printLog(
+                                                'Valor enviado: ${value.round()}');
+                                            putDistanceOn(
+                                              service,
+                                              DeviceManager.getProductCode(
+                                                  deviceName),
+                                              DeviceManager.extractSerialNumber(
+                                                  deviceName),
+                                              value.toString(),
+                                            );
+                                          },
+                                          min: 3000,
+                                          max: 5000,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : const SizedBox(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (!deviceOwner && owner != '' && !tenant)
+            Container(
+              color: Colors.black.withValues(alpha: 0.7),
+              child: const Center(
+                child: Text(
+                  'No tienes acceso a esta función',
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              ),
+            ),
+        ],
+      ),
+
+      //*- Página 4: Gestión del Equipo -*\\
       SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
@@ -1233,8 +1970,8 @@ wifiNotifier.updateStatus(
                                     : const SizedBox(),
                               ),
                               const SizedBox(height: 10),
-
                               //! Opción 4 - Habitante inteligente
+
                               InkWell(
                                 onTap: () {
                                   if (activatedAT) {
@@ -1757,7 +2494,7 @@ wifiNotifier.updateStatus(
                                 ),
                               ),
 
-// Tarjeta de opciones de notificación
+                              // Tarjeta de opciones de notificación
                               AnimatedSize(
                                 duration: const Duration(milliseconds: 600),
                                 curve: Curves.easeInOut,
@@ -1871,15 +2608,67 @@ wifiNotifier.updateStatus(
                                       )
                                     : const SizedBox.shrink(),
                               ),
-                              const SizedBox(height: 20),
                             ],
                           ],
                         )
                       : const SizedBox(),
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(
+                height: 30,
+              ),
 
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    // Mostrar el diálogo para seleccionar un pin al activar acceso rápido
+                    if (!quickAccesActivated) {
+                      int? selectedPin = await showPinSelectionDialog(context);
+
+                      if (selectedPin != null) {
+                        pinQuickAccess
+                            .addAll({deviceName: selectedPin.toString()});
+                        quickAccess.add(deviceName);
+                        await savequickAccess(quickAccess);
+                        await savepinQuickAccess(pinQuickAccess);
+                        setState(() {
+                          quickAccesActivated = true;
+                        });
+                      }
+                    } else {
+                      quickAccess.remove(deviceName);
+                      pinQuickAccess.remove(deviceName);
+                      await savequickAccess(quickAccess);
+                      await savepinQuickAccess(pinQuickAccess);
+                      setState(() {
+                        quickAccesActivated = false;
+                      });
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: color0,
+                    backgroundColor: color3,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: Text(
+                    quickAccesActivated
+                        ? 'Desactivar acceso rápido'
+                        : 'Activar acceso rápido',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(
+                height: 10,
+              ),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -1995,7 +2784,7 @@ wifiNotifier.updateStatus(
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: color3,
+          backgroundColor: const Color.fromRGBO(48, 43, 54, 1),
           title: GestureDetector(
             onTap: () async {
               TextEditingController nicknameController =
@@ -2056,17 +2845,11 @@ wifiNotifier.updateStatus(
                 Expanded(
                   child: ScrollingText(
                     text: nickname,
-                    style: poppinsStyle.copyWith(
-                      color: color0,
-                    ),
+                    style: poppinsStyle.copyWith(color: color0),
                   ),
                 ),
                 const SizedBox(width: 3),
-                const Icon(
-                  Icons.edit,
-                  size: 20,
-                  color: color0,
-                )
+                const Icon(Icons.edit, size: 20, color: color0)
               ],
             ),
           ),
@@ -2136,7 +2919,8 @@ wifiNotifier.updateStatus(
                 height: 75.0,
                 items: const <Widget>[
                   Icon(Icons.home, size: 30, color: color0),
-                  Icon(Icons.bluetooth, size: 30, color: color0),
+                  //Icon(Icons.bluetooth, size: 30, color: color0),
+                  Icon(Icons.location_on, size: 30, color: color0),
                   Icon(Icons.settings, size: 30, color: color0),
                 ],
                 color: color3,
@@ -2154,289 +2938,3 @@ wifiNotifier.updateStatus(
     );
   }
 }
-
-//*- Diseño de la cortina Roller-*\\
-class CurtainAnimation extends StatelessWidget {
-  final int position;
-  final Function(TapDownDetails) onTapDown;
-
-  const CurtainAnimation({
-    super.key,
-    required this.position,
-    required this.onTapDown,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    double curtainHeight = (position / 100) * 250;
-
-    return GestureDetector(
-      onTapDown: onTapDown,
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: 300,
-        decoration: const BoxDecoration(
-          color: Colors.transparent,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 10,
-              offset: Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Stack(
-          alignment: Alignment.topCenter,
-          children: [
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 320,
-              child: Image.asset(
-                'assets/misc/parteSuperior.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-            Positioned(
-              top: 19,
-              left: 20,
-              right: 20,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeInOut,
-                height: curtainHeight,
-                child: Image.asset(
-                  'assets/misc/persiana.jpg',
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-//*- Diseño de la cortina Roller-*\\
-
-//*- Diseño de la cortina Riel Left -*\\
-class CurtainAnimationRielLeft extends StatelessWidget {
-  final int position;
-  final Function(TapDownDetails) onTapDown;
-
-  const CurtainAnimationRielLeft({
-    super.key,
-    required this.position,
-    required this.onTapDown,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    double curtainWidth =
-        (position / 100) * MediaQuery.of(context).size.width * 0.8;
-
-    return GestureDetector(
-      onTapDown: onTapDown,
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: 300,
-        decoration: const BoxDecoration(
-          color: Colors.transparent,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 10,
-              offset: Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Stack(
-          alignment: Alignment.centerLeft,
-          children: [
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 30,
-              child: Image.asset(
-                'assets/misc/barrielRiel.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-            Positioned(
-              top: 13,
-              left: 10,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeInOut,
-                width: curtainWidth,
-                height: 270,
-                child: Image.asset(
-                  'assets/misc/cortinaRiel.jpg',
-                  fit: BoxFit.cover,
-                  height: double.infinity,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-//*- Diseño de la cortina Riel Left -*\\
-
-//*- Diseño de la cortina Riel Right -*\\
-class CurtainAnimationRielRight extends StatelessWidget {
-  final int position;
-  final Function(TapDownDetails) onTapDown;
-
-  const CurtainAnimationRielRight({
-    super.key,
-    required this.position,
-    required this.onTapDown,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    double curtainWidth =
-        (position / 100) * MediaQuery.of(context).size.width * 0.8;
-
-    return GestureDetector(
-      onTapDown: onTapDown,
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: 300,
-        decoration: const BoxDecoration(
-          color: Colors.transparent,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 10,
-              offset: Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Stack(
-          alignment: Alignment.centerRight,
-          children: [
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 30,
-              child: Image.asset(
-                'assets/misc/barrielRiel.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-            Positioned(
-              top: 13,
-              right: 10,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeInOut,
-                width: curtainWidth,
-                height: 270,
-                child: Image.asset(
-                  'assets/misc/cortinaRiel.jpg',
-                  fit: BoxFit.cover,
-                  height: double.infinity,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-//*- Diseño de la cortina Riel Right -*\\
-
-//*- Diseño de la cortina Riel Center -*\\
-class CurtainAnimationRielCenter extends StatelessWidget {
-  final int position;
-  final Function(TapDownDetails) onTapDown;
-
-  const CurtainAnimationRielCenter({
-    super.key,
-    required this.position,
-    required this.onTapDown,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    double curtainWidth = (position / 100) *
-        MediaQuery.of(context).size.width *
-        0.4; // Cada lado ocupa un 40% del ancho
-
-    return GestureDetector(
-      onTapDown: onTapDown,
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: 300,
-        decoration: const BoxDecoration(
-          color: Colors.transparent,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 10,
-              offset: Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 30,
-              child: Image.asset(
-                'assets/misc/barrielRiel.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-            // Cortina izquierda
-            Positioned(
-              top: 13,
-              left: 10,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeInOut,
-                width: curtainWidth,
-                height: 270,
-                child: Image.asset(
-                  'assets/misc/cortinaRiel.jpg',
-                  fit: BoxFit.cover,
-                  height: double.infinity,
-                ),
-              ),
-            ),
-            // Cortina derecha
-            Positioned(
-              top: 13,
-              right: 10,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeInOut,
-                width: curtainWidth,
-                height: 270,
-                child: Image.asset(
-                  'assets/misc/cortinaRiel.jpg',
-                  fit: BoxFit.cover,
-                  height: double.infinity,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-//*- Diseño de la cortina Riel Center -*\\

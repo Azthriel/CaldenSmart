@@ -23,10 +23,8 @@ void loadValues() async {
   configNotiDsc = await loadconfigNotiDsc();
   quickAccess = await loadquickAccess();
   pinQuickAccess = await loadpinQuickAccess();
-  labelEncendido = await loadlabelEncendido();
-  labelApagado = await loadlabelApagado();
   lastPage = await loadLastPage();
-
+  oldRelay = await loadOldRelay();
 
   for (String device in previusConnections) {
     await queryItems(service, DeviceManager.getProductCode(device),
@@ -403,38 +401,6 @@ Future<List<String>> loadAlexaDevices() async {
 }
 //*-Alexa devices -*\\
 
-//*-Labels personalizados-*\\
-Future<void> savelabelEncendido(Map<String, String> labels) async {
-  final prefs = await SharedPreferences.getInstance();
-  String labelsString = json.encode(labels);
-  await prefs.setString('CSlabelEncendido', labelsString);
-}
-
-Future<Map<String, String>> loadlabelEncendido() async {
-  final prefs = await SharedPreferences.getInstance();
-  String? labelsString = prefs.getString('CSlabelEncendido');
-  if (labelsString != null) {
-    return Map<String, String>.from(json.decode(labelsString));
-  }
-  return {};
-}
-
-Future<void> savelabelApagado(Map<String, String> labels) async {
-  final prefs = await SharedPreferences.getInstance();
-  String labelsString = json.encode(labels);
-  await prefs.setString('CSlabelApagado', labelsString);
-}
-
-Future<Map<String, String>> loadlabelApagado() async {
-  final prefs = await SharedPreferences.getInstance();
-  String? labelsString = prefs.getString('CSlabelApagado');
-  if (labelsString != null) {
-    return Map<String, String>.from(json.decode(labelsString));
-  }
-  return {};
-}
-//*-Labels personalizados-*\\
-
 //*- Guardar y cargar última página-*\\
 Future<void> saveLastPage(int index) async {
   final prefs = await SharedPreferences.getInstance();
@@ -446,3 +412,15 @@ Future<int?> loadLastPage() async {
   return prefs.getInt('CSlastPageIndex') ?? 0;
 }
 //*- Guardar y cargar última página-*\\
+
+//*- Guardar y cargar si el rele es antiguo-*\\
+Future<void> saveOldRelay(List<String> reles) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setStringList('CSOldRelay', reles);
+}
+
+Future<List<String>> loadOldRelay() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getStringList('CSOldRelay') ?? [];
+}
+//*- Guardar y cargar si el rele es antiguo-*\\

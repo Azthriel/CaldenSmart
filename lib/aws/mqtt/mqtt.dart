@@ -122,9 +122,22 @@ void listenToTopics() {
     final String messageString = utf8.decode(message);
     printLog('Mensaje: $messageString');
     try {
-      final Map<String, dynamic> messageMap = json.decode(messageString);
+      final Map<String, dynamic> messageMap = json.decode(messageString) ?? {};
 
-      if (listNames[1] == '020010_IOT' && !messageMap.keys.contains('cstate')) {
+      printLog('Mensaje decodificado: $messageMap');
+
+      bool specialDevice = (listNames[1] == '020010_IOT' &&
+              !messageMap.keys.contains('cstate')) ||
+          (listNames[1] == '020020_IOT' &&
+              !messageMap.keys.contains('cstate')) ||
+          (listNames[1] == '027313_IOT' &&
+              !messageMap.keys.contains('cstate') &&
+              !oldRelay.contains(DeviceManager.recoverDeviceName(
+                  listNames[1], listNames[2])));
+
+      printLog('Special device: $specialDevice', 'rojo');
+
+      if (specialDevice) {
         printLog('Mensaje domotica $messageMap');
         int index = messageMap["index"];
         globalDATA
@@ -146,6 +159,13 @@ void listenToTopics() {
             listen: false);
         notifier.updateData(keyName, messageMap);
       }
+
+      // globalDATA.putIfAbsent(keyName, () => {}).addAll(messageMap);
+      // saveGlobalData(globalDATA);
+      // GlobalDataNotifier notifier = Provider.of<GlobalDataNotifier>(
+      //     navigatorKey.currentContext!,
+      //     listen: false);
+      // notifier.updateData(keyName, messageMap);
 
       printLog('Received message: $messageMap from topic: $topic');
     } catch (e, s) {
