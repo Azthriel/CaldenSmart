@@ -27,6 +27,7 @@ class ProfilePageState extends State<ProfilePage> {
   ];
 
   bool isAccountOpen = false;
+  bool isTutorialOpen = false;
   bool isDevicesOpen = false;
   bool isDomoticaOpen = false;
   bool isDetectorOpen = false;
@@ -416,6 +417,79 @@ class ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                     crossFadeState: isDetectorOpen
+                        ? CrossFadeState.showSecond
+                        : CrossFadeState.showFirst,
+                  ),
+                  const Divider(color: color3),
+                  ListTile(
+                    leading: const Icon(
+                        HugeIcons.strokeRoundedBubbleChatQuestion,
+                        color: color3),
+                    title: Text(
+                      "Tutorial",
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      "Activar o desactivar tutoriales",
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                      ),
+                    ),
+                    onTap: () {
+                      setState(() {
+                        isTutorialOpen = !isTutorialOpen;
+                      });
+                    },
+                    trailing: Icon(
+                      isTutorialOpen
+                          ? HugeIcons.strokeRoundedArrowUp01
+                          : HugeIcons.strokeRoundedArrowDown01,
+                      color: color3,
+                    ),
+                  ),
+                  AnimatedCrossFade(
+                    duration: const Duration(milliseconds: 300),
+                    firstChild: const SizedBox.shrink(),
+                    secondChild: Padding(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: MediaQuery.of(context).size.width * 0.1),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: color3,
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          spacing: 10,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              tutorial
+                                  ? "Tutorial Activado"
+                                  : "Tutorial Desactivado",
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Switch(
+                              value: tutorial,
+                              activeColor: color0,
+                              onChanged: (bool value) {
+                                setState(() {
+                                  tutorial = value;
+                                });
+                                saveTutorial(tutorial);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    crossFadeState: isTutorialOpen
                         ? CrossFadeState.showSecond
                         : CrossFadeState.showFirst,
                   ),

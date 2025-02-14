@@ -36,6 +36,8 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
   bool isAgreeChecked = false;
   bool isPasswordCorrect = false;
   bool _isAnimating = false;
+  bool _isTutorialActive = false;
+
   late List<bool> _selectedPins;
   late List<bool> _notis;
   TextEditingController emailController = TextEditingController();
@@ -45,6 +47,213 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
   final TextEditingController tenantController = TextEditingController();
   int _selectedNotificationOption = 0;
   int _selectedIndex = 0;
+
+  ///*- Elementos para tutoriales -*\\\
+  List<TutorialItem> items = [];
+
+  //*- Keys para funciones de la appbar -*\\
+  final titleKey = GlobalKey(); // key para el nombre del equipo
+  final wifiKey = GlobalKey(); // key para el wifi del equipo
+  //*- Keys para funciones de la appbar -*\\
+
+  //*- Keys estado del dispositivo -*\\
+  final estadoKey = GlobalKey(); // key para la pantalla de estado
+  //*- Keys estado del dispositivo-*\\
+
+  //*- Keys para control por distancia -*\\
+  final distanceKey =
+      GlobalKey(); // key para la pantalla de control por distancia
+  final distanceBottomKey = GlobalKey(); // key para el boton de encendido
+  //*- Keys para control por distancia -*\\
+
+  //*- Keys para gestión -*\\
+  final adminKey = GlobalKey(); // key para la pantalla de gestión
+  final claimKey = GlobalKey(); // key para el boton de reclamar admin
+  final fastBotonKey = GlobalKey(); // key para el boton de acceso rápido
+  final fastAccessKey = GlobalKey(); // key para el boton de acceso rápido
+  final imageKey = GlobalKey(); // key para la imagen del equipo
+  //*- Keys para gestión -*\\
+
+  //*- Keys para gestión siendo admin-*\\
+  final agreeAdminKey =
+      GlobalKey(); // key para el boton de agregar administradores
+  final viewAdminKey = GlobalKey(); // key para ver la lista de administradores
+  final habitKey = GlobalKey(); // key para el boton de habitantes
+
+  //*- Keys para gestión siendo admin-*\\
+
+  void initItems() {
+    items.addAll({
+      TutorialItem(
+        globalKey: estadoKey,
+        color: Colors.black.withValues(alpha: 0.6),
+        borderRadius: const Radius.circular(0),
+        shapeFocus: ShapeFocus.oval,
+        radius: 0,
+        pageIndex: 0,
+        child: const TutorialItemContent(
+          title: 'Estado del equipo',
+          content:
+              'Podrás revisar el estado de las entradas y modificar el estado de las salidas',
+        ),
+      ),
+      TutorialItem(
+        globalKey: titleKey,
+        color: Colors.black.withValues(alpha: 0.6),
+        shapeFocus: ShapeFocus.roundedSquare,
+        borderRadius: const Radius.circular(10.0),
+        contentPosition: ContentPosition.below,
+        pageIndex: 0,
+        child: const TutorialItemContent(
+          title: 'Nombre del equipo',
+          content:
+              'Podrás ponerle un apodo tocando en cualquier parte del nombre',
+        ),
+      ),
+      TutorialItem(
+        globalKey: wifiKey,
+        color: Colors.black.withValues(alpha: 0.6),
+        shapeFocus: ShapeFocus.oval,
+        borderRadius: const Radius.circular(15.0),
+        radius: 25,
+        contentPosition: ContentPosition.below,
+        pageIndex: 0,
+        child: const TutorialItemContent(
+          title: 'Menu Wifi',
+          content:
+              'Podrás observar el estado de la conexión wifi del dispositivo',
+        ),
+      ),
+      TutorialItem(
+        globalKey: distanceKey,
+        color: Colors.black.withValues(alpha: 0.6),
+        shapeFocus: ShapeFocus.oval,
+        borderRadius: const Radius.circular(0),
+        radius: 0,
+        pageIndex: 1,
+        child: const TutorialItemContent(
+          title: 'Control por distancia',
+          content:
+              'Podrás ajustar la distancia de encendido y apagado de tu dispositivo',
+        ),
+      ),
+      TutorialItem(
+        globalKey: distanceBottomKey,
+        color: Colors.black.withValues(alpha: 0.6),
+        borderRadius: const Radius.circular(10),
+        radius: 90,
+        shapeFocus: ShapeFocus.oval,
+        pageIndex: 1,
+        child: const TutorialItemContent(
+          title: 'Botón de encendido',
+          content: 'Podrás activar esta función y configurar la distancia',
+        ),
+      ),
+      TutorialItem(
+        globalKey: adminKey,
+        color: Colors.black.withValues(alpha: 0.6),
+        borderRadius: const Radius.circular(0),
+        shapeFocus: ShapeFocus.oval,
+        pageIndex: 2,
+        radius: 0,
+        contentPosition: ContentPosition.below,
+        child: const TutorialItemContent(
+          title: 'Gestión',
+          content: 'Podrás reclamar el equipo y gestionar sus funciones',
+        ),
+      ),
+      TutorialItem(
+        globalKey: claimKey,
+        color: Colors.black.withValues(alpha: 0.6),
+        borderRadius: const Radius.circular(20),
+        shapeFocus: ShapeFocus.roundedSquare,
+        pageIndex: 2,
+        contentPosition: ContentPosition.below,
+        child: const TutorialItemContent(
+          title: 'Reclamar administrador',
+          content:
+              'Presiona este botón para reclamar la administración del equipo',
+        ),
+      ),
+    });
+    // SOLO PARA LOS ADMINS
+    if (currentUserEmail == owner) {
+      items.addAll({
+        TutorialItem(
+          globalKey: agreeAdminKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(15),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 2,
+          contentPosition: ContentPosition.below,
+          child: const TutorialItemContent(
+            title: 'Añadir administradores secundarios',
+            content: 'Podrás agregar correos secundarios hasta un límite de 3',
+          ),
+        ),
+        TutorialItem(
+          globalKey: viewAdminKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(15),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 2,
+          contentPosition: ContentPosition.below,
+          child: const TutorialItemContent(
+            title: 'Ver administradores secundarios',
+            content: 'Podrás ver o quitar los correos adicionales añadidos',
+          ),
+        ),
+        TutorialItem(
+          globalKey: habitKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(15),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 2,
+          child: const TutorialItemContent(
+            title: 'Habitante inteligente',
+            content:
+                'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
+          ),
+        ),
+      });
+    }
+    items.addAll({
+      TutorialItem(
+        globalKey: fastBotonKey,
+        color: Colors.black.withValues(alpha: 0.6),
+        borderRadius: const Radius.circular(20),
+        shapeFocus: ShapeFocus.roundedSquare,
+        pageIndex: 2,
+        child: const TutorialItemContent(
+          title: 'Accesso rápido',
+          content: 'Podrás encender y apagar el dispositivo desde el menú',
+        ),
+      ),
+      TutorialItem(
+        globalKey: fastAccessKey,
+        color: Colors.black.withValues(alpha: 0.6),
+        borderRadius: const Radius.circular(20),
+        shapeFocus: ShapeFocus.roundedSquare,
+        pageIndex: 2,
+        child: const TutorialItemContent(
+          title: 'Notificación de desconexión',
+          content: 'Puedes establecer una alerta si el equipo se desconecta',
+        ),
+      ),
+      TutorialItem(
+        globalKey: imageKey,
+        color: Colors.black.withValues(alpha: 0.6),
+        borderRadius: const Radius.circular(20),
+        shapeFocus: ShapeFocus.roundedSquare,
+        pageIndex: 2,
+        child: const TutorialItemContent(
+          title: 'Imagen del dispositivo',
+          content: 'Podrás ajustar la imagen del equipo en el menú',
+        ),
+      ),
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -801,366 +1010,390 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
 
     final List<Widget> pages = [
       //*- Página 1: Estado del Dispositivo -*\\
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              tipo.length + 1,
-              (index) {
-                if (index == tipo.length) {
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
-                  );
-                }
-                bool entrada = tipo[index] == 'Entrada';
-                bool isOn = estado[index] == '1';
-                bool isPresenceControlled = _selectedPins[index] && tracking;
-                return Column(
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      decoration: BoxDecoration(
-                        color: color3,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.all(18),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const SizedBox(width: 6),
-                              GestureDetector(
-                                onTap: () async {
-                                  TextEditingController nicknameController =
-                                      TextEditingController(
-                                    text: subNicknamesMap[
-                                            '$deviceName/-/$index'] ??
-                                        '${tipo[index]} $index',
-                                  );
-                                  showAlertDialog(
-                                    context,
-                                    false,
-                                    Text(
-                                      'Editar Nombre',
-                                      style: GoogleFonts.poppins(color: color0),
-                                    ),
-                                    TextField(
-                                      controller: nicknameController,
-                                      style: const TextStyle(color: color0),
-                                      cursorColor: color0,
-                                      decoration: InputDecoration(
-                                        hintText:
-                                            "Nuevo nombre para ${tipo[index]} $index",
-                                        hintStyle: TextStyle(
-                                          color: color0.withValues(alpha: 0.6),
-                                        ),
-                                        enabledBorder: UnderlineInputBorder(
-                                          borderSide: BorderSide(
-                                            color:
-                                                color0.withValues(alpha: 0.5),
-                                          ),
-                                        ),
-                                        focusedBorder:
-                                            const UnderlineInputBorder(
-                                          borderSide: BorderSide(color: color0),
-                                        ),
-                                      ),
-                                    ),
-                                    <Widget>[
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                        },
-                                        child: const Text(
-                                          'Cancelar',
-                                          style: TextStyle(color: color0),
-                                        ),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            String newName =
-                                                nicknameController.text;
-                                            subNicknamesMap[
-                                                    '$deviceName/-/$index'] =
-                                                newName;
-                                            saveSubNicknamesMap(
-                                                subNicknamesMap);
-                                          });
-                                          Navigator.of(context).pop();
-                                        },
-                                        child: const Text(
-                                          'Guardar',
-                                          style: TextStyle(color: color0),
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    SizedBox(
-                                      width: 160,
-                                      child: ScrollingText(
-                                        text: subNicknamesMap[
-                                                '$deviceName/-/$index'] ??
-                                            '${tipo[index]} $index',
-                                        style: GoogleFonts.poppins(
-                                          color: color0,
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        // overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.edit,
-                                        size: 22,
-                                        color: color0,
-                                      ),
-                                      onPressed: () {
-                                        TextEditingController
-                                            nicknameController =
-                                            TextEditingController(
-                                          text: subNicknamesMap[
-                                                  '$deviceName/-/$index'] ??
-                                              '${tipo[index]} $index',
-                                        );
-                                        showAlertDialog(
-                                          context,
-                                          false,
-                                          Text(
-                                            'Editar Nombre',
-                                            style: GoogleFonts.poppins(
-                                                color: color0),
-                                          ),
-                                          TextField(
-                                            controller: nicknameController,
-                                            style:
-                                                const TextStyle(color: color0),
-                                            cursorColor: color0,
-                                            decoration: InputDecoration(
-                                              hintText:
-                                                  "Nuevo nombre para ${tipo[index]} $index",
-                                              hintStyle: TextStyle(
-                                                color: color0.withValues(
-                                                    alpha: 0.6),
-                                              ),
-                                              enabledBorder:
-                                                  UnderlineInputBorder(
-                                                borderSide: BorderSide(
-                                                  color: color0.withValues(
-                                                      alpha: 0.5),
-                                                ),
-                                              ),
-                                              focusedBorder:
-                                                  const UnderlineInputBorder(
-                                                borderSide:
-                                                    BorderSide(color: color0),
-                                              ),
-                                            ),
-                                          ),
-                                          <Widget>[
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.of(context).pop();
-                                              },
-                                              child: const Text(
-                                                'Cancelar',
-                                                style: TextStyle(color: color0),
-                                              ),
-                                            ),
-                                            TextButton(
-                                              onPressed: () {
-                                                setState(() {
-                                                  String newName =
-                                                      nicknameController.text;
-                                                  subNicknamesMap[
-                                                          '$deviceName/-/$index'] =
-                                                      newName;
-                                                  saveSubNicknamesMap(
-                                                      subNicknamesMap);
-                                                });
-                                                Navigator.of(context).pop();
-                                              },
-                                              child: const Text(
-                                                'Guardar',
-                                                style: TextStyle(color: color0),
-                                              ),
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                'Tipo: ${tipo[index]}',
-                                style: const TextStyle(
-                                  color: color0,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
+      SingleChildScrollView(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.8,
+          child: Center(
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  tipo.length + 1,
+                  (index) {
+                    if (index == tipo.length) {
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
+                      );
+                    }
+                    bool entrada = tipo[index] == 'Entrada';
+                    bool isOn = estado[index] == '1';
+                    bool isPresenceControlled =
+                        _selectedPins[index] && tracking;
+                    return Column(
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          decoration: BoxDecoration(
+                            color: color3,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          entrada
-                              ? Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Center(
-                                      child: Icon(
-                                        alertIO[index]
-                                            ? Icons.new_releases
-                                            : Icons.new_releases,
-                                        color: alertIO[index]
-                                            ? Colors.red
-                                            : Colors.grey,
-                                        size: 40,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
+                          padding: const EdgeInsets.all(18),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const SizedBox(width: 6),
+                                  GestureDetector(
+                                    onTap: () async {
+                                      TextEditingController nicknameController =
+                                          TextEditingController(
+                                        text: subNicknamesMap[
+                                                '$deviceName/-/$index'] ??
+                                            '${tipo[index]} $index',
+                                      );
+                                      showAlertDialog(
+                                        context,
+                                        false,
                                         Text(
-                                          _notis[index]
-                                              ? '¿Desactivar notificaciones?'
-                                              : '¿Activar notificaciones?',
-                                          style: const TextStyle(
-                                            color: color0,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
+                                          'Editar Nombre',
+                                          style: GoogleFonts.poppins(
+                                              color: color0),
+                                        ),
+                                        TextField(
+                                          controller: nicknameController,
+                                          style: const TextStyle(color: color0),
+                                          cursorColor: color0,
+                                          decoration: InputDecoration(
+                                            hintText:
+                                                "Nuevo nombre para ${tipo[index]} $index",
+                                            hintStyle: TextStyle(
+                                              color:
+                                                  color0.withValues(alpha: 0.6),
+                                            ),
+                                            enabledBorder: UnderlineInputBorder(
+                                              borderSide: BorderSide(
+                                                color: color0.withValues(
+                                                    alpha: 0.5),
+                                              ),
+                                            ),
+                                            focusedBorder:
+                                                const UnderlineInputBorder(
+                                              borderSide:
+                                                  BorderSide(color: color0),
+                                            ),
+                                          ),
+                                        ),
+                                        <Widget>[
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                            child: const Text(
+                                              'Cancelar',
+                                              style: TextStyle(color: color0),
+                                            ),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                String newName =
+                                                    nicknameController.text;
+                                                subNicknamesMap[
+                                                        '$deviceName/-/$index'] =
+                                                    newName;
+                                                saveSubNicknamesMap(
+                                                    subNicknamesMap);
+                                              });
+                                              Navigator.of(context).pop();
+                                            },
+                                            child: const Text(
+                                              'Guardar',
+                                              style: TextStyle(color: color0),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.start,
+                                      children: [
+                                        SizedBox(
+                                          width: 160,
+                                          child: ScrollingText(
+                                            text: subNicknamesMap[
+                                                    '$deviceName/-/$index'] ??
+                                                '${tipo[index]} $index',
+                                            style: GoogleFonts.poppins(
+                                              color: color0,
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            // overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
                                         IconButton(
+                                          icon: const Icon(
+                                            Icons.edit,
+                                            size: 22,
+                                            color: color0,
+                                          ),
                                           onPressed: () {
-                                            bool activated = _notis[index];
-                                            setState(() {
-                                              activated = !activated;
-                                              _notis[index] = activated;
-                                            });
-                                            notificationMap[
-                                                    '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}'] =
-                                                _notis;
-                                            saveNotificationMap(
-                                                notificationMap);
-                                          },
-                                          icon: _notis[index]
-                                              ? Icon(
-                                                  Icons.notifications_off,
-                                                  color: Colors.red.shade300,
-                                                )
-                                              : const Icon(
-                                                  Icons
-                                                      .notification_add_rounded,
-                                                  color: Colors.green,
+                                            TextEditingController
+                                                nicknameController =
+                                                TextEditingController(
+                                              text: subNicknamesMap[
+                                                      '$deviceName/-/$index'] ??
+                                                  '${tipo[index]} $index',
+                                            );
+                                            showAlertDialog(
+                                              context,
+                                              false,
+                                              Text(
+                                                'Editar Nombre',
+                                                style: GoogleFonts.poppins(
+                                                    color: color0),
+                                              ),
+                                              TextField(
+                                                controller: nicknameController,
+                                                style: const TextStyle(
+                                                    color: color0),
+                                                cursorColor: color0,
+                                                decoration: InputDecoration(
+                                                  hintText:
+                                                      "Nuevo nombre para ${tipo[index]} $index",
+                                                  hintStyle: TextStyle(
+                                                    color: color0.withValues(
+                                                        alpha: 0.6),
+                                                  ),
+                                                  enabledBorder:
+                                                      UnderlineInputBorder(
+                                                    borderSide: BorderSide(
+                                                      color: color0.withValues(
+                                                          alpha: 0.5),
+                                                    ),
+                                                  ),
+                                                  focusedBorder:
+                                                      const UnderlineInputBorder(
+                                                    borderSide: BorderSide(
+                                                        color: color0),
+                                                  ),
                                                 ),
+                                              ),
+                                              <Widget>[
+                                                TextButton(
+                                                  onPressed: () {
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                  child: const Text(
+                                                    'Cancelar',
+                                                    style: TextStyle(
+                                                        color: color0),
+                                                  ),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      String newName =
+                                                          nicknameController
+                                                              .text;
+                                                      subNicknamesMap[
+                                                              '$deviceName/-/$index'] =
+                                                          newName;
+                                                      saveSubNicknamesMap(
+                                                          subNicknamesMap);
+                                                    });
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                  child: const Text(
+                                                    'Guardar',
+                                                    style: TextStyle(
+                                                        color: color0),
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          },
                                         ),
                                       ],
                                     ),
-                                  ],
-                                )
-                              : Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Icon(
-                                      isOn ? Icons.check_circle : Icons.cancel,
-                                      color: isOn ? Colors.green : Colors.red,
-                                      size: 40,
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    'Tipo: ${tipo[index]}',
+                                    style: const TextStyle(
+                                      color: color0,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
                                     ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        isPresenceControlled
-                                            ? null
-                                            : setState(() {
-                                                controlOut(!isOn, index);
-                                                estado[index] =
-                                                    !isOn ? '1' : '0';
-                                              });
-                                      },
-                                      child: AnimatedContainer(
-                                        duration:
-                                            const Duration(milliseconds: 300),
-                                        width: 55,
-                                        height: 30,
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(20),
-                                          color: isPresenceControlled
-                                              ? Colors.grey
-                                              : isOn
-                                                  ? Colors.greenAccent.shade400
-                                                  : Colors.red.shade300,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              entrada
+                                  ? Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Center(
+                                          child: Icon(
+                                            alertIO[index]
+                                                ? Icons.new_releases
+                                                : Icons.new_releases,
+                                            color: alertIO[index]
+                                                ? Colors.red
+                                                : Colors.grey,
+                                            size: 40,
+                                          ),
                                         ),
-                                        child: AnimatedAlign(
-                                          duration:
-                                              const Duration(milliseconds: 300),
-                                          alignment: isOn
-                                              ? Alignment.centerRight
-                                              : Alignment.centerLeft,
-                                          curve: Curves.easeInOut,
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(3.0),
-                                            child: Container(
-                                              width: 24,
-                                              height: 24,
-                                              decoration: const BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: Colors.white,
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              _notis[index]
+                                                  ? '¿Desactivar notificaciones?'
+                                                  : '¿Activar notificaciones?',
+                                              style: const TextStyle(
+                                                color: color0,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            IconButton(
+                                              onPressed: () {
+                                                bool activated = _notis[index];
+                                                setState(() {
+                                                  activated = !activated;
+                                                  _notis[index] = activated;
+                                                });
+                                                notificationMap[
+                                                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}'] =
+                                                    _notis;
+                                                saveNotificationMap(
+                                                    notificationMap);
+                                              },
+                                              icon: _notis[index]
+                                                  ? Icon(
+                                                      Icons.notifications_off,
+                                                      color:
+                                                          Colors.red.shade300,
+                                                    )
+                                                  : const Icon(
+                                                      Icons
+                                                          .notification_add_rounded,
+                                                      color: Colors.green,
+                                                    ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    )
+                                  : Row(
+                                      //TODO
+                                      key: estadoKey,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Icon(
+                                          isOn
+                                              ? Icons.check_circle
+                                              : Icons.cancel,
+                                          color:
+                                              isOn ? Colors.green : Colors.red,
+                                          size: 40,
+                                        ),
+                                        GestureDetector(
+                                          onTap: () {
+                                            isPresenceControlled
+                                                ? null
+                                                : setState(() {
+                                                    controlOut(!isOn, index);
+                                                    estado[index] =
+                                                        !isOn ? '1' : '0';
+                                                  });
+                                          },
+                                          child: AnimatedContainer(
+                                            duration: const Duration(
+                                                milliseconds: 300),
+                                            width: 55,
+                                            height: 30,
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              color: isPresenceControlled
+                                                  ? Colors.grey
+                                                  : isOn
+                                                      ? Colors
+                                                          .greenAccent.shade400
+                                                      : Colors.red.shade300,
+                                            ),
+                                            child: AnimatedAlign(
+                                              duration: const Duration(
+                                                  milliseconds: 300),
+                                              alignment: isOn
+                                                  ? Alignment.centerRight
+                                                  : Alignment.centerLeft,
+                                              curve: Curves.easeInOut,
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.all(3.0),
+                                                child: Container(
+                                                  width: 24,
+                                                  height: 24,
+                                                  decoration:
+                                                      const BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
                                               ),
                                             ),
                                           ),
                                         ),
-                                      ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                          const SizedBox(height: 20),
-                          if (isPresenceControlled) ...{
-                            Container(
-                              decoration: BoxDecoration(
-                                color: color1,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  'Desactiva control por presencia para utilizar esta función',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: color3,
+                              const SizedBox(height: 20),
+                              if (isPresenceControlled) ...{
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: color1,
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
-                                  textAlign: TextAlign.center,
+                                  child: Center(
+                                    child: Text(
+                                      'Desactiva control por presencia para utilizar esta función',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: color3,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                          },
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16.0),
-                  ],
-                );
-              },
+                              },
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16.0),
+                      ],
+                    );
+                  },
+                ),
+              ),
             ),
           ),
         ),
@@ -1199,22 +1432,17 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
       //                         if (tracking) {
       //                           devicesToTrack.add(deviceName);
       //                           saveDeviceListToTrack(devicesToTrack);
-
       //                           SharedPreferences prefs =
       //                               await SharedPreferences.getInstance();
       //                           bool hasInitService =
       //                               prefs.getBool('hasInitService') ?? false;
-
       //                           if (!hasInitService) {
       //                             await initializeService();
       //                             await prefs.setBool('hasInitService', true);
       //                           }
-
       //                           await Future.delayed(
       //                               const Duration(seconds: 30));
-
       //                           printLog("Achi");
-
       //                           final backService = FlutterBackgroundService();
       //                           backService.invoke('presenceControl');
       //                         } else {
@@ -1325,295 +1553,308 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
       // ),
 
       //*- Página 3 - Control por distancia -*\\
-      Stack(
-        children: [
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  'Control por distancia',
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: color3,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Activar control por distancia',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w500,
-                    color: color3,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 30),
-                GestureDetector(
-                  onTap: () {
-                    if (deviceOwner || owner == '' || tenant) {
-                      verifyPermission().then((result) {
-                        if (result == true) {
-                          setState(() {
-                            isTaskScheduled[deviceName] =
-                                !(isTaskScheduled[deviceName] ?? false);
-                          });
-                          saveControlValue(isTaskScheduled);
-                          controlTask(
-                              isTaskScheduled[deviceName] ?? false, deviceName);
-                        } else {
-                          showToast(
-                            'Permitir ubicación todo el tiempo\nPara usar el control por distancia',
-                          );
-                          openAppSettings();
-                        }
-                      });
-                    } else {
-                      showToast('No tienes acceso a esta función');
-                    }
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 500),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: isTaskScheduled[deviceName] ?? false
-                          ? Colors.greenAccent
-                          : Colors.redAccent,
-                      shape: BoxShape.circle,
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 10,
-                          offset: Offset(0, 5),
-                        ),
-                      ],
+      SingleChildScrollView(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.8,
+          child: Stack(
+            children: [
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      key: distanceKey,
+                      'Control por distancia',
+                      style: GoogleFonts.poppins(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: color3,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    child: Icon(
-                        (isTaskScheduled[deviceName] ?? false)
-                            ? Icons.check_circle_outline_rounded
-                            : Icons.cancel_rounded,
-                        size: 80,
-                        color: Colors.white),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                AnimatedOpacity(
-                  opacity: isTaskScheduled[deviceName] ?? false ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 500),
-                  child: AnimatedSize(
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.easeInOut,
-                    child: isTaskScheduled[deviceName] ?? false
-                        ? Column(
-                            children: [
-                              // Tarjeta de Distancia de apagado
-                              Card(
-                                color: color3.withValues(alpha: 0.9),
-                                elevation: 6,
-                                margin: const EdgeInsets.symmetric(
-                                    vertical: 8.0, horizontal: 20.0),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  side: BorderSide(
-                                    color: Color.lerp(
-                                        Colors.blueAccent,
-                                        Colors.redAccent,
-                                        (distOffValue - 100) / 200)!,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(10.0),
-                                  child: Column(
-                                    children: [
-                                      const Text(
-                                        'Distancia de apagado',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: color1,
-                                        ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Activar control por distancia',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w500,
+                        color: color3,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 30),
+                    GestureDetector(
+                      key: distanceBottomKey,
+                      onTap: () {
+                        if (deviceOwner || owner == '' || tenant) {
+                          verifyPermission().then((result) {
+                            if (result == true) {
+                              setState(() {
+                                isTaskScheduled[deviceName] =
+                                    !(isTaskScheduled[deviceName] ?? false);
+                              });
+                              saveControlValue(isTaskScheduled);
+                              controlTask(isTaskScheduled[deviceName] ?? false,
+                                  deviceName);
+                            } else {
+                              showToast(
+                                'Permitir ubicación todo el tiempo\nPara usar el control por distancia',
+                              );
+                              openAppSettings();
+                            }
+                          });
+                        } else {
+                          showToast('No tienes acceso a esta función');
+                        }
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 500),
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: isTaskScheduled[deviceName] ?? false
+                              ? Colors.greenAccent
+                              : Colors.redAccent,
+                          shape: BoxShape.circle,
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 10,
+                              offset: Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                            (isTaskScheduled[deviceName] ?? false)
+                                ? Icons.check_circle_outline_rounded
+                                : Icons.cancel_rounded,
+                            size: 80,
+                            color: Colors.white),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    AnimatedOpacity(
+                      opacity: isTaskScheduled[deviceName] ?? false ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 500),
+                      child: AnimatedSize(
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.easeInOut,
+                        child: isTaskScheduled[deviceName] ?? false
+                            ? Column(
+                                children: [
+                                  // Tarjeta de Distancia de apagado
+                                  Card(
+                                    color: color3.withValues(alpha: 0.9),
+                                    elevation: 6,
+                                    margin: const EdgeInsets.symmetric(
+                                        vertical: 8.0, horizontal: 20.0),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      side: BorderSide(
+                                        color: Color.lerp(
+                                            Colors.blueAccent,
+                                            Colors.redAccent,
+                                            (distOffValue - 100) / 200)!,
+                                        width: 2,
                                       ),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(10.0),
+                                      child: Column(
                                         children: [
-                                          Text(
-                                            distOffValue.round().toString(),
-                                            style: const TextStyle(
-                                              fontSize: 24,
+                                          const Text(
+                                            'Distancia de apagado',
+                                            style: TextStyle(
+                                              fontSize: 16,
                                               color: color1,
                                             ),
                                           ),
-                                          const Text(
-                                            ' Metros',
-                                            style: TextStyle(
-                                              fontSize: 24,
-                                              color: color1,
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                distOffValue.round().toString(),
+                                                style: const TextStyle(
+                                                  fontSize: 24,
+                                                  color: color1,
+                                                ),
+                                              ),
+                                              const Text(
+                                                ' Metros',
+                                                style: TextStyle(
+                                                  fontSize: 24,
+                                                  color: color1,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          SliderTheme(
+                                            data: SliderTheme.of(context)
+                                                .copyWith(
+                                              trackHeight: 20.0,
+                                              thumbColor: color3,
+                                              activeTrackColor:
+                                                  Colors.blueAccent,
+                                              inactiveTrackColor:
+                                                  Colors.blueGrey[100],
+                                              thumbShape:
+                                                  const RoundSliderThumbShape(
+                                                enabledThumbRadius: 12.0,
+                                                elevation: 0.0,
+                                                pressedElevation: 0.0,
+                                              ),
+                                            ),
+                                            child: Slider(
+                                              activeColor: Colors.white,
+                                              inactiveColor:
+                                                  const Color(0xFFBDBDBD),
+                                              value: distOffValue,
+                                              divisions: 20,
+                                              onChanged: (value) {
+                                                setState(() {
+                                                  distOffValue = value;
+                                                });
+                                              },
+                                              onChangeEnd: (value) {
+                                                printLog(
+                                                    'Valor enviado: ${value.round()}');
+                                                putDistanceOff(
+                                                  service,
+                                                  DeviceManager.getProductCode(
+                                                      deviceName),
+                                                  DeviceManager
+                                                      .extractSerialNumber(
+                                                          deviceName),
+                                                  value.toString(),
+                                                );
+                                              },
+                                              min: 100,
+                                              max: 300,
                                             ),
                                           ),
                                         ],
                                       ),
-                                      SliderTheme(
-                                        data: SliderTheme.of(context).copyWith(
-                                          trackHeight: 20.0,
-                                          thumbColor: color3,
-                                          activeTrackColor: Colors.blueAccent,
-                                          inactiveTrackColor:
-                                              Colors.blueGrey[100],
-                                          thumbShape:
-                                              const RoundSliderThumbShape(
-                                            enabledThumbRadius: 12.0,
-                                            elevation: 0.0,
-                                            pressedElevation: 0.0,
-                                          ),
-                                        ),
-                                        child: Slider(
-                                          activeColor: Colors.white,
-                                          inactiveColor:
-                                              const Color(0xFFBDBDBD),
-                                          value: distOffValue,
-                                          divisions: 20,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              distOffValue = value;
-                                            });
-                                          },
-                                          onChangeEnd: (value) {
-                                            printLog(
-                                                'Valor enviado: ${value.round()}');
-                                            putDistanceOff(
-                                              service,
-                                              DeviceManager.getProductCode(
-                                                  deviceName),
-                                              DeviceManager.extractSerialNumber(
-                                                  deviceName),
-                                              value.toString(),
-                                            );
-                                          },
-                                          min: 100,
-                                          max: 300,
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              ),
-                              const SizedBox(height: 15),
-                              Card(
-                                color: color3.withValues(alpha: 0.9),
-                                elevation: 6,
-                                margin: const EdgeInsets.symmetric(
-                                    vertical: 8.0, horizontal: 20.0),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  side: BorderSide(
-                                    color: Color.lerp(
-                                        Colors.blueAccent,
-                                        Colors.redAccent,
-                                        (distOnValue - 3000) / 2000)!,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(10.0),
-                                  child: Column(
-                                    children: [
-                                      const Text(
-                                        'Distancia de encendido',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: color1,
-                                        ),
+                                  const SizedBox(height: 15),
+                                  Card(
+                                    color: color3.withValues(alpha: 0.9),
+                                    elevation: 6,
+                                    margin: const EdgeInsets.symmetric(
+                                        vertical: 8.0, horizontal: 20.0),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      side: BorderSide(
+                                        color: Color.lerp(
+                                            Colors.blueAccent,
+                                            Colors.redAccent,
+                                            (distOnValue - 3000) / 2000)!,
+                                        width: 2,
                                       ),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(10.0),
+                                      child: Column(
                                         children: [
-                                          Text(
-                                            distOnValue.round().toString(),
-                                            style: const TextStyle(
-                                              fontSize: 24,
+                                          const Text(
+                                            'Distancia de encendido',
+                                            style: TextStyle(
+                                              fontSize: 16,
                                               color: color1,
                                             ),
                                           ),
-                                          const Text(
-                                            ' Metros',
-                                            style: TextStyle(
-                                              fontSize: 24,
-                                              color: color1,
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                distOnValue.round().toString(),
+                                                style: const TextStyle(
+                                                  fontSize: 24,
+                                                  color: color1,
+                                                ),
+                                              ),
+                                              const Text(
+                                                ' Metros',
+                                                style: TextStyle(
+                                                  fontSize: 24,
+                                                  color: color1,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          SliderTheme(
+                                            data: SliderTheme.of(context)
+                                                .copyWith(
+                                              trackHeight: 20.0,
+                                              thumbColor: color3,
+                                              activeTrackColor:
+                                                  Colors.blueAccent,
+                                              inactiveTrackColor:
+                                                  Colors.blueGrey[100],
+                                              thumbShape:
+                                                  const RoundSliderThumbShape(
+                                                enabledThumbRadius: 12.0,
+                                                elevation: 0.0,
+                                                pressedElevation: 0.0,
+                                              ),
+                                            ),
+                                            child: Slider(
+                                              activeColor: Colors.white,
+                                              inactiveColor:
+                                                  const Color(0xFFBDBDBD),
+                                              value: distOnValue,
+                                              divisions: 20,
+                                              onChanged: (value) {
+                                                setState(() {
+                                                  distOnValue = value;
+                                                });
+                                              },
+                                              onChangeEnd: (value) {
+                                                printLog(
+                                                    'Valor enviado: ${value.round()}');
+                                                putDistanceOn(
+                                                  service,
+                                                  DeviceManager.getProductCode(
+                                                      deviceName),
+                                                  DeviceManager
+                                                      .extractSerialNumber(
+                                                          deviceName),
+                                                  value.toString(),
+                                                );
+                                              },
+                                              min: 3000,
+                                              max: 5000,
                                             ),
                                           ),
                                         ],
                                       ),
-                                      SliderTheme(
-                                        data: SliderTheme.of(context).copyWith(
-                                          trackHeight: 20.0,
-                                          thumbColor: color3,
-                                          activeTrackColor: Colors.blueAccent,
-                                          inactiveTrackColor:
-                                              Colors.blueGrey[100],
-                                          thumbShape:
-                                              const RoundSliderThumbShape(
-                                            enabledThumbRadius: 12.0,
-                                            elevation: 0.0,
-                                            pressedElevation: 0.0,
-                                          ),
-                                        ),
-                                        child: Slider(
-                                          activeColor: Colors.white,
-                                          inactiveColor:
-                                              const Color(0xFFBDBDBD),
-                                          value: distOnValue,
-                                          divisions: 20,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              distOnValue = value;
-                                            });
-                                          },
-                                          onChangeEnd: (value) {
-                                            printLog(
-                                                'Valor enviado: ${value.round()}');
-                                            putDistanceOn(
-                                              service,
-                                              DeviceManager.getProductCode(
-                                                  deviceName),
-                                              DeviceManager.extractSerialNumber(
-                                                  deviceName),
-                                              value.toString(),
-                                            );
-                                          },
-                                          min: 3000,
-                                          max: 5000,
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              ),
-                            ],
-                          )
-                        : const SizedBox(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (!deviceOwner && owner != '' && !tenant)
-            Container(
-              color: Colors.black.withValues(alpha: 0.7),
-              child: const Center(
-                child: Text(
-                  'No tienes acceso a esta función',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
+                                ],
+                              )
+                            : const SizedBox(),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-        ],
+              if (!deviceOwner && owner != '' && !tenant)
+                Container(
+                  color: Colors.black.withValues(alpha: 0.7),
+                  child: const Center(
+                    child: Text(
+                      'No tienes acceso a esta función',
+                      style: TextStyle(color: Colors.white, fontSize: 18),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
 
       //*- Página 4: Gestión del Equipo -*\\
@@ -1624,6 +1865,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
+                key: adminKey,
                 'Gestión del equipo',
                 style: GoogleFonts.poppins(
                   fontSize: 28,
@@ -1635,6 +1877,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
               const SizedBox(height: 40),
               //! Opción - Reclamar propiedad del equipo o dejar de ser propietario
               InkWell(
+                key: claimKey,
                 onTap: () async {
                   if (currentUserEmail == owner) {
                     // Opción para dejar de ser propietario
@@ -1664,9 +1907,11 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                 DeviceManager.extractSerialNumber(deviceName),
                                 '',
                               );
-                              myDevice.device.disconnect();
+
                               Navigator.of(context).pop();
                               setState(() {
+                                owner = '';
+                                deviceOwner = false;
                                 showOptions = false;
                               });
                             } catch (e, s) {
@@ -1741,10 +1986,11 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                   child: showOptions
                       ? Column(
                           children: [
-                            //! Opciones adicionales existentes (isOwner)
+                            //! Opciones adicionales existentes (deviceOwner)
                             if (deviceOwner) ...[
                               //! Opción 2 - Añadir administradores secundarios
                               InkWell(
+                                key: agreeAdminKey,
                                 onTap: () {
                                   setState(() {
                                     showSecondaryAdminFields =
@@ -1753,8 +1999,6 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                 },
                                 borderRadius: BorderRadius.circular(15),
                                 child: Container(
-                                  margin:
-                                      const EdgeInsets.symmetric(vertical: 10),
                                   padding: const EdgeInsets.all(15),
                                   decoration: BoxDecoration(
                                     color: color3,
@@ -1862,6 +2106,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                               const SizedBox(height: 10),
                               //! Opción 3 - Ver administradores secundarios
                               InkWell(
+                                key: viewAdminKey,
                                 onTap: () {
                                   setState(() {
                                     showSecondaryAdminList =
@@ -1870,8 +2115,6 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                 },
                                 borderRadius: BorderRadius.circular(15),
                                 child: Container(
-                                  margin:
-                                      const EdgeInsets.symmetric(vertical: 10),
                                   padding: const EdgeInsets.all(15),
                                   decoration: BoxDecoration(
                                     color: color3,
@@ -1971,8 +2214,8 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                               ),
                               const SizedBox(height: 10),
                               //! Opción 4 - Habitante inteligente
-
                               InkWell(
+                                key: habitKey,
                                 onTap: () {
                                   if (activatedAT) {
                                     setState(() {
@@ -2038,8 +2281,6 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                 },
                                 borderRadius: BorderRadius.circular(15),
                                 child: Container(
-                                  margin:
-                                      const EdgeInsets.symmetric(vertical: 10),
                                   padding: const EdgeInsets.all(15),
                                   decoration: BoxDecoration(
                                     color: color3,
@@ -2209,7 +2450,6 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                                                   '3000',
                                                                   '100',
                                                                 );
-
                                                                 setState(() {
                                                                   tenantController
                                                                       .clear();
@@ -2400,214 +2640,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                       )
                                     : const SizedBox(),
                               ),
-
                               const SizedBox(height: 10),
-                              //! Opción 5 - activar notificación
-                              InkWell(
-                                onTap: () async {
-                                  if (discNotfActivated) {
-                                    showAlertDialog(
-                                      context,
-                                      true,
-                                      Text(
-                                        'Confirmar Desactivación',
-                                        style:
-                                            GoogleFonts.poppins(color: color0),
-                                      ),
-                                      Text(
-                                        '¿Estás seguro de que deseas desactivar la notificación de desconexión?',
-                                        style:
-                                            GoogleFonts.poppins(color: color0),
-                                      ),
-                                      [
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                          child: Text(
-                                            'Cancelar',
-                                            style: GoogleFonts.poppins(
-                                                color: color0),
-                                          ),
-                                        ),
-                                        TextButton(
-                                          onPressed: () async {
-                                            // Actualizar el estado para desactivar la notificación
-                                            setState(() {
-                                              discNotfActivated = false;
-                                              _showNotificationOptions = false;
-                                            });
-
-                                            // Eliminar la configuración de notificación para el dispositivo actual
-                                            configNotiDsc.removeWhere(
-                                                (key, value) =>
-                                                    key == deviceName);
-                                            await saveconfigNotiDsc(
-                                                configNotiDsc);
-
-                                            if (context.mounted) {
-                                              Navigator.of(context).pop();
-                                            }
-                                          },
-                                          child: Text(
-                                            'Aceptar',
-                                            style: GoogleFonts.poppins(
-                                                color: color0),
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  } else {
-                                    setState(() {
-                                      _showNotificationOptions =
-                                          !_showNotificationOptions;
-                                    });
-                                  }
-                                },
-                                child: Container(
-                                  margin:
-                                      const EdgeInsets.symmetric(vertical: 10),
-                                  padding: const EdgeInsets.all(15),
-                                  decoration: BoxDecoration(
-                                    color: color3,
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        discNotfActivated
-                                            ? 'Desactivar notificación\nde desconexión'
-                                            : 'Activar notificación\nde desconexión',
-                                        style: GoogleFonts.poppins(
-                                            fontSize: 15, color: color0),
-                                      ),
-                                      Icon(
-                                        _showNotificationOptions
-                                            ? Icons.arrow_drop_up
-                                            : Icons.arrow_drop_down,
-                                        color: color0,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                              // Tarjeta de opciones de notificación
-                              AnimatedSize(
-                                duration: const Duration(milliseconds: 600),
-                                curve: Curves.easeInOut,
-                                child: _showNotificationOptions
-                                    ? Container(
-                                        padding: const EdgeInsets.all(20),
-                                        margin: const EdgeInsets.only(top: 20),
-                                        decoration: BoxDecoration(
-                                          color: color3,
-                                          borderRadius:
-                                              BorderRadius.circular(15),
-                                        ),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              'Selecciona cuándo deseas recibir una notificación en caso de que el equipo se desconecte:',
-                                              style: GoogleFonts.poppins(
-                                                  color: color0, fontSize: 16),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                            const SizedBox(height: 20),
-                                            RadioListTile<int>(
-                                              value: 0,
-                                              groupValue:
-                                                  _selectedNotificationOption,
-                                              onChanged: (int? value) {
-                                                setState(() {
-                                                  _selectedNotificationOption =
-                                                      value!;
-                                                });
-                                              },
-                                              activeColor: color1,
-                                              title: Text(
-                                                'Instantáneo',
-                                                style: GoogleFonts.poppins(
-                                                    color: color0),
-                                              ),
-                                            ),
-                                            RadioListTile<int>(
-                                              value: 10,
-                                              groupValue:
-                                                  _selectedNotificationOption,
-                                              onChanged: (int? value) {
-                                                setState(() {
-                                                  _selectedNotificationOption =
-                                                      value!;
-                                                });
-                                              },
-                                              title: Text(
-                                                'Si permanece 10 minutos desconectado',
-                                                style: GoogleFonts.poppins(
-                                                    color: color0),
-                                              ),
-                                            ),
-                                            RadioListTile<int>(
-                                              value: 60,
-                                              groupValue:
-                                                  _selectedNotificationOption,
-                                              onChanged: (int? value) {
-                                                setState(() {
-                                                  _selectedNotificationOption =
-                                                      value!;
-                                                });
-                                              },
-                                              title: Text(
-                                                'Si permanece 1 hora desconectado',
-                                                style: GoogleFonts.poppins(
-                                                    color: color0),
-                                              ),
-                                            ),
-                                            const SizedBox(height: 20),
-                                            ElevatedButton(
-                                              onPressed: () async {
-                                                setState(() {
-                                                  discNotfActivated = true;
-                                                  _showNotificationOptions =
-                                                      false;
-                                                });
-
-                                                configNotiDsc[deviceName] =
-                                                    _selectedNotificationOption;
-                                                await saveconfigNotiDsc(
-                                                    configNotiDsc);
-
-                                                showNotification(
-                                                  'Notificación Activada',
-                                                  'Has activado la notificación de desconexión con la opción seleccionada.',
-                                                  'noti',
-                                                );
-                                              },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: color0,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        vertical: 15),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(15),
-                                                ),
-                                              ),
-                                              child: Text(
-                                                'Aceptar',
-                                                style: GoogleFonts.poppins(
-                                                    color: color3,
-                                                    fontSize: 16),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      )
-                                    : const SizedBox.shrink(),
-                              ),
                             ],
                           ],
                         )
@@ -2619,6 +2652,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
               ),
 
               SizedBox(
+                key: fastBotonKey,
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
@@ -2649,9 +2683,10 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                   style: ElevatedButton.styleFrom(
                     foregroundColor: color0,
                     backgroundColor: color3,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 11, horizontal: 18),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                   ),
                   child: Text(
@@ -2666,10 +2701,198 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                 ),
               ),
 
-              const SizedBox(
-                height: 10,
+              const SizedBox(height: 10),
+
+              //! activar notificación
+              if (owner == '' || deviceOwner || secondaryAdmin) ...{
+                ElevatedButton(
+                  key: fastAccessKey,
+                  onPressed: () async {
+                    if (discNotfActivated) {
+                      showAlertDialog(
+                        context,
+                        true,
+                        Text(
+                          'Confirmar Desactivación',
+                          style: GoogleFonts.poppins(color: color0),
+                        ),
+                        Text(
+                          '¿Estás seguro de que deseas desactivar la notificación de desconexión?',
+                          style: GoogleFonts.poppins(color: color0),
+                        ),
+                        [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            child: Text(
+                              'Cancelar',
+                              style: GoogleFonts.poppins(color: color0),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              // Actualizar el estado para desactivar la notificación
+                              setState(() {
+                                discNotfActivated = false;
+                                _showNotificationOptions = false;
+                              });
+
+                              // Eliminar la configuración de notificación para el dispositivo actual
+                              configNotiDsc.removeWhere(
+                                  (key, value) => key == deviceName);
+                              await saveconfigNotiDsc(configNotiDsc);
+
+                              if (context.mounted) {
+                                Navigator.of(context).pop();
+                              }
+                            },
+                            child: Text(
+                              'Aceptar',
+                              style: GoogleFonts.poppins(color: color0),
+                            ),
+                          ),
+                        ],
+                      );
+                    } else {
+                      setState(() {
+                        _showNotificationOptions = !_showNotificationOptions;
+                      });
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: color0,
+                    backgroundColor: color3,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        discNotfActivated
+                            ? 'Desactivar notificación de desconexión'
+                            : 'Activar notificación de desconexión',
+                        style: GoogleFonts.poppins(
+                          fontSize: 17,
+                          color: color0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              },
+
+              // Tarjeta de opciones de notificación
+              AnimatedSize(
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeInOut,
+                child: _showNotificationOptions
+                    ? Container(
+                        padding: const EdgeInsets.all(20),
+                        margin: const EdgeInsets.only(top: 20),
+                        decoration: BoxDecoration(
+                          color: color3,
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Selecciona cuándo deseas recibir una notificación en caso de que el equipo se desconecte:',
+                              style: GoogleFonts.poppins(
+                                  color: color0, fontSize: 16),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 20),
+                            RadioListTile<int>(
+                              value: 0,
+                              groupValue: _selectedNotificationOption,
+                              onChanged: (int? value) {
+                                setState(() {
+                                  _selectedNotificationOption = value!;
+                                });
+                              },
+                              activeColor: color1,
+                              title: Text(
+                                'Instantáneo',
+                                style: GoogleFonts.poppins(color: color0),
+                              ),
+                            ),
+                            RadioListTile<int>(
+                              value: 10,
+                              groupValue: _selectedNotificationOption,
+                              onChanged: (int? value) {
+                                setState(() {
+                                  _selectedNotificationOption = value!;
+                                });
+                              },
+                              activeColor: color1,
+                              title: Text(
+                                'Si permanece 10 minutos desconectado',
+                                style: GoogleFonts.poppins(color: color0),
+                              ),
+                            ),
+                            RadioListTile<int>(
+                              value: 60,
+                              groupValue: _selectedNotificationOption,
+                              onChanged: (int? value) {
+                                setState(() {
+                                  _selectedNotificationOption = value!;
+                                });
+                              },
+                              activeColor: color1,
+                              title: Text(
+                                'Si permanece 1 hora desconectado',
+                                style: GoogleFonts.poppins(color: color0),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            ElevatedButton(
+                              onPressed: () async {
+                                setState(() {
+                                  discNotfActivated = true;
+                                  _showNotificationOptions = false;
+                                });
+
+                                configNotiDsc[deviceName] =
+                                    _selectedNotificationOption;
+                                await saveconfigNotiDsc(configNotiDsc);
+
+                                showNotification(
+                                  'Notificación Activada',
+                                  'Has activado la notificación de desconexión con la opción seleccionada.',
+                                  'noti',
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: color0,
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 15, horizontal: 15),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                              ),
+                              child: Text(
+                                'Aceptar',
+                                style: GoogleFonts.poppins(
+                                    color: color3, fontSize: 16),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : const SizedBox.shrink(),
               ),
+
+              const SizedBox(height: 10),
+
               SizedBox(
+                key: imageKey,
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
@@ -2682,16 +2905,17 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                   style: ElevatedButton.styleFrom(
                     foregroundColor: color0,
                     backgroundColor: color3,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 11, horizontal: 20),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                   ),
                   child: const Text(
                     'Cambiar imagen del dispositivo',
                     style: TextStyle(
-                      fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      fontSize: 18,
                     ),
                   ),
                 ),
@@ -2751,6 +2975,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, A) {
+        if (_isTutorialActive) return;
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -2784,9 +3009,10 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: const Color.fromRGBO(48, 43, 54, 1),
+          backgroundColor: color3,
           title: GestureDetector(
             onTap: () async {
+              if (_isTutorialActive) return;
               TextEditingController nicknameController =
                   TextEditingController(text: nickname);
               showAlertDialog(
@@ -2843,6 +3069,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
             child: Row(
               children: [
                 Expanded(
+                  key: titleKey,
                   child: ScrollingText(
                     text: nickname,
                     style: poppinsStyle.copyWith(color: color0),
@@ -2854,9 +3081,12 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
             ),
           ),
           leading: IconButton(
+            key: estadoKey,
             icon: const Icon(Icons.arrow_back_ios_new),
             color: color0,
             onPressed: () {
+              if (_isTutorialActive) return;
+
               showDialog(
                 context: context,
                 barrierDismissible: false,
@@ -2891,8 +3121,11 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
           ),
           actions: [
             IconButton(
+              key: wifiKey,
               icon: Icon(wifiNotifier.wifiIcon, color: color0),
               onPressed: () {
+                if (_isTutorialActive) return;
+
                 wifiText(context);
               },
             ),
@@ -2900,40 +3133,98 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
         ),
         backgroundColor: color1,
         resizeToAvoidBottomInset: false,
-        body: Stack(
-          children: [
-            PageView(
-              controller: _pageController,
-              physics: _isAnimating
-                  ? const NeverScrollableScrollPhysics()
-                  : const BouncingScrollPhysics(),
-              onPageChanged: onItemChanged,
-              children: pages,
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: CurvedNavigationBar(
-                index: _selectedIndex,
-                height: 75.0,
-                items: const <Widget>[
-                  Icon(Icons.home, size: 30, color: color0),
-                  //Icon(Icons.bluetooth, size: 30, color: color0),
-                  Icon(Icons.location_on, size: 30, color: color0),
-                  Icon(Icons.settings, size: 30, color: color0),
-                ],
-                color: color3,
-                buttonBackgroundColor: color3,
-                backgroundColor: Colors.transparent,
-                animationCurve: Curves.easeInOut,
-                animationDuration: const Duration(milliseconds: 600),
-                onTap: onItemTapped,
-                letIndexChange: (index) => true,
+        body: IgnorePointer(
+          ignoring: _isTutorialActive,
+          child: Stack(
+            children: [
+              PageView(
+                controller: _pageController,
+                physics: _isAnimating || _isTutorialActive
+                    ? const NeverScrollableScrollPhysics()
+                    : const BouncingScrollPhysics(),
+                onPageChanged: onItemChanged,
+                children: pages,
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: IgnorePointer(
+                  ignoring: _isTutorialActive,
+                  child: CurvedNavigationBar(
+                    index: _selectedIndex,
+                    height: 75.0,
+                    items: <Widget>[
+                      const Icon(Icons.home, size: 30, color: color0),
+                      const Icon(Icons.bluetooth, size: 30, color: color0),
+                      if (hardwareVersion == '240422A') ...{
+                        const Icon(Icons.input, size: 30, color: color0),
+                      },
+                      const Icon(Icons.settings, size: 30, color: color0),
+                    ],
+                    color: color3,
+                    buttonBackgroundColor: color3,
+                    backgroundColor: Colors.transparent,
+                    animationCurve: Curves.easeInOut,
+                    animationDuration: const Duration(milliseconds: 600),
+                    onTap: onItemTapped,
+                    letIndexChange: (index) => true,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        floatingActionButton: Visibility(
+          visible: tutorial,
+          child: AnimatedSlide(
+            offset: _isTutorialActive ? const Offset(1.5, 0) : Offset.zero,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: bottomBarHeight + 20),
+              child: FloatingActionButton(
+                onPressed: () {
+                  items = [];
+                  initItems();
+                  setState(() {
+                    _isAnimating = true;
+                    _selectedIndex = 0;
+                    _isTutorialActive = true;
+                  });
+                  _pageController
+                      .animateToPage(
+                    0,
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.easeInOut,
+                  )
+                      .then((_) {
+                    setState(() {
+                      _isAnimating = false;
+                    });
+                    if (context.mounted) {
+                      Tutorial.showTutorial(
+                        context,
+                        items,
+                        _pageController,
+                        onTutorialComplete: () {
+                          setState(() {
+                            _isTutorialActive = false;
+                          });
+                          printLog('Tutorial is complete!', 'verde');
+                        },
+                      );
+                    }
+                  });
+                },
+                backgroundColor: color6,
+                shape: const CircleBorder(),
+                child: const Icon(Icons.help, size: 30, color: color0),
               ),
             ),
-          ],
+          ),
         ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }

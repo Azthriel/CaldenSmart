@@ -25,6 +25,7 @@ void loadValues() async {
   pinQuickAccess = await loadpinQuickAccess();
   lastPage = await loadLastPage();
   oldRelay = await loadOldRelay();
+  tutorial = await loadTutorial();
 
   for (String device in previusConnections) {
     await queryItems(service, DeviceManager.getProductCode(device),
@@ -424,3 +425,17 @@ Future<List<String>> loadOldRelay() async {
   return prefs.getStringList('CSOldRelay') ?? [];
 }
 //*- Guardar y cargar si el rele es antiguo-*\\
+
+//*- Guardar si el tutorial esta activado -*\\
+
+Future<void> saveTutorial(bool tutorial) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('CSTutorial', tutorial);
+}
+
+Future<bool> loadTutorial() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getBool('CSTutorial') ?? true;
+}
+
+//*- Guardar si el tutorial esta activado -*\\

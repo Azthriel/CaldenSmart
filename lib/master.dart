@@ -284,6 +284,12 @@ double bottomBarHeight = kBottomNavigationBarHeight;
 int? lastPage;
 //*- ultima pagina visitada -*\\
 
+//*- Tutorial -*\\
+enum ShapeFocus { oval, square, roundedSquare }
+
+bool tutorial = true;
+//*- Tutorial -*\\
+
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
 //! FUNCIONES !\\
@@ -1096,8 +1102,8 @@ void wifiText(BuildContext context) {
                         TextButton(
                           onPressed: () {
                             sendWifitoBle('DSC', 'DSC');
-                            wifiNotifier.updateStatus(
-                                'DESCONECTANDO...', Colors.orange, Icons.wifi_find);
+                            wifiNotifier.updateStatus('DESCONECTANDO...',
+                                Colors.orange, Icons.wifi_find);
                           },
                           style: const ButtonStyle(
                             foregroundColor: WidgetStatePropertyAll(
@@ -5243,3 +5249,484 @@ class AnimatedIconWidgetState extends State<AnimatedIconWidget>
   }
 }
 //*- animacion para los iconos al estar calentando-*\\
+
+//*- tutorial -*\\
+
+/// This is the class that will be used to create the shapes
+class TutorialItem {
+  final GlobalKey globalKey;
+  final ShapeFocus shapeFocus;
+  final Widget child;
+  final double? radius;
+  final Color color;
+  final Radius borderRadius;
+  final int? pageIndex;
+  final ContentPosition contentPosition;
+
+  /// This is the constructor of the class
+  TutorialItem({
+    required this.globalKey,
+    required this.child,
+    this.radius,
+    this.color = const Color.fromRGBO(0, 0, 0, 0.6),
+    this.borderRadius = const Radius.circular(10.0),
+    this.shapeFocus = ShapeFocus.roundedSquare,
+    required this.pageIndex,
+    this.contentPosition = ContentPosition.above,
+  });
+}
+
+/// A class that holds the data of the shapes
+class HolePainter extends CustomPainter {
+  final double dx;
+  final double dy;
+  final double width;
+  final double height;
+  final Color color;
+  final Radius borderRadius;
+  final ShapeFocus shapeFocus;
+  final double? radius;
+
+  /// A constructor that takes in the data of the shape
+  HolePainter({
+    required this.dx,
+    required this.dy,
+    required this.width,
+    required this.height,
+    required this.color,
+    required this.radius,
+    required this.borderRadius,
+    this.shapeFocus = ShapeFocus.oval,
+  });
+
+  @override
+
+  /// A method that paints the shape
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    if (shapeFocus == ShapeFocus.oval) {
+      canvas.drawPath(
+          Path.combine(
+            PathOperation.difference,
+            Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height)),
+            Path()
+              ..addOval(Rect.fromCircle(
+                  center: Offset(dx, dy), radius: radius ?? width))
+              ..close(),
+          ),
+          paint);
+    } else if (shapeFocus == ShapeFocus.roundedSquare) {
+      canvas.drawPath(
+          Path.combine(
+            PathOperation.difference,
+            Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height)),
+            Path()
+              ..addRRect(RRect.fromRectAndCorners(
+                Rect.fromLTWH(
+                  dx - (width / 2),
+                  dy - (height / 2),
+                  width,
+                  height,
+                ),
+                topRight: borderRadius,
+                topLeft: borderRadius,
+                bottomRight: borderRadius,
+                bottomLeft: borderRadius,
+              ))
+              ..close(),
+          ),
+          paint);
+    } else {
+      canvas.drawPath(
+          Path.combine(
+            PathOperation.difference,
+            Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height)),
+            Path()
+              ..addRect(Rect.fromLTWH(
+                  dx - (width / 2), dy - (height / 2), width, height))
+              ..close(),
+          ),
+          paint);
+    }
+  }
+
+  @override
+
+  /// A method that returns whether the shape is a custom shape or not
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return false;
+  }
+}
+
+enum ContentPosition {
+  above,
+  below,
+}
+
+class Tutorial {
+  static List<OverlayEntry> entries = [];
+  static late int count;
+
+  static Future<void> showTutorial(
+    BuildContext context,
+    List<TutorialItem> children,
+    PageController pageController, {
+    required VoidCallback onTutorialComplete,
+  }) async {
+    clearEntries();
+    final size = MediaQuery.of(context).size;
+    OverlayState overlayState = Overlay.of(context);
+
+    count = 0;
+
+    Completer<void> tutorialCompleter = Completer<void>();
+
+    void removeCurrentOverlay() {
+      if (entries.isNotEmpty) {
+        entries.last.remove();
+        entries.removeLast();
+      }
+    }
+
+    Future<void> showTutorialItem() async {
+      if (count >= children.length) {
+        tutorialCompleter.complete();
+        onTutorialComplete();
+        return;
+      }
+
+      removeCurrentOverlay();
+
+      final element = children[count];
+      if (element.pageIndex != null &&
+          element.pageIndex != pageController.page?.toInt()) {
+        await pageController.animateToPage(
+          element.pageIndex!,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut,
+        );
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
+
+      // Asegurar que el elemento esté visible en la pantalla
+      final renderObject = element.globalKey.currentContext?.findRenderObject();
+      if (renderObject != null && renderObject is RenderBox) {
+        await Scrollable.ensureVisible(
+          element.globalKey.currentContext!,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          alignment: 0.5,
+        );
+      }
+
+      final offset = _capturePositionWidget(element.globalKey);
+      final sizeWidget = _getSizeWidget(element.globalKey);
+
+      final overlayEntry = OverlayEntry(
+        builder: (context) {
+          return Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Stack(
+              children: [
+                const ModalBarrier(
+                  dismissible: true,
+                  color: Colors.transparent,
+                ),
+                CustomPaint(
+                  size: size,
+                  painter: HolePainter(
+                    shapeFocus: element.shapeFocus,
+                    dx: offset.dx + (sizeWidget.width / 2),
+                    dy: offset.dy + (sizeWidget.height / 2),
+                    width: sizeWidget.width,
+                    height: sizeWidget.height,
+                    color: element.color,
+                    borderRadius: element.borderRadius,
+                    radius: element.radius,
+                  ),
+                ),
+                _buildTutorialContent(
+                  context: context,
+                  element: element,
+                  targetOffset: offset,
+                  targetSize: sizeWidget,
+                ),
+
+                // Botones de anterior
+                Positioned(
+                  bottom: 150,
+                  left: 20,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFAEF0B0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 17),
+                    ),
+                    icon: const Icon(Icons.arrow_back, color: color3),
+                    label:
+                        const Text('Anterior', style: TextStyle(color: color3)),
+                    onPressed: count > 0
+                        ? () {
+                            count--;
+                            showTutorialItem();
+                          }
+                        : null,
+                  ),
+                ),
+
+                //Boton de siguiente
+                Positioned(
+                  bottom: 150,
+                  right: 20,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFAEF0B0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 17),
+                    ),
+                    icon: Icon(
+                      count == children.length - 1
+                          ? Icons.check
+                          : Icons.arrow_forward,
+                      color: color3,
+                    ),
+                    label: Text(
+                      count == children.length - 1 ? 'Finalizar' : 'Siguiente',
+                      style: const TextStyle(color: color3),
+                    ),
+                    onPressed: () {
+                      if (count == children.length - 1) {
+                        clearEntries();
+                        tutorialCompleter.complete();
+                        onTutorialComplete();
+                      } else {
+                        count++;
+                        showTutorialItem();
+                      }
+                    },
+                  ),
+                ),
+
+                // Botón de Saltar Tutorial
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 100.0),
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: color6,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 17),
+                      ),
+                      icon: const Icon(Icons.close, color: color0),
+                      label: const Text('Saltar Tutorial',
+                          style: TextStyle(color: color0)),
+                      onPressed: () {
+                        clearEntries();
+                        tutorialCompleter.complete();
+                        onTutorialComplete();
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+
+      entries.add(overlayEntry);
+      overlayState.insert(overlayEntry);
+    }
+
+    await showTutorialItem();
+
+    await tutorialCompleter.future;
+  }
+
+  static Widget _buildTutorialContent({
+    required BuildContext context,
+    required TutorialItem element,
+    required Offset targetOffset,
+    required Size targetSize,
+  }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final contentWidth = screenWidth * 1;
+
+    // Calcula posición vertical (arriba/abajo)
+    double topPosition;
+    if (element.contentPosition == ContentPosition.above) {
+      topPosition = targetOffset.dy - 20 - _calculateContentHeight(context);
+    } else {
+      topPosition = targetOffset.dy + targetSize.height + 20;
+    }
+
+    // Ajustar la posición si el contenido se superpone con la BottomAppBar
+    const bottomAppBarHeight = kBottomNavigationBarHeight;
+    final screenHeight = MediaQuery.of(context).size.height;
+    if (topPosition + _calculateContentHeight(context) >
+        screenHeight - bottomAppBarHeight) {
+      topPosition = screenHeight -
+          bottomAppBarHeight -
+          _calculateContentHeight(context) -
+          20;
+    }
+
+    return Positioned(
+      top: topPosition,
+      left: (screenWidth - contentWidth) / 2,
+      child: Material(
+        color: Colors.transparent,
+        child: SizedBox(
+          width: contentWidth,
+          child: element.child,
+        ),
+      ),
+    );
+  }
+
+  static double _calculateContentHeight(BuildContext context) {
+    return MediaQuery.of(context).size.height * 0.20;
+  }
+
+  static void clearEntries() {
+    for (var entry in entries) {
+      entry.remove();
+    }
+    entries.clear();
+  }
+
+  static Offset _capturePositionWidget(GlobalKey key) {
+    RenderBox renderPosition =
+        key.currentContext?.findRenderObject() as RenderBox;
+    return renderPosition.localToGlobal(Offset.zero);
+  }
+
+  static Size _getSizeWidget(GlobalKey key) {
+    RenderBox renderSize = key.currentContext?.findRenderObject() as RenderBox;
+    return renderSize.size;
+  }
+}
+
+/// This is the enum that will be used to determine the shape of the focus
+class TutorialItemContent extends StatelessWidget {
+  const TutorialItemContent({
+    super.key,
+    required this.title,
+    required this.content,
+  });
+
+  final String title;
+  final String content;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+
+    return Center(
+      child: SizedBox(
+        width: width * 0.9,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: width * 0.05),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFAEF0B0),
+              borderRadius: BorderRadius.circular(20.0),
+              boxShadow: [
+                BoxShadow(
+                  color: color6.withValues(alpha: 0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: color3,
+                    fontFamily: 'Poppins',
+                    fontSize: 22.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Divider(
+                  color: color3,
+                  thickness: 1.0,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  content,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: color3,
+                    fontFamily: 'Poppins',
+                    fontSize: 16.0,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+//*- tutorial -*\\
+
+//*- Botón de tutorial -*\\
+class FloatingTutorialButton extends StatefulWidget {
+  const FloatingTutorialButton({super.key});
+
+  @override
+  State<FloatingTutorialButton> createState() => _FloatingTutorialButtonState();
+}
+
+class _FloatingTutorialButtonState extends State<FloatingTutorialButton> {
+  // The FAB's foregroundColor, backgroundColor, and shape
+  static const List<(Color?, Color? background, ShapeBorder?)> customizations =
+      <(Color?, Color?, ShapeBorder?)>[
+    (null, null, null), // The FAB uses its default for null parameters.
+    (null, Colors.green, null),
+    (Colors.white, Colors.green, null),
+    (Colors.white, Colors.green, CircleBorder()),
+  ];
+  int index = 0; // Selects the customization.
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('FloatingActionButton Sample'),
+      ),
+      body: const Center(child: Text('Press the button below!')),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          setState(() {
+            index = (index + 1) % customizations.length;
+          });
+        },
+        foregroundColor: customizations[index].$1,
+        backgroundColor: customizations[index].$2,
+        shape: customizations[index].$3,
+        child: const Icon(Icons.navigation),
+      ),
+    );
+  }
+}
+//*- Botón de tutorial -*\\
