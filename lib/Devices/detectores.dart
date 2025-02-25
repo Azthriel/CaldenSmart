@@ -1589,13 +1589,13 @@ class DetectorPageState extends State<DetectorPage> {
                           ),
                           child: Text(
                             discNotfActivated
-                                ? 'Desactivar notificación de desconexión'
-                                : 'Activar notificación de desconexión',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                                ? 'Desactivar notificación\nde desconexión'
+                                : 'Activar notificación\nde desconexión',
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
+                              color: color0,
                             ),
+                            textAlign: TextAlign.center,
                           ),
                         ),
                       ),

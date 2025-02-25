@@ -158,6 +158,17 @@ class WelcomePageState extends State<WelcomePage>
   /// Variable para controlar la visibilidad de la contraseña
   bool obscurePassword = true;
 
+  /// Controlar para animación del carousel
+  late AnimationController carouselFadeController;
+
+  /// animación para carousel
+  late Animation<double> carouselFadeAnimation;
+
+  /// animación para carousel contenido
+  final ScrollController _scrollController1 = ScrollController();
+  final ScrollController _scrollController2 = ScrollController();
+  final ScrollController _scrollController3 = ScrollController();
+
   /// Método para alternar la visibilidad de la contraseña
   void togglePasswordVisibility() {
     setState(() {
@@ -175,7 +186,7 @@ class WelcomePageState extends State<WelcomePage>
     )..repeat(reverse: true);
 
     welcomeTextController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
     welcomeFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -246,11 +257,30 @@ class WelcomePageState extends State<WelcomePage>
 
     foregroundSlideAnimation = Tween<Offset>(
       begin: const Offset(0.0, -0.12),
-      end: const Offset(0.0, -0.41),
-    ).animate(CurvedAnimation(
-      parent: foregroundPositionController,
-      curve: Curves.easeInOutCubic,
-    ));
+      end: const Offset(0.0, -0.65),
+    ).animate(
+      CurvedAnimation(
+        parent: foregroundPositionController,
+        curve: Curves.easeInOutCubic,
+      ),
+    );
+
+    carouselFadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    carouselFadeAnimation = Tween<double>(begin: 1.0, end: 0).animate(
+      CurvedAnimation(
+        parent: carouselFadeController,
+        curve: Curves.easeInOutCubic,
+      ),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController1.jumpTo(100.0);
+      _scrollController2.jumpTo(50.0);
+      _scrollController3.jumpTo(180.0);
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkForUpdate(context);
@@ -267,6 +297,10 @@ class WelcomePageState extends State<WelcomePage>
     loginFormController.dispose();
     foregroundController.dispose();
     foregroundPositionController.dispose();
+    carouselFadeController.dispose();
+    _scrollController1.dispose();
+    _scrollController2.dispose();
+    _scrollController3.dispose();
 
     loginEmailController.dispose();
     loginPasswordController.dispose();
@@ -381,7 +415,7 @@ class WelcomePageState extends State<WelcomePage>
         showIngresarButton = false;
         currentForm = FormType.login;
       });
-      //TODO esperar a que desaparezca el texto de ingresar
+      carouselFadeController.forward();
       welcomeTextController.reverse().then((_) {
         welcomeToLoginController.forward().then((_) {
           loginFormController.forward();
@@ -491,6 +525,36 @@ class WelcomePageState extends State<WelcomePage>
               );
             },
           ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.6,
+              child: ClipRect(
+                child: Transform.rotate(
+                  angle: 10 * 3.141592653589793 / 180,
+                  child: carouselImages(
+                      carouselFadeAnimation,
+                      _scrollController1,
+                      _scrollController2,
+                      _scrollController3),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: MediaQuery.of(context).size.height * 0.59,
+            left: 0,
+            right: 0,
+            child: FadeTransition(
+              opacity: carouselFadeAnimation,
+              child: const Divider(
+                color: color3,
+                thickness: 3.0,
+              ),
+            ),
+          ),
           SlideTransition(
             position: welcomeSlideAnimation,
             child: buildWelcome(),
@@ -535,11 +599,15 @@ class WelcomePageState extends State<WelcomePage>
               opacity: foregroundFadeAnimation,
               child: IgnorePointer(
                 child: Center(
-                  child: Image.asset(
-                    'assets/branch/Logo_sitio.png',
-                    width: MediaQuery.of(context).size.width - 100,
-                    height: 100,
-                    fit: BoxFit.contain,
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                        top: MediaQuery.of(context).size.height * 0.55),
+                    child: Image.asset(
+                      'assets/branch/Logo_sitio.png',
+                      width: MediaQuery.of(context).size.width * 0.8,
+                      height: MediaQuery.of(context).size.height * 0.15,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
               ),
@@ -563,7 +631,7 @@ class WelcomePageState extends State<WelcomePage>
       key: const ValueKey<FormType>(FormType.welcome),
       child: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
             FadeTransition(
               opacity: welcomeFadeAnimation,
@@ -583,10 +651,9 @@ class WelcomePageState extends State<WelcomePage>
                 ),
               ),
             ),
-            const SizedBox(
-              height: 40,
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.23,
             ),
-            // Aquí podrías agregar otros widgets de bienvenida si lo deseas
           ],
         ),
       ),
@@ -656,6 +723,110 @@ class WelcomePageState extends State<WelcomePage>
         return Container();
     }
   }
+}
+
+Widget carouselImages(Animation<double> carouselFadeAnimation,
+    scrollController1, scrollController2, scrollController3) {
+  return FadeTransition(
+    opacity: carouselFadeAnimation,
+    child: SizedBox(
+      height: 100,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              controller: scrollController1,
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  SizedBox(
+                    width: 220,
+                    child: buildCard('assets/devices/015773.jpeg'),
+                  ),
+                  SizedBox(
+                    width: 220,
+                    child: buildCard('assets/devices/020010.jpg'),
+                  ),
+                  SizedBox(
+                    width: 220,
+                    child: buildCard('assets/devices/022000.jpg'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              controller: scrollController2,
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  SizedBox(
+                    width: 220,
+                    child: buildCard('assets/devices/027000.webp'),
+                  ),
+                  SizedBox(
+                    width: 220,
+                    child: buildCard('assets/devices/027313.jpg'),
+                  ),
+                  SizedBox(
+                    width: 220,
+                    child: buildCard('assets/devices/028000.png'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              controller: scrollController3,
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  SizedBox(
+                    width: 220,
+                    child: buildCard('assets/devices/020010.jpg'),
+                  ),
+                  SizedBox(
+                    width: 220,
+                    child: buildCard('assets/devices/022000.jpg'),
+                  ),
+                  SizedBox(
+                    width: 220,
+                    child: buildCard('assets/devices/027000.webp'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget buildCard(String imagePath) {
+  return ClipRRect(
+    child: Padding(
+      padding: const EdgeInsets.all(5.0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: Image.asset(
+          imagePath,
+          width: 200,
+          height: 160,
+          fit: BoxFit.cover,
+        ),
+      ),
+    ),
+  );
 }
 
 ///*- Pintor personalizado para dibujar círculos animados en el fondo *-\\\

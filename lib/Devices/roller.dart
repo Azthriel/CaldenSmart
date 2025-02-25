@@ -38,6 +38,12 @@ class RollerPageState extends State<RollerPage> {
   bool dOffOk = false;
   bool _isAnimating = false;
 
+  int? rollerEnd;
+  int? rollerStart;
+  int? totalGrades;
+
+  bool endSaved = false;
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +52,7 @@ class RollerPageState extends State<RollerPage> {
     showOptions = currentUserEmail == owner;
 
     updateWifiValues(toolsValues);
+    processValues(varsValues);
     subscribeToWifiStatus();
     subToVars();
   }
@@ -139,7 +146,7 @@ class RollerPageState extends State<RollerPage> {
       printLog('non $isWifiConnected');
 
       nameOfWifi = '';
-wifiNotifier.updateStatus(
+      wifiNotifier.updateStatus(
           'DESCONECTADO', Colors.red, Icons.signal_wifi_off);
 
       if (atemp) {
@@ -245,7 +252,7 @@ wifiNotifier.updateStatus(
     final varsSub =
         myDevice.varsUuid.onValueReceived.listen((List<int> status) {
       var parts = utf8.decode(status).split(':');
-      // printLog(parts);
+      // printLog('Posición nueva: ${parts[0]}');
       if (context.mounted) {
         setState(() {
           actualPosition = int.parse(parts[0]);
@@ -268,7 +275,7 @@ wifiNotifier.updateStatus(
     // rollerIMAX = partes[5];
     // rollerIRMSRUN = partes[6];
     // rollerIRMSHOLD = partes[7];
-    rollerFreewheeling = partes[8] == '1';
+    // rollerFreewheeling = partes[8] == '1';
     // rollerTPWMTHRS = partes[9];
     // rollerTCOOLTHRS = partes[10];
     // rollerSGTHRS = partes[11];
@@ -279,14 +286,14 @@ wifiNotifier.updateStatus(
     // awsInit = partes[16] == '1';
   }
 
-  void setRange(int mm) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[7]($mm)';
+  void setDistance(int pc) {
+    String data = '${DeviceManager.getProductCode(deviceName)}[7]($pc%)';
     printLog(data);
     myDevice.toolsUuid.write(data.codeUnits);
   }
 
-  void setDistance(int pc) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[7]($pc%)';
+  void setLarge(int grades) {
+    String data = '${DeviceManager.getProductCode(deviceName)}[7]($grades)';
     printLog(data);
     myDevice.toolsUuid.write(data.codeUnits);
   }
@@ -298,44 +305,6 @@ wifiNotifier.updateStatus(
 
   void setMotorSpeed(String rpm) {
     String data = '${DeviceManager.getProductCode(deviceName)}[10]($rpm)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setMicroStep(String uStep) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[11]($uStep)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setMotorCurrent(bool run, String value) {
-    String data =
-        '${DeviceManager.getProductCode(deviceName)}[12](${run ? '1' : '0'}#$value)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setFreeWheeling(bool active) {
-    String data =
-        '${DeviceManager.getProductCode(deviceName)}[14](${active ? '1' : '0'})';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setTPWMTHRS(String value) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[15]($value)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setTCOOLTHRS(String value) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[16]($value)';
-    printLog(data);
-    myDevice.toolsUuid.write(data.codeUnits);
-  }
-
-  void setSGTHRS(String value) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[17]($value)';
     printLog(data);
     myDevice.toolsUuid.write(data.codeUnits);
   }
@@ -528,129 +497,18 @@ wifiNotifier.updateStatus(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15.0),
+              Text(
+                'Configuración de parámetros',
+                style: GoogleFonts.poppins(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: color3,
                 ),
-                color: color3,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Largo del Roller',
-                            style: TextStyle(
-                              fontSize: 18.0,
-                              color: color0,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Text(
-                                rollerlength,
-                                style: const TextStyle(
-                                  fontSize: 28.0,
-                                  color: color0,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(width: 5),
-                              const Text(
-                                'mm',
-                                style: TextStyle(
-                                  fontSize: 16.0,
-                                  color: color0,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  backgroundColor: color3,
-                                  title: const Text('Modificar largo (mm)',
-                                      style: TextStyle(color: color0)),
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      TextField(
-                                        controller: rLargeController,
-                                        keyboardType: TextInputType.number,
-                                        decoration: const InputDecoration(
-                                            label: Text(
-                                          'Ingresar tamaño:',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.normal,
-                                              color: color0),
-                                        )),
-                                        onSubmitted: (value) {
-                                          int? valor = int.tryParse(
-                                              rLargeController.text);
-                                          if (valor != null) {
-                                            setRange(valor);
-                                            setState(() {
-                                              rollerlength = value;
-                                            });
-                                          } else {
-                                            showToast('Valor no permitido');
-                                          }
-                                          rLargeController.clear();
-                                          navigatorKey.currentState?.pop();
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                        onPressed: () {
-                                          int? valor = int.tryParse(
-                                              rLargeController.text);
-                                          if (valor != null) {
-                                            setRange(valor);
-                                            setState(() {
-                                              rollerlength =
-                                                  rLargeController.text;
-                                            });
-                                          } else {
-                                            showToast('Valor no permitido');
-                                          }
-                                          rLargeController.clear();
-                                          navigatorKey.currentState?.pop();
-                                        },
-                                        child: const Text(
-                                          'Modificar',
-                                          style: TextStyle(color: color0),
-                                        ))
-                                  ],
-                                );
-                              });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: color6,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: const Text('Modificar',
-                            style: TextStyle(color: color0)),
-                      ),
-                    ],
-                  ),
-                ),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 20),
-
+              const SizedBox(
+                height: 20,
+              ),
               // Polaridad del Roller Section
               Card(
                 shape: RoundedRectangleBorder(
@@ -698,8 +556,10 @@ wifiNotifier.updateStatus(
                             borderRadius: BorderRadius.circular(30),
                           ),
                         ),
-                        child: const Text('Invertir',
-                            style: TextStyle(color: color0)),
+                        child: const Text(
+                          'Invertir',
+                          style: TextStyle(color: color0),
+                        ),
                       ),
                     ],
                   ),
@@ -733,6 +593,7 @@ wifiNotifier.updateStatus(
                             onPressed: () {
                               rollerRPM = '50';
                               setMotorSpeed('50');
+                              showToast("Velocidad baja");
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.green,
@@ -741,7 +602,7 @@ wifiNotifier.updateStatus(
                               ),
                             ),
                             child: const Text(
-                              'Bajo',
+                              'Baja',
                               style: TextStyle(color: color0),
                             ),
                           ),
@@ -750,6 +611,7 @@ wifiNotifier.updateStatus(
                             onPressed: () {
                               rollerRPM = '150';
                               setMotorSpeed('150');
+                              showToast('Velocidad media');
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.orange,
@@ -758,15 +620,18 @@ wifiNotifier.updateStatus(
                               ),
                             ),
                             child: const Text(
-                              'Medio',
+                              'Media',
                               style: TextStyle(color: color0),
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(
+                            width: 10,
+                          ),
                           ElevatedButton(
                             onPressed: () {
                               rollerRPM = '250';
                               setMotorSpeed('250');
+                              showToast("Velocidad alta");
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: color5,
@@ -775,7 +640,7 @@ wifiNotifier.updateStatus(
                               ),
                             ),
                             child: const Text(
-                              'Alto',
+                              'Alta',
                               style: TextStyle(color: color0),
                             ),
                           ),
@@ -788,6 +653,18 @@ wifiNotifier.updateStatus(
               const SizedBox(height: 20),
 
               // Configuración del Roller Section
+              Text(
+                'Configuración del\nlargo de la cortina',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: color3,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(
+                height: 10,
+              ),
               Card(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15.0),
@@ -797,45 +674,158 @@ wifiNotifier.updateStatus(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          setRollerConfig(0);
-                          setState(() {
-                            workingPosition = 0;
-                          });
+                      if (rollerSavedLength == '') ...{
+                        if (rollerEnd == null && !endSaved) ...{
+                          Text(
+                            'Lo primero que debes hacer es mover la cortina al final de su recorrido y presionar el botón de abajo para guardar la posición.',
+                            style: GoogleFonts.poppins(
+                              fontSize: 18.0,
+                              color: color0,
+                              fontWeight: FontWeight.normal,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(
+                            height: 20,
+                          ),
+                          ElevatedButton(
+                            onPressed: () async {
+                              printLog("Guardo fin");
+                              List<int> fun = await myDevice.varsUuid.read();
+                              processValues(fun);
+                              rollerEnd = actualPositionGrades;
+                              endSaved = true;
+
+                              printLog("Fin en grados: $rollerEnd");
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: color6,
+                              minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            child: const Text(
+                              'Guardar fin',
+                              style: TextStyle(fontSize: 16, color: color0),
+                            ),
+                          ),
+                        } else if (rollerStart == null && endSaved) ...{
+                          Text(
+                            'Luego de eso se debe mover la cortina al inicio de su recorrido y presionar el botón de abajo para guardar la posición.',
+                            style: GoogleFonts.poppins(
+                              fontSize: 18.0,
+                              color: color0,
+                              fontWeight: FontWeight.normal,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(
+                            height: 20,
+                          ),
+                          ElevatedButton(
+                            onPressed: () async {
+                              printLog("Guardo inicio");
+                              List<int> fun = await myDevice.varsUuid.read();
+                              processValues(fun);
+                              rollerStart = actualPositionGrades;
+
+                              printLog("Inicio en grados: $rollerStart");
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: color6,
+                              minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            child: const Text(
+                              'Guardar inicio',
+                              style: TextStyle(fontSize: 16, color: color0),
+                            ),
+                          ),
+                        } else if (rollerEnd != null &&
+                            rollerStart != null) ...{
+                          Text(
+                            'Ahora envía el largo de la cortina.',
+                            style: GoogleFonts.poppins(
+                              fontSize: 18.0,
+                              color: color0,
+                              fontWeight: FontWeight.normal,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(
+                            height: 10,
+                          ),
+                          ElevatedButton(
+                            onPressed: () async {
+                              printLog("Envio largo");
+                              int largo = rollerEnd! - rollerStart!;
+                              printLog("Largo: $largo");
+                              putRollerLength(
+                                  service,
+                                  DeviceManager.getProductCode(deviceName),
+                                  DeviceManager.extractSerialNumber(deviceName),
+                                  largo.toString());
+
+                              setLarge(largo);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: color6,
+                              minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            child: const Text(
+                              'Enviar largo de la cortina',
+                              style: TextStyle(fontSize: 16, color: color0),
+                            ),
+                          ),
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: color6,
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+                      } else ...{
+                        Text(
+                          rollerSavedLength == rollerlength
+                              ? 'El largo de la cortina se configuro correctamente'
+                              : 'El largo de la cortina no coincide con el configurado, por favor configurarlo nuevamente',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18.0,
+                            color: color0,
+                            fontWeight: FontWeight.normal,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(
+                          height: 20,
+                        ),
+                        ElevatedButton(
+                          onPressed: ()  {
+                            rollerSavedLength = '';
+                            setState(() {});
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: color6,
+                            minimumSize: const Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                          ),
+                          child: const Text(
+                            'Volver a configurar largo',
+                            style: TextStyle(fontSize: 16, color: color0),
                           ),
                         ),
-                        child: const Text(
-                          'Guardar inicio',
-                          style: TextStyle(fontSize: 16, color: color0),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: () {
-                          //TODO Guardar fin logica
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: color6,
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: const Text(
-                          'Guardar fin',
-                          style: TextStyle(fontSize: 16, color: color0),
-                        ),
+                      },
+                      const SizedBox(
+                        height: 10,
                       ),
                     ],
                   ),
                 ),
+              ),
+              const SizedBox(
+                height: 100,
               ),
             ],
           ),
@@ -1197,7 +1187,7 @@ wifiNotifier.updateStatus(
                               ),
                               const SizedBox(height: 10),
 
-                              //! Opción 4 - Habitante inteligente
+                              //! Opción 4 - Alquiler temporario
                               InkWell(
                                 onTap: () {
                                   if (activatedAT) {
@@ -1227,7 +1217,7 @@ wifiNotifier.updateStatus(
                                             ),
                                             onPressed: () async {
                                               String cuerpo =
-                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
+                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Alquiler temporario" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
                                               final Uri emailLaunchUri = Uri(
                                                 scheme: 'mailto',
                                                 path:
@@ -1236,7 +1226,7 @@ wifiNotifier.updateStatus(
                                                     encodeQueryParameters(<String,
                                                         String>{
                                                   'subject':
-                                                      'Habilitación habitante inteligente',
+                                                      'Habilitación Alquiler temporario',
                                                   'body': cuerpo,
                                                   'CC':
                                                       'pablo@intelligentgas.com.ar'
@@ -1276,7 +1266,7 @@ wifiNotifier.updateStatus(
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        'Habitante inteligente',
+                                        'Alquiler temporario',
                                         style: GoogleFonts.poppins(
                                             fontSize: 15, color: color0),
                                       ),
@@ -1709,7 +1699,10 @@ wifiNotifier.updateStatus(
                                             ? 'Desactivar notificación\nde desconexión'
                                             : 'Activar notificación\nde desconexión',
                                         style: GoogleFonts.poppins(
-                                            fontSize: 15, color: color0),
+                                          fontSize: 15,
+                                          color: color0,
+                                        ),
+                                        textAlign: TextAlign.center,
                                       ),
                                       Icon(
                                         _showNotificationOptions
@@ -2100,7 +2093,7 @@ wifiNotifier.updateStatus(
                 height: 75.0,
                 items: const <Widget>[
                   Icon(Icons.home, size: 30, color: color0),
-                  Icon(Icons.bluetooth, size: 30, color: color0),
+                  Icon(Icons.build, size: 30, color: color0),
                   Icon(Icons.settings, size: 30, color: color0),
                 ],
                 color: color3,

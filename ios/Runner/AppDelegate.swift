@@ -10,6 +10,7 @@ import AVFoundation
 @objc class AppDelegate: FlutterAppDelegate {
   private let CHANNEL = "com.caldensmart.sime/native"
   var audioPlayer: AVAudioPlayer?
+  var soundTimer: Timer?
 
   override func application(
     _ application: UIApplication,
@@ -37,21 +38,50 @@ import AVFoundation
       case "turnOnBluetooth":
         let bluetoothManager = CBCentralManager()
         if bluetoothManager.state != .poweredOn {
-          // No es posible encender Bluetooth directamente en iOS, solicitará al usuario
-          result(
-            FlutterError(
-              code: "UNAVAILABLE", message: "Cannot turn on Bluetooth directly", details: nil))
+          result(FlutterError(code: "UNAVAILABLE", message: "Cannot turn on Bluetooth directly", details: nil))
         } else {
           result(true)
         }
       case "playSound":
         if let args = call.arguments as? [String: Any],
-           let soundName = args["soundName"] as? String {
-          self?.playSound(soundName: soundName)
+          let soundName = args["soundName"] as? String,
+          let delay = args["delay"] as? Int {
+
+          self?.audioPlayer?.stop()
+          self?.audioPlayer = nil
+          self?.soundTimer?.invalidate()
+          self?.soundTimer = nil
+
+          do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
+            try AVAudioSession.sharedInstance().setActive(true)
+          } catch {
+            print("Error configurando el AVAudioSession: \(error.localizedDescription)")
+          }
+
+          if let soundURL = Bundle.main.url(forResource: soundName, withExtension: "wav") {
+            do {
+              self?.audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
+              self?.audioPlayer?.play()
+              print("Reproduciendo sonido: \(soundName)")
+
+              self?.soundTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval(delay) / 1000.0, repeats: false) { _ in
+                self?.stopSound()
+                print("Sonido detenido después de \(delay) ms")
+              }
+            } catch {
+              print("Error al reproducir el sonido: \(error.localizedDescription)")
+            }
+          } else {
+            print("Archivo de sonido no encontrado: \(soundName).wav")
+          }
           result(nil)
         } else {
-          result(FlutterError(code: "ERROR", message: "Nombre del sonido no proporcionado", details: nil))
+          result(FlutterError(code: "ERROR", message: "Nombre del sonido o delay no proporcionado", details: nil))
         }
+      case "stopSound":
+        self?.stopSound()
+        result(nil)
       default:
         result(FlutterMethodNotImplemented)
       }
@@ -69,16 +99,11 @@ import AVFoundation
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
-  private func playSound(soundName: String) {
-    if let soundURL = Bundle.main.url(forResource: soundName, withExtension: "mp3") {
-      do {
-        audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
-        audioPlayer?.play()
-      } catch {
-        print("Error al reproducir el sonido: \(error.localizedDescription)")
-      }
-    } else {
-      print("Recurso de sonido no encontrado: \(soundName)")
-    }
+  private func stopSound() {
+    audioPlayer?.stop()
+    audioPlayer = nil
+    soundTimer?.invalidate()
+    soundTimer = nil
+    print("Sonido detenido manualmente")
   }
 }

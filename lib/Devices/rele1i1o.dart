@@ -210,7 +210,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 2,
           child: const TutorialItemContent(
-            title: 'Habitante inteligente',
+            title: 'Alquiler temporario',
             content:
                 'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
           ),
@@ -2213,7 +2213,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                     : const SizedBox(),
                               ),
                               const SizedBox(height: 10),
-                              //! Opción 4 - Habitante inteligente
+                              //! Opción 4 - Alquiler temporario
                               InkWell(
                                 key: habitKey,
                                 onTap: () {
@@ -2244,7 +2244,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                             ),
                                             onPressed: () async {
                                               String cuerpo =
-                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
+                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Alquiler temporario" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
                                               final Uri emailLaunchUri = Uri(
                                                 scheme: 'mailto',
                                                 path:
@@ -2253,7 +2253,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                                     encodeQueryParameters(<String,
                                                         String>{
                                                   'subject':
-                                                      'Habilitación habitante inteligente',
+                                                      'Habilitación Alquiler temporario',
                                                   'body': cuerpo,
                                                   'CC':
                                                       'pablo@intelligentgas.com.ar'
@@ -2291,7 +2291,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        'Habitante inteligente',
+                                        'Alquiler temporario',
                                         style: GoogleFonts.poppins(
                                             fontSize: 15, color: color0),
                                       ),
@@ -2774,13 +2774,13 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                     children: [
                       Text(
                         discNotfActivated
-                            ? 'Desactivar notificación de desconexión'
-                            : 'Activar notificación de desconexión',
+                            ? 'Desactivar notificación\nde desconexión'
+                            : 'Activar notificación\nde desconexión',
                         style: GoogleFonts.poppins(
-                          fontSize: 17,
+                          fontSize: 15,
                           color: color0,
-                          fontWeight: FontWeight.bold,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),

@@ -101,6 +101,7 @@ String textState = '';
 bool werror = false;
 MaterialColor statusColor = Colors.grey;
 int signalPower = 0;
+String? qrResult;
 //*-Relacionado al wifi-*\\
 
 //*-Relacionado al ble-*\\
@@ -210,17 +211,9 @@ bool rollerMoving = false;
 int workingPosition = 0;
 String rollerlength = '';
 String rollerPolarity = '';
-String contrapulseTime = '';
 bool awsInit = false;
 String rollerRPM = '';
-String rollerMicroStep = '';
-String rollerIMAX = '';
-String rollerIRMSRUN = '';
-String rollerIRMSHOLD = '';
-bool rollerFreewheeling = false;
-String rollerTPWMTHRS = '';
-String rollerTCOOLTHRS = '';
-String rollerSGTHRS = '';
+String rollerSavedLength = '';
 //*- Roller -*\\
 
 //*-Detectores-*\\
@@ -280,9 +273,9 @@ bool shouldUpdateDevice = false;
 double bottomBarHeight = kBottomNavigationBarHeight;
 //*- Altura de la bottomAppBar -*\\
 
-//*- ultima pagina visitada -*\\
+//*- Última pagina visitada -*\\
 int? lastPage;
-//*- ultima pagina visitada -*\\
+//*- Última pagina visitada -*\\
 
 //*- Tutorial -*\\
 enum ShapeFocus { oval, square, roundedSquare }
@@ -874,7 +867,7 @@ void showToast(String message) {
     toastLength: Toast.LENGTH_SHORT,
     gravity: ToastGravity.BOTTOM,
     timeInSecForIosWeb: 1,
-    backgroundColor: color3,
+    backgroundColor: color6,
     textColor: color0,
     fontSize: 16.0,
   );
@@ -1700,13 +1693,17 @@ String getWifiErrorSintax(int errorCode) {
 Future<void> openQRScanner(BuildContext context) async {
   try {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      var qrResult = await navigatorKey.currentState
-          ?.push(MaterialPageRoute(builder: (context) => const QRScanPage()));
+      await Navigator.pushNamed(context, '/scanPage');
+
       if (qrResult != null) {
-        var wifiData = parseWifiQR(qrResult);
+        var wifiData = parseWifiQR(qrResult!);
         sendWifitoBle(wifiData['SSID']!, wifiData['password']!);
+        qrResult = null;
       }
     });
+    if (context.mounted) {
+      wifiText(context);
+    }
   } catch (e) {
     printLog("Error during navigation: $e");
   }
@@ -3681,7 +3678,8 @@ class QRScanPageState extends State<QRScanPage>
               result = barcode.barcodes.first;
             });
             if (result != null) {
-              Navigator.pop(context, result!.rawValue);
+              qrResult = result!.rawValue;
+              Navigator.of(context).pop();
             }
           },
         ),
@@ -4898,7 +4896,7 @@ class ImageManager {
       case '050217_IOT':
         return 'assets/devices/050217.png';
       case '027313_IOT':
-        return 'assets/devices/027313.webp';
+        return 'assets/devices/027313.jpg';
       case '041220_IOT':
         return 'assets/devices/041220.jpg';
       case '028000_IOT':

@@ -199,7 +199,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: isPinMode ? 2 : 1,
           child: const TutorialItemContent(
-            title: 'Habitante inteligente',
+            title: 'Alquiler temporario',
             content:
                 'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
           ),
@@ -2233,7 +2233,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                                     : const SizedBox(),
                               ),
                               const SizedBox(height: 10),
-                              //! Opción 4 - Habitante inteligente
+                              //! Opción 4 - Alquiler temporario
                               InkWell(
                                 key: habitKey,
                                 onTap: () {
@@ -2264,7 +2264,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                                             ),
                                             onPressed: () async {
                                               String cuerpo =
-                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
+                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Alquiler temporario" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
                                               final Uri emailLaunchUri = Uri(
                                                 scheme: 'mailto',
                                                 path:
@@ -2273,7 +2273,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                                                     encodeQueryParameters(<String,
                                                         String>{
                                                   'subject':
-                                                      'Habilitación habitante inteligente',
+                                                      'Habilitación Alquiler temporario',
                                                   'body': cuerpo,
                                                   'CC':
                                                       'pablo@intelligentgas.com.ar'
@@ -2311,7 +2311,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        'Habitante inteligente',
+                                        'Alquiler temporario',
                                         style: GoogleFonts.poppins(
                                             fontSize: 15, color: color0),
                                       ),
@@ -2794,13 +2794,13 @@ class DomoticaPageState extends State<DomoticaPage> {
                     children: [
                       Text(
                         discNotfActivated
-                            ? 'Desactivar notificación de desconexión'
-                            : 'Activar notificación de desconexión',
+                            ? 'Desactivar notificación\nde desconexión'
+                            : 'Activar notificación\nde desconexión',
                         style: GoogleFonts.poppins(
-                          fontSize: 18,
+                          fontSize: 15,
                           color: color0,
-                          fontWeight: FontWeight.bold,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),

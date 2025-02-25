@@ -215,7 +215,7 @@ class RelayPageState extends State<RelayPage> {
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 2,
           child: const TutorialItemContent(
-            title: 'Habitante inteligente',
+            title: 'Alquiler temporario',
             content:
                 'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
           ),
@@ -278,6 +278,12 @@ class RelayPageState extends State<RelayPage> {
     if (!oldRelay.contains(deviceName)) {
       oldRelay.add(deviceName);
       saveOldRelay(oldRelay);
+    }
+
+    if (!alexaDevices.contains(deviceName)) {
+      alexaDevices.add(deviceName);
+      saveAlexaDevices(alexaDevices);
+      putDevicesForAlexa(service, currentUserEmail, alexaDevices);
     }
 
     // WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -1733,7 +1739,7 @@ class RelayPageState extends State<RelayPage> {
                                     : const SizedBox(),
                               ),
                               const SizedBox(height: 10),
-                              //! Opción 4 - Habitante inteligente
+                              //! Opción 4 - Alquiler temporario
                               InkWell(
                                 key: habitKey,
                                 onTap: () {
@@ -1764,7 +1770,7 @@ class RelayPageState extends State<RelayPage> {
                                             ),
                                             onPressed: () async {
                                               String cuerpo =
-                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
+                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Alquiler temporario" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
                                               final Uri emailLaunchUri = Uri(
                                                 scheme: 'mailto',
                                                 path:
@@ -1773,7 +1779,7 @@ class RelayPageState extends State<RelayPage> {
                                                     encodeQueryParameters(<String,
                                                         String>{
                                                   'subject':
-                                                      'Habilitación habitante inteligente',
+                                                      'Habilitación Alquiler temporario',
                                                   'body': cuerpo,
                                                   'CC':
                                                       'pablo@intelligentgas.com.ar'
@@ -1811,7 +1817,7 @@ class RelayPageState extends State<RelayPage> {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        'Habitante inteligente',
+                                        'Alquiler temporario',
                                         style: GoogleFonts.poppins(
                                             fontSize: 15, color: color0),
                                       ),
@@ -2282,13 +2288,13 @@ class RelayPageState extends State<RelayPage> {
                     children: [
                       Text(
                         discNotfActivated
-                            ? 'Desactivar notificación de desconexión'
-                            : 'Activar notificación de desconexión',
+                            ? 'Desactivar notificación\nde desconexión'
+                            : 'Activar notificación\nde desconexión',
                         style: GoogleFonts.poppins(
-                          fontSize: 17,
+                          fontSize: 15,
                           color: color0,
-                          fontWeight: FontWeight.bold,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),

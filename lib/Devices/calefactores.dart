@@ -367,7 +367,7 @@ class CalefactorPageState extends State<CalefactorPage> {
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 4,
           child: const TutorialItemContent(
-            title: 'Habitante inteligente',
+            title: 'Alquiler temporario',
             content:
                 'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
           ),
@@ -1924,9 +1924,85 @@ class CalefactorPageState extends State<CalefactorPage> {
                                             onTap: () {
                                               if (emailController
                                                   .text.isNotEmpty) {
-                                                addSecondaryAdmin(
-                                                    emailController.text
-                                                        .trim());
+                                                if (adminDevices.length < 3) {
+                                                  addSecondaryAdmin(
+                                                      emailController.text);
+                                                } else {
+                                                  printLog('¿Pago? $payAdmSec');
+                                                  if (payAdmSec) {
+                                                    if (adminDevices.length <
+                                                        6) {
+                                                      addSecondaryAdmin(
+                                                          emailController.text);
+                                                    } else {
+                                                      showToast(
+                                                          'No puedes añadir más de 6 administradores secundarios');
+                                                    }
+                                                  } else {
+                                                    showAlertDialog(
+                                                      context,
+                                                      true,
+                                                      Text(
+                                                        'Actualmente no tienes habilitado este beneficio',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                                color: color0),
+                                                      ),
+                                                      Text(
+                                                        'En caso de requerirlo puedes solicitarlo vía mail',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                                color: color0),
+                                                      ),
+                                                      [
+                                                        TextButton(
+                                                          style: TextButton
+                                                              .styleFrom(
+                                                            foregroundColor:
+                                                                const Color(
+                                                                    0xFFFFFFFF),
+                                                          ),
+                                                          onPressed: () async {
+                                                            String cuerpo =
+                                                                '¡Hola! Me comunico porque busco habilitar la opción de "Administradores secundarios extras" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
+                                                            final Uri
+                                                                emailLaunchUri =
+                                                                Uri(
+                                                              scheme: 'mailto',
+                                                              path:
+                                                                  'cobranzas@ibsanitarios.com.ar',
+                                                              query:
+                                                                  encodeQueryParameters(<String,
+                                                                      String>{
+                                                                'subject':
+                                                                    'Habilitación Administradores secundarios extras',
+                                                                'body': cuerpo,
+                                                                'CC':
+                                                                    'pablo@intelligentgas.com.ar'
+                                                              }),
+                                                            );
+                                                            if (await canLaunchUrl(
+                                                                emailLaunchUri)) {
+                                                              await launchUrl(
+                                                                  emailLaunchUri);
+                                                            } else {
+                                                              showToast(
+                                                                  'No se pudo enviar el correo electrónico');
+                                                            }
+                                                            navigatorKey
+                                                                .currentState
+                                                                ?.pop();
+                                                          },
+                                                          child: const Text(
+                                                              'Solicitar'),
+                                                        ),
+                                                      ],
+                                                    );
+                                                  }
+                                                }
+                                              } else {
+                                                showToast(
+                                                    'Por favor, introduce un correo electrónico.');
                                               }
                                             },
                                             borderRadius:
@@ -2063,7 +2139,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                                     : const SizedBox(),
                               ),
                               const SizedBox(height: 10),
-                              //! Opción 4 - Habitante inteligente
+                              //! Opción 4 - Alquiler temporario
                               InkWell(
                                 key: habitKey,
                                 onTap: () {
@@ -2094,7 +2170,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                                             ),
                                             onPressed: () async {
                                               String cuerpo =
-                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
+                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Alquiler temporario" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
                                               final Uri emailLaunchUri = Uri(
                                                 scheme: 'mailto',
                                                 path:
@@ -2103,7 +2179,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                                                     encodeQueryParameters(<String,
                                                         String>{
                                                   'subject':
-                                                      'Habilitación habitante inteligente',
+                                                      'Habilitación Alquiler temporario',
                                                   'body': cuerpo,
                                                   'CC':
                                                       'pablo@intelligentgas.com.ar'
@@ -2141,7 +2217,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        'Habitante inteligente',
+                                        'Alquiler temporario',
                                         style: GoogleFonts.poppins(
                                             fontSize: 15, color: color0),
                                       ),
@@ -2613,13 +2689,14 @@ class CalefactorPageState extends State<CalefactorPage> {
                     children: [
                       Text(
                         discNotfActivated
-                            ? 'Desactivar notificación de desconexión'
-                            : 'Activar notificación de desconexión',
+                            ? 'Desactivar notificación\nde desconexión'
+                            : 'Activar notificación\nde desconexión',
                         style: GoogleFonts.poppins(
-                          fontSize: 17,
+                          fontSize: 18,
                           color: color0,
                           fontWeight: FontWeight.bold,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
@@ -2806,17 +2883,20 @@ class CalefactorPageState extends State<CalefactorPage> {
                     foregroundColor: color0,
                     backgroundColor: color3,
                     padding: const EdgeInsets.symmetric(
-                        vertical: 11, horizontal: 20),
+                      vertical: 11,
+                      horizontal: 20,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Cambiar imagen del dispositivo',
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),

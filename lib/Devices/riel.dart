@@ -139,7 +139,7 @@ class RollerPageState extends State<RollerPage> {
       printLog('non $isWifiConnected');
 
       nameOfWifi = '';
-wifiNotifier.updateStatus(
+      wifiNotifier.updateStatus(
           'DESCONECTADO', Colors.red, Icons.signal_wifi_off);
 
       if (atemp) {
@@ -1234,7 +1234,7 @@ wifiNotifier.updateStatus(
                               ),
                               const SizedBox(height: 10),
 
-                              //! Opción 4 - Habitante inteligente
+                              //! Opción 4 - Alquiler temporario
                               InkWell(
                                 onTap: () {
                                   if (activatedAT) {
@@ -1264,7 +1264,7 @@ wifiNotifier.updateStatus(
                                             ),
                                             onPressed: () async {
                                               String cuerpo =
-                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
+                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Alquiler temporario" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
                                               final Uri emailLaunchUri = Uri(
                                                 scheme: 'mailto',
                                                 path:
@@ -1273,7 +1273,7 @@ wifiNotifier.updateStatus(
                                                     encodeQueryParameters(<String,
                                                         String>{
                                                   'subject':
-                                                      'Habilitación habitante inteligente',
+                                                      'Habilitación Alquiler temporario',
                                                   'body': cuerpo,
                                                   'CC':
                                                       'pablo@intelligentgas.com.ar'
@@ -1313,7 +1313,7 @@ wifiNotifier.updateStatus(
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        'Habitante inteligente',
+                                        'Alquiler temporario',
                                         style: GoogleFonts.poppins(
                                             fontSize: 15, color: color0),
                                       ),
@@ -1744,7 +1744,10 @@ wifiNotifier.updateStatus(
                                             ? 'Desactivar notificación\nde desconexión'
                                             : 'Activar notificación\nde desconexión',
                                         style: GoogleFonts.poppins(
-                                            fontSize: 15, color: color0),
+                                          fontSize: 15,
+                                          color: color0,
+                                        ),
+                                        textAlign: TextAlign.center,
                                       ),
                                       Icon(
                                         _showNotificationOptions

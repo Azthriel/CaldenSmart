@@ -516,17 +516,11 @@ class LoadState extends State<LoadingPage> {
             tenant = false;
           }
 
-          if (canControlDistance) {
-            distOffValue = globalDATA[
-                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                    'distanceOff'] ??
-                100.0;
-            distOnValue = globalDATA[
-                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                    'distanceOn'] ??
-                3000.0;
-            isTaskScheduled = await loadControlValue();
-          }
+          rollerSavedLength = globalDATA[
+                      '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                  'rollerSavedLength'] ??
+              '';
+
           break;
         case '050217_IOT' || '028000_IOT':
           varsValues = await myDevice.varsUuid.read();

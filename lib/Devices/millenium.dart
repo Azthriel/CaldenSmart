@@ -308,7 +308,7 @@ class MilleniumPageState extends State<MilleniumPage> {
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 3,
           child: const TutorialItemContent(
-            title: 'Habitante inteligente',
+            title: 'Alquiler temporario',
             content:
                 'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
           ),
@@ -937,7 +937,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                       color: Color.lerp(
                         Colors.blueAccent,
                         Colors.redAccent,
-                        (tempValue + 4) / 79,
+                        (tempValue - 15) / 55,
                       ),
                     ),
                     const SizedBox(width: 20),
@@ -975,8 +975,8 @@ class MilleniumPageState extends State<MilleniumPage> {
                                 alignment: Alignment.bottomCenter,
                                 child: Container(
                                   width: 70,
-                                  height: (tempValue > -4
-                                      ? (((tempValue + 4) / 79) * 350)
+                                  height: (tempValue > 15
+                                      ? (((tempValue - 15) / 55) * 350)
                                           .clamp(40, 350)
                                       : 40),
                                   decoration: BoxDecoration(
@@ -1009,8 +1009,8 @@ class MilleniumPageState extends State<MilleniumPage> {
                                     quarterTurns: 3,
                                     child: Slider(
                                       value: tempValue,
-                                      min: -4,
-                                      max: 75,
+                                      min: 15,
+                                      max: 70,
                                       onChanged: (value) {
                                         setState(() {
                                           tempValue = value;
@@ -1625,7 +1625,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                                     : const SizedBox(),
                               ),
                               const SizedBox(height: 10),
-                              //! Opción 4 - Habitante inteligente
+                              //! Opción 4 - Alquiler temporario
                               InkWell(
                                 key: habitKey,
                                 onTap: () {
@@ -1656,7 +1656,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                                             ),
                                             onPressed: () async {
                                               String cuerpo =
-                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Habitante inteligente" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
+                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Alquiler temporario" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
                                               final Uri emailLaunchUri = Uri(
                                                 scheme: 'mailto',
                                                 path:
@@ -1665,7 +1665,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                                                     encodeQueryParameters(<String,
                                                         String>{
                                                   'subject':
-                                                      'Habilitación habitante inteligente',
+                                                      'Habilitación Alquiler temporario',
                                                   'body': cuerpo,
                                                   'CC':
                                                       'pablo@intelligentgas.com.ar'
@@ -1703,7 +1703,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        'Habitante inteligente',
+                                        'Alquiler temporario',
                                         style: GoogleFonts.poppins(
                                             fontSize: 15, color: color0),
                                       ),
@@ -2174,13 +2174,13 @@ class MilleniumPageState extends State<MilleniumPage> {
                     children: [
                       Text(
                         discNotfActivated
-                            ? 'Desactivar notificación de desconexión'
-                            : 'Activar notificación de desconexión',
+                            ? 'Desactivar notificación\nde desconexión'
+                            : 'Activar notificación\nde desconexión',
                         style: GoogleFonts.poppins(
-                          fontSize: 17,
+                          fontSize: 15,
                           color: color0,
-                          fontWeight: FontWeight.bold,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),

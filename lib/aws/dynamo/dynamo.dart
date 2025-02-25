@@ -101,6 +101,11 @@ Future<void> queryItems(DynamoDB service, String pc, String sn) async {
                     .putIfAbsent('$pc/$sn', () => {})
                     .addAll({key: value.boolValue ?? false});
                 break;
+              case 'rollerSavedLength':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.s ?? ''});
+                break;
               case 'io0' || 'io1' || 'io2' || 'io3':
                 Map<String, AttributeValue> mapa = value.m ?? {};
                 Map<String, dynamic> valores = {};
@@ -409,3 +414,22 @@ Future<void> putDevicesForAlexa(
 }
 
 ///*-Guardar equipos para la Alexa Skill-*\\\
+
+
+///*-Guardar el largo del Roller-*\\\
+Future<void> putRollerLength(
+    DynamoDB service, String pc, String sn, String data) async {
+  try {
+    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+      'product_code': AttributeValue(s: pc),
+      'device_id': AttributeValue(s: sn),
+    }, attributeUpdates: {
+      'rollerSavedLength': AttributeValueUpdate(value: AttributeValue(s: data)),
+    });
+
+    printLog('Item escrito perfectamente $response');
+  } catch (e) {
+    printLog('Error inserting item: $e');
+  }
+}
+///*-Guardar el largo del Roller-*\\\
