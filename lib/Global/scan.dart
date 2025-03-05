@@ -94,6 +94,7 @@ class ScanPageState extends State<ScanPage>
 
         listener = FlutterBluePlus.scanResults.listen(
           (results) {
+            if (!mounted) return;
             for (ScanResult result in results) {
               if (!devices
                   .any((device) => device.remoteId == result.device.remoteId)) {
@@ -111,7 +112,7 @@ class ScanPageState extends State<ScanPage>
               lastSeenDevices[result.device.remoteId.toString()] =
                   DateTime.now();
             }
-            if (context.mounted) {
+            if (mounted) {
               _removeLostDevices();
             }
           },
@@ -148,7 +149,6 @@ class ScanPageState extends State<ScanPage>
     try {
       await device.connect(timeout: const Duration(seconds: 6));
       deviceName = device.platformName;
-      myDeviceid = device.remoteId.toString();
 
       printLog('Teoricamente estoy conectado');
 
@@ -168,6 +168,11 @@ class ScanPageState extends State<ScanPage>
                 }
                 nameOfWifi = '';
                 connectionFlag = false;
+                deviceName = '';
+                toolsValues.clear();
+                varsValues.clear();
+                ioValues.clear();
+                infoValues.clear();
                 printLog(
                     'Razon: ${myDevice.device.disconnectReason?.description}');
                 navigatorKey.currentState?.pushReplacementNamed('/menu');

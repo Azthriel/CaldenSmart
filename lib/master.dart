@@ -76,11 +76,10 @@ String owner = '';
 bool deviceOwner = false;
 int lastUser = 0;
 bool userConnected = false;
-String myDeviceid = '';
 bool connectionFlag = false;
 bool turnOn = false;
-double distOnValue = 0.0;
-double distOffValue = 0.0;
+double distOnValue = 3000;
+double distOffValue = 100;
 //*-Datos del dispositivo al que te conectaste-*\\
 
 //*-Relacionado al wifi-*\\
@@ -1693,7 +1692,7 @@ String getWifiErrorSintax(int errorCode) {
 Future<void> openQRScanner(BuildContext context) async {
   try {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Navigator.pushNamed(context, '/scanPage');
+      await Navigator.pushNamed(context, '/qr');
 
       if (qrResult != null) {
         var wifiData = parseWifiQR(qrResult!);
@@ -4901,6 +4900,8 @@ class ImageManager {
         return 'assets/devices/041220.jpg';
       case '028000_IOT':
         return 'assets/devices/028000.png';
+      case '024011_IOT':
+        return 'assets/devices/024011.jpg';
       default:
         return 'assets/branch/Logo.png';
     }

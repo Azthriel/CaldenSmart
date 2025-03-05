@@ -172,6 +172,7 @@ class MyAppState extends State<MyApp> {
         '/modulo': (context) => const ModuloPage(),
         '/heladera': (context) => const HeladeraPage(),
         '/rele1i1o': (context) => const Rele1i1oPage(),
+        '/qr': (context) => const QRScanPage(),
       },
     );
   }

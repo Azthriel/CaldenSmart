@@ -3,10 +3,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
+
+import '../Global/manager_screen.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
 import '../aws/mqtt/mqtt.dart';
@@ -29,15 +31,18 @@ class RelayPageState extends State<RelayPage> {
   bool dOnOk = false;
   bool dOffOk = false;
   bool showOptions = false;
-  bool _showNotificationOptions = false;
+  bool isPasswordCorrect = false;
+  bool isChangeModeVisible = false;
+
   bool _isAnimating = false;
   bool _isTutorialActive = false;
 
-  int _selectedNotificationOption = 0;
   int _selectedIndex = 0;
 
   final PageController _pageController = PageController(initialPage: 0);
   final TextEditingController tenantController = TextEditingController();
+  final TextEditingController modulePassController = TextEditingController();
+
   TextEditingController emailController = TextEditingController();
 
   ///*- Elementos para tutoriales -*\\\
@@ -59,21 +64,9 @@ class RelayPageState extends State<RelayPage> {
   final distanceBottomKey = GlobalKey(); // key para el boton de encendido
   //*- Keys para control por distancia -*\\
 
-  //*- Keys para gestión -*\\
-  final adminKey = GlobalKey(); // key para la pantalla de gestión
-  final claimKey = GlobalKey(); // key para el boton de reclamar admin
-  final fastBotonKey = GlobalKey(); // key para el boton de acceso rápido
-  final fastAccessKey = GlobalKey(); // key para el boton de acceso rápido
-  final imageKey = GlobalKey(); // key para la imagen del equipo
-  //*- Keys para gestión -*\\
-
-  //*- Keys para gestión siendo admin-*\\
-  final agreeAdminKey =
-      GlobalKey(); // key para el boton de agregar administradores
-  final viewAdminKey = GlobalKey(); // key para ver la lista de administradores
-  final habitKey = GlobalKey(); // key para el boton de habitantes
-
-  //*- Keys para gestión siendo admin-*\\
+  //*- Keys para cambio de Modo de Pines -*\\
+  final pinModeKey = GlobalKey(); // key para el cambio de modo de pines
+  //*- Keys para cambio de Modo de Pines -*\\
 
   void initItems() {
     items.addAll({
@@ -159,7 +152,7 @@ class RelayPageState extends State<RelayPage> {
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(0),
         shapeFocus: ShapeFocus.oval,
-        pageIndex: 2,
+        pageIndex: 3,
         radius: 0,
         contentPosition: ContentPosition.below,
         child: const TutorialItemContent(
@@ -168,11 +161,25 @@ class RelayPageState extends State<RelayPage> {
         ),
       ),
       TutorialItem(
+        globalKey: pinModeKey,
+        color: Colors.black.withValues(alpha: 0.6),
+        shapeFocus: ShapeFocus.oval,
+        borderRadius: const Radius.circular(0),
+        radius: 0,
+        contentPosition: ContentPosition.below,
+        pageIndex: 2,
+        child: const TutorialItemContent(
+          title: 'Cambio de modo de pines',
+          content:
+              'si introduces la clave del manual podrás modificar el estado comun de las salidas',
+        ),
+      ),
+      TutorialItem(
         globalKey: claimKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 2,
+        pageIndex: 3,
         contentPosition: ContentPosition.below,
         child: const TutorialItemContent(
           title: 'Reclamar administrador',
@@ -182,14 +189,14 @@ class RelayPageState extends State<RelayPage> {
       ),
     });
     // SOLO PARA LOS ADMINS
-    if (currentUserEmail == owner) {
+    if (owner == currentUserEmail) {
       items.addAll({
         TutorialItem(
           globalKey: agreeAdminKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 2,
+          pageIndex: 3,
           contentPosition: ContentPosition.below,
           child: const TutorialItemContent(
             title: 'Añadir administradores secundarios',
@@ -201,7 +208,7 @@ class RelayPageState extends State<RelayPage> {
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 2,
+          pageIndex: 3,
           contentPosition: ContentPosition.below,
           child: const TutorialItemContent(
             title: 'Ver administradores secundarios',
@@ -213,7 +220,7 @@ class RelayPageState extends State<RelayPage> {
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 2,
+          pageIndex: 3,
           child: const TutorialItemContent(
             title: 'Alquiler temporario',
             content:
@@ -228,7 +235,7 @@ class RelayPageState extends State<RelayPage> {
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 2,
+        pageIndex: 3,
         child: const TutorialItemContent(
           title: 'Accesso rápido',
           content: 'Podrás encender y apagar el dispositivo desde el menú',
@@ -239,7 +246,7 @@ class RelayPageState extends State<RelayPage> {
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 2,
+        pageIndex: 3,
         child: const TutorialItemContent(
           title: 'Notificación de desconexión',
           content: 'Puedes establecer una alerta si el equipo se desconecta',
@@ -250,7 +257,7 @@ class RelayPageState extends State<RelayPage> {
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 2,
+        pageIndex: 3,
         child: const TutorialItemContent(
           title: 'Imagen del dispositivo',
           content: 'Podrás ajustar la imagen del equipo en el menú',
@@ -299,6 +306,7 @@ class RelayPageState extends State<RelayPage> {
     _pageController.dispose();
     tenantController.dispose();
     emailController.dispose();
+    modulePassController.dispose();
   }
 
   void onItemChanged(int index) {
@@ -763,136 +771,136 @@ class RelayPageState extends State<RelayPage> {
                             ),
                           ),
                           const SizedBox(height: 50),
-                          if (deviceOwner || owner == '')
-                            Card(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              elevation: 5,
-                              color: color3,
-                              child: Padding(
-                                padding: const EdgeInsets.all(20.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'Puedes cambiar entre Normal Abierto (NA) y Normal Cerrado (NC). Selecciona una opción:',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 16,
-                                        color: color0,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: 20),
-                                    Container(
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        borderRadius:
-                                            BorderRadius.circular(30.0),
-                                        border: Border.all(
-                                          color: color0,
-                                          width: 2,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: GestureDetector(
-                                              onTap: () {
-                                                setState(() {
-                                                  isNC = false;
-                                                });
-                                                saveNC(
-                                                  service,
-                                                  DeviceManager.getProductCode(
-                                                      deviceName),
-                                                  DeviceManager
-                                                      .extractSerialNumber(
-                                                          deviceName),
-                                                  false,
-                                                );
-                                              },
-                                              child: Container(
-                                                decoration: BoxDecoration(
-                                                  color: !isNC
-                                                      ? color0
-                                                      : Colors.transparent,
-                                                  borderRadius:
-                                                      const BorderRadius.only(
-                                                    topLeft:
-                                                        Radius.circular(28),
-                                                    bottomLeft:
-                                                        Radius.circular(28),
-                                                  ),
-                                                ),
-                                                child: Center(
-                                                  child: Text(
-                                                    'Normal Abierto',
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize: 14,
-                                                      color: !isNC
-                                                          ? color3
-                                                          : color0,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          Container(
-                                            width: 2,
-                                            color: color0,
-                                          ),
-                                          Expanded(
-                                            child: GestureDetector(
-                                              onTap: () {
-                                                setState(() {
-                                                  isNC = true;
-                                                });
-                                                saveNC(
-                                                  service,
-                                                  DeviceManager.getProductCode(
-                                                      deviceName),
-                                                  DeviceManager
-                                                      .extractSerialNumber(
-                                                          deviceName),
-                                                  true,
-                                                );
-                                              },
-                                              child: Container(
-                                                decoration: BoxDecoration(
-                                                  color: isNC
-                                                      ? color0
-                                                      : Colors.transparent,
-                                                  borderRadius:
-                                                      const BorderRadius.only(
-                                                    topRight:
-                                                        Radius.circular(28),
-                                                    bottomRight:
-                                                        Radius.circular(28),
-                                                  ),
-                                                ),
-                                                child: Center(
-                                                  child: Text(
-                                                    'Normal Cerrado',
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize: 14,
-                                                      color: isNC
-                                                          ? color3
-                                                          : color0,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                          // if (deviceOwner || owner == '')
+                          //   Card(
+                          //     shape: RoundedRectangleBorder(
+                          //       borderRadius: BorderRadius.circular(20),
+                          //     ),
+                          //     elevation: 5,
+                          //     color: color3,
+                          //     child: Padding(
+                          //       padding: const EdgeInsets.all(20.0),
+                          //       child: Column(
+                          //         crossAxisAlignment: CrossAxisAlignment.center,
+                          //         children: [
+                          //           Text(
+                          //             'Puedes cambiar entre Normal Abierto (NA) y Normal Cerrado (NC). Selecciona una opción:',
+                          //             style: GoogleFonts.poppins(
+                          //               fontSize: 16,
+                          //               color: color0,
+                          //             ),
+                          //             textAlign: TextAlign.center,
+                          //           ),
+                          //           const SizedBox(height: 20),
+                          //           Container(
+                          //             height: 40,
+                          //             decoration: BoxDecoration(
+                          //               borderRadius:
+                          //                   BorderRadius.circular(30.0),
+                          //               border: Border.all(
+                          //                 color: color0,
+                          //                 width: 2,
+                          //               ),
+                          //             ),
+                          //             child: Row(
+                          //               children: [
+                          //                 Expanded(
+                          //                   child: GestureDetector(
+                          //                     onTap: () {
+                          //                       setState(() {
+                          //                         isNC = false;
+                          //                       });
+                          //                       saveNC(
+                          //                         service,
+                          //                         DeviceManager.getProductCode(
+                          //                             deviceName),
+                          //                         DeviceManager
+                          //                             .extractSerialNumber(
+                          //                                 deviceName),
+                          //                         false,
+                          //                       );
+                          //                     },
+                          //                     child: Container(
+                          //                       decoration: BoxDecoration(
+                          //                         color: !isNC
+                          //                             ? color0
+                          //                             : Colors.transparent,
+                          //                         borderRadius:
+                          //                             const BorderRadius.only(
+                          //                           topLeft:
+                          //                               Radius.circular(28),
+                          //                           bottomLeft:
+                          //                               Radius.circular(28),
+                          //                         ),
+                          //                       ),
+                          //                       child: Center(
+                          //                         child: Text(
+                          //                           'Normal Abierto',
+                          //                           style: GoogleFonts.poppins(
+                          //                             fontSize: 14,
+                          //                             color: !isNC
+                          //                                 ? color3
+                          //                                 : color0,
+                          //                           ),
+                          //                         ),
+                          //                       ),
+                          //                     ),
+                          //                   ),
+                          //                 ),
+                          //                 Container(
+                          //                   width: 2,
+                          //                   color: color0,
+                          //                 ),
+                          //                 Expanded(
+                          //                   child: GestureDetector(
+                          //                     onTap: () {
+                          //                       setState(() {
+                          //                         isNC = true;
+                          //                       });
+                          //                       saveNC(
+                          //                         service,
+                          //                         DeviceManager.getProductCode(
+                          //                             deviceName),
+                          //                         DeviceManager
+                          //                             .extractSerialNumber(
+                          //                                 deviceName),
+                          //                         true,
+                          //                       );
+                          //                     },
+                          //                     child: Container(
+                          //                       decoration: BoxDecoration(
+                          //                         color: isNC
+                          //                             ? color0
+                          //                             : Colors.transparent,
+                          //                         borderRadius:
+                          //                             const BorderRadius.only(
+                          //                           topRight:
+                          //                               Radius.circular(28),
+                          //                           bottomRight:
+                          //                               Radius.circular(28),
+                          //                         ),
+                          //                       ),
+                          //                       child: Center(
+                          //                         child: Text(
+                          //                           'Normal Cerrado',
+                          //                           style: GoogleFonts.poppins(
+                          //                             fontSize: 14,
+                          //                             color: isNC
+                          //                                 ? color3
+                          //                                 : color0,
+                          //                           ),
+                          //                         ),
+                          //                       ),
+                          //                     ),
+                          //                   ),
+                          //                 ),
+                          //               ],
+                          //             ),
+                          //           ),
+                          //         ],
+                          //       ),
+                          //     ),
+                          //   ),
                         ],
                       ),
                     ),
@@ -1082,6 +1090,7 @@ class RelayPageState extends State<RelayPage> {
       // ),
 
       //*- Página 3 - Control por distancia -*\\
+
       SingleChildScrollView(
         child: SizedBox(
           height: MediaQuery.of(context).size.height * 0.8,
@@ -1219,50 +1228,53 @@ class RelayPageState extends State<RelayPage> {
                                               ),
                                             ],
                                           ),
-                                          SliderTheme(
-                                            data: SliderTheme.of(context)
-                                                .copyWith(
-                                              trackHeight: 20.0,
-                                              thumbColor: color3,
-                                              activeTrackColor:
-                                                  Colors.blueAccent,
-                                              inactiveTrackColor:
-                                                  Colors.blueGrey[100],
-                                              thumbShape:
-                                                  const RoundSliderThumbShape(
-                                                enabledThumbRadius: 12.0,
-                                                elevation: 0.0,
-                                                pressedElevation: 0.0,
+                                          if (!tenant) ...{
+                                            SliderTheme(
+                                              data: SliderTheme.of(context)
+                                                  .copyWith(
+                                                trackHeight: 20.0,
+                                                thumbColor: color3,
+                                                activeTrackColor:
+                                                    Colors.blueAccent,
+                                                inactiveTrackColor:
+                                                    Colors.blueGrey[100],
+                                                thumbShape:
+                                                    const RoundSliderThumbShape(
+                                                  enabledThumbRadius: 12.0,
+                                                  elevation: 0.0,
+                                                  pressedElevation: 0.0,
+                                                ),
+                                              ),
+                                              child: Slider(
+                                                activeColor: Colors.white,
+                                                inactiveColor:
+                                                    const Color(0xFFBDBDBD),
+                                                value: distOffValue,
+                                                divisions: 20,
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    distOffValue = value;
+                                                  });
+                                                },
+                                                onChangeEnd: (value) {
+                                                  printLog(
+                                                      'Valor enviado: ${value.round()}');
+                                                  putDistanceOff(
+                                                    service,
+                                                    DeviceManager
+                                                        .getProductCode(
+                                                            deviceName),
+                                                    DeviceManager
+                                                        .extractSerialNumber(
+                                                            deviceName),
+                                                    value.toString(),
+                                                  );
+                                                },
+                                                min: 100,
+                                                max: 300,
                                               ),
                                             ),
-                                            child: Slider(
-                                              activeColor: Colors.white,
-                                              inactiveColor:
-                                                  const Color(0xFFBDBDBD),
-                                              value: distOffValue,
-                                              divisions: 20,
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  distOffValue = value;
-                                                });
-                                              },
-                                              onChangeEnd: (value) {
-                                                printLog(
-                                                    'Valor enviado: ${value.round()}');
-                                                putDistanceOff(
-                                                  service,
-                                                  DeviceManager.getProductCode(
-                                                      deviceName),
-                                                  DeviceManager
-                                                      .extractSerialNumber(
-                                                          deviceName),
-                                                  value.toString(),
-                                                );
-                                              },
-                                              min: 100,
-                                              max: 300,
-                                            ),
-                                          ),
+                                          },
                                         ],
                                       ),
                                     ),
@@ -1315,50 +1327,53 @@ class RelayPageState extends State<RelayPage> {
                                               ),
                                             ],
                                           ),
-                                          SliderTheme(
-                                            data: SliderTheme.of(context)
-                                                .copyWith(
-                                              trackHeight: 20.0,
-                                              thumbColor: color3,
-                                              activeTrackColor:
-                                                  Colors.blueAccent,
-                                              inactiveTrackColor:
-                                                  Colors.blueGrey[100],
-                                              thumbShape:
-                                                  const RoundSliderThumbShape(
-                                                enabledThumbRadius: 12.0,
-                                                elevation: 0.0,
-                                                pressedElevation: 0.0,
+                                          if (!tenant) ...{
+                                            SliderTheme(
+                                              data: SliderTheme.of(context)
+                                                  .copyWith(
+                                                trackHeight: 20.0,
+                                                thumbColor: color3,
+                                                activeTrackColor:
+                                                    Colors.blueAccent,
+                                                inactiveTrackColor:
+                                                    Colors.blueGrey[100],
+                                                thumbShape:
+                                                    const RoundSliderThumbShape(
+                                                  enabledThumbRadius: 12.0,
+                                                  elevation: 0.0,
+                                                  pressedElevation: 0.0,
+                                                ),
+                                              ),
+                                              child: Slider(
+                                                activeColor: Colors.white,
+                                                inactiveColor:
+                                                    const Color(0xFFBDBDBD),
+                                                value: distOnValue,
+                                                divisions: 20,
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    distOnValue = value;
+                                                  });
+                                                },
+                                                onChangeEnd: (value) {
+                                                  printLog(
+                                                      'Valor enviado: ${value.round()}');
+                                                  putDistanceOn(
+                                                    service,
+                                                    DeviceManager
+                                                        .getProductCode(
+                                                            deviceName),
+                                                    DeviceManager
+                                                        .extractSerialNumber(
+                                                            deviceName),
+                                                    value.toString(),
+                                                  );
+                                                },
+                                                min: 3000,
+                                                max: 5000,
                                               ),
                                             ),
-                                            child: Slider(
-                                              activeColor: Colors.white,
-                                              inactiveColor:
-                                                  const Color(0xFFBDBDBD),
-                                              value: distOnValue,
-                                              divisions: 20,
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  distOnValue = value;
-                                                });
-                                              },
-                                              onChangeEnd: (value) {
-                                                printLog(
-                                                    'Valor enviado: ${value.round()}');
-                                                putDistanceOn(
-                                                  service,
-                                                  DeviceManager.getProductCode(
-                                                      deviceName),
-                                                  DeviceManager
-                                                      .extractSerialNumber(
-                                                          deviceName),
-                                                  value.toString(),
-                                                );
-                                              },
-                                              min: 3000,
-                                              max: 5000,
-                                            ),
-                                          ),
+                                          },
                                         ],
                                       ),
                                     ),
@@ -1385,1150 +1400,269 @@ class RelayPageState extends State<RelayPage> {
           ),
         ),
       ),
-      //*- Página 4: Gestión del Equipo -*\\
-      SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                key: adminKey,
-                'Gestión del equipo',
-                style: GoogleFonts.poppins(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: color3,
+
+      //*- página 4: Cambiar pines -*\\
+
+      Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 30,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  key: pinModeKey,
+                  'Cambio de Modo de Pines',
+                  style: GoogleFonts.poppins(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: color3,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 40),
-              //! Opción - Reclamar propiedad del equipo o dejar de ser propietario
-              InkWell(
-                key: claimKey,
-                onTap: () async {
-                  if (deviceOwner) {
-                    showAlertDialog(
-                      context,
-                      false,
-                      const Text(
-                        '¿Dejar de ser administrador del equipo?',
-                      ),
-                      const Text(
-                        'Esto hará que otras personas puedan conectarse al dispositivo y modificar sus parámetros',
-                      ),
-                      <Widget>[
-                        TextButton(
-                          child: const Text('Cancelar'),
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
+                const SizedBox(height: 40),
+                Card(
+                  color: color3,
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 500),
+                          child: isPasswordCorrect
+                              ? const Icon(
+                                  HugeIcons.strokeRoundedSquareUnlock02,
+                                  color: color0,
+                                  size: 40,
+                                  key: ValueKey('open_lock'),
+                                )
+                              : const Icon(
+                                  HugeIcons.strokeRoundedSquareLock02,
+                                  color: color0,
+                                  size: 40,
+                                  key: ValueKey('closed_lock'),
+                                ),
                         ),
-                        TextButton(
-                          child: const Text('Aceptar'),
-                          onPressed: () {
-                            try {
-                              putOwner(
-                                service,
-                                DeviceManager.getProductCode(deviceName),
-                                DeviceManager.extractSerialNumber(deviceName),
-                                '',
-                              );
-                              Navigator.of(context).pop();
-                              setState(() {
-                                owner = '';
-                                deviceOwner = false;
-                                showOptions = false;
-                              });
-                            } catch (e, s) {
-                              printLog('Error al borrar owner $e Trace: $s');
-                              showToast('Error al borrar el administrador.');
-                            }
+                        const SizedBox(height: 20),
+                        Text(
+                          'Ingresa la contraseña del módulo ubicada en el manual',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            color: color0,
+                            fontSize: 18,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        TextField(
+                          controller: modulePassController,
+                          style: const TextStyle(color: color0, fontSize: 16),
+                          cursorColor: color0,
+                          obscureText: true,
+                          onChanged: (value) {
+                            setState(() {
+                              isPasswordCorrect = value == '53494d45';
+                            });
                           },
+                          decoration: InputDecoration(
+                            prefixIcon: Icon(
+                              Icons.key,
+                              color: color0.withValues(alpha: 0.7),
+                            ),
+                            hintText: "Contraseña",
+                            hintStyle: TextStyle(
+                              color: color0.withValues(alpha: 0.6),
+                            ),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(
+                                color: color0.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            focusedBorder: const UnderlineInputBorder(
+                              borderSide: BorderSide(
+                                color: color0,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
-                    );
-                  } else if (owner == '') {
-                    try {
-                      putOwner(
-                        service,
-                        DeviceManager.getProductCode(deviceName),
-                        DeviceManager.extractSerialNumber(deviceName),
-                        currentUserEmail,
-                      );
-                      setState(() {
-                        owner = currentUserEmail;
-                        deviceOwner = true;
-                        showOptions = true;
-                      });
-                      showToast('Ahora eres el propietario del equipo');
-                    } catch (e, s) {
-                      printLog('Error al agregar owner $e Trace: $s');
-                      showToast('Error al agregar el administrador.');
-                    }
-                  } else {
-                    showToast('El equipo ya esta reclamado');
-                  }
-                },
-                borderRadius: BorderRadius.circular(15),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 600),
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: color6,
-                    shape: BoxShape.rectangle,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 10,
-                        offset: Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    deviceOwner
-                        ? 'Dejar de ser dueño del equipo'
-                        : 'Reclamar propiedad del equipo',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              //! Opciones adicionales con animación
-              AnimatedSize(
-                duration: const Duration(milliseconds: 600),
-                curve: Curves.easeInOut,
-                child: AnimatedOpacity(
-                  opacity: showOptions ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 600),
-                  child: showOptions
-                      ? Column(
-                          children: [
-                            //! Opciones adicionales existentes (deviceOwner)
-                            if (deviceOwner) ...[
-                              //! Opción 2 - Añadir administradores secundarios
-                              InkWell(
-                                key: agreeAdminKey,
-                                onTap: () {
-                                  setState(() {
-                                    showSecondaryAdminFields =
-                                        !showSecondaryAdminFields;
-                                  });
-                                },
-                                borderRadius: BorderRadius.circular(15),
-                                child: Container(
-                                  padding: const EdgeInsets.all(15),
-                                  decoration: BoxDecoration(
-                                    color: color3,
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Añadir administradores\nsecundarios',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 15,
-                                          color: color0,
-                                        ),
-                                      ),
-                                      Icon(
-                                        showSecondaryAdminFields
-                                            ? Icons.arrow_drop_up
-                                            : Icons.arrow_drop_down,
-                                        color: color0,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              AnimatedSize(
-                                duration: const Duration(milliseconds: 600),
-                                curve: Curves.easeInOut,
-                                child: showSecondaryAdminFields
-                                    ? Column(
-                                        children: [
-                                          const SizedBox(height: 10),
-                                          AnimatedOpacity(
-                                            opacity: showSecondaryAdminFields
-                                                ? 1.0
-                                                : 0.0,
-                                            duration: const Duration(
-                                                milliseconds: 600),
-                                            child: TextField(
-                                              controller: emailController,
-                                              cursorColor: color3,
-                                              style: GoogleFonts.poppins(
-                                                color: color3,
-                                              ),
-                                              decoration: InputDecoration(
-                                                labelText: 'Correo electrónico',
-                                                labelStyle: GoogleFonts.poppins(
-                                                  fontSize: 16,
-                                                  color: color3,
-                                                ),
-                                                filled: true,
-                                                fillColor: Colors.transparent,
-                                                focusedBorder:
-                                                    OutlineInputBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(15),
-                                                  borderSide: const BorderSide(
-                                                    color: color3,
-                                                    width: 2,
-                                                  ),
-                                                ),
-                                                border: OutlineInputBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(15),
-                                                  borderSide: const BorderSide(
-                                                    color: Colors.grey,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 10),
-                                          InkWell(
-                                            onTap: () {
-                                              if (emailController
-                                                  .text.isNotEmpty) {
-                                                addSecondaryAdmin(
-                                                    emailController.text
-                                                        .trim());
-                                              }
-                                            },
-                                            borderRadius:
-                                                BorderRadius.circular(15),
-                                            child: Container(
-                                              padding: const EdgeInsets.all(15),
-                                              decoration: BoxDecoration(
-                                                color: color3,
-                                                borderRadius:
-                                                    BorderRadius.circular(15),
-                                              ),
-                                              child: Center(
-                                                child: Text(
-                                                  'Añadir administrador',
-                                                  style: GoogleFonts.poppins(
-                                                    color: color0,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      )
-                                    : const SizedBox(),
-                              ),
-                              const SizedBox(height: 10),
-                              //! Opción 3 - Ver administradores secundarios
-                              InkWell(
-                                key: viewAdminKey,
-                                onTap: () {
-                                  setState(() {
-                                    showSecondaryAdminList =
-                                        !showSecondaryAdminList;
-                                  });
-                                },
-                                borderRadius: BorderRadius.circular(15),
-                                child: Container(
-                                  padding: const EdgeInsets.all(15),
-                                  decoration: BoxDecoration(
-                                    color: color3,
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Ver administradores\nsecundarios',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 15,
-                                          color: color0,
-                                        ),
-                                      ),
-                                      Icon(
-                                        showSecondaryAdminList
-                                            ? Icons.arrow_drop_up
-                                            : Icons.arrow_drop_down,
-                                        color: color0,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              AnimatedSize(
-                                duration: const Duration(milliseconds: 600),
-                                curve: Curves.easeInOut,
-                                child: showSecondaryAdminList
-                                    ? adminDevices.isEmpty
-                                        ? Text(
-                                            'No hay administradores secundarios.',
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 16,
-                                              color: color3,
-                                            ),
-                                          )
-                                        : Column(
-                                            children: adminDevices.map((email) {
-                                              return AnimatedContainer(
-                                                duration: const Duration(
-                                                    milliseconds: 300),
-                                                curve: Curves.easeInOut,
-                                                margin:
-                                                    const EdgeInsets.symmetric(
-                                                        vertical: 5),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        vertical: 10,
-                                                        horizontal: 15),
-                                                decoration: BoxDecoration(
-                                                  color: color3,
-                                                  borderRadius:
-                                                      BorderRadius.circular(15),
-                                                  border: Border.all(
-                                                    color: color0,
-                                                    width: 2,
-                                                  ),
-                                                  boxShadow: const [
-                                                    BoxShadow(
-                                                      color: Colors.black12,
-                                                      blurRadius: 4,
-                                                      offset: Offset(2, 2),
-                                                    ),
-                                                  ],
-                                                ),
-                                                child: Row(
-                                                  children: [
-                                                    Expanded(
-                                                      child: Text(
-                                                        email,
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          fontSize: 16,
-                                                          color: color0,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    IconButton(
-                                                      icon: const Icon(
-                                                          Icons.delete,
-                                                          color: color5),
-                                                      onPressed: () {
-                                                        removeSecondaryAdmin(
-                                                            email);
-                                                      },
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            }).toList(),
-                                          )
-                                    : const SizedBox(),
-                              ),
-                              const SizedBox(height: 10),
-                              //! Opción 4 - Alquiler temporario
-                              InkWell(
-                                key: habitKey,
-                                onTap: () {
-                                  if (activatedAT) {
-                                    setState(() {
-                                      showSmartResident = !showSmartResident;
-                                    });
-                                  } else {
-                                    if (!payAT) {
-                                      showAlertDialog(
-                                        context,
-                                        true,
-                                        Text(
-                                          'Actualmente no tienes habilitado este beneficio',
-                                          style: GoogleFonts.poppins(
-                                              color: color0),
-                                        ),
-                                        Text(
-                                          'En caso de requerirlo puedes solicitarlo vía mail',
-                                          style: GoogleFonts.poppins(
-                                              color: color0),
-                                        ),
-                                        [
-                                          TextButton(
-                                            style: TextButton.styleFrom(
-                                              foregroundColor:
-                                                  const Color(0xFFFFFFFF),
-                                            ),
-                                            onPressed: () async {
-                                              String cuerpo =
-                                                  '¡Hola! Me comunico porque busco habilitar la opción de "Alquiler temporario" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
-                                              final Uri emailLaunchUri = Uri(
-                                                scheme: 'mailto',
-                                                path:
-                                                    'cobranzas@ibsanitarios.com.ar',
-                                                query:
-                                                    encodeQueryParameters(<String,
-                                                        String>{
-                                                  'subject':
-                                                      'Habilitación Alquiler temporario',
-                                                  'body': cuerpo,
-                                                  'CC':
-                                                      'pablo@intelligentgas.com.ar'
-                                                }),
-                                              );
-                                              if (await canLaunchUrl(
-                                                  emailLaunchUri)) {
-                                                await launchUrl(emailLaunchUri);
-                                              } else {
-                                                showToast(
-                                                    'No se pudo enviar el correo electrónico');
-                                              }
-                                              navigatorKey.currentState?.pop();
-                                            },
-                                            child: const Text('Solicitar'),
-                                          ),
-                                        ],
-                                      );
-                                    } else {
-                                      setState(() {
-                                        showSmartResident = !showSmartResident;
-                                      });
-                                    }
-                                  }
-                                },
-                                borderRadius: BorderRadius.circular(15),
-                                child: Container(
-                                  padding: const EdgeInsets.all(15),
-                                  decoration: BoxDecoration(
-                                    color: color3,
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Alquiler temporario',
-                                        style: GoogleFonts.poppins(
-                                            fontSize: 15, color: color0),
-                                      ),
-                                      Icon(
-                                        showSmartResident
-                                            ? Icons.arrow_drop_up
-                                            : Icons.arrow_drop_down,
-                                        color: color0,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              AnimatedSize(
-                                duration: const Duration(milliseconds: 600),
-                                curve: Curves.easeInOut,
-                                child: showSmartResident && payAT
-                                    ? Column(
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(20),
-                                            margin:
-                                                const EdgeInsets.only(top: 20),
-                                            decoration: BoxDecoration(
-                                              color: color3,
-                                              borderRadius:
-                                                  BorderRadius.circular(15),
-                                              boxShadow: const [
-                                                BoxShadow(
-                                                  color: Colors.black26,
-                                                  blurRadius: 5,
-                                                  offset: Offset(0, 3),
-                                                ),
-                                              ],
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  'Configura los parámetros del alquiler',
-                                                  style: GoogleFonts.poppins(
-                                                    fontSize: 18,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: color0,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 20),
-                                                TextField(
-                                                  controller: tenantController,
-                                                  keyboardType: TextInputType
-                                                      .emailAddress,
-                                                  style: GoogleFonts.poppins(
-                                                      color: color0),
-                                                  decoration: InputDecoration(
-                                                    labelText:
-                                                        "Email del inquilino",
-                                                    labelStyle:
-                                                        GoogleFonts.poppins(
-                                                            color: color0),
-                                                    enabledBorder:
-                                                        OutlineInputBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              15),
-                                                      borderSide:
-                                                          const BorderSide(
-                                                              color: color0),
-                                                    ),
-                                                    focusedBorder:
-                                                        OutlineInputBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              15),
-                                                      borderSide:
-                                                          const BorderSide(
-                                                              color: color0),
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 20),
-                                                // Mostrar el email actual solo si existe
-                                                if (activatedAT)
-                                                  Container(
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                            15),
-                                                    decoration: BoxDecoration(
-                                                      color: color3,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              15),
-                                                      border: Border.all(
-                                                          color: color0,
-                                                          width: 2),
-                                                      boxShadow: const [
-                                                        BoxShadow(
-                                                          color: Colors.black12,
-                                                          blurRadius: 4,
-                                                          offset: Offset(2, 2),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        Text(
-                                                          'Inquilino actual:',
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                            fontSize: 16,
-                                                            color: color0,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                        const SizedBox(
-                                                            height: 5),
-                                                        Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .spaceBetween,
-                                                          children: [
-                                                            Expanded(
-                                                              child: Text(
-                                                                globalDATA[
-                                                                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-                                                                    ?['tenant'],
-                                                                style:
-                                                                    GoogleFonts
-                                                                        .poppins(
-                                                                  fontSize: 14,
-                                                                  color: color0,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            IconButton(
-                                                              icon: const Icon(
-                                                                  Icons.delete,
-                                                                  color: Colors
-                                                                      .redAccent),
-                                                              onPressed:
-                                                                  () async {
-                                                                await saveATData(
-                                                                  service,
-                                                                  DeviceManager
-                                                                      .getProductCode(
-                                                                          deviceName),
-                                                                  DeviceManager
-                                                                      .extractSerialNumber(
-                                                                          deviceName),
-                                                                  false,
-                                                                  '',
-                                                                  '3000',
-                                                                  '100',
-                                                                );
-
-                                                                setState(() {
-                                                                  tenantController
-                                                                      .clear();
-                                                                  globalDATA[
-                                                                          '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-                                                                      ?[
-                                                                      'tenant'] = '';
-                                                                  activatedAT =
-                                                                      false;
-                                                                  dOnOk = false;
-                                                                  dOffOk =
-                                                                      false;
-                                                                });
-                                                                showToast(
-                                                                    "Inquilino eliminado correctamente.");
-                                                              },
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-
-                                                const SizedBox(height: 10),
-
-                                                // Distancia de apagado y encendido sliders
-                                                Text(
-                                                  'Distancia de apagado (${distOffValue.round()} metros)',
-                                                  style: GoogleFonts.poppins(
-                                                      color: color0),
-                                                ),
-                                                Slider(
-                                                  value: distOffValue,
-                                                  min: 100,
-                                                  max: 300,
-                                                  divisions: 200,
-                                                  activeColor: color0,
-                                                  inactiveColor: color0
-                                                      .withValues(alpha: 0.3),
-                                                  onChanged: (double value) {
-                                                    setState(() {
-                                                      distOffValue = value;
-                                                      dOffOk = true;
-                                                    });
-                                                  },
-                                                ),
-                                                const SizedBox(height: 10),
-                                                Text(
-                                                  'Distancia de encendido (${distOnValue.round()} metros)',
-                                                  style: GoogleFonts.poppins(
-                                                      color: color0),
-                                                ),
-                                                Slider(
-                                                  value: distOnValue,
-                                                  min: 3000,
-                                                  max: 5000,
-                                                  divisions: 200,
-                                                  activeColor: color0,
-                                                  inactiveColor: color0
-                                                      .withValues(alpha: 0.3),
-                                                  onChanged: (double value) {
-                                                    setState(() {
-                                                      distOnValue = value;
-                                                      dOnOk = true;
-                                                    });
-                                                  },
-                                                ),
-                                                const SizedBox(height: 20),
-
-                                                // Botones de Activar y Cancelar
-                                                Center(
-                                                  child: Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .center,
-                                                    children: [
-                                                      TextButton(
-                                                        onPressed: () {
-                                                          if (dOnOk &&
-                                                              dOffOk &&
-                                                              tenantController
-                                                                  .text
-                                                                  .isNotEmpty) {
-                                                            saveATData(
-                                                              service,
-                                                              DeviceManager
-                                                                  .getProductCode(
-                                                                      deviceName),
-                                                              DeviceManager
-                                                                  .extractSerialNumber(
-                                                                      deviceName),
-                                                              true,
-                                                              tenantController
-                                                                  .text
-                                                                  .trim(),
-                                                              distOnValue
-                                                                  .round()
-                                                                  .toString(),
-                                                              distOffValue
-                                                                  .round()
-                                                                  .toString(),
-                                                            );
-
-                                                            setState(() {
-                                                              activatedAT =
-                                                                  true;
-                                                              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-                                                                      ?[
-                                                                      'tenant'] =
-                                                                  tenantController
-                                                                      .text
-                                                                      .trim();
-                                                            });
-                                                            showToast(
-                                                                'Configuración guardada para el inquilino.');
-                                                          } else {
-                                                            showToast(
-                                                                'Por favor, completa todos los campos');
-                                                          }
-                                                        },
-                                                        style: TextButton
-                                                            .styleFrom(
-                                                          backgroundColor:
-                                                              color0,
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  horizontal:
-                                                                      30,
-                                                                  vertical: 15),
-                                                          shape:
-                                                              RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        15),
-                                                          ),
-                                                        ),
-                                                        child: Text(
-                                                          'Activar',
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                                  color: color3,
-                                                                  fontSize: 16),
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 20),
-                                                      TextButton(
-                                                        onPressed: () {
-                                                          setState(() {
-                                                            showSmartResident =
-                                                                false;
-                                                          });
-                                                        },
-                                                        style: TextButton
-                                                            .styleFrom(
-                                                          backgroundColor:
-                                                              color0,
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  horizontal:
-                                                                      30,
-                                                                  vertical: 15),
-                                                          shape:
-                                                              RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        15),
-                                                          ),
-                                                        ),
-                                                        child: Text(
-                                                          'Cancelar',
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                                  color: color3,
-                                                                  fontSize: 16),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      )
-                                    : const SizedBox(),
-                              ),
-                              const SizedBox(height: 10),
-                            ],
-                          ],
-                        )
-                      : const SizedBox(),
-                ),
-              ),
-              const SizedBox(height: 30),
-              SizedBox(
-                key: fastBotonKey,
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    if (!quickAccesActivated) {
-                      quickAccess.add(deviceName);
-                      await savequickAccess(quickAccess);
+                const SizedBox(height: 30),
+                if (isPasswordCorrect)
+                  FloatingActionButton.extended(
+                    onPressed: () {
                       setState(() {
-                        quickAccesActivated = true;
+                        isChangeModeVisible = !isChangeModeVisible;
                       });
-                    } else {
-                      quickAccess.remove(deviceName);
-                      await savequickAccess(quickAccess);
-                      setState(() {
-                        quickAccesActivated = false;
-                      });
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: color0,
+                    },
                     backgroundColor: color3,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 11, horizontal: 20),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: Text(
-                    quickAccesActivated
-                        ? 'Desactivar acceso rápido'
-                        : 'Activar acceso rápido',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              if (owner == '' || deviceOwner || secondaryAdmin) ...{
-                //! activar notificación
-                ElevatedButton(
-                  key: fastAccessKey,
-                  onPressed: () async {
-                    if (discNotfActivated) {
-                      showAlertDialog(
-                        context,
-                        true,
-                        Text(
-                          'Confirmar Desactivación',
-                          style: GoogleFonts.poppins(color: color0),
-                        ),
-                        Text(
-                          '¿Estás seguro de que deseas desactivar la notificación de desconexión?',
-                          style: GoogleFonts.poppins(color: color0),
-                        ),
-                        [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                            child: Text(
-                              'Cancelar',
-                              style: GoogleFonts.poppins(color: color0),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () async {
-                              // Actualizar el estado para desactivar la notificación
-                              setState(() {
-                                discNotfActivated = false;
-                                _showNotificationOptions = false;
-                              });
-
-                              // Eliminar la configuración de notificación para el dispositivo actual
-                              configNotiDsc.removeWhere(
-                                  (key, value) => key == deviceName);
-                              await saveconfigNotiDsc(configNotiDsc);
-
-                              if (context.mounted) {
-                                Navigator.of(context).pop();
-                              }
-                            },
-                            child: Text(
-                              'Aceptar',
-                              style: GoogleFonts.poppins(color: color0),
-                            ),
-                          ),
-                        ],
-                      );
-                    } else {
-                      setState(() {
-                        _showNotificationOptions = !_showNotificationOptions;
-                      });
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
                     foregroundColor: color0,
-                    backgroundColor: color3,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 20),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                    icon: const Icon(Icons.settings, color: color0),
+                    label: Text(
+                      'Cambiar modo de pines',
+                      style: GoogleFonts.poppins(
+                          fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                const SizedBox(height: 20),
+                if (isChangeModeVisible && isPasswordCorrect)
+                  Column(
                     children: [
-                      Text(
-                        discNotfActivated
-                            ? 'Desactivar notificación\nde desconexión'
-                            : 'Activar notificación\nde desconexión',
-                        style: GoogleFonts.poppins(
-                          fontSize: 15,
-                          color: color0,
+                      Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        textAlign: TextAlign.center,
+                        elevation: 5,
+                        color: color3,
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Puedes cambiar entre Normal Abierto (NA) y Normal Cerrado (NC). Selecciona una opción:',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  color: color0,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 20),
+                              Container(
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(30.0),
+                                  border: Border.all(
+                                    color: color0,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            isNC = false;
+                                          });
+                                          saveNC(
+                                            service,
+                                            DeviceManager.getProductCode(
+                                                deviceName),
+                                            DeviceManager.extractSerialNumber(
+                                                deviceName),
+                                            false,
+                                          );
+                                        },
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: !isNC
+                                                ? color0
+                                                : Colors.transparent,
+                                            borderRadius:
+                                                const BorderRadius.only(
+                                              topLeft: Radius.circular(28),
+                                              bottomLeft: Radius.circular(28),
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              'Normal Abierto',
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 14,
+                                                color: !isNC ? color3 : color0,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 2,
+                                      color: color0,
+                                    ),
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            isNC = true;
+                                          });
+                                          saveNC(
+                                            service,
+                                            DeviceManager.getProductCode(
+                                                deviceName),
+                                            DeviceManager.extractSerialNumber(
+                                                deviceName),
+                                            true,
+                                          );
+                                        },
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: isNC
+                                                ? color0
+                                                : Colors.transparent,
+                                            borderRadius:
+                                                const BorderRadius.only(
+                                              topRight: Radius.circular(28),
+                                              bottomRight: Radius.circular(28),
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              'Normal Cerrado',
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 14,
+                                                color: isNC ? color3 : color0,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: EdgeInsets.only(bottom: bottomBarHeight + 10),
                       ),
                     ],
                   ),
-                ),
-              },
-              // Tarjeta de opciones de notificación
-              AnimatedSize(
-                duration: const Duration(milliseconds: 600),
-                curve: Curves.easeInOut,
-                child: _showNotificationOptions
-                    ? Container(
-                        padding: const EdgeInsets.all(20),
-                        margin: const EdgeInsets.only(top: 20),
-                        decoration: BoxDecoration(
-                          color: color3,
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Selecciona cuándo deseas recibir una notificación en caso de que el equipo se desconecte:',
-                              style: GoogleFonts.poppins(
-                                  color: color0, fontSize: 16),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 20),
-                            RadioListTile<int>(
-                              value: 0,
-                              groupValue: _selectedNotificationOption,
-                              onChanged: (int? value) {
-                                setState(() {
-                                  _selectedNotificationOption = value!;
-                                });
-                              },
-                              activeColor: color1,
-                              title: Text(
-                                'Instantáneo',
-                                style: GoogleFonts.poppins(color: color0),
-                              ),
-                            ),
-                            RadioListTile<int>(
-                              value: 10,
-                              groupValue: _selectedNotificationOption,
-                              onChanged: (int? value) {
-                                setState(() {
-                                  _selectedNotificationOption = value!;
-                                });
-                              },
-                              activeColor: color1,
-                              title: Text(
-                                'Si permanece 10 minutos desconectado',
-                                style: GoogleFonts.poppins(color: color0),
-                              ),
-                            ),
-                            RadioListTile<int>(
-                              value: 60,
-                              groupValue: _selectedNotificationOption,
-                              onChanged: (int? value) {
-                                setState(() {
-                                  _selectedNotificationOption = value!;
-                                });
-                              },
-                              activeColor: color1,
-                              title: Text(
-                                'Si permanece 1 hora desconectado',
-                                style: GoogleFonts.poppins(color: color0),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            ElevatedButton(
-                              onPressed: () async {
-                                setState(() {
-                                  discNotfActivated = true;
-                                  _showNotificationOptions = false;
-                                });
-
-                                configNotiDsc[deviceName] =
-                                    _selectedNotificationOption;
-                                await saveconfigNotiDsc(configNotiDsc);
-
-                                showNotification(
-                                  'Notificación Activada',
-                                  'Has activado la notificación de desconexión con la opción seleccionada.',
-                                  'noti',
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: color0,
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 15, horizontal: 15),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                              ),
-                              child: Text(
-                                'Aceptar',
-                                style: GoogleFonts.poppins(
-                                    color: color3, fontSize: 16),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-
-              const SizedBox(height: 10),
-              SizedBox(
-                key: imageKey,
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    ImageManager.openImageOptions(context, deviceName, () {
-                      setState(() {
-                        // La UI se reconstruirá automáticamente para mostrar la nueva imagen
-                      });
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: color0,
-                    backgroundColor: color3,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 11, horizontal: 20),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: const Text(
-                    'Cambiar imagen del dispositivo',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    showAlertDialog(
-                      context,
-                      true,
-                      Text(
-                        'Beneficios',
-                        style: GoogleFonts.poppins(color: color0),
-                      ),
-                      Text(
-                        '- Encendio rapido y sencillo al alcance de tu mano\n- Configura tu temperatura ideal\n- Mayor eficiencia energética\n- Control de consumo inmediato\n- Mayor comodidad\n- Seguridad corte automático sobre temperatura superior a la establecida\n- Programación de encendido por dias o por franjas horarias\n- Mayor durabilidad',
-                        style: GoogleFonts.poppins(color: color0),
-                      ),
-                      [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: Text(
-                            'Cerrar',
-                            style: GoogleFonts.poppins(color: color0),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: color0,
-                    backgroundColor: color3,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  child: const Text(
-                    'Beneficios de termotanque smart',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              Container(
-                width: MediaQuery.of(context).size.width * 1.5,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                decoration: BoxDecoration(
-                  color: color3,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'Versión de Hardware: $hardwareVersion',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    textStyle: const TextStyle(
-                      color: color0,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Container(
-                width: MediaQuery.of(context).size.width * 1.5,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                decoration: BoxDecoration(
-                  color: color3,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'Versión de Software: $softwareVersion',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    textStyle: const TextStyle(
-                      color: color0,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+          if (!deviceOwner && owner != '')
+            Container(
+              color: Colors.black.withValues(alpha: 0.7),
+              child: const Center(
+                child: Text(
+                  'No tienes acceso a esta función',
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              ),
+            ),
+        ],
       ),
+
+      //*- Página 5: Gestión del Equipo -*\\
+
+      const ManagerScreen(),
     ];
 
     return PopScope(
@@ -2713,13 +1847,11 @@ class RelayPageState extends State<RelayPage> {
                   child: CurvedNavigationBar(
                     index: _selectedIndex,
                     height: 75.0,
-                    items: <Widget>[
-                      const Icon(Icons.home, size: 30, color: color0),
-                      const Icon(Icons.bluetooth, size: 30, color: color0),
-                      if (hardwareVersion == '240422A') ...{
-                        const Icon(Icons.input, size: 30, color: color0),
-                      },
-                      const Icon(Icons.settings, size: 30, color: color0),
+                    items: const <Widget>[
+                      Icon(Icons.home, size: 30, color: color0),
+                      Icon(Icons.bluetooth, size: 30, color: color0),
+                      Icon(Icons.input, size: 30, color: color0),
+                      Icon(Icons.settings, size: 30, color: color0),
                     ],
                     color: color3,
                     buttonBackgroundColor: color3,

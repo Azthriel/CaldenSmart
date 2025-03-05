@@ -39,15 +39,20 @@ class MenuPageState extends State<MenuPage> {
   void _onPageChanged(int index) {
     setState(() {
       _selectedIndex = index;
+      lastPage = _selectedIndex;
     });
     saveLastPage(index);
   }
 
   void _onItemTapped(int index) {
-    _pageController.animateToPage(index,
-        duration: const Duration(milliseconds: 300), curve: Curves.ease);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.ease,
+    );
     setState(() {
       _selectedIndex = index;
+      lastPage = _selectedIndex;
     });
     saveLastPage(index);
   }
@@ -98,7 +103,7 @@ class MenuPageState extends State<MenuPage> {
                       icon: Icon(
                         HugeIcons.strokeRoundedBluetoothSearch,
                         color: _selectedIndex == 0
-                            ? const Color(0xFFE77272)
+                            ? color6
                             : Colors.grey,
                       ),
                       onPressed: () => _onItemTapped(0),
@@ -112,7 +117,7 @@ class MenuPageState extends State<MenuPage> {
                       icon: Icon(
                         HugeIcons.strokeRoundedWifi02,
                         color: _selectedIndex == 1
-                            ? const Color(0xFFE77272)
+                            ? color6
                             : Colors.grey,
                       ),
                       onPressed: () => _onItemTapped(1),

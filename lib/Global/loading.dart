@@ -153,13 +153,10 @@ class LoadState extends State<LoadingPage> {
               deviceOwner = true;
             } else {
               deviceOwner = false;
-              if (userConnected) {
+              if (adminDevices.contains(currentUserEmail)) {
+                secondaryAdmin = true;
               } else {
-                if (adminDevices.contains(currentUserEmail)) {
-                  secondaryAdmin = true;
-                } else {
-                  secondaryAdmin = false;
-                }
+                secondaryAdmin = false;
               }
             }
           } else {
@@ -265,13 +262,10 @@ class LoadState extends State<LoadingPage> {
               deviceOwner = true;
             } else {
               deviceOwner = false;
-              if (userConnected) {
+              if (adminDevices.contains(currentUserEmail)) {
+                secondaryAdmin = true;
               } else {
-                if (adminDevices.contains(currentUserEmail)) {
-                  secondaryAdmin = true;
-                } else {
-                  secondaryAdmin = false;
-                }
+                secondaryAdmin = false;
               }
             }
           } else {
@@ -335,13 +329,10 @@ class LoadState extends State<LoadingPage> {
               deviceOwner = true;
             } else {
               deviceOwner = false;
-              if (userConnected) {
+              if (adminDevices.contains(currentUserEmail)) {
+                secondaryAdmin = true;
               } else {
-                if (adminDevices.contains(currentUserEmail)) {
-                  secondaryAdmin = true;
-                } else {
-                  secondaryAdmin = false;
-                }
+                secondaryAdmin = false;
               }
             }
           } else {
@@ -430,13 +421,10 @@ class LoadState extends State<LoadingPage> {
               deviceOwner = true;
             } else {
               deviceOwner = false;
-              if (userConnected) {
+              if (adminDevices.contains(currentUserEmail)) {
+                secondaryAdmin = true;
               } else {
-                if (adminDevices.contains(currentUserEmail)) {
-                  secondaryAdmin = true;
-                } else {
-                  secondaryAdmin = false;
-                }
+                secondaryAdmin = false;
               }
             }
           } else {
@@ -486,13 +474,10 @@ class LoadState extends State<LoadingPage> {
               deviceOwner = true;
             } else {
               deviceOwner = false;
-              if (userConnected) {
+              if (adminDevices.contains(currentUserEmail)) {
+                secondaryAdmin = true;
               } else {
-                if (adminDevices.contains(currentUserEmail)) {
-                  secondaryAdmin = true;
-                } else {
-                  secondaryAdmin = false;
-                }
+                secondaryAdmin = false;
               }
             }
           } else {
@@ -551,13 +536,10 @@ class LoadState extends State<LoadingPage> {
               deviceOwner = true;
             } else {
               deviceOwner = false;
-              if (userConnected) {
+              if (adminDevices.contains(currentUserEmail)) {
+                secondaryAdmin = true;
               } else {
-                if (adminDevices.contains(currentUserEmail)) {
-                  secondaryAdmin = true;
-                } else {
-                  secondaryAdmin = false;
-                }
+                secondaryAdmin = false;
               }
             }
           } else {

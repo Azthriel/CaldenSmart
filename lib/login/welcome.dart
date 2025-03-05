@@ -1,4 +1,6 @@
 // welcome.dart
+import 'dart:async';
+
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:flutter/material.dart';
 import 'package:caldensmart/master.dart';
@@ -169,6 +171,30 @@ class WelcomePageState extends State<WelcomePage>
   final ScrollController _scrollController2 = ScrollController();
   final ScrollController _scrollController3 = ScrollController();
 
+  late List<String> topImagesInf;
+  late List<String> middleImagesInf;
+  late List<String> bottomImagesInf;
+
+  final List<String> topImages = [
+    'assets/devices/015773.jpeg',
+    'assets/devices/020010.jpg',
+    'assets/devices/028000.png',
+  ];
+
+  final List<String> middleImages = [
+    'assets/devices/027000.webp',
+    'assets/devices/027313.jpg',
+    'assets/devices/022000.jpg',
+  ];
+
+  final List<String> bottomImages = [
+    'assets/devices/027000.webp',
+    'assets/devices/024011.jpg',
+    'assets/devices/020010.jpg',
+  ];
+
+  Timer? _autoScrollTimer;
+
   /// Método para alternar la visibilidad de la contraseña
   void togglePasswordVisibility() {
     setState(() {
@@ -276,11 +302,17 @@ class WelcomePageState extends State<WelcomePage>
       ),
     );
 
+    topImagesInf = [...topImages, ...topImages];
+    middleImagesInf = [...middleImages, ...middleImages];
+    bottomImagesInf = [...bottomImages, ...bottomImages];
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollController1.jumpTo(100.0);
-      _scrollController2.jumpTo(50.0);
-      _scrollController3.jumpTo(180.0);
+      _scrollController1.jumpTo(220.0 * topImages.length);
+      _scrollController2.jumpTo(220.0 * middleImages.length);
+      _scrollController3.jumpTo(220.0 * bottomImages.length);
     });
+
+    startAutoScrolling();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkForUpdate(context);
@@ -301,6 +333,7 @@ class WelcomePageState extends State<WelcomePage>
     _scrollController1.dispose();
     _scrollController2.dispose();
     _scrollController3.dispose();
+    _autoScrollTimer?.cancel();
 
     loginEmailController.dispose();
     loginPasswordController.dispose();
@@ -314,6 +347,84 @@ class WelcomePageState extends State<WelcomePage>
     newPasswordController.dispose();
     confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  void startAutoScrolling() {
+    // Velocidad de desplazamiento (pixeles por frame aprox. ~60 fps)
+    const double scrollSpeed = 0.5;
+    const double itemWidth = 220.0;
+
+    // Mitad de la lista duplicada (en pixeles).
+    // OJO: aquí se multiplica por la cantidad de ítems *originales*
+    // porque duplicaste la lista. Ejemplo: topImages.length = 3 => 3 * 220 = 660.
+    // La lista duplicada final tendrá 6, pero "la mitad" estará en 660 px.
+    final double halfWidthTop = itemWidth * topImages.length;
+    final double halfWidthMiddle = itemWidth * middleImages.length;
+    final double halfWidthBottom = itemWidth * bottomImages.length;
+
+    // Creamos un Timer que corre ~60 veces/seg (cada 16ms)
+    _autoScrollTimer =
+        Timer.periodic(const Duration(milliseconds: 16), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      // =========================
+      // 1) LISTA SUPERIOR (IZQ)
+      // =========================
+      if (_scrollController1.hasClients) {
+        final newOffset = _scrollController1.offset - scrollSpeed;
+
+        // Si se acerca al extremo izquierdo
+        if (newOffset <= 0) {
+          // “Brincamos” el offset hacia la mitad
+          _scrollController1.jumpTo(_scrollController1.offset + halfWidthTop);
+        }
+        // Si se pasa del extremo derecho
+        else if (newOffset >= _scrollController1.position.maxScrollExtent) {
+          _scrollController1.jumpTo(_scrollController1.offset - halfWidthTop);
+        }
+        // En caso normal, seguimos desplazando
+        else {
+          _scrollController1.jumpTo(newOffset);
+        }
+      }
+
+      // =========================
+      // 2) LISTA DEL MEDIO (DER)
+      // =========================
+      if (_scrollController2.hasClients) {
+        final newOffset = _scrollController2.offset + scrollSpeed;
+
+        if (newOffset <= 0) {
+          _scrollController2
+              .jumpTo(_scrollController2.offset + halfWidthMiddle);
+        } else if (newOffset >= _scrollController2.position.maxScrollExtent) {
+          _scrollController2
+              .jumpTo(_scrollController2.offset - halfWidthMiddle);
+        } else {
+          _scrollController2.jumpTo(newOffset);
+        }
+      }
+
+      // =========================
+      // 3) LISTA INFERIOR (IZQ)
+      // =========================
+      if (_scrollController3.hasClients) {
+        final newOffset = _scrollController3.offset - scrollSpeed;
+
+        if (newOffset <= 0) {
+          _scrollController3
+              .jumpTo(_scrollController3.offset + halfWidthBottom);
+        } else if (newOffset >= _scrollController3.position.maxScrollExtent) {
+          _scrollController3
+              .jumpTo(_scrollController3.offset - halfWidthBottom);
+        } else {
+          _scrollController3.jumpTo(newOffset);
+        }
+      }
+    });
   }
 
   Future<void> confirmPasswordReset(
@@ -538,20 +649,23 @@ class WelcomePageState extends State<WelcomePage>
                       carouselFadeAnimation,
                       _scrollController1,
                       _scrollController2,
-                      _scrollController3),
+                      _scrollController3,
+                      topImagesInf,
+                      middleImagesInf,
+                      bottomImagesInf),
                 ),
               ),
             ),
           ),
           Positioned(
-            top: MediaQuery.of(context).size.height * 0.59,
+            top: MediaQuery.of(context).size.height * 0.6,
             left: 0,
             right: 0,
             child: FadeTransition(
               opacity: carouselFadeAnimation,
               child: const Divider(
                 color: color3,
-                thickness: 3.0,
+                thickness: 2.0,
               ),
             ),
           ),
@@ -725,8 +839,15 @@ class WelcomePageState extends State<WelcomePage>
   }
 }
 
-Widget carouselImages(Animation<double> carouselFadeAnimation,
-    scrollController1, scrollController2, scrollController3) {
+Widget carouselImages(
+  Animation<double> carouselFadeAnimation,
+  ScrollController scrollController1,
+  ScrollController scrollController2,
+  ScrollController scrollController3,
+  List<String> topImagesInf,
+  List<String> middleImagesInf,
+  List<String> bottomImagesInf,
+) {
   return FadeTransition(
     opacity: carouselFadeAnimation,
     child: SizedBox(
@@ -734,75 +855,44 @@ Widget carouselImages(Animation<double> carouselFadeAnimation,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
+          // =========== Fila Superior ===========
           Expanded(
             child: SingleChildScrollView(
               controller: scrollController1,
               scrollDirection: Axis.horizontal,
               clipBehavior: Clip.none,
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  SizedBox(
-                    width: 220,
-                    child: buildCard('assets/devices/015773.jpeg'),
-                  ),
-                  SizedBox(
-                    width: 220,
-                    child: buildCard('assets/devices/020010.jpg'),
-                  ),
-                  SizedBox(
-                    width: 220,
-                    child: buildCard('assets/devices/022000.jpg'),
-                  ),
-                ],
+                children: topImagesInf.map((path) {
+                  return SizedBox(width: 220, child: buildCard(path));
+                }).toList(),
               ),
             ),
           ),
+
+          // =========== Fila del Medio ===========
           Expanded(
             child: SingleChildScrollView(
               controller: scrollController2,
               scrollDirection: Axis.horizontal,
               clipBehavior: Clip.none,
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  SizedBox(
-                    width: 220,
-                    child: buildCard('assets/devices/027000.webp'),
-                  ),
-                  SizedBox(
-                    width: 220,
-                    child: buildCard('assets/devices/027313.jpg'),
-                  ),
-                  SizedBox(
-                    width: 220,
-                    child: buildCard('assets/devices/028000.png'),
-                  ),
-                ],
+                children: middleImagesInf.map<Widget>((String path) {
+                  return SizedBox(width: 220, child: buildCard(path));
+                }).toList(),
               ),
             ),
           ),
+
+          // =========== Fila Inferior ===========
           Expanded(
             child: SingleChildScrollView(
               controller: scrollController3,
               scrollDirection: Axis.horizontal,
               clipBehavior: Clip.none,
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  SizedBox(
-                    width: 220,
-                    child: buildCard('assets/devices/020010.jpg'),
-                  ),
-                  SizedBox(
-                    width: 220,
-                    child: buildCard('assets/devices/022000.jpg'),
-                  ),
-                  SizedBox(
-                    width: 220,
-                    child: buildCard('assets/devices/027000.webp'),
-                  ),
-                ],
+                children: bottomImagesInf.map<Widget>((String path) {
+                  return SizedBox(width: 220, child: buildCard(path));
+                }).toList(),
               ),
             ),
           ),
