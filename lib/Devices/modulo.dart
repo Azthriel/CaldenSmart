@@ -106,21 +106,42 @@ class ModuloPageState extends State<ModuloPage> {
               'Podrás observar el estado de la conexión wifi del dispositivo',
         ),
       ),
-      TutorialItem(
-        globalKey: pinModeKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        shapeFocus: ShapeFocus.oval,
-        borderRadius: const Radius.circular(0),
-        radius: 0,
-        contentPosition: ContentPosition.below,
-        pageIndex: 1,
-        child: const TutorialItemContent(
-          title: 'Cambio de modo de pines',
-          content:
-              'si introduces la clave del manual podrás modificar el estado comun de las salidas',
-        ),
-      ),
     });
+    if (!tenant) {
+      items.addAll({
+        TutorialItem(
+          globalKey: pinModeKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          shapeFocus: ShapeFocus.oval,
+          borderRadius: const Radius.circular(0),
+          radius: 0,
+          contentPosition: ContentPosition.below,
+          pageIndex: 1,
+          child: const TutorialItemContent(
+            title: 'Cambio de modo de pines',
+            content:
+                'si introduces la clave del manual podrás modificar el estado comun de las salidas',
+          ),
+        ),
+      });
+    } else {
+      items.addAll({
+        TutorialItem(
+          globalKey: pinModeKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          shapeFocus: ShapeFocus.oval,
+          borderRadius: const Radius.circular(0),
+          radius: 0,
+          contentPosition: ContentPosition.below,
+          pageIndex: 1,
+          child: const TutorialItemContent(
+            title: 'Inquilino',
+            content:
+                'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
+          ),
+        ),
+      });
+    }
     items.addAll({
       TutorialItem(
         globalKey: adminKey,
@@ -135,21 +156,26 @@ class ModuloPageState extends State<ModuloPage> {
           content: 'Podrás reclamar el equipo y gestionar sus funciones',
         ),
       ),
-      TutorialItem(
-        globalKey: claimKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(20),
-        shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 2,
-        contentPosition: ContentPosition.below,
-        child: const TutorialItemContent(
-          title: 'Reclamar administrador',
-          content: 'podras reclamar la administración del equipo',
-        ),
-      ),
     });
+    if (!tenant) {
+      items.addAll({
+        TutorialItem(
+          globalKey: claimKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 2,
+          contentPosition: ContentPosition.below,
+          child: const TutorialItemContent(
+            title: 'Reclamar administrador',
+            content: 'podras reclamar la administración del equipo',
+          ),
+        ),
+      });
+    }
+
     // SOLO PARA LOS ADMINS
-    if (currentUserEmail == owner) {
+    if (owner == currentUserEmail) {
       items.addAll({
         TutorialItem(
           globalKey: agreeAdminKey,
@@ -189,29 +215,34 @@ class ModuloPageState extends State<ModuloPage> {
         ),
       });
     }
+    if (!tenant) {
+      items.addAll({
+        TutorialItem(
+          globalKey: fastBotonKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(40),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 2,
+          child: const TutorialItemContent(
+            title: 'Accesso rápido',
+            content: 'Podrás encender y apagar el dispositivo desde el menú',
+          ),
+        ),
+        TutorialItem(
+          globalKey: fastAccessKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 2,
+          child: const TutorialItemContent(
+            title: 'Notificación de desconexión',
+            content: 'Puedes establecer una alerta si el equipo se desconecta',
+          ),
+        ),
+      });
+    }
+
     items.addAll({
-      TutorialItem(
-        globalKey: fastBotonKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(40),
-        shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 2,
-        child: const TutorialItemContent(
-          title: 'Accesso rápido',
-          content: 'Podrás encender y apagar el dispositivo desde el menú',
-        ),
-      ),
-      TutorialItem(
-        globalKey: fastAccessKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(20),
-        shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 2,
-        child: const TutorialItemContent(
-          title: 'Notificación de desconexión',
-          content: 'Puedes establecer una alerta si el equipo se desconecta',
-        ),
-      ),
       TutorialItem(
         globalKey: imageKey,
         color: Colors.black.withValues(alpha: 0.6),
@@ -707,127 +738,6 @@ class ModuloPageState extends State<ModuloPage> {
       printLog('Xd');
       backService.invoke('presenceControl');
     }
-  }
-
-  bool isValidEmail(String email) {
-    final RegExp emailRegex = RegExp(
-      r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@"
-      r"[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$",
-    );
-    return emailRegex.hasMatch(email);
-  }
-
-  Future<void> addSecondaryAdmin(String email) async {
-    if (!isValidEmail(email)) {
-      showToast('Por favor, introduce un correo electrónico válido.');
-      return;
-    }
-
-    if (adminDevices.contains(email)) {
-      showToast('Este administrador ya está añadido.');
-      return;
-    }
-
-    try {
-      List<String> updatedAdmins = List.from(adminDevices)..add(email);
-
-      await putSecondaryAdmins(
-          service,
-          DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName),
-          updatedAdmins);
-
-      setState(() {
-        adminDevices = updatedAdmins;
-        emailController.clear();
-      });
-
-      showToast('Administrador añadido correctamente.');
-    } catch (e) {
-      printLog('Error al añadir administrador secundario: $e');
-      showToast('Error al añadir el administrador. Inténtalo de nuevo.');
-    }
-  }
-
-  Future<void> removeSecondaryAdmin(String email) async {
-    try {
-      List<String> updatedAdmins = List.from(adminDevices)..remove(email);
-
-      await putSecondaryAdmins(
-          service,
-          DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName),
-          updatedAdmins);
-
-      setState(() {
-        adminDevices.remove(email);
-      });
-
-      showToast('Administrador eliminado correctamente.');
-    } catch (e) {
-      printLog('Error al eliminar administrador secundario: $e');
-      showToast('Error al eliminar el administrador. Inténtalo de nuevo.');
-    }
-  }
-
-  Future<int?> showPinSelectionDialog(BuildContext context) async {
-    int? selectedPin;
-    return showDialog<int>(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return AlertDialog(
-              backgroundColor: color3,
-              title: Text(
-                'Selecciona un pin',
-                style: GoogleFonts.poppins(
-                  color: color0,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              content: SingleChildScrollView(
-                child: ListBody(
-                  children: List.generate(parts.length, (index) {
-                    return tipo[index] == 'Salida'
-                        ? RadioListTile<int>(
-                            title: Text(
-                              subNicknamesMap['$deviceName/-/$index'] ??
-                                  'Salida $index',
-                              style: GoogleFonts.poppins(
-                                color: color0,
-                                fontSize: 16,
-                              ),
-                            ),
-                            value: index,
-                            groupValue: selectedPin,
-                            activeColor: color6,
-                            onChanged: (int? value) {
-                              setState(() {
-                                selectedPin = value;
-                              });
-                            },
-                          )
-                        : const SizedBox.shrink();
-                  }),
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  child: Text(
-                    'Aceptar',
-                    style: GoogleFonts.poppins(color: color6),
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).pop(selectedPin);
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
   }
 
 //!Visual

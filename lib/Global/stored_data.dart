@@ -27,6 +27,8 @@ void loadValues() async {
   oldRelay = await loadOldRelay();
   tutorial = await loadTutorial();
 
+  await DeviceManager.init();
+
   for (String device in previusConnections) {
     await queryItems(service, DeviceManager.getProductCode(device),
         DeviceManager.extractSerialNumber(device));

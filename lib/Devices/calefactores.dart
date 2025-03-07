@@ -172,33 +172,54 @@ class CalefactorPageState extends State<CalefactorPage> {
         ),
       });
     }
+    if (!tenant) {
+      items.addAll({
+        TutorialItem(
+          globalKey: tempKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(0),
+          shapeFocus: ShapeFocus.oval,
+          contentPosition: ContentPosition.below,
+          pageIndex: 1,
+          radius: 0,
+          child: const TutorialItemContent(
+            title: 'Temperatura',
+            content:
+                'En esta pantalla podrás ajustar la temperatura de corte del equipo',
+          ),
+        ),
+        TutorialItem(
+          globalKey: tempBarKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(35),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 1,
+          child: const TutorialItemContent(
+            title: 'Barra de temperatura',
+            content:
+                'Podrás manejar la temperatura a la que el equipo debe cortar',
+          ),
+        ),
+      });
+    } else {
+      items.addAll({
+        TutorialItem(
+          globalKey: tempKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(0),
+          shapeFocus: ShapeFocus.oval,
+          contentPosition: ContentPosition.below,
+          pageIndex: 1,
+          radius: 0,
+          child: const TutorialItemContent(
+            title: 'Inquilino',
+            content:
+                'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
+          ),
+        ),
+      });
+    }
     items.addAll({
-      TutorialItem(
-        globalKey: tempKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
-        contentPosition: ContentPosition.below,
-        pageIndex: 1,
-        radius: 0,
-        child: const TutorialItemContent(
-          title: 'Temperatura',
-          content:
-              'En esta pantalla podrás ajustar la temperatura de corte del equipo',
-        ),
-      ),
-      TutorialItem(
-        globalKey: tempBarKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(35),
-        shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 1,
-        child: const TutorialItemContent(
-          title: 'Barra de temperatura',
-          content:
-              'Podrás manejar la temperatura a la que el equipo debe cortar',
-        ),
-      ),
       TutorialItem(
         globalKey: distanceKey,
         color: Colors.black.withValues(alpha: 0.6),
@@ -224,33 +245,54 @@ class CalefactorPageState extends State<CalefactorPage> {
           content: 'Podrás activar esta función y configurar la distancia',
         ),
       ),
-      TutorialItem(
-        globalKey: consumeKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        shapeFocus: ShapeFocus.oval,
-        borderRadius: const Radius.circular(0),
-        radius: 0,
-        contentPosition: ContentPosition.below,
-        pageIndex: 3,
-        child: const TutorialItemContent(
-          title: 'Calculadora de consumo',
-          content:
-              'En esta pantalla puedes estimar el uso de tu equipo según tu tarifa',
-        ),
-      ),
-      TutorialItem(
-        globalKey: valorKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        shapeFocus: ShapeFocus.roundedSquare,
-        borderRadius: const Radius.circular(15.0),
-        pageIndex: 3,
-        child: const TutorialItemContent(
-          title: 'Tarifa',
-          content: 'Podrás ingresar el valor de tu tarifa',
-        ),
-      ),
     });
-    if (valueConsuption == null) {
+    if (!tenant) {
+      items.addAll({
+        TutorialItem(
+          globalKey: consumeKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          shapeFocus: ShapeFocus.oval,
+          borderRadius: const Radius.circular(0),
+          radius: 0,
+          contentPosition: ContentPosition.below,
+          pageIndex: 3,
+          child: const TutorialItemContent(
+            title: 'Calculadora de consumo',
+            content:
+                'En esta pantalla puedes estimar el uso de tu equipo según tu tarifa',
+          ),
+        ),
+        TutorialItem(
+          globalKey: valorKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          shapeFocus: ShapeFocus.roundedSquare,
+          borderRadius: const Radius.circular(15.0),
+          pageIndex: 3,
+          child: const TutorialItemContent(
+            title: 'Tarifa',
+            content: 'Podrás ingresar el valor de tu tarifa',
+          ),
+        ),
+      });
+    } else {
+      items.addAll({
+        TutorialItem(
+          globalKey: consumeKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(0),
+          shapeFocus: ShapeFocus.oval,
+          contentPosition: ContentPosition.below,
+          pageIndex: 3,
+          radius: 0,
+          child: const TutorialItemContent(
+            title: 'Inquilino',
+            content:
+                'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
+          ),
+        ),
+      });
+    }
+    if (valueConsuption == null && !tenant) {
       items.addAll({
         TutorialItem(
           globalKey: consuptionKey,
@@ -265,30 +307,34 @@ class CalefactorPageState extends State<CalefactorPage> {
         ),
       });
     }
+    if (!tenant) {
+      items.addAll({
+        TutorialItem(
+          globalKey: calculateKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          shapeFocus: ShapeFocus.roundedSquare,
+          borderRadius: const Radius.circular(15.0),
+          pageIndex: 3,
+          child: const TutorialItemContent(
+            title: 'Calculo',
+            content: 'Podrás ver el costo de consumo de tu equipo',
+          ),
+        ),
+        TutorialItem(
+          globalKey: mesKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          shapeFocus: ShapeFocus.roundedSquare,
+          borderRadius: const Radius.circular(15.0),
+          pageIndex: 3,
+          child: const TutorialItemContent(
+            title: 'Mes de consumo',
+            content: 'Podrás reiniciar el mes de consumo',
+          ),
+        ),
+      });
+    }
 
     items.addAll({
-      TutorialItem(
-        globalKey: calculateKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        shapeFocus: ShapeFocus.roundedSquare,
-        borderRadius: const Radius.circular(15.0),
-        pageIndex: 3,
-        child: const TutorialItemContent(
-          title: 'Calculo',
-          content: 'Podrás ver el costo de consumo de tu equipo',
-        ),
-      ),
-      TutorialItem(
-        globalKey: mesKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        shapeFocus: ShapeFocus.roundedSquare,
-        borderRadius: const Radius.circular(15.0),
-        pageIndex: 3,
-        child: const TutorialItemContent(
-          title: 'Mes de consumo',
-          content: 'Podrás reiniciar el mes de consumo',
-        ),
-      ),
       TutorialItem(
         globalKey: adminKey,
         color: Colors.black.withValues(alpha: 0.6),
@@ -302,22 +348,27 @@ class CalefactorPageState extends State<CalefactorPage> {
           content: 'Podrás reclamar el equipo y gestionar sus funciones',
         ),
       ),
-      TutorialItem(
-        globalKey: claimKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(20),
-        shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 4,
-        contentPosition: ContentPosition.below,
-        child: const TutorialItemContent(
-          title: 'Reclamar administrador',
-          content:
-              'Presiona este botón para reclamar la administración del equipo',
-        ),
-      ),
     });
+    if (!tenant) {
+      items.addAll({
+        TutorialItem(
+          globalKey: claimKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 4,
+          contentPosition: ContentPosition.below,
+          child: const TutorialItemContent(
+            title: 'Reclamar administrador',
+            content:
+                'Presiona este botón para reclamar la administración del equipo',
+          ),
+        ),
+      });
+    }
+
     // SOLO PARA LOS ADMINS
-    if (currentUserEmail == owner) {
+    if (owner == currentUserEmail) {
       items.addAll({
         TutorialItem(
           globalKey: agreeAdminKey,
@@ -357,29 +408,38 @@ class CalefactorPageState extends State<CalefactorPage> {
         ),
       });
     }
+    if (!tenant) {
+      items.addAll({
+        TutorialItem(
+          globalKey: fastBotonKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 4,
+          child: const TutorialItemContent(
+            title: 'Accesso rápido',
+            content: 'Podrás encender y apagar el dispositivo desde el menú',
+          ),
+        ),
+      });
+    }
+
+    if (!tenant) {
+      items.addAll({
+        TutorialItem(
+          globalKey: fastAccessKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 4,
+          child: const TutorialItemContent(
+            title: 'Notificación de desconexión',
+            content: 'Puedes establecer una alerta si el equipo se desconecta',
+          ),
+        ),
+      });
+    }
     items.addAll({
-      TutorialItem(
-        globalKey: fastBotonKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(20),
-        shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 4,
-        child: const TutorialItemContent(
-          title: 'Accesso rápido',
-          content: 'Podrás encender y apagar el dispositivo desde el menú',
-        ),
-      ),
-      TutorialItem(
-        globalKey: fastAccessKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(20),
-        shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 4,
-        child: const TutorialItemContent(
-          title: 'Notificación de desconexión',
-          content: 'Puedes establecer una alerta si el equipo se desconecta',
-        ),
-      ),
       TutorialItem(
         globalKey: ledKey,
         color: Colors.black.withValues(alpha: 0.6),

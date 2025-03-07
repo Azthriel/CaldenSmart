@@ -136,20 +136,44 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
           content: 'Podrás activar esta función y configurar la distancia',
         ),
       ),
-      TutorialItem(
-        globalKey: pinModeKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        shapeFocus: ShapeFocus.oval,
-        borderRadius: const Radius.circular(0),
-        radius: 0,
-        contentPosition: ContentPosition.below,
-        pageIndex: 2,
-        child: const TutorialItemContent(
-          title: 'Cambio de modo de pines',
-          content:
-              'si introduces la clave del manual podrás modificar el estado comun de las salidas',
+    });
+    if (!tenant) {
+      items.addAll({
+        TutorialItem(
+          globalKey: pinModeKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          shapeFocus: ShapeFocus.oval,
+          borderRadius: const Radius.circular(0),
+          radius: 0,
+          contentPosition: ContentPosition.below,
+          pageIndex: 2,
+          child: const TutorialItemContent(
+            title: 'Cambio de modo de pines',
+            content:
+                'si introduces la clave del manual podrás modificar el estado comun de las salidas',
+          ),
         ),
-      ),
+      });
+    } else {
+      items.addAll({
+        TutorialItem(
+          globalKey: pinModeKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          shapeFocus: ShapeFocus.oval,
+          borderRadius: const Radius.circular(0),
+          radius: 0,
+          contentPosition: ContentPosition.below,
+          pageIndex: 2,
+          child: const TutorialItemContent(
+            title: 'Inquilino',
+            content:
+                'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
+          ),
+        ),
+      });
+    }
+
+    items.addAll({
       TutorialItem(
         globalKey: adminKey,
         color: Colors.black.withValues(alpha: 0.6),
@@ -163,20 +187,25 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
           content: 'Podrás reclamar el equipo y gestionar sus funciones',
         ),
       ),
-      TutorialItem(
-        globalKey: claimKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(20),
-        shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 3,
-        contentPosition: ContentPosition.below,
-        child: const TutorialItemContent(
-          title: 'Reclamar administrador',
-          content:
-              'Presiona este botón para reclamar la administración del equipo',
-        ),
-      ),
     });
+    if (!tenant) {
+      items.addAll({
+        TutorialItem(
+          globalKey: claimKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 3,
+          contentPosition: ContentPosition.below,
+          child: const TutorialItemContent(
+            title: 'Reclamar administrador',
+            content:
+                'Presiona este botón para reclamar la administración del equipo',
+          ),
+        ),
+      });
+    }
+
     // SOLO PARA LOS ADMINS
     if (owner == currentUserEmail) {
       items.addAll({
@@ -218,29 +247,34 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
         ),
       });
     }
+    if (!tenant) {
+      items.addAll({
+        TutorialItem(
+          globalKey: fastBotonKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 3,
+          child: const TutorialItemContent(
+            title: 'Accesso rápido',
+            content: 'Podrás encender y apagar el dispositivo desde el menú',
+          ),
+        ),
+        TutorialItem(
+          globalKey: fastAccessKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 3,
+          child: const TutorialItemContent(
+            title: 'Notificación de desconexión',
+            content: 'Puedes establecer una alerta si el equipo se desconecta',
+          ),
+        ),
+      });
+    }
+
     items.addAll({
-      TutorialItem(
-        globalKey: fastBotonKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(20),
-        shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 3,
-        child: const TutorialItemContent(
-          title: 'Accesso rápido',
-          content: 'Podrás encender y apagar el dispositivo desde el menú',
-        ),
-      ),
-      TutorialItem(
-        globalKey: fastAccessKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(20),
-        shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 3,
-        child: const TutorialItemContent(
-          title: 'Notificación de desconexión',
-          content: 'Puedes establecer una alerta si el equipo se desconecta',
-        ),
-      ),
       TutorialItem(
         globalKey: imageKey,
         color: Colors.black.withValues(alpha: 0.6),
@@ -254,6 +288,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
       ),
     });
   }
+
 
   @override
   void initState() {

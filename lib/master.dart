@@ -3223,11 +3223,14 @@ class DeviceManager {
       case '020020_IOT':
         code = 'Modulo';
         break;
-      case '027131_IOT':
+      case '024131_IOT':
         code = 'Riel';
         break;
       case '041220_IOT':
         code = 'Radiador';
+        break;
+      case '028000_IOT':
+        code = 'Heladera';
         break;
     }
 

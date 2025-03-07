@@ -60,6 +60,7 @@ class DomoticaPageState extends State<DomoticaPage> {
   //*- Keys para cambio de Modo de Pines -*\\
   final pinModeKey = GlobalKey(); // key para el cambio de modo de pines
   //*- Keys para cambio de Modo de Pines -*\\
+
   void initItems() {
     items.addAll({
       TutorialItem(
@@ -106,22 +107,41 @@ class DomoticaPageState extends State<DomoticaPage> {
     });
     if (hardwareVersion == '240422A') {
       isPinMode = true;
-      items.addAll({
-        TutorialItem(
-          globalKey: pinModeKey,
-          color: Colors.black.withValues(alpha: 0.6),
-          shapeFocus: ShapeFocus.oval,
-          borderRadius: const Radius.circular(0),
-          radius: 0,
-          contentPosition: ContentPosition.below,
-          pageIndex: 1,
-          child: const TutorialItemContent(
-            title: 'Cambio de modo de pines',
-            content:
-                'si introduces la clave del manual podrás modificar el estado comun de los pines y alterar las entradas/salidas',
+      if (!tenant) {
+        items.addAll({
+          TutorialItem(
+            globalKey: pinModeKey,
+            color: Colors.black.withValues(alpha: 0.6),
+            shapeFocus: ShapeFocus.oval,
+            borderRadius: const Radius.circular(0),
+            radius: 0,
+            contentPosition: ContentPosition.below,
+            pageIndex: 1,
+            child: const TutorialItemContent(
+              title: 'Cambio de modo de pines',
+              content:
+                  'si introduces la clave del manual podrás modificar el estado comun de los pines y alterar las entradas/salidas',
+            ),
           ),
-        ),
-      });
+        });
+      } else {
+        items.addAll({
+          TutorialItem(
+            globalKey: pinModeKey,
+            color: Colors.black.withValues(alpha: 0.6),
+            shapeFocus: ShapeFocus.oval,
+            borderRadius: const Radius.circular(0),
+            radius: 0,
+            contentPosition: ContentPosition.below,
+            pageIndex: 1,
+            child: const TutorialItemContent(
+              title: 'Inquilino',
+              content:
+                  'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
+            ),
+          ),
+        });
+      }
     }
     items.addAll({
       TutorialItem(
@@ -137,21 +157,26 @@ class DomoticaPageState extends State<DomoticaPage> {
           content: 'Podrás reclamar el equipo y gestionar sus funciones',
         ),
       ),
-      TutorialItem(
-        globalKey: claimKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(20),
-        shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: isPinMode ? 2 : 1,
-        contentPosition: ContentPosition.below,
-        child: const TutorialItemContent(
-          title: 'Reclamar administrador',
-          content: 'Podras reclamar la administración del equipo',
-        ),
-      ),
     });
+    if (!tenant) {
+      items.addAll({
+        TutorialItem(
+          globalKey: claimKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: isPinMode ? 2 : 1,
+          contentPosition: ContentPosition.below,
+          child: const TutorialItemContent(
+            title: 'Reclamar administrador',
+            content: 'Podras reclamar la administración del equipo',
+          ),
+        ),
+      });
+    }
+
     // SOLO PARA LOS ADMINS
-    if (currentUserEmail == owner) {
+    if (owner == currentUserEmail) {
       items.addAll({
         TutorialItem(
           globalKey: agreeAdminKey,
@@ -191,29 +216,33 @@ class DomoticaPageState extends State<DomoticaPage> {
         ),
       });
     }
+    if (!tenant) {
+      items.addAll({
+        TutorialItem(
+          globalKey: fastBotonKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: isPinMode ? 2 : 1,
+          child: const TutorialItemContent(
+            title: 'Accesso rápido',
+            content: 'Podrás encender y apagar el dispositivo desde el menú',
+          ),
+        ),
+        TutorialItem(
+          globalKey: fastAccessKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: isPinMode ? 2 : 1,
+          child: const TutorialItemContent(
+            title: 'Notificación de desconexión',
+            content: 'Puedes establecer una alerta si el equipo se desconecta',
+          ),
+        ),
+      });
+    }
     items.addAll({
-      TutorialItem(
-        globalKey: fastBotonKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(20),
-        shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: isPinMode ? 2 : 1,
-        child: const TutorialItemContent(
-          title: 'Accesso rápido',
-          content: 'Podrás encender y apagar el dispositivo desde el menú',
-        ),
-      ),
-      TutorialItem(
-        globalKey: fastAccessKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(20),
-        shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: isPinMode ? 2 : 1,
-        child: const TutorialItemContent(
-          title: 'Notificación de desconexión',
-          content: 'Puedes establecer una alerta si el equipo se desconecta',
-        ),
-      ),
       TutorialItem(
         globalKey: imageKey,
         color: Colors.black.withValues(alpha: 0.6),
