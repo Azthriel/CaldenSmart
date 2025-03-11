@@ -14,15 +14,11 @@ Widget buildEnterCodeForm(WelcomePageState state) {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Expanded(
-                    child: Text(
-                      'Código de verificación',
-                      style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: color3),
-                    ),
-                  ),
+              const Text(
+                'Código de verificación',
+                style: TextStyle(
+                    fontSize: 24, fontWeight: FontWeight.bold, color: color3),
+              ),
               const SizedBox(height: 10),
               const Text(
                 'Ingrese el código enviado a su correo y su nueva contraseña',

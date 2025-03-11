@@ -69,36 +69,6 @@ class CalefactorPageState extends State<CalefactorPage> {
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
 
-  //*- Keys para funciones de la appbar -*\\
-  final titleKey = GlobalKey(); // key para el nombre del equipo
-  final wifiKey = GlobalKey(); // key para el wifi del equipo
-  //*- Keys para funciones de la appbar -*\\
-
-  //*- Keys estado del dispositivo -*\\
-  final estadoKey = GlobalKey(); // key para la pantalla de estado
-  final bottomKey = GlobalKey(); // key para el boton de encendido
-  final sparkKey = GlobalKey();
-  //*- Keys estado del dispositivo-*\\
-
-  //*- Keys temperatura del equipo -*\\
-  final tempKey = GlobalKey(); //key para la pantalla de temperatura
-  final tempBarKey = GlobalKey(); //key para la barra de temperatura
-  //*- Keys temperatura del equipo -*\\
-
-  //*- Keys para control por distancia -*\\
-  final distanceKey =
-      GlobalKey(); // key para la pantalla de control por distancia
-  final distanceBottomKey = GlobalKey(); // key para el boton de encendido
-  //*- Keys para control por distancia -*\\
-
-  //*- Keys para consumo -*\\
-  final consumeKey = GlobalKey(); // key para la pantalla de consumo
-  final valorKey = GlobalKey(); // key para el valor de la tarifa
-  final consuptionKey = GlobalKey(); // key para el valor de consumo
-  final calculateKey = GlobalKey();
-  final mesKey = GlobalKey(); // key para el mes de consumo
-  //*- Keys para consumo -*\\
-
   void initItems() {
     items.addAll({
       TutorialItem(
@@ -427,7 +397,7 @@ class CalefactorPageState extends State<CalefactorPage> {
     if (!tenant) {
       items.addAll({
         TutorialItem(
-          globalKey: fastAccessKey,
+          globalKey: discNotificationKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -1053,7 +1023,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                   children: [
                     Icon(
                       Icons.thermostat_rounded,
-                      size: 250,
+                      size: 200,
                       color: Color.lerp(
                         Colors.blueAccent,
                         Colors.redAccent,

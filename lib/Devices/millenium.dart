@@ -6,10 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-
 import '../Global/manager_screen.dart';
-import '../aws/dynamo/dynamo.dart';
-import '../aws/dynamo/dynamo_certificates.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../Global/stored_data.dart';
 
@@ -60,30 +57,6 @@ class MilleniumPageState extends State<MilleniumPage> {
 
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
-
-  //*- Keys para funciones de la appbar -*\\
-  final titleKey = GlobalKey(); // key para el nombre del equipo
-  final wifiKey = GlobalKey(); // key para el wifi del equipo
-  //*- Keys para funciones de la appbar -*\\
-
-  //*- Keys estado del dispositivo -*\\
-  final estadoKey = GlobalKey(); // key para la pantalla de estado
-  final bottomKey = GlobalKey(); // key para el boton de encendido
-  final sparkKey = GlobalKey();
-  //*- Keys estado del dispositivo-*\\
-
-  //*- Keys temperatura del equipo -*\\
-  final tempKey = GlobalKey(); //key para la pantalla de temperatura
-  final tempBarKey = GlobalKey(); //key para la barra de temperatura
-  //*- Keys temperatura del equipo -*\\
-
-  //*- Keys para consumo -*\\
-  final consumeKey = GlobalKey(); // key para la pantalla de consumo
-  final valorKey = GlobalKey(); // key para el valor de la tarifa
-  final consuptionKey = GlobalKey(); // key para el valor de consumo
-  final calculateKey = GlobalKey();
-  final mesKey = GlobalKey(); // key para el mes de consumo
-  //*- Keys para consumo -*\\
 
   void initItems() {
     items.addAll({
@@ -312,7 +285,7 @@ class MilleniumPageState extends State<MilleniumPage> {
         ),
       ),
       TutorialItem(
-        globalKey: fastAccessKey,
+        globalKey: discNotificationKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
@@ -418,59 +391,6 @@ class MilleniumPageState extends State<MilleniumPage> {
     }
   }
 
-  Future<void> addSecondaryAdmin(String email) async {
-    if (!isValidEmail(email)) {
-      showToast('Por favor, introduce un correo electrónico válido.');
-      return;
-    }
-
-    if (adminDevices.contains(email)) {
-      showToast('Este administrador ya está añadido.');
-      return;
-    }
-
-    try {
-      List<String> updatedAdmins = List.from(adminDevices)..add(email);
-
-      await putSecondaryAdmins(
-          service,
-          DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName),
-          updatedAdmins);
-
-      setState(() {
-        adminDevices = updatedAdmins;
-        emailController.clear();
-      });
-
-      showToast('Administrador añadido correctamente.');
-    } catch (e) {
-      printLog('Error al añadir administrador secundario: $e');
-      showToast('Error al añadir el administrador. Inténtalo de nuevo.');
-    }
-  }
-
-  Future<void> removeSecondaryAdmin(String email) async {
-    try {
-      List<String> updatedAdmins = List.from(adminDevices)..remove(email);
-
-      await putSecondaryAdmins(
-          service,
-          DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName),
-          updatedAdmins);
-
-      setState(() {
-        adminDevices.remove(email);
-      });
-
-      showToast('Administrador eliminado correctamente.');
-    } catch (e) {
-      printLog('Error al eliminar administrador secundario: $e');
-      showToast('Error al eliminar el administrador. Inténtalo de nuevo.');
-    }
-  }
-
   void timeData() async {
     fechaSeleccionada = await cargarFechaGuardada(deviceName);
     List<int> list = await myDevice.varsUuid.read(timeout: 2);
@@ -482,14 +402,6 @@ class MilleniumPageState extends State<MilleniumPage> {
     } else {
       timeData();
     }
-  }
-
-  bool isValidEmail(String email) {
-    final RegExp emailRegex = RegExp(
-      r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@"
-      r"[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$",
-    );
-    return emailRegex.hasMatch(email);
   }
 
   void makeCompute() async {

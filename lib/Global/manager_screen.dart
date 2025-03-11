@@ -21,7 +21,7 @@ final agreeAdminKey =
     GlobalKey(); // key para el boton de agregar administradores
 final viewAdminKey = GlobalKey(); // key para ver la lista de administradores
 final habitKey = GlobalKey(); // key para el boton de habitantes
-final fastAccessKey = GlobalKey(); // key para el boton de acceso rápido
+final discNotificationKey = GlobalKey(); // key para el boton de acceso rápido
 //*- Keys para gestión siendo admin-*\\
 
 class ManagerScreen extends StatefulWidget {
@@ -219,6 +219,17 @@ class ManagerScreenState extends State<ManagerScreen> {
                                 '',
                               );
                               Navigator.of(context).pop();
+
+                              saveATData(
+                                service,
+                                DeviceManager.getProductCode(deviceName),
+                                DeviceManager.extractSerialNumber(deviceName),
+                                false,
+                                '',
+                                '3000',
+                                '100',
+                              );
+
                               setState(() {
                                 owner = '';
                                 deviceOwner = false;
@@ -1111,7 +1122,7 @@ class ManagerScreenState extends State<ManagerScreen> {
 
             if (owner == '' || owner == currentUserEmail || secondaryAdmin) ...{
               ElevatedButton(
-                key: fastAccessKey,
+                key: discNotificationKey,
                 onPressed: () async {
                   if (discNotfActivated) {
                     showAlertDialog(

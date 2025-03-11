@@ -13,7 +13,7 @@ import file_selector_macos
 import firebase_core
 import firebase_crashlytics
 import firebase_messaging
-import flutter_blue_plus
+import flutter_blue_plus_darwin
 import flutter_local_notifications
 import geolocator_apple
 import mobile_scanner

@@ -50,24 +50,6 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
 
-  //*- Keys para funciones de la appbar -*\\
-  final titleKey = GlobalKey(); // key para el nombre del equipo
-  final wifiKey = GlobalKey(); // key para el wifi del equipo
-  //*- Keys para funciones de la appbar -*\\
-
-  //*- Keys estado del dispositivo -*\\
-  final estadoKey = GlobalKey(); // key para la pantalla de estado
-  //*- Keys estado del dispositivo-*\\
-
-  //*- Keys para control por distancia -*\\
-  final distanceKey =
-      GlobalKey(); // key para la pantalla de control por distancia
-  final distanceBottomKey = GlobalKey(); // key para el boton de encendido
-  //*- Keys para control por distancia -*\\
-
-  //*- Keys para cambio de Modo de Pines -*\\
-  final pinModeKey = GlobalKey(); // key para el cambio de modo de pines
-  //*- Keys para cambio de Modo de Pines -*\\
 
   void initItems() {
     items.addAll({
@@ -261,7 +243,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
           ),
         ),
         TutorialItem(
-          globalKey: fastAccessKey,
+          globalKey: discNotificationKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -1897,14 +1879,14 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
         ),
       ),
 
-      //*- página 4: Cambiar pines -*\\
+      //*- Página 4: Cambiar pines -*\\
 
       Stack(
         children: [
           SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               horizontal: 20.0,
-              vertical: MediaQuery.of(context).size.height * 0.15,
+              vertical: 30,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -2377,7 +2359,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                     index: _selectedIndex,
                     height: 75.0,
                     items: const <Widget>[
-                                Icon(Icons.home, size: 30, color: color0),
+                      Icon(Icons.home, size: 30, color: color0),
                       Icon(Icons.bluetooth, size: 30, color: color0),
                       Icon(Icons.input, size: 30, color: color0),
                       Icon(Icons.settings, size: 30, color: color0),

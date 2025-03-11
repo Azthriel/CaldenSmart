@@ -50,19 +50,6 @@ class ModuloPageState extends State<ModuloPage> {
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
 
-  //*- Keys para funciones de la appbar -*\\
-  final titleKey = GlobalKey(); // key para el nombre del equipo
-  final wifiKey = GlobalKey(); // key para el wifi del equipo
-  //*- Keys para funciones de la appbar -*\\
-
-  //*- Keys estado del dispositivo -*\\
-  final estadoKey = GlobalKey(); // key para la pantalla de estado
-  //*- Keys estado del dispositivo-*\\
-
-  //*- Keys para cambio de Modo de Pines -*\\
-  final pinModeKey = GlobalKey(); // key para el cambio de modo de pines
-  //*- Keys para cambio de Modo de Pines -*\\
-
   void initItems() {
     items.addAll({
       TutorialItem(
@@ -229,7 +216,7 @@ class ModuloPageState extends State<ModuloPage> {
           ),
         ),
         TutorialItem(
-          globalKey: fastAccessKey,
+          globalKey: discNotificationKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -760,7 +747,7 @@ class ModuloPageState extends State<ModuloPage> {
     }
 
     final List<Widget> pages = [
-      //*- página 1 entradas/salidas -*\\
+      //*- Página 1 entradas/salidas -*\\
       SingleChildScrollView(
         child: SizedBox(
           height: MediaQuery.of(context).size.height * 0.8,
@@ -1437,7 +1424,7 @@ class ModuloPageState extends State<ModuloPage> {
       //   ],
       // ),
 
-      //*- página 3: Cambiar pines -*\\
+      //*- Página 3: Cambiar pines -*\\
 
       Stack(
         children: [
@@ -1447,7 +1434,7 @@ class ModuloPageState extends State<ModuloPage> {
               vertical: 30,
             ),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
@@ -1554,13 +1541,8 @@ class ModuloPageState extends State<ModuloPage> {
                 if (isChangeModeVisible && isPasswordCorrect)
                   Column(
                     children: [
-                      for (int i = 2; i < 5; i++) ...[
-                        if (i == 4) ...{
-                          Padding(
-                            padding:
-                                EdgeInsets.only(bottom: bottomBarHeight + 10),
-                          ),
-                        } else ...{
+                      for (var i = 0; i < parts.length; i++) ...[
+                        if (tipo[i] == 'Entrada') ...{
                           Card(
                             color: color3,
                             elevation: 6,
@@ -1570,9 +1552,7 @@ class ModuloPageState extends State<ModuloPage> {
                             child: Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 24.0,
-                              ),
+                                  horizontal: 16.0, vertical: 24.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -1586,64 +1566,139 @@ class ModuloPageState extends State<ModuloPage> {
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  const SizedBox(height: 20),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                  const SizedBox(height: 8),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Estado común:',
+                                        'Puedes cambiar entre Normal Abierto (NA) y Normal Cerrado (NC). Selecciona una opción:',
                                         style: GoogleFonts.poppins(
+                                          fontSize: 16,
                                           color: color0,
-                                          fontSize: 14,
                                         ),
+                                        textAlign: TextAlign.center,
                                       ),
-                                      Text(
-                                        common[i],
-                                        style: GoogleFonts.poppins(
-                                          color: color0,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
+                                      const SizedBox(height: 20),
+                                      Container(
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(30.0),
+                                          border: Border.all(
+                                            color: color0,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  setState(() {
+                                                    String data =
+                                                        '${DeviceManager.getProductCode(deviceName)}[14]($i#0)';
+                                                    printLog(data);
+                                                    myDevice.toolsUuid
+                                                        .write(data.codeUnits);
+                                                    common[i] = '0';
+                                                  });
+                                                  //TODO normal abierto
+                                                },
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    color: common[i] == '0'
+                                                        ? color0
+                                                        : Colors.transparent,
+                                                    borderRadius:
+                                                        const BorderRadius.only(
+                                                      topLeft:
+                                                          Radius.circular(28),
+                                                      bottomLeft:
+                                                          Radius.circular(28),
+                                                    ),
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      'Normal Abierto',
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        fontSize: 14,
+                                                        color: common[i] == '0'
+                                                            ? color3
+                                                            : color0,
+                                                      ),
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            Container(
+                                              width: 2,
+                                              color: color0,
+                                            ),
+                                            Expanded(
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  //TODO normal cerrado
+                                                  setState(() {
+                                                    String data =
+                                                        '${DeviceManager.getProductCode(deviceName)}[14]($i#1)';
+                                                    printLog(data);
+                                                    myDevice.toolsUuid
+                                                        .write(data.codeUnits);
+                                                    common[i] = '1';
+                                                  });
+                                                },
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    color: common[i] == '1'
+                                                        ? color0
+                                                        : Colors.transparent,
+                                                    borderRadius:
+                                                        const BorderRadius.only(
+                                                      topRight:
+                                                          Radius.circular(28),
+                                                      bottomRight:
+                                                          Radius.circular(28),
+                                                    ),
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      'Normal Cerrado',
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        fontSize: 14,
+                                                        color: common[i] == '1'
+                                                            ? color3
+                                                            : color0,
+                                                      ),
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Center(
-                                    child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        foregroundColor: color3,
-                                        backgroundColor: color0,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 24.0,
-                                          vertical: 12.0,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                      ),
-                                      onPressed: () {
-                                        String data =
-                                            '${DeviceManager.getProductCode(deviceName)}[14]($i#${common[i] == '1' ? '0' : '1'})';
-                                        printLog(data);
-                                        myDevice.toolsUuid
-                                            .write(data.codeUnits);
-                                      },
-                                      child: const Text(
-                                        'CAMBIAR',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
                                   ),
                                 ],
                               ),
                             ),
                           ),
                           const SizedBox(height: 20),
-                        }
+                          if (i == parts.length - 1) ...{
+                            Padding(
+                              padding:
+                                  EdgeInsets.only(bottom: bottomBarHeight + 10),
+                            ),
+                          }
+                        },
                       ],
                     ],
                   ),

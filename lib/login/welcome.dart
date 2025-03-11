@@ -302,9 +302,16 @@ class WelcomePageState extends State<WelcomePage>
       ),
     );
 
+  
+
     topImagesInf = [...topImages, ...topImages];
     middleImagesInf = [...middleImages, ...middleImages];
     bottomImagesInf = [...bottomImages, ...bottomImages];
+
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await precacheAllImages(context);
+  
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollController1.jumpTo(220.0 * topImages.length);
@@ -426,6 +433,20 @@ class WelcomePageState extends State<WelcomePage>
       }
     });
   }
+
+    Future<void> precacheAllImages(BuildContext context) async {
+    final List<String> allImages = [
+      ...topImages,
+      ...middleImages,
+      ...bottomImages,
+    ];
+
+    for (String imagePath in allImages) {
+      await precacheImage(AssetImage(imagePath), context);
+      printLog('Imagen precargada: $imagePath');
+    }
+  }
+
 
   Future<void> confirmPasswordReset(
       String email, String confirmationCode, String newPassword) async {

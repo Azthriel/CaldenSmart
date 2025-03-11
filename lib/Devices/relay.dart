@@ -48,26 +48,6 @@ class RelayPageState extends State<RelayPage> {
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
 
-  //*- Keys para funciones de la appbar -*\\
-  final titleKey = GlobalKey(); // key para el nombre del equipo
-  final wifiKey = GlobalKey(); // key para el wifi del equipo
-  //*- Keys para funciones de la appbar -*\\
-
-  //*- Keys estado del dispositivo -*\\
-  final estadoKey = GlobalKey(); // key para la pantalla de estado
-  final bottomKey = GlobalKey(); // key para el boton de encendido
-  //*- Keys estado del dispositivo-*\\
-
-  //*- Keys para control por distancia -*\\
-  final distanceKey =
-      GlobalKey(); // key para la pantalla de control por distancia
-  final distanceBottomKey = GlobalKey(); // key para el boton de encendido
-  //*- Keys para control por distancia -*\\
-
-  //*- Keys para cambio de Modo de Pines -*\\
-  final pinModeKey = GlobalKey(); // key para el cambio de modo de pines
-  //*- Keys para cambio de Modo de Pines -*\\
-
   void initItems() {
     items.addAll({
       TutorialItem(
@@ -272,7 +252,7 @@ class RelayPageState extends State<RelayPage> {
           ),
         ),
         TutorialItem(
-          globalKey: fastAccessKey,
+          globalKey: discNotificationKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -1064,317 +1044,313 @@ class RelayPageState extends State<RelayPage> {
 
       //*- Página 3 - Control por distancia -*\\
 
-      SingleChildScrollView(
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.8,
-          child: Stack(
-            children: [
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      key: distanceKey,
-                      'Control por distancia',
-                      style: GoogleFonts.poppins(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: color3,
-                      ),
-                      textAlign: TextAlign.center,
+      Stack(
+        children: [
+          Center(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    key: distanceKey,
+                    'Control por distancia',
+                    style: GoogleFonts.poppins(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: color3,
                     ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Activar control por distancia',
-                      style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500,
-                        color: color3,
-                      ),
-                      textAlign: TextAlign.center,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Activar control por distancia',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                      color: color3,
                     ),
-                    const SizedBox(height: 30),
-                    GestureDetector(
-                      key: distanceBottomKey,
-                      onTap: () {
-                        if (deviceOwner || owner == '' || tenant) {
-                          verifyPermission().then((result) {
-                            if (result == true) {
-                              setState(() {
-                                isTaskScheduled[deviceName] =
-                                    !(isTaskScheduled[deviceName] ?? false);
-                              });
-                              saveControlValue(isTaskScheduled);
-                              controlTask(isTaskScheduled[deviceName] ?? false,
-                                  deviceName);
-                            } else {
-                              showToast(
-                                'Permitir ubicación todo el tiempo\nPara usar el control por distancia',
-                              );
-                              openAppSettings();
-                            }
-                          });
-                        } else {
-                          showToast('No tienes acceso a esta función');
-                        }
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 500),
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: isTaskScheduled[deviceName] ?? false
-                              ? Colors.greenAccent
-                              : Colors.redAccent,
-                          shape: BoxShape.circle,
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 10,
-                              offset: Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                            (isTaskScheduled[deviceName] ?? false)
-                                ? Icons.check_circle_outline_rounded
-                                : Icons.cancel_rounded,
-                            size: 80,
-                            color: Colors.white),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    AnimatedOpacity(
-                      opacity: isTaskScheduled[deviceName] ?? false ? 1.0 : 0.0,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 30),
+                  GestureDetector(
+                    key: distanceBottomKey,
+                    onTap: () {
+                      if (deviceOwner || owner == '' || tenant) {
+                        verifyPermission().then((result) {
+                          if (result == true) {
+                            setState(() {
+                              isTaskScheduled[deviceName] =
+                                  !(isTaskScheduled[deviceName] ?? false);
+                            });
+                            saveControlValue(isTaskScheduled);
+                            controlTask(isTaskScheduled[deviceName] ?? false,
+                                deviceName);
+                          } else {
+                            showToast(
+                              'Permitir ubicación todo el tiempo\nPara usar el control por distancia',
+                            );
+                            openAppSettings();
+                          }
+                        });
+                      } else {
+                        showToast('No tienes acceso a esta función');
+                      }
+                    },
+                    child: AnimatedContainer(
                       duration: const Duration(milliseconds: 500),
-                      child: AnimatedSize(
-                        duration: const Duration(milliseconds: 500),
-                        curve: Curves.easeInOut,
-                        child: isTaskScheduled[deviceName] ?? false
-                            ? Column(
-                                children: [
-                                  // Tarjeta de Distancia de apagado
-                                  Card(
-                                    color: color3.withValues(alpha: 0.9),
-                                    elevation: 6,
-                                    margin: const EdgeInsets.symmetric(
-                                        vertical: 8.0, horizontal: 20.0),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(15),
-                                      side: BorderSide(
-                                        color: Color.lerp(
-                                            Colors.blueAccent,
-                                            Colors.redAccent,
-                                            (distOffValue - 100) / 200)!,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(10.0),
-                                      child: Column(
-                                        children: [
-                                          const Text(
-                                            'Distancia de apagado',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              color: color1,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                distOffValue.round().toString(),
-                                                style: const TextStyle(
-                                                  fontSize: 24,
-                                                  color: color1,
-                                                ),
-                                              ),
-                                              const Text(
-                                                ' Metros',
-                                                style: TextStyle(
-                                                  fontSize: 24,
-                                                  color: color1,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          if (!tenant) ...{
-                                            SliderTheme(
-                                              data: SliderTheme.of(context)
-                                                  .copyWith(
-                                                trackHeight: 20.0,
-                                                thumbColor: color3,
-                                                activeTrackColor:
-                                                    Colors.blueAccent,
-                                                inactiveTrackColor:
-                                                    Colors.blueGrey[100],
-                                                thumbShape:
-                                                    const RoundSliderThumbShape(
-                                                  enabledThumbRadius: 12.0,
-                                                  elevation: 0.0,
-                                                  pressedElevation: 0.0,
-                                                ),
-                                              ),
-                                              child: Slider(
-                                                activeColor: Colors.white,
-                                                inactiveColor:
-                                                    const Color(0xFFBDBDBD),
-                                                value: distOffValue,
-                                                divisions: 20,
-                                                onChanged: (value) {
-                                                  setState(() {
-                                                    distOffValue = value;
-                                                  });
-                                                },
-                                                onChangeEnd: (value) {
-                                                  printLog(
-                                                      'Valor enviado: ${value.round()}');
-                                                  putDistanceOff(
-                                                    service,
-                                                    DeviceManager
-                                                        .getProductCode(
-                                                            deviceName),
-                                                    DeviceManager
-                                                        .extractSerialNumber(
-                                                            deviceName),
-                                                    value.toString(),
-                                                  );
-                                                },
-                                                min: 100,
-                                                max: 300,
-                                              ),
-                                            ),
-                                          },
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 15),
-                                  Card(
-                                    color: color3.withValues(alpha: 0.9),
-                                    elevation: 6,
-                                    margin: const EdgeInsets.symmetric(
-                                        vertical: 8.0, horizontal: 20.0),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(15),
-                                      side: BorderSide(
-                                        color: Color.lerp(
-                                            Colors.blueAccent,
-                                            Colors.redAccent,
-                                            (distOnValue - 3000) / 2000)!,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(10.0),
-                                      child: Column(
-                                        children: [
-                                          const Text(
-                                            'Distancia de encendido',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              color: color1,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                distOnValue.round().toString(),
-                                                style: const TextStyle(
-                                                  fontSize: 24,
-                                                  color: color1,
-                                                ),
-                                              ),
-                                              const Text(
-                                                ' Metros',
-                                                style: TextStyle(
-                                                  fontSize: 24,
-                                                  color: color1,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          if (!tenant) ...{
-                                            SliderTheme(
-                                              data: SliderTheme.of(context)
-                                                  .copyWith(
-                                                trackHeight: 20.0,
-                                                thumbColor: color3,
-                                                activeTrackColor:
-                                                    Colors.blueAccent,
-                                                inactiveTrackColor:
-                                                    Colors.blueGrey[100],
-                                                thumbShape:
-                                                    const RoundSliderThumbShape(
-                                                  enabledThumbRadius: 12.0,
-                                                  elevation: 0.0,
-                                                  pressedElevation: 0.0,
-                                                ),
-                                              ),
-                                              child: Slider(
-                                                activeColor: Colors.white,
-                                                inactiveColor:
-                                                    const Color(0xFFBDBDBD),
-                                                value: distOnValue,
-                                                divisions: 20,
-                                                onChanged: (value) {
-                                                  setState(() {
-                                                    distOnValue = value;
-                                                  });
-                                                },
-                                                onChangeEnd: (value) {
-                                                  printLog(
-                                                      'Valor enviado: ${value.round()}');
-                                                  putDistanceOn(
-                                                    service,
-                                                    DeviceManager
-                                                        .getProductCode(
-                                                            deviceName),
-                                                    DeviceManager
-                                                        .extractSerialNumber(
-                                                            deviceName),
-                                                    value.toString(),
-                                                  );
-                                                },
-                                                min: 3000,
-                                                max: 5000,
-                                              ),
-                                            ),
-                                          },
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : const SizedBox(),
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: isTaskScheduled[deviceName] ?? false
+                            ? Colors.greenAccent
+                            : Colors.redAccent,
+                        shape: BoxShape.circle,
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 10,
+                            offset: Offset(0, 5),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              if (!deviceOwner && owner != '' && !tenant)
-                Container(
-                  color: Colors.black.withValues(alpha: 0.7),
-                  child: const Center(
-                    child: Text(
-                      'No tienes acceso a esta función',
-                      style: TextStyle(color: Colors.white, fontSize: 18),
+                      child: Icon(
+                          (isTaskScheduled[deviceName] ?? false)
+                              ? Icons.check_circle_outline_rounded
+                              : Icons.cancel_rounded,
+                          size: 80,
+                          color: Colors.white),
                     ),
                   ),
-                ),
-            ],
+                  const SizedBox(height: 10),
+                  AnimatedOpacity(
+                    opacity: isTaskScheduled[deviceName] ?? false ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 500),
+                    child: AnimatedSize(
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeInOut,
+                      child: isTaskScheduled[deviceName] ?? false
+                          ? Column(
+                              children: [
+                                // Tarjeta de Distancia de apagado
+                                Card(
+                                  color: color3.withValues(alpha: 0.9),
+                                  elevation: 6,
+                                  margin: const EdgeInsets.symmetric(
+                                      vertical: 8.0, horizontal: 20.0),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                    side: BorderSide(
+                                      color: Color.lerp(
+                                          Colors.blueAccent,
+                                          Colors.redAccent,
+                                          (distOffValue - 100) / 200)!,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(10.0),
+                                    child: Column(
+                                      children: [
+                                        const Text(
+                                          'Distancia de apagado',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: color1,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              distOffValue.round().toString(),
+                                              style: const TextStyle(
+                                                fontSize: 24,
+                                                color: color1,
+                                              ),
+                                            ),
+                                            const Text(
+                                              ' Metros',
+                                              style: TextStyle(
+                                                fontSize: 24,
+                                                color: color1,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        if (!tenant) ...{
+                                          SliderTheme(
+                                            data: SliderTheme.of(context)
+                                                .copyWith(
+                                              trackHeight: 20.0,
+                                              thumbColor: color3,
+                                              activeTrackColor:
+                                                  Colors.blueAccent,
+                                              inactiveTrackColor:
+                                                  Colors.blueGrey[100],
+                                              thumbShape:
+                                                  const RoundSliderThumbShape(
+                                                enabledThumbRadius: 12.0,
+                                                elevation: 0.0,
+                                                pressedElevation: 0.0,
+                                              ),
+                                            ),
+                                            child: Slider(
+                                              activeColor: Colors.white,
+                                              inactiveColor:
+                                                  const Color(0xFFBDBDBD),
+                                              value: distOffValue,
+                                              divisions: 20,
+                                              onChanged: (value) {
+                                                setState(() {
+                                                  distOffValue = value;
+                                                });
+                                              },
+                                              onChangeEnd: (value) {
+                                                printLog(
+                                                    'Valor enviado: ${value.round()}');
+                                                putDistanceOff(
+                                                  service,
+                                                  DeviceManager.getProductCode(
+                                                      deviceName),
+                                                  DeviceManager
+                                                      .extractSerialNumber(
+                                                          deviceName),
+                                                  value.toString(),
+                                                );
+                                              },
+                                              min: 100,
+                                              max: 300,
+                                            ),
+                                          ),
+                                        },
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 15),
+                                Card(
+                                  color: color3.withValues(alpha: 0.9),
+                                  elevation: 6,
+                                  margin: const EdgeInsets.symmetric(
+                                      vertical: 8.0, horizontal: 20.0),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                    side: BorderSide(
+                                      color: Color.lerp(
+                                          Colors.blueAccent,
+                                          Colors.redAccent,
+                                          (distOnValue - 3000) / 2000)!,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(10.0),
+                                    child: Column(
+                                      children: [
+                                        const Text(
+                                          'Distancia de encendido',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: color1,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              distOnValue.round().toString(),
+                                              style: const TextStyle(
+                                                fontSize: 24,
+                                                color: color1,
+                                              ),
+                                            ),
+                                            const Text(
+                                              ' Metros',
+                                              style: TextStyle(
+                                                fontSize: 24,
+                                                color: color1,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        if (!tenant) ...{
+                                          SliderTheme(
+                                            data: SliderTheme.of(context)
+                                                .copyWith(
+                                              trackHeight: 20.0,
+                                              thumbColor: color3,
+                                              activeTrackColor:
+                                                  Colors.blueAccent,
+                                              inactiveTrackColor:
+                                                  Colors.blueGrey[100],
+                                              thumbShape:
+                                                  const RoundSliderThumbShape(
+                                                enabledThumbRadius: 12.0,
+                                                elevation: 0.0,
+                                                pressedElevation: 0.0,
+                                              ),
+                                            ),
+                                            child: Slider(
+                                              activeColor: Colors.white,
+                                              inactiveColor:
+                                                  const Color(0xFFBDBDBD),
+                                              value: distOnValue,
+                                              divisions: 20,
+                                              onChanged: (value) {
+                                                setState(() {
+                                                  distOnValue = value;
+                                                });
+                                              },
+                                              onChangeEnd: (value) {
+                                                printLog(
+                                                    'Valor enviado: ${value.round()}');
+                                                putDistanceOn(
+                                                  service,
+                                                  DeviceManager.getProductCode(
+                                                      deviceName),
+                                                  DeviceManager
+                                                      .extractSerialNumber(
+                                                          deviceName),
+                                                  value.toString(),
+                                                );
+                                              },
+                                              min: 3000,
+                                              max: 5000,
+                                            ),
+                                          ),
+                                        },
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : const SizedBox(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
+          if (!deviceOwner && owner != '' && !tenant) ...{
+            Container(
+              color: Colors.black.withValues(alpha: 0.7),
+              child: const Center(
+                child: Text(
+                  'No tienes acceso a esta función',
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              ),
+            ),
+          },
+        ],
       ),
 
-      //*- página 4: Cambiar pines -*\\
+      //*- Página 4: Cambiar pines -*\\
 
       Stack(
         children: [

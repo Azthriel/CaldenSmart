@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../master.dart';
 import '../Global/stored_data.dart';
+import '../Global/manager_screen.dart';
 
 // CLASES \\
 
@@ -30,41 +31,6 @@ class DetectorPageState extends State<DetectorPage> {
 
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
-
-  //*- Keys para funciones de la appbar -*\\
-  final titleKey = GlobalKey(); // key para el nombre del equipo
-  final wifiKey = GlobalKey(); // key para el wifi del equipo
-  //*- Keys para funciones de la appbar -*\\
-
-  //*- Keys estado del dispositivo -*\\
-  final estadoKey = GlobalKey(); // key para la pantalla de estado
-  //*- Keys estado del dispositivo-*\\
-
-  //*- Keys Atmosfera explosiva y monóxido de carbono -*\\
-  final gasKey = GlobalKey(); // key para la pantalla de gas
-  final coKey = GlobalKey(); // key para la pantalla de co
-  //*- Keys Atmosfera explosiva y monóxido de carbono -*\\
-
-  //*- Keys Atmosfera explosiva y monóxido de carbono 2 -*\\
-  final gas2Key = GlobalKey(); // key para la pantalla de gas2
-  final co2Key = GlobalKey(); // key para la pantalla de co2
-  //*- Keys Atmosfera explosiva y monóxido de carbono -*\\
-
-  //*- Keys Atmosfera explosiva y monóxido de carbono 3 -*\\
-  final gas3Key = GlobalKey(); // key para la pantalla de gas2
-  final co3Key = GlobalKey(); // key para la pantalla de co2
-  //*- Keys Atmosfera explosiva y monóxido de carbono -*\\
-
-  //*- Keys para brillo display -*\\
-  final brightnessKey = GlobalKey(); // key para el brillo del display
-  final barBrightnessKey = GlobalKey(); // key para la barra de brillo
-  //*- Keys para brillo display -*\\
-
-  //*- keys para configuraciones -*\\
-  final configKey = GlobalKey(); // key para la pantalla de configuraciones
-  final imageKey = GlobalKey(); // key para el boton de imagen
-  final fastAccessKey = GlobalKey(); // key para el boton de acceso rapido
-  //*- keys para configuraciones -*\\
 
   void initItems() {
     items.addAll({
@@ -229,7 +195,7 @@ class DetectorPageState extends State<DetectorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: fastAccessKey,
+        globalKey: discNotificationKey,
         color: Colors.black.withValues(alpha: 0.6),
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(30.0),
@@ -1530,7 +1496,7 @@ class DetectorPageState extends State<DetectorPage> {
                       const SizedBox(height: 20),
                       // Botón 2: Activar/Desactivar notificación de desconexión
                       SizedBox(
-                        key: fastAccessKey,
+                        key: discNotificationKey,
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () async {

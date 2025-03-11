@@ -48,19 +48,6 @@ class DomoticaPageState extends State<DomoticaPage> {
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
 
-  //*- Keys para funciones de la appbar -*\\
-  final titleKey = GlobalKey(); // key para el nombre del equipo
-  final wifiKey = GlobalKey(); // key para el wifi del equipo
-  //*- Keys para funciones de la appbar -*\\
-
-  //*- Keys estado del dispositivo -*\\
-  final estadoKey = GlobalKey(); // key para la pantalla de estado
-  //*- Keys estado del dispositivo-*\\
-
-  //*- Keys para cambio de Modo de Pines -*\\
-  final pinModeKey = GlobalKey(); // key para el cambio de modo de pines
-  //*- Keys para cambio de Modo de Pines -*\\
-
   void initItems() {
     items.addAll({
       TutorialItem(
@@ -230,7 +217,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           ),
         ),
         TutorialItem(
-          globalKey: fastAccessKey,
+          globalKey: discNotificationKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -916,7 +903,7 @@ class DomoticaPageState extends State<DomoticaPage> {
     }
 
     final List<Widget> pages = [
-      //*- página 1 entradas/salidas -*\\
+      //*- Página 1 entradas/salidas -*\\
       SingleChildScrollView(
         child: SizedBox(
           height: MediaQuery.of(context).size.height * 0.8,
@@ -1443,125 +1430,123 @@ class DomoticaPageState extends State<DomoticaPage> {
       //   ],
       // ),
 
-      if (hardwareVersion == '240422A') ...{
-        //*- página 3: Cambiar pines -*\\
-
-        Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20.0,
-                vertical: 30,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    key: pinModeKey,
-                    'Cambio de Modo de Pines',
-                    style: GoogleFonts.poppins(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: color3,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 40),
-                  Card(
+      Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 30,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  key: pinModeKey,
+                  'Cambio de Modo de Pines',
+                  style: GoogleFonts.poppins(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
                     color: color3,
-                    elevation: 8,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 500),
-                            child: isPasswordCorrect
-                                ? const Icon(
-                                    HugeIcons.strokeRoundedSquareUnlock02,
-                                    color: color0,
-                                    size: 40,
-                                    key: ValueKey('open_lock'),
-                                  )
-                                : const Icon(
-                                    HugeIcons.strokeRoundedSquareLock02,
-                                    color: color0,
-                                    size: 40,
-                                    key: ValueKey('closed_lock'),
-                                  ),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            'Ingresa la contraseña del módulo ubicada en el manual',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontSize: 18,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          TextField(
-                            controller: modulePassController,
-                            style: const TextStyle(color: color0, fontSize: 16),
-                            cursorColor: color0,
-                            obscureText: true,
-                            onChanged: (value) {
-                              setState(() {
-                                isPasswordCorrect = value == '53494d45';
-                              });
-                            },
-                            decoration: InputDecoration(
-                              prefixIcon: Icon(
-                                Icons.key,
-                                color: color0.withValues(alpha: 0.7),
-                              ),
-                              hintText: "Contraseña",
-                              hintStyle: TextStyle(
-                                color: color0.withValues(alpha: 0.6),
-                              ),
-                              enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(
-                                  color: color0.withValues(alpha: 0.5),
-                                ),
-                              ),
-                              focusedBorder: const UnderlineInputBorder(
-                                borderSide: BorderSide(
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 40),
+                Card(
+                  color: color3,
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 500),
+                          child: isPasswordCorrect
+                              ? const Icon(
+                                  HugeIcons.strokeRoundedSquareUnlock02,
                                   color: color0,
+                                  size: 40,
+                                  key: ValueKey('open_lock'),
+                                )
+                              : const Icon(
+                                  HugeIcons.strokeRoundedSquareLock02,
+                                  color: color0,
+                                  size: 40,
+                                  key: ValueKey('closed_lock'),
                                 ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Ingresa la contraseña del módulo ubicada en el manual',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            color: color0,
+                            fontSize: 18,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        TextField(
+                          controller: modulePassController,
+                          style: const TextStyle(color: color0, fontSize: 16),
+                          cursorColor: color0,
+                          obscureText: true,
+                          onChanged: (value) {
+                            setState(() {
+                              isPasswordCorrect = value == '53494d45';
+                            });
+                          },
+                          decoration: InputDecoration(
+                            prefixIcon: Icon(
+                              Icons.key,
+                              color: color0.withValues(alpha: 0.7),
+                            ),
+                            hintText: "Contraseña",
+                            hintStyle: TextStyle(
+                              color: color0.withValues(alpha: 0.6),
+                            ),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(
+                                color: color0.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            focusedBorder: const UnderlineInputBorder(
+                              borderSide: BorderSide(
+                                color: color0,
                               ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 30),
-                  if (isPasswordCorrect)
-                    FloatingActionButton.extended(
-                      onPressed: () {
-                        setState(() {
-                          isChangeModeVisible = !isChangeModeVisible;
-                        });
-                      },
-                      backgroundColor: color3,
-                      foregroundColor: color0,
-                      icon: const Icon(Icons.settings, color: color0),
-                      label: Text(
-                        'Cambiar modo de pines',
-                        style: GoogleFonts.poppins(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
+                ),
+                const SizedBox(height: 30),
+                if (isPasswordCorrect)
+                  FloatingActionButton.extended(
+                    onPressed: () {
+                      setState(() {
+                        isChangeModeVisible = !isChangeModeVisible;
+                      });
+                    },
+                    backgroundColor: color3,
+                    foregroundColor: color0,
+                    icon: const Icon(Icons.settings, color: color0),
+                    label: Text(
+                      'Cambiar modo de pines',
+                      style: GoogleFonts.poppins(
+                          fontSize: 16, fontWeight: FontWeight.bold),
                     ),
-                  const SizedBox(height: 20),
-                  if (isChangeModeVisible && isPasswordCorrect)
-                    Column(
-                      children: [
-                        for (var i = 0; i < parts.length; i++) ...[
+                  ),
+                const SizedBox(height: 30),
+                if (isChangeModeVisible && isPasswordCorrect)
+                  Column(
+                    children: [
+                      for (var i = 0; i < parts.length; i++) ...[
+                        if (tipo[i] == 'Entrada') ...{
                           Card(
                             color: color3,
                             elevation: 6,
@@ -1586,281 +1571,201 @@ class DomoticaPageState extends State<DomoticaPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  if (tipo[i] == 'Salida') ...{
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Alternar entre Normal Abierto y Normal Cerrado',
-                                          style: GoogleFonts.poppins(
-                                            color: color0,
-                                            fontSize: 16,
-                                          ),
+                                  Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Puedes cambiar entre Normal Abierto (NA) y Normal Cerrado (NC)',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 16,
+                                          color: color0,
                                         ),
-                                        const SizedBox(height: 12),
-                                        Container(
-                                          height: 40,
-                                          decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(30.0),
-                                            border: Border.all(
-                                              color: color0,
-                                              width: 2,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Expanded(
-                                                child: GestureDetector(
-                                                  onTap: () {
-                                                    // NORMAL Abierto
-
-                                                    String message =
-                                                        jsonEncode({
-                                                      'pinType': '0',
-                                                      'index': i,
-                                                      'w_status':
-                                                          estado[i] == '1',
-                                                      'r_state': 0,
-                                                    });
-
-                                                    // Envías por MQTT
-                                                    String topicRx =
-                                                        'devices_rx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
-                                                    String topicTx =
-                                                        'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
-                                                    sendMessagemqtt(
-                                                        topicRx, message);
-                                                    sendMessagemqtt(
-                                                        topicTx, message);
-
-                                                    // Guardas en globalDATA
-                                                    globalDATA
-                                                        .putIfAbsent(
-                                                      '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
-                                                      () => {},
-                                                    )
-                                                        .addAll(
-                                                            {'io$i': message});
-                                                    saveGlobalData(globalDATA);
-
-                                                    setState(() {
-                                                      common[i] = '0';
-                                                    });
-                                                  },
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      color: common[i] == '0'
-                                                          ? color0
-                                                          : Colors.transparent,
-                                                      borderRadius:
-                                                          const BorderRadius
-                                                              .only(
-                                                        topLeft:
-                                                            Radius.circular(28),
-                                                        bottomLeft:
-                                                            Radius.circular(28),
-                                                      ),
-                                                    ),
-                                                    child: Center(
-                                                      child: Text(
-                                                        'Normal Abierto',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          fontSize: 14,
-                                                          color:
-                                                              common[i] == '0'
-                                                                  ? color3
-                                                                  : color0,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              Container(
-                                                width: 2,
-                                                color: color0,
-                                              ),
-                                              Expanded(
-                                                child: GestureDetector(
-                                                  onTap: () {
-                                                    // NORMAL Cerrado
-
-                                                    // pones los valores
-                                                    String message =
-                                                        jsonEncode({
-                                                      'pinType': '0',
-                                                      'index': i,
-                                                      'w_status':
-                                                          estado[i] == '1',
-                                                      'r_state': '1',
-                                                    });
-
-                                                    // Envías por MQTT
-                                                    String topicRx =
-                                                        'devices_rx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
-                                                    String topicTx =
-                                                        'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
-                                                    sendMessagemqtt(
-                                                        topicRx, message);
-                                                    sendMessagemqtt(
-                                                        topicTx, message);
-
-                                                    // Guardas globalDATA
-                                                    globalDATA
-                                                        .putIfAbsent(
-                                                      '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
-                                                      () => {},
-                                                    )
-                                                        .addAll(
-                                                            {'io$i': message});
-                                                    saveGlobalData(globalDATA);
-
-                                                    setState(() {
-                                                      common[i] = '1';
-                                                    });
-                                                  },
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      color: common[i] == '1'
-                                                          ? color0
-                                                          : Colors.transparent,
-                                                      borderRadius:
-                                                          const BorderRadius
-                                                              .only(
-                                                        topRight:
-                                                            Radius.circular(28),
-                                                        bottomRight:
-                                                            Radius.circular(28),
-                                                      ),
-                                                    ),
-                                                    child: Center(
-                                                      child: Text(
-                                                        'Normal Cerrado',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          fontSize: 14,
-                                                          color:
-                                                              common[i] == '1'
-                                                                  ? color3
-                                                                  : color0,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 20),
-                                  },
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    tipo[i] == 'Entrada'
-                                        ? '¿Cambiar de entrada a salida?'
-                                        : '¿Cambiar de salida a entrada?',
-                                    style: GoogleFonts.poppins(
-                                      color: color0,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  if (tipo[i] == 'Entrada')
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'Estado común:',
-                                          style: GoogleFonts.poppins(
-                                            color: color0,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        Text(
-                                          common[i],
-                                          style: GoogleFonts.poppins(
-                                            color: color0,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        IconButton(
-                                          onPressed: () {
-                                            String data =
-                                                '${DeviceManager.getProductCode(deviceName)}[14]($i#${common[i] == '1' ? '0' : '1'})';
-                                            printLog(data);
-                                            myDevice.toolsUuid
-                                                .write(data.codeUnits);
-                                          },
-                                          icon: const Icon(
-                                            Icons.change_circle_outlined,
-                                            color: color0,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  const SizedBox(height: 12),
-                                  Center(
-                                    child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        foregroundColor: color3,
-                                        backgroundColor: color0,
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 24.0, vertical: 12.0),
-                                        shape: RoundedRectangleBorder(
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 20),
+                                      Container(
+                                        height: 40,
+                                        decoration: BoxDecoration(
                                           borderRadius:
-                                              BorderRadius.circular(12),
+                                              BorderRadius.circular(30.0),
+                                          border: Border.all(
+                                            color: color0,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  setState(() {
+                                                    String data =
+                                                        '${DeviceManager.getProductCode(deviceName)}[14]($i#0)';
+                                                    printLog(data);
+                                                    myDevice.toolsUuid
+                                                        .write(data.codeUnits);
+                                                    common[i] = '0';
+                                                  });
+                                                  //TODO normal abierto
+                                                },
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    color: common[i] == '0'
+                                                        ? color0
+                                                        : Colors.transparent,
+                                                    borderRadius:
+                                                        const BorderRadius.only(
+                                                      topLeft:
+                                                          Radius.circular(28),
+                                                      bottomLeft:
+                                                          Radius.circular(28),
+                                                    ),
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      'Normal Abierto',
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        fontSize: 14,
+                                                        color: common[i] == '0'
+                                                            ? color3
+                                                            : color0,
+                                                      ),
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            Container(
+                                              width: 2,
+                                              color: color0,
+                                            ),
+                                            Expanded(
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  //TODO normal cerrado
+                                                  setState(() {
+                                                    String data =
+                                                        '${DeviceManager.getProductCode(deviceName)}[14]($i#1)';
+                                                    printLog(data);
+                                                    myDevice.toolsUuid
+                                                        .write(data.codeUnits);
+                                                    common[i] = '1';
+                                                  });
+                                                },
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    color: common[i] == '1'
+                                                        ? color0
+                                                        : Colors.transparent,
+                                                    borderRadius:
+                                                        const BorderRadius.only(
+                                                      topRight:
+                                                          Radius.circular(28),
+                                                      bottomRight:
+                                                          Radius.circular(28),
+                                                    ),
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      'Normal Cerrado',
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        fontSize: 14,
+                                                        color: common[i] == '1'
+                                                            ? color3
+                                                            : color0,
+                                                      ),
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      onPressed: () {
-                                        String fun =
-                                            '${DeviceManager.getProductCode(deviceName)}[13]($i#${tipo[i] == 'Entrada' ? '0' : '1'})';
-                                        printLog(fun);
-                                        myDevice.toolsUuid.write(fun.codeUnits);
-                                      },
-                                      child: const Text(
-                                        'CAMBIAR',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  if (Versioner.isPrevious(
+                                      hardwareVersion, '240422A')) ...{
+                                    const Divider(),
+                                    const SizedBox(height: 10),
+                                    Center(
+                                      child: Text(
+                                        tipo[i] == 'Entrada'
+                                            ? '¿Cambiar de entrada a salida?'
+                                            : '¿Cambiar de salida a entrada?',
+                                        style: GoogleFonts.poppins(
+                                          color: color0,
+                                          fontSize: 16,
+                                        ),
+                                        textAlign: TextAlign.center,
                                       ),
                                     ),
-                                  ),
+                                    const SizedBox(height: 12),
+                                    Center(
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          foregroundColor: color3,
+                                          backgroundColor: color0,
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 24.0, vertical: 12.0),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          String fun =
+                                              '${DeviceManager.getProductCode(deviceName)}[13]($i#${tipo[i] == 'Entrada' ? '0' : '1'})';
+                                          printLog(fun);
+                                          myDevice.toolsUuid
+                                              .write(fun.codeUnits);
+                                        },
+                                        child: const Text(
+                                          'CAMBIAR',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ),
+                                  },
                                 ],
                               ),
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          if (i == parts.length - 1) ...{
-                            Padding(
-                              padding:
-                                  EdgeInsets.only(bottom: bottomBarHeight + 10),
-                            ),
-                          }
-                        ],
+                        },
+                        const SizedBox(height: 20),
+                        if (i == parts.length - 1) ...{
+                          Padding(
+                            padding:
+                                EdgeInsets.only(bottom: bottomBarHeight + 10),
+                          ),
+                        }
                       ],
-                    ),
-                ],
-              ),
-            ),
-            if (!deviceOwner && owner != '')
-              Container(
-                color: Colors.black.withValues(alpha: 0.7),
-                child: const Center(
-                  child: Text(
-                    'No tienes acceso a esta función',
-                    style: TextStyle(color: Colors.white, fontSize: 18),
+                    ],
                   ),
+              ],
+            ),
+          ),
+          if (!deviceOwner && owner != '')
+            Container(
+              color: Colors.black.withValues(alpha: 0.7),
+              child: const Center(
+                child: Text(
+                  'No tienes acceso a esta función',
+                  style: TextStyle(color: Colors.white, fontSize: 18),
                 ),
               ),
-          ],
-        ),
-      },
+            ),
+        ],
+      ),
 
       //*- Página 4: Gestión del Equipo -*\\
       const ManagerScreen(),
@@ -2048,13 +1953,11 @@ class DomoticaPageState extends State<DomoticaPage> {
                   child: CurvedNavigationBar(
                     index: _selectedIndex,
                     height: 75.0,
-                    items: <Widget>[
-                      const Icon(Icons.home, size: 30, color: color0),
+                    items: const <Widget>[
+                      Icon(Icons.home, size: 30, color: color0),
                       //const Icon(Icons.bluetooth, size: 30, color: color0),
-                      if (hardwareVersion == '240422A') ...{
-                        const Icon(Icons.input, size: 30, color: color0),
-                      },
-                      const Icon(Icons.settings, size: 30, color: color0),
+                      Icon(Icons.input, size: 30, color: color0),
+                      Icon(Icons.settings, size: 30, color: color0),
                     ],
                     color: color3,
                     buttonBackgroundColor: color3,
