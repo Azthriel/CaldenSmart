@@ -4,8 +4,10 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 import 'package:amplify_flutter/amplify_flutter.dart';
+import 'package:caldensmart/firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -900,6 +902,27 @@ String linksOfApp(int type, String link) {
           return 'https://www.facebook.com/CalefactoresCalden';
       }
     case 'Web':
+      switch (type) {
+        case 0:
+          return 'https://caldensmart.com';
+        default:
+          return 'https://caldensmart.com';
+      }
+    case 'Alexa':
+      switch (type) {
+        case 0:
+          return 'https://alexa-skills.amazon.com/apis/custom/skills/amzn1.ask.skill.e858a007-cc1f-4dcf-a753-59b785c08928/launch';
+        default:
+          return 'https://alexa-skills.amazon.com/apis/custom/skills/amzn1.ask.skill.e858a007-cc1f-4dcf-a753-59b785c08928/launch';
+      }
+    case 'GoogleHome':
+      switch (type) {
+        case 0:
+          return 'https://caldensmart.com';
+        default:
+          return 'https://caldensmart.com';
+      }
+    case 'Siri':
       switch (type) {
         case 0:
           return 'https://caldensmart.com';
@@ -1817,9 +1840,12 @@ Future<void> initNotifications() async {
 Future<void> handleNotifications(RemoteMessage message) async {
   android = Platform.isAndroid;
   try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     nicknamesMap = await loadNicknamesMap();
     soundOfNotification = await loadSounds();
-    DeviceManager.init();
+    await DeviceManager.init();
     printLog('Llegó esta notif: ${message.data}', 'rojo');
     String product = message.data['pc']!;
     String number = message.data['sn']!;

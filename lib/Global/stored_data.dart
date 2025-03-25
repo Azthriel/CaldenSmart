@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // MASTERLOAD \\
 //*-Cargo toda la data-*\\
-void loadValues() async {
+Future<void> loadValues() async {
   globalDATA = await loadGlobalData();
   previusConnections = await loadDeviceList();
   alexaDevices = await loadAlexaDevices();

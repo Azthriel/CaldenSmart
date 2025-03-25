@@ -104,12 +104,12 @@ class WifiPageState extends State<WifiPage> {
           style: GoogleFonts.poppins(color: color0),
         ),
         backgroundColor: color3,
-        actions: [
-          IconButton(
-            icon: const Icon(HugeIcons.strokeRoundedSettings02, color: color0),
-            onPressed: () => Navigator.pushNamed(context, '/escenas'),
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     icon: const Icon(HugeIcons.strokeRoundedSettings02, color: color0),
+        //     onPressed: () => Navigator.pushNamed(context, '/escenas'),
+        //   ),
+        // ],
       ),
       body: Container(
         padding: const EdgeInsets.only(bottom: 100.0),

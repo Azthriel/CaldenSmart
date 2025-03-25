@@ -648,82 +648,84 @@ class DetectorPageState extends State<DetectorPage> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(20.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const SizedBox(height: 20),
-                              const Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  SizedBox(width: 70),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'GAS',
-                                          style: TextStyle(
-                                            color: color0,
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
+                          child: SingleChildScrollView(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(height: 20),
+                                const Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    SizedBox(width: 70),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'GAS',
+                                            style: TextStyle(
+                                              color: color0,
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                        ),
-                                        SizedBox(height: 10),
-                                        Text(
-                                          'Atmósfera explosiva',
-                                          style: TextStyle(
-                                            color: color0,
-                                            fontSize: 18,
+                                          SizedBox(height: 10),
+                                          Text(
+                                            'Atmósfera explosiva',
+                                            style: TextStyle(
+                                              color: color0,
+                                              fontSize: 18,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              const Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    HugeIcons.strokeRoundedFire,
-                                    color: Color(0xFF10BB96),
-                                    size: 40, // Tamaño adaptado
-                                  ),
-                                  SizedBox(width: 20),
-                                  Expanded(
-                                    child: Divider(
-                                      color: Colors.white54,
-                                      thickness: 1,
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                const Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      HugeIcons.strokeRoundedFire,
+                                      color: Color(0xFF10BB96),
+                                      size: 40, // Tamaño adaptado
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    "${(ppmCH4 / 500).round()}%",
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.bold,
+                                    SizedBox(width: 20),
+                                    Expanded(
+                                      child: Divider(
+                                        color: Colors.white54,
+                                        thickness: 1,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  const Text(
-                                    'LIE',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 18,
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      "${(ppmCH4 / 500).round()}%",
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                    const SizedBox(width: 10),
+                                    const Text(
+                                      'LIE',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -745,82 +747,84 @@ class DetectorPageState extends State<DetectorPage> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(20.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const SizedBox(height: 20),
-                              const Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  SizedBox(width: 70),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'CO',
-                                          style: TextStyle(
-                                            color: color0,
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
+                          child: SingleChildScrollView(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(height: 20),
+                                const Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    SizedBox(width: 70),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'CO',
+                                            style: TextStyle(
+                                              color: color0,
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                        ),
-                                        SizedBox(height: 10),
-                                        Text(
-                                          'Monóxido de carbono',
-                                          style: TextStyle(
-                                            color: color0,
-                                            fontSize: 18,
+                                          SizedBox(height: 10),
+                                          Text(
+                                            'Monóxido de carbono',
+                                            style: TextStyle(
+                                              color: color0,
+                                              fontSize: 18,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              const Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    HugeIcons.strokeRoundedCloud,
-                                    color: Color(0xFF18B2C7),
-                                    size: 40,
-                                  ),
-                                  SizedBox(width: 20),
-                                  Expanded(
-                                    child: Divider(
-                                      color: Colors.white54,
-                                      thickness: 1,
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                const Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      HugeIcons.strokeRoundedCloud,
+                                      color: Color(0xFF18B2C7),
+                                      size: 40,
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    ppmCO.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.bold,
+                                    SizedBox(width: 20),
+                                    Expanded(
+                                      child: Divider(
+                                        color: Colors.white54,
+                                        thickness: 1,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  const Text(
-                                    'PPM',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 18,
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      ppmCO.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                    const SizedBox(width: 10),
+                                    const Text(
+                                      'PPM',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -865,82 +869,84 @@ class DetectorPageState extends State<DetectorPage> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(20.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const SizedBox(height: 20),
-                              const Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  SizedBox(width: 70),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Pico máximo',
-                                          style: TextStyle(
-                                            color: color0,
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
+                          child: SingleChildScrollView(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(height: 20),
+                                const Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    SizedBox(width: 70),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Pico máximo',
+                                            style: TextStyle(
+                                              color: color0,
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                        ),
-                                        SizedBox(height: 10),
-                                        Text(
-                                          'PPM CH4',
-                                          style: TextStyle(
-                                            color: color0,
-                                            fontSize: 18,
+                                          SizedBox(height: 10),
+                                          Text(
+                                            'PPM CH4',
+                                            style: TextStyle(
+                                              color: color0,
+                                              fontSize: 18,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              const Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.trending_up,
-                                    color: Color(0xFF10BB96),
-                                    size: 40,
-                                  ),
-                                  SizedBox(width: 20),
-                                  Expanded(
-                                    child: Divider(
-                                      color: Colors.white54,
-                                      thickness: 1,
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                const Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.trending_up,
+                                      color: Color(0xFF10BB96),
+                                      size: 40,
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    picoMaxppmCH4.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.bold,
+                                    SizedBox(width: 20),
+                                    Expanded(
+                                      child: Divider(
+                                        color: Colors.white54,
+                                        thickness: 1,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  const Text(
-                                    'PPM',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 18,
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      picoMaxppmCH4.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                    const SizedBox(width: 10),
+                                    const Text(
+                                      'PPM',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -962,82 +968,84 @@ class DetectorPageState extends State<DetectorPage> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(20.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const SizedBox(height: 20),
-                              const Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  SizedBox(width: 70),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Pico máximo',
-                                          style: TextStyle(
-                                            color: color0,
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
+                          child: SingleChildScrollView(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(height: 20),
+                                const Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    SizedBox(width: 70),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Pico máximo',
+                                            style: TextStyle(
+                                              color: color0,
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                        ),
-                                        SizedBox(height: 10),
-                                        Text(
-                                          'PPM CO',
-                                          style: TextStyle(
-                                            color: color0,
-                                            fontSize: 18,
+                                          SizedBox(height: 10),
+                                          Text(
+                                            'PPM CO',
+                                            style: TextStyle(
+                                              color: color0,
+                                              fontSize: 18,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              const Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.trending_up,
-                                    color: Color(0xFF18B2C7),
-                                    size: 40,
-                                  ),
-                                  SizedBox(width: 20),
-                                  Expanded(
-                                    child: Divider(
-                                      color: Colors.white54,
-                                      thickness: 1,
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                const Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.trending_up,
+                                      color: Color(0xFF18B2C7),
+                                      size: 40,
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    promedioppmCO.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.bold,
+                                    SizedBox(width: 20),
+                                    Expanded(
+                                      child: Divider(
+                                        color: Colors.white54,
+                                        thickness: 1,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  const Text(
-                                    'PPM',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 18,
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      promedioppmCO.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                    const SizedBox(width: 10),
+                                    const Text(
+                                      'PPM',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -1083,82 +1091,84 @@ class DetectorPageState extends State<DetectorPage> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(20.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const SizedBox(height: 20),
-                              const Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  SizedBox(width: 70),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Promedio',
-                                          style: TextStyle(
-                                            color: color0,
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
+                          child: SingleChildScrollView(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(height: 20),
+                                const Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    SizedBox(width: 70),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Promedio',
+                                            style: TextStyle(
+                                              color: color0,
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                        ),
-                                        SizedBox(height: 10),
-                                        Text(
-                                          'PPM CH4',
-                                          style: TextStyle(
-                                            color: color0,
-                                            fontSize: 18,
+                                          SizedBox(height: 10),
+                                          Text(
+                                            'PPM CH4',
+                                            style: TextStyle(
+                                              color: color0,
+                                              fontSize: 18,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              const Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    HugeIcons.strokeRoundedChartLineData03,
-                                    color: Color(0xFF10BB96),
-                                    size: 40,
-                                  ),
-                                  SizedBox(width: 20),
-                                  Expanded(
-                                    child: Divider(
-                                      color: Colors.white54,
-                                      thickness: 1,
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                const Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      HugeIcons.strokeRoundedChartLineData03,
+                                      color: Color(0xFF10BB96),
+                                      size: 40,
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    promedioppmCH4.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.bold,
+                                    SizedBox(width: 20),
+                                    Expanded(
+                                      child: Divider(
+                                        color: Colors.white54,
+                                        thickness: 1,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  const Text(
-                                    'PPM',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 18,
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      promedioppmCH4.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                    const SizedBox(width: 10),
+                                    const Text(
+                                      'PPM',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -1180,82 +1190,84 @@ class DetectorPageState extends State<DetectorPage> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(20.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const SizedBox(height: 20),
-                              const Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  SizedBox(width: 70),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Promedio',
-                                          style: TextStyle(
-                                            color: color0,
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
+                          child: SingleChildScrollView(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(height: 20),
+                                const Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    SizedBox(width: 70),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Promedio',
+                                            style: TextStyle(
+                                              color: color0,
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                        ),
-                                        SizedBox(height: 10),
-                                        Text(
-                                          'PPM CO',
-                                          style: TextStyle(
-                                            color: color0,
-                                            fontSize: 18,
+                                          SizedBox(height: 10),
+                                          Text(
+                                            'PPM CO',
+                                            style: TextStyle(
+                                              color: color0,
+                                              fontSize: 18,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              const Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    HugeIcons.strokeRoundedChartLineData03,
-                                    color: Color(0xFF18B2C7),
-                                    size: 40,
-                                  ),
-                                  SizedBox(width: 20),
-                                  Expanded(
-                                    child: Divider(
-                                      color: Colors.white54,
-                                      thickness: 1,
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                const Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      HugeIcons.strokeRoundedChartLineData03,
+                                      color: Color(0xFF18B2C7),
+                                      size: 40,
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    promedioppmCO.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.bold,
+                                    SizedBox(width: 20),
+                                    Expanded(
+                                      child: Divider(
+                                        color: Colors.white54,
+                                        thickness: 1,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  const Text(
-                                    'PPM',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 18,
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      promedioppmCO.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                    const SizedBox(width: 10),
+                                    const Text(
+                                      'PPM',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -1295,7 +1307,7 @@ class DetectorPageState extends State<DetectorPage> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 100),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -1381,47 +1393,6 @@ class DetectorPageState extends State<DetectorPage> {
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 70),
-                    // versiones de hardware y software
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 10, horizontal: 20),
-                      decoration: BoxDecoration(
-                        color: color3,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Versión de Hardware $hardwareVersion',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          textStyle: const TextStyle(
-                            color: color0,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 10, horizontal: 20),
-                      decoration: BoxDecoration(
-                        color: color3,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Versión de Software $softwareVersion',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          textStyle: const TextStyle(
-                            color: color0,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
                     ),
                   ],
                 );
@@ -1558,8 +1529,9 @@ class DetectorPageState extends State<DetectorPage> {
                                 ? 'Desactivar notificación\nde desconexión'
                                 : 'Activar notificación\nde desconexión',
                             style: GoogleFonts.poppins(
-                              fontSize: 15,
+                              fontSize: 18,
                               color: color0,
+                              fontWeight: FontWeight.bold,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -1699,6 +1671,48 @@ class DetectorPageState extends State<DetectorPage> {
                               )
                             : const SizedBox.shrink(),
                       ),
+                      const SizedBox(height: 20),
+                      // versiones de hardware y software
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 10, horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: color3,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Versión de Hardware $hardwareVersion',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            textStyle: const TextStyle(
+                              color: color0,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 10, horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: color3,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Versión de Software $softwareVersion',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            textStyle: const TextStyle(
+                              color: color0,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+
                       Padding(
                         padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
                       ),

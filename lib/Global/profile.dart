@@ -33,6 +33,7 @@ class ProfilePageState extends State<ProfilePage> {
   bool isDetectorOpen = false;
   bool isContactOpen = false;
   bool isSocialOpen = false;
+  bool isAssistantOpen = false;
 
   @override
   void dispose() {
@@ -328,6 +329,7 @@ class ProfilePageState extends State<ProfilePage> {
                                   printLog('Elegí alarma${value! + 1}');
                                   soundOfNotification['020010_IOT'] =
                                       'alarm${value + 1}';
+                                  saveSounds(soundOfNotification);
                                   NativeService().playNativeSound(
                                       'alarm${value + 1}',
                                       getAlarmDelay('alarm${value + 1}'));
@@ -406,6 +408,7 @@ class ProfilePageState extends State<ProfilePage> {
                                   printLog('Elegí alarma${value! + 1}');
                                   soundOfNotification['015773_IOT'] =
                                       'alarm${value + 1}';
+                                  saveSounds(soundOfNotification);
                                   NativeService().playNativeSound(
                                       'alarm${value + 1}',
                                       getAlarmDelay('alarm${value + 1}'));
@@ -534,6 +537,101 @@ class ProfilePageState extends State<ProfilePage> {
                         : CrossFadeState.showFirst,
                   ),
                   const Divider(color: color3),
+                  // ListTile(
+                  //   leading: const Icon(
+                  //     HugeIcons.strokeRoundedVoice,
+                  //     color: color3,
+                  //   ),
+                  //   title: Text(
+                  //     "Asistentes por voz",
+                  //     style: GoogleFonts.poppins(
+                  //       color: color3,
+                  //       fontWeight: FontWeight.bold,
+                  //     ),
+                  //   ),
+                  //   subtitle: Text(
+                  //     "VIncular Asistentes por voz",
+                  //     style: GoogleFonts.poppins(
+                  //       color: color3,
+                  //     ),
+                  //   ),
+                  //   onTap: () {
+                  //     setState(() {
+                  //       isAssistantOpen = !isAssistantOpen;
+                  //     });
+                  //   },
+                  //   trailing: Icon(
+                  //     isAssistantOpen
+                  //         ? HugeIcons.strokeRoundedArrowUp01
+                  //         : HugeIcons.strokeRoundedArrowDown01,
+                  //     color: color3,
+                  //   ),
+                  // ),
+                  // AnimatedCrossFade(
+                  //   duration: const Duration(milliseconds: 300),
+                  //   firstChild: const SizedBox.shrink(),
+                  //   secondChild: Padding(
+                  //     padding: const EdgeInsets.only(left: 16.0),
+                  //     child: Column(
+                  //       crossAxisAlignment: CrossAxisAlignment.start,
+                  //       children: [
+                  //         ListTile(
+                  //           leading: const Image(
+                  //             image: AssetImage('assets/misc/Alexa.png'),
+                  //             width: 30,
+                  //             height: 30,
+                  //           ),
+                  //           title: Text(
+                  //             'Alexa',
+                  //             style: GoogleFonts.poppins(
+                  //               color: color3,
+                  //             ),
+                  //           ),
+                  //           onTap: () {
+                  //             launchWebURL(linksOfApp(app, 'Alexa'));
+                  //           },
+                  //         ),
+                  //         ListTile(
+                  //           leading: const Image(
+                  //             image: AssetImage('assets/misc/GoogleHome.png'),
+                  //             width: 30,
+                  //             height: 30,
+                  //           ),
+                  //           title: Text(
+                  //             'Google Home',
+                  //             style: GoogleFonts.poppins(
+                  //               color: color3,
+                  //             ),
+                  //           ),
+                  //           onTap: () {
+                  //             launchWebURL(linksOfApp(app, 'GoogleHome'));
+                  //           },
+                  //         ),
+                  //         ListTile(
+                  //           leading: const Image(
+                  //             image: AssetImage('assets/misc/Siri.webp'),
+                  //             width: 30,
+                  //             height: 30,
+                  //           ),
+                  //           title: Text(
+                  //             'Siri',
+                  //             style: GoogleFonts.poppins(
+                  //               color: color3,
+                  //             ),
+                  //           ),
+                  //           onTap: () {
+                  //             showToast('Próximamente');
+                  //             // launchWebURL(linksOfApp(app, 'Siri'));
+                  //           },
+                  //         ),
+                  //       ],
+                  //     ),
+                  //   ),
+                  //   crossFadeState: isAssistantOpen
+                  //       ? CrossFadeState.showSecond
+                  //       : CrossFadeState.showFirst,
+                  // ),
+                  // const Divider(color: color3),
                   ListTile(
                     leading: const Icon(HugeIcons.strokeRoundedShare01,
                         color: color3),
