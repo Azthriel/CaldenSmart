@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:caldensmart/aws/dynamo/dynamo.dart';
+import 'package:caldensmart/aws/dynamo/dynamo_certificates.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -903,6 +905,7 @@ class RollerPageState extends State<RollerPage> {
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
                         saveNicknamesMap(nicknamesMap);
+                        putNicknames(service, currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },

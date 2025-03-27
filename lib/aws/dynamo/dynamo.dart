@@ -415,6 +415,29 @@ Future<void> putDevicesForAlexa(
 
 ///*-Guardar equipos para la Alexa Skill-*\\\
 
+///*-Guardar Nicknames de los equipo-*\\\
+Future<void> putNicknames(
+    DynamoDB service, String email, Map<String, String> data) async {
+  try {
+    final response = await service.updateItem(tableName: 'Alexa-Devices', key: {
+      'email': AttributeValue(s: email),
+    }, attributeUpdates: {
+      'nicknames': AttributeValueUpdate(
+        value: AttributeValue(
+          m: {
+            for (final entry in data.entries)
+              entry.key: AttributeValue(s: entry.value),
+          },
+        ),
+      ),
+    });
+
+    printLog('Item escrito perfectamente $response');
+  } catch (e) {
+    printLog('Error guardando alexa item: $e');
+  }
+}
+///*-Guardar Nicknames de los equipo-*\\\
 
 ///*-Guardar el largo del Roller-*\\\
 Future<void> putRollerLength(

@@ -1701,6 +1701,7 @@ class RelayPageState extends State<RelayPage> {
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
                         saveNicknamesMap(nicknamesMap);
+                        putNicknames(service, currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },

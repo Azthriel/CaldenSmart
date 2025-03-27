@@ -1678,6 +1678,7 @@ class HeladeraPageState extends State<HeladeraPage> {
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
                         saveNicknamesMap(nicknamesMap);
+                        putNicknames(service, currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },

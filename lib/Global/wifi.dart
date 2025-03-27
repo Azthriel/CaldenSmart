@@ -779,8 +779,8 @@ class WifiPageState extends State<WifiPage> {
                                                   title: Row(
                                                     children: [
                                                       Text(
-                                                        subNicknamesMap[
-                                                                '$deviceName/-/$i'] ??
+                                                        nicknamesMap[
+                                                                '${deviceName}_$i'] ??
                                                             '$tipoWifi $i',
                                                         style:
                                                             GoogleFonts.poppins(
@@ -1221,8 +1221,8 @@ class WifiPageState extends State<WifiPage> {
                                                     title: Row(
                                                       children: [
                                                         Text(
-                                                          subNicknamesMap[
-                                                                  '$deviceName/-/$i'] ??
+                                                          nicknamesMap[
+                                                                  '${deviceName}_$i'] ??
                                                               '$tipoWifi $i',
                                                           style: GoogleFonts
                                                               .poppins(
@@ -1737,8 +1737,8 @@ class WifiPageState extends State<WifiPage> {
                                                   title: Row(
                                                     children: [
                                                       Text(
-                                                        subNicknamesMap[
-                                                                '$deviceName/-/$i'] ??
+                                                        nicknamesMap[
+                                                                '${deviceName}_$i'] ??
                                                             '$tipoWifi $i',
                                                         style:
                                                             GoogleFonts.poppins(

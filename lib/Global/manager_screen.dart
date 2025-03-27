@@ -129,7 +129,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                     return equipo[0] == '0'
                         ? RadioListTile<int>(
                             title: Text(
-                              subNicknamesMap['$deviceName/-/$index'] ??
+                              nicknamesMap['${deviceName}_$index'] ??
                                   'Salida $index',
                               style: GoogleFonts.poppins(
                                 color: color0,

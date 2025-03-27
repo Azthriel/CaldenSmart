@@ -1778,6 +1778,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
                         saveNicknamesMap(nicknamesMap);
+                        putNicknames(service, currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },

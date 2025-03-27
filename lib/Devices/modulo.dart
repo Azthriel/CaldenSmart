@@ -587,8 +587,8 @@ class ModuloPageState extends State<ModuloPage> {
                                           List.generate(parts.length, (index) {
                                         return CheckboxListTile(
                                           title: Text(
-                                            subNicknamesMap[
-                                                    '$deviceName/-/$index'] ??
+                                            nicknamesMap[
+                                                    '${deviceName}_$index'] ??
                                                 'Pin $index',
                                             style: GoogleFonts.poppins(
                                               color: color0,
@@ -783,9 +783,9 @@ class ModuloPageState extends State<ModuloPage> {
                                 onTap: () async {
                                   TextEditingController nicknameController =
                                       TextEditingController(
-                                    text: subNicknamesMap[
-                                            '$deviceName/-/$index'] ??
-                                        '${tipo[index]} $index',
+                                    text:
+                                        nicknamesMap['${deviceName}_$index'] ??
+                                            '${tipo[index]} $index',
                                   );
                                   showAlertDialog(
                                     context,
@@ -831,11 +831,12 @@ class ModuloPageState extends State<ModuloPage> {
                                           setState(() {
                                             String newName =
                                                 nicknameController.text;
-                                            subNicknamesMap[
-                                                    '$deviceName/-/$index'] =
+                                            nicknamesMap[
+                                                    '${deviceName}_$index'] =
                                                 newName;
-                                            saveSubNicknamesMap(
-                                                subNicknamesMap);
+                                            saveNicknamesMap(nicknamesMap);
+                                            putNicknames(service,
+                                                currentUserEmail, nicknamesMap);
                                           });
                                           Navigator.of(context).pop();
                                         },
@@ -853,8 +854,8 @@ class ModuloPageState extends State<ModuloPage> {
                                     SizedBox(
                                       width: 160,
                                       child: ScrollingText(
-                                        text: subNicknamesMap[
-                                                '$deviceName/-/$index'] ??
+                                        text: nicknamesMap[
+                                                '${deviceName}_$index'] ??
                                             '${tipo[index]} $index',
                                         style: GoogleFonts.poppins(
                                           color: color0,
@@ -874,8 +875,8 @@ class ModuloPageState extends State<ModuloPage> {
                                         TextEditingController
                                             nicknameController =
                                             TextEditingController(
-                                          text: subNicknamesMap[
-                                                  '$deviceName/-/$index'] ??
+                                          text: nicknamesMap[
+                                                  '${deviceName}_$index'] ??
                                               '${tipo[index]} $index',
                                         );
                                         showAlertDialog(
@@ -927,11 +928,15 @@ class ModuloPageState extends State<ModuloPage> {
                                                 setState(() {
                                                   String newName =
                                                       nicknameController.text;
-                                                  subNicknamesMap[
-                                                          '$deviceName/-/$index'] =
+                                                  nicknamesMap[
+                                                          '${deviceName}_$index'] =
                                                       newName;
-                                                  saveSubNicknamesMap(
-                                                      subNicknamesMap);
+                                                  saveNicknamesMap(
+                                                      nicknamesMap);
+                                                  putNicknames(
+                                                      service,
+                                                      currentUserEmail,
+                                                      nicknamesMap);
                                                 });
                                                 Navigator.of(context).pop();
                                               },
@@ -1073,8 +1078,8 @@ class ModuloPageState extends State<ModuloPage> {
                                   onTap: () async {
                                     TextEditingController nicknameController =
                                         TextEditingController(
-                                      text: subNicknamesMap[
-                                              '$deviceName/-/$index'] ??
+                                      text: nicknamesMap[
+                                              '${deviceName}_$index'] ??
                                           '${tipo[index]} $index',
                                     );
                                     showAlertDialog(
@@ -1124,11 +1129,14 @@ class ModuloPageState extends State<ModuloPage> {
                                             setState(() {
                                               String newName =
                                                   nicknameController.text;
-                                              subNicknamesMap[
-                                                      '$deviceName/-/$index'] =
+                                              nicknamesMap[
+                                                      '${deviceName}_$index'] =
                                                   newName;
-                                              saveSubNicknamesMap(
-                                                  subNicknamesMap);
+                                              saveNicknamesMap(nicknamesMap);
+                                              putNicknames(
+                                                  service,
+                                                  currentUserEmail,
+                                                  nicknamesMap);
                                             });
                                             Navigator.of(context).pop();
                                           },
@@ -1144,8 +1152,8 @@ class ModuloPageState extends State<ModuloPage> {
                                     height: 30,
                                     width: 180,
                                     child: ScrollingText(
-                                      text: subNicknamesMap[
-                                              '$deviceName/-/$index'] ??
+                                      text: nicknamesMap[
+                                              '${deviceName}_$index'] ??
                                           '${tipo[index]} $index',
                                       style: GoogleFonts.poppins(
                                         color: color0,
@@ -1557,8 +1565,7 @@ class ModuloPageState extends State<ModuloPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    subNicknamesMap[
-                                            '$deviceName/-/${parts[i]}'] ??
+                                    nicknamesMap['${deviceName}_${parts[i]}'] ??
                                         '${tipo[i]} $i',
                                     style: GoogleFonts.poppins(
                                       color: color0,
@@ -1809,6 +1816,7 @@ class ModuloPageState extends State<ModuloPage> {
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
                         saveNicknamesMap(nicknamesMap);
+                        putNicknames(service, currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },

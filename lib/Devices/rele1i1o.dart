@@ -50,7 +50,6 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
 
-
   void initItems() {
     items.addAll({
       TutorialItem(
@@ -270,7 +269,6 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
       ),
     });
   }
-
 
   @override
   void initState() {
@@ -605,8 +603,8 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                           List.generate(parts.length, (index) {
                                         return CheckboxListTile(
                                           title: Text(
-                                            subNicknamesMap[
-                                                    '$deviceName/-/$index'] ??
+                                            nicknamesMap[
+                                                    '${deviceName}_$index'] ??
                                                 'Pin $index',
                                             style: GoogleFonts.poppins(
                                               color: color0,
@@ -828,7 +826,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                     return tipo[index] == 'Salida'
                         ? RadioListTile<int>(
                             title: Text(
-                              subNicknamesMap['$deviceName/-/$index'] ??
+                              nicknamesMap['${deviceName}_$index'] ??
                                   'Salida $index',
                               style: GoogleFonts.poppins(
                                 color: color0,
@@ -1076,8 +1074,8 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                     onTap: () async {
                                       TextEditingController nicknameController =
                                           TextEditingController(
-                                        text: subNicknamesMap[
-                                                '$deviceName/-/$index'] ??
+                                        text: nicknamesMap[
+                                                '${deviceName}_$index'] ??
                                             '${tipo[index]} $index',
                                       );
                                       showAlertDialog(
@@ -1127,11 +1125,14 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                               setState(() {
                                                 String newName =
                                                     nicknameController.text;
-                                                subNicknamesMap[
-                                                        '$deviceName/-/$index'] =
+                                                nicknamesMap[
+                                                        '${deviceName}_$index'] =
                                                     newName;
-                                                saveSubNicknamesMap(
-                                                    subNicknamesMap);
+                                                saveNicknamesMap(nicknamesMap);
+                                                putNicknames(
+                                                    service,
+                                                    currentUserEmail,
+                                                    nicknamesMap);
                                               });
                                               Navigator.of(context).pop();
                                             },
@@ -1150,8 +1151,8 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                         SizedBox(
                                           width: 150,
                                           child: ScrollingText(
-                                            text: subNicknamesMap[
-                                                    '$deviceName/-/$index'] ??
+                                            text: nicknamesMap[
+                                                    '${deviceName}_$index'] ??
                                                 '${tipo[index]} $index',
                                             style: GoogleFonts.poppins(
                                               color: color0,
@@ -1171,8 +1172,8 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                             TextEditingController
                                                 nicknameController =
                                                 TextEditingController(
-                                              text: subNicknamesMap[
-                                                      '$deviceName/-/$index'] ??
+                                              text: nicknamesMap[
+                                                      '${deviceName}_$index'] ??
                                                   '${tipo[index]} $index',
                                             );
                                             showAlertDialog(
@@ -1226,11 +1227,15 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                                       String newName =
                                                           nicknameController
                                                               .text;
-                                                      subNicknamesMap[
-                                                              '$deviceName/-/$index'] =
+                                                      nicknamesMap[
+                                                              '${deviceName}_$index'] =
                                                           newName;
-                                                      saveSubNicknamesMap(
-                                                          subNicknamesMap);
+                                                      saveNicknamesMap(
+                                                          nicknamesMap);
+                                                      putNicknames(
+                                                          service,
+                                                          currentUserEmail,
+                                                          nicknamesMap);
                                                     });
                                                     Navigator.of(context).pop();
                                                   },
@@ -1709,50 +1714,51 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                             ],
                                           ),
                                           if (!tenant) ...{
-                                          SliderTheme(
-                                            data: SliderTheme.of(context)
-                                                .copyWith(
-                                              trackHeight: 20.0,
-                                              thumbColor: color3,
-                                              activeTrackColor:
-                                                  Colors.blueAccent,
-                                              inactiveTrackColor:
-                                                  Colors.blueGrey[100],
-                                              thumbShape:
-                                                  const RoundSliderThumbShape(
-                                                enabledThumbRadius: 12.0,
-                                                elevation: 0.0,
-                                                pressedElevation: 0.0,
+                                            SliderTheme(
+                                              data: SliderTheme.of(context)
+                                                  .copyWith(
+                                                trackHeight: 20.0,
+                                                thumbColor: color3,
+                                                activeTrackColor:
+                                                    Colors.blueAccent,
+                                                inactiveTrackColor:
+                                                    Colors.blueGrey[100],
+                                                thumbShape:
+                                                    const RoundSliderThumbShape(
+                                                  enabledThumbRadius: 12.0,
+                                                  elevation: 0.0,
+                                                  pressedElevation: 0.0,
+                                                ),
+                                              ),
+                                              child: Slider(
+                                                activeColor: Colors.white,
+                                                inactiveColor:
+                                                    const Color(0xFFBDBDBD),
+                                                value: distOffValue,
+                                                divisions: 20,
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    distOffValue = value;
+                                                  });
+                                                },
+                                                onChangeEnd: (value) {
+                                                  printLog(
+                                                      'Valor enviado: ${value.round()}');
+                                                  putDistanceOff(
+                                                    service,
+                                                    DeviceManager
+                                                        .getProductCode(
+                                                            deviceName),
+                                                    DeviceManager
+                                                        .extractSerialNumber(
+                                                            deviceName),
+                                                    value.toString(),
+                                                  );
+                                                },
+                                                min: 100,
+                                                max: 300,
                                               ),
                                             ),
-                                            child: Slider(
-                                              activeColor: Colors.white,
-                                              inactiveColor:
-                                                  const Color(0xFFBDBDBD),
-                                              value: distOffValue,
-                                              divisions: 20,
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  distOffValue = value;
-                                                });
-                                              },
-                                              onChangeEnd: (value) {
-                                                printLog(
-                                                    'Valor enviado: ${value.round()}');
-                                                putDistanceOff(
-                                                  service,
-                                                  DeviceManager.getProductCode(
-                                                      deviceName),
-                                                  DeviceManager
-                                                      .extractSerialNumber(
-                                                          deviceName),
-                                                  value.toString(),
-                                                );
-                                              },
-                                              min: 100,
-                                              max: 300,
-                                            ),
-                                          ),
                                           },
                                         ],
                                       ),
@@ -1807,50 +1813,51 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                             ],
                                           ),
                                           if (!tenant) ...{
-                                          SliderTheme(
-                                            data: SliderTheme.of(context)
-                                                .copyWith(
-                                              trackHeight: 20.0,
-                                              thumbColor: color3,
-                                              activeTrackColor:
-                                                  Colors.blueAccent,
-                                              inactiveTrackColor:
-                                                  Colors.blueGrey[100],
-                                              thumbShape:
-                                                  const RoundSliderThumbShape(
-                                                enabledThumbRadius: 12.0,
-                                                elevation: 0.0,
-                                                pressedElevation: 0.0,
+                                            SliderTheme(
+                                              data: SliderTheme.of(context)
+                                                  .copyWith(
+                                                trackHeight: 20.0,
+                                                thumbColor: color3,
+                                                activeTrackColor:
+                                                    Colors.blueAccent,
+                                                inactiveTrackColor:
+                                                    Colors.blueGrey[100],
+                                                thumbShape:
+                                                    const RoundSliderThumbShape(
+                                                  enabledThumbRadius: 12.0,
+                                                  elevation: 0.0,
+                                                  pressedElevation: 0.0,
+                                                ),
+                                              ),
+                                              child: Slider(
+                                                activeColor: Colors.white,
+                                                inactiveColor:
+                                                    const Color(0xFFBDBDBD),
+                                                value: distOnValue,
+                                                divisions: 20,
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    distOnValue = value;
+                                                  });
+                                                },
+                                                onChangeEnd: (value) {
+                                                  printLog(
+                                                      'Valor enviado: ${value.round()}');
+                                                  putDistanceOn(
+                                                    service,
+                                                    DeviceManager
+                                                        .getProductCode(
+                                                            deviceName),
+                                                    DeviceManager
+                                                        .extractSerialNumber(
+                                                            deviceName),
+                                                    value.toString(),
+                                                  );
+                                                },
+                                                min: 3000,
+                                                max: 5000,
                                               ),
                                             ),
-                                            child: Slider(
-                                              activeColor: Colors.white,
-                                              inactiveColor:
-                                                  const Color(0xFFBDBDBD),
-                                              value: distOnValue,
-                                              divisions: 20,
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  distOnValue = value;
-                                                });
-                                              },
-                                              onChangeEnd: (value) {
-                                                printLog(
-                                                    'Valor enviado: ${value.round()}');
-                                                putDistanceOn(
-                                                  service,
-                                                  DeviceManager.getProductCode(
-                                                      deviceName),
-                                                  DeviceManager
-                                                      .extractSerialNumber(
-                                                          deviceName),
-                                                  value.toString(),
-                                                );
-                                              },
-                                              min: 3000,
-                                              max: 5000,
-                                            ),
-                                          ),
                                           },
                                         ],
                                       ),
@@ -2012,8 +2019,8 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    subNicknamesMap[
-                                            '$deviceName/-/${parts[i]}'] ??
+                                    nicknamesMap[
+                                            '${deviceName}_${parts[i]}'] ??
                                         '${tipo[i]} $i',
                                     style: GoogleFonts.poppins(
                                       color: color0,
@@ -2174,7 +2181,8 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
       ),
 
       //*- Página 5: Gestión del Equipo -*\\
-    const ManagerScreen(), ];
+      const ManagerScreen(),
+    ];
 
     return PopScope(
       canPop: false,
@@ -2263,6 +2271,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
                         saveNicknamesMap(nicknamesMap);
+                        putNicknames(service, currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },

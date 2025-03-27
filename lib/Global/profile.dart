@@ -497,46 +497,6 @@ class ProfilePageState extends State<ProfilePage> {
                         : CrossFadeState.showFirst,
                   ),
                   const Divider(color: color3),
-                  ListTile(
-                    leading: const Icon(HugeIcons.strokeRoundedContactBook,
-                        color: color3),
-                    title: Text(
-                      "Contáctanos",
-                      style: GoogleFonts.poppins(
-                        color: color3,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: Text(
-                      "Ver información de contacto",
-                      style: GoogleFonts.poppins(
-                        color: color3,
-                      ),
-                    ),
-                    onTap: () {
-                      setState(() {
-                        isContactOpen = !isContactOpen;
-                      });
-                    },
-                    trailing: Icon(
-                      isContactOpen
-                          ? HugeIcons.strokeRoundedArrowUp01
-                          : HugeIcons.strokeRoundedArrowDown01,
-                      color: color3,
-                    ),
-                  ),
-                  AnimatedCrossFade(
-                    duration: const Duration(milliseconds: 300),
-                    firstChild: const SizedBox.shrink(),
-                    secondChild: Padding(
-                      padding: const EdgeInsets.only(left: 16.0),
-                      child: contactInfo(app),
-                    ),
-                    crossFadeState: isContactOpen
-                        ? CrossFadeState.showSecond
-                        : CrossFadeState.showFirst,
-                  ),
-                  const Divider(color: color3),
                   // ListTile(
                   //   leading: const Icon(
                   //     HugeIcons.strokeRoundedVoice,
@@ -632,6 +592,46 @@ class ProfilePageState extends State<ProfilePage> {
                   //       : CrossFadeState.showFirst,
                   // ),
                   // const Divider(color: color3),
+                  ListTile(
+                    leading: const Icon(HugeIcons.strokeRoundedContactBook,
+                        color: color3),
+                    title: Text(
+                      "Contáctanos",
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      "Ver información de contacto",
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                      ),
+                    ),
+                    onTap: () {
+                      setState(() {
+                        isContactOpen = !isContactOpen;
+                      });
+                    },
+                    trailing: Icon(
+                      isContactOpen
+                          ? HugeIcons.strokeRoundedArrowUp01
+                          : HugeIcons.strokeRoundedArrowDown01,
+                      color: color3,
+                    ),
+                  ),
+                  AnimatedCrossFade(
+                    duration: const Duration(milliseconds: 300),
+                    firstChild: const SizedBox.shrink(),
+                    secondChild: Padding(
+                      padding: const EdgeInsets.only(left: 16.0),
+                      child: contactInfo(app),
+                    ),
+                    crossFadeState: isContactOpen
+                        ? CrossFadeState.showSecond
+                        : CrossFadeState.showFirst,
+                  ),
+                  const Divider(color: color3),
                   ListTile(
                     leading: const Icon(HugeIcons.strokeRoundedShare01,
                         color: color3),

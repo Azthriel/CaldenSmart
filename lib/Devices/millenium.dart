@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:caldensmart/aws/dynamo/dynamo.dart';
+import 'package:caldensmart/aws/dynamo/dynamo_certificates.dart';
 import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -1267,6 +1269,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
                         saveNicknamesMap(nicknamesMap);
+                        putNicknames(service, currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },

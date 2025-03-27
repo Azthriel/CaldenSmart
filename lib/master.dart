@@ -127,7 +127,6 @@ List<String> alexaDevices = [];
 //*-Nicknames-*\\
 late String nickname;
 Map<String, String> nicknamesMap = {};
-Map<String, String> subNicknamesMap = {};
 //*-Nicknames-*\\
 
 //*-Notifications-*\\
@@ -911,9 +910,9 @@ String linksOfApp(int type, String link) {
     case 'Alexa':
       switch (type) {
         case 0:
-          return 'https://alexa-skills.amazon.com/apis/custom/skills/amzn1.ask.skill.e858a007-cc1f-4dcf-a753-59b785c08928/launch';
+          return 'https://www.amazon.es/dp/B0DK94GBXW/';
         default:
-          return 'https://alexa-skills.amazon.com/apis/custom/skills/amzn1.ask.skill.e858a007-cc1f-4dcf-a753-59b785c08928/launch';
+          return 'https://www.amazon.es/dp/B0DK94GBXW/';
       }
     case 'GoogleHome':
       switch (type) {
@@ -1880,11 +1879,10 @@ Future<void> handleNotifications(RemoteMessage message) async {
         }
       } else if (product == '020010_IOT') {
         notificationMap = await loadNotificationMap();
-        subNicknamesMap = await loadSubNicknamesMap();
         List<bool> notis =
             notificationMap['$product/$number'] ?? List<bool>.filled(8, false);
         final now = DateTime.now();
-        String entry = subNicknamesMap['$device/-/${message.data['entry']!}'] ??
+        String entry = nicknamesMap['${device}_${message.data['entry']!}'] ??
             'Entrada${message.data['entry']!}';
         String displayTitle = '¡ALERTA EN ${nicknamesMap[device] ?? device}!';
         String displayMessage =
@@ -2416,7 +2414,6 @@ Future<bool> backFunctionDS() async {
     Map<String, double> latitudes = await loadLatitude();
     Map<String, double> longitudes = await loadLongitud();
     Map<String, String> nicks = await loadNicknamesMap();
-    Map<String, String> subNicks = await loadSubNicknamesMap();
     List<String> old = await loadOldRelay();
 
     for (int index = 0; index < devicesStored.length; index++) {
@@ -2494,7 +2491,7 @@ Future<bool> backFunctionDS() async {
           if ((DeviceManager.getProductCode(name) == '027313_IOT' &&
               !old.contains(name))) {
             showNotification(
-                'Encendimos ${subNicks[name] ?? 'Salida 0'} en ${nicks[name] ?? name}',
+                'Encendimos ${nicknamesMap['${name}_0'] ?? 'Salida 0'} en ${nicks[name] ?? name}',
                 'Te acercaste a menos de $distanceOn metros',
                 'noti');
 
@@ -2533,7 +2530,7 @@ Future<bool> backFunctionDS() async {
           if ((DeviceManager.getProductCode(name) == '027313_IOT' &&
               !old.contains(name))) {
             showNotification(
-                'Apagamos ${subNicks[name] ?? 'Salida 0'} en ${nicks[name] ?? name}',
+                'Apagamos ${nicknamesMap['${name}_0'] ?? 'Salida 0'} en ${nicks[name] ?? name}',
                 'Te alejaste a más de $distanceOff metros',
                 'noti');
 

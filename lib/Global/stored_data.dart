@@ -13,7 +13,6 @@ Future<void> loadValues() async {
   topicsToSub = await loadTopicList();
   nicknamesMap = await loadNicknamesMap();
   tokensOfDevices = await loadToken();
-  subNicknamesMap = await loadSubNicknamesMap();
   notificationMap = await loadNotificationMap();
   deviceImages = await loadDeviceImages();
   soundOfNotification = await loadSounds();
@@ -77,23 +76,6 @@ Future<Map<String, String>> loadNicknamesMap() async {
   return {}; // Devuelve un mapa vacío si no hay nada almacenado
 }
 //*-Nicknames-*\\
-
-//*-SubNicknames-*\\
-Future<void> saveSubNicknamesMap(Map<String, String> nicknamesMap) async {
-  final prefs = await SharedPreferences.getInstance();
-  String nicknamesString = json.encode(nicknamesMap);
-  await prefs.setString('CSsubNicknamesMap', nicknamesString);
-}
-
-Future<Map<String, String>> loadSubNicknamesMap() async {
-  final prefs = await SharedPreferences.getInstance();
-  String? nicknamesString = prefs.getString('CSsubNicknamesMap');
-  if (nicknamesString != null) {
-    return Map<String, String>.from(json.decode(nicknamesString));
-  }
-  return {}; // Devuelve un mapa vacío si no hay nada almacenado
-}
-//*-SubNicknames-*\\
 
 //*-GlobalDATA-*\\
 Future<void> saveGlobalData(

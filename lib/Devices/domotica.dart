@@ -620,8 +620,8 @@ class DomoticaPageState extends State<DomoticaPage> {
                                           List.generate(parts.length, (index) {
                                         return CheckboxListTile(
                                           title: Text(
-                                            subNicknamesMap[
-                                                    '$deviceName/-/$index'] ??
+                                            nicknamesMap[
+                                                    '${deviceName}_$index'] ??
                                                 'Pin $index',
                                             style: GoogleFonts.poppins(
                                               color: color0,
@@ -845,7 +845,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                     return equipo[0] == '0'
                         ? RadioListTile<int>(
                             title: Text(
-                              subNicknamesMap['$deviceName/-/$index'] ??
+                              nicknamesMap['${deviceName}_$index'] ??
                                   'Salida $index',
                               style: GoogleFonts.poppins(
                                 color: color0,
@@ -946,7 +946,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                             onTap: () async {
                               TextEditingController nicknameController =
                                   TextEditingController(
-                                text: subNicknamesMap['$deviceName/-/$index'] ??
+                                text: nicknamesMap['${deviceName}_$index'] ??
                                     '${tipo[index]} $index',
                               );
                               showAlertDialog(
@@ -991,9 +991,11 @@ class DomoticaPageState extends State<DomoticaPage> {
                                       setState(() {
                                         String newName =
                                             nicknameController.text;
-                                        subNicknamesMap[
-                                            '$deviceName/-/$index'] = newName;
-                                        saveSubNicknamesMap(subNicknamesMap);
+                                        nicknamesMap['${deviceName}_$index'] =
+                                            newName;
+                                        saveNicknamesMap(nicknamesMap);
+                                        putNicknames(service, currentUserEmail,
+                                            nicknamesMap);
                                       });
                                       Navigator.of(context).pop();
                                     },
@@ -1011,9 +1013,9 @@ class DomoticaPageState extends State<DomoticaPage> {
                                 SizedBox(
                                   width: 160,
                                   child: ScrollingText(
-                                    text: subNicknamesMap[
-                                            '$deviceName/-/$index'] ??
-                                        '${tipo[index]} $index',
+                                    text:
+                                        nicknamesMap['${deviceName}_$index'] ??
+                                            '${tipo[index]} $index',
                                     style: GoogleFonts.poppins(
                                       color: color0,
                                       fontSize: 20,
@@ -1031,8 +1033,8 @@ class DomoticaPageState extends State<DomoticaPage> {
                                   onPressed: () {
                                     TextEditingController nicknameController =
                                         TextEditingController(
-                                      text: subNicknamesMap[
-                                              '$deviceName/-/$index'] ??
+                                      text: nicknamesMap[
+                                              '${deviceName}_$index'] ??
                                           '${tipo[index]} $index',
                                     );
                                     showAlertDialog(
@@ -1082,11 +1084,14 @@ class DomoticaPageState extends State<DomoticaPage> {
                                             setState(() {
                                               String newName =
                                                   nicknameController.text;
-                                              subNicknamesMap[
-                                                      '$deviceName/-/$index'] =
+                                              nicknamesMap[
+                                                      '${deviceName}_$index'] =
                                                   newName;
-                                              saveSubNicknamesMap(
-                                                  subNicknamesMap);
+                                              saveNicknamesMap(nicknamesMap);
+                                              putNicknames(
+                                                  service,
+                                                  currentUserEmail,
+                                                  nicknamesMap);
                                             });
                                             Navigator.of(context).pop();
                                           },
@@ -1561,8 +1566,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    subNicknamesMap[
-                                            '$deviceName/-/${parts[i]}'] ??
+                                    nicknamesMap['${deviceName}_${parts[i]}'] ??
                                         '${tipo[i]} $i',
                                     style: GoogleFonts.poppins(
                                       color: color0,
@@ -1858,6 +1862,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
                         saveNicknamesMap(nicknamesMap);
+                        putNicknames(service, currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },
