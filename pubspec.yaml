@@ -1,7 +1,7 @@
 name: caldensmart
 description: "Caldén Smart"
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
-version: 1.0.25+30
+version: 1.0.26+31
 
 environment:
   sdk: ^3.5.1
@@ -12,7 +12,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   permission_handler: ^11.1.0
   path_provider: ^2.1.5
-  flutter_blue_plus: ^1.33.4
+  flutter_blue_plus: ^1.35.1
   easy_refresh: ^3.4.0
   geolocator: ^10.1.0
   shared_preferences: ^2.3.2
@@ -86,6 +86,7 @@ flutter:
     - assets/misc/fondo.png
     - assets/misc/google.png
     - assets/branch/Logo_sitio.png
+    - assets/branch/Banner.png
     - assets/misc/parteSuperior.png
     - assets/misc/persiana.jpg
     - assets/misc/millenium.png

@@ -324,6 +324,8 @@ class WelcomePageState extends State<WelcomePage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkForUpdate(context);
     });
+
+    fToast.init(navigatorKey.currentState!.context);
   }
 
   ///*- Elimina los controladores de animación y texto *-\\\
@@ -941,7 +943,7 @@ Widget buildCard(String imagePath) {
 }
 
 ///*- Pintor personalizado para dibujar círculos animados en el fondo *-\\\
-class CirclePainter extends CustomPainter {
+class CirclePainter extends CustomPainter { 
   final double animationValue;
   final List<Color> colors = [
     color0,

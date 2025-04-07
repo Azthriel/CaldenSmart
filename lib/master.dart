@@ -342,6 +342,10 @@ final pinModeKey = GlobalKey(); // key para el cambio de modo de pines
 
 //*- Tutorial -*\\
 
+//*- Toast -*\\
+late FToast fToast;
+//*- Toast -*\\
+
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
 //! FUNCIONES !\\
@@ -942,14 +946,48 @@ String linksOfApp(int type, String link) {
 //*-Funciones diversas-*\\
 void showToast(String message) {
   printLog('Toast: $message');
-  Fluttertoast.showToast(
-    msg: message,
-    toastLength: Toast.LENGTH_SHORT,
+  fToast.removeCustomToast();
+  Widget toast = Container(
+    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(25.0),
+      color: color3,
+      border: Border.all(
+        color: color6,
+        width: 1.0,
+      ),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Image.asset(
+          'assets/branch/dragon.png',
+          width: 24,
+          height: 24,
+        ),
+        const SizedBox(
+          width: 12.0,
+        ),
+        Flexible(
+          child: Text(
+            message,
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              color: color0,
+            ),
+            softWrap: true,
+            maxLines: 10,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    ),
+  );
+
+  fToast.showToast(
+    child: toast,
     gravity: ToastGravity.BOTTOM,
-    timeInSecForIosWeb: 1,
-    backgroundColor: color6,
-    textColor: color0,
-    fontSize: 16.0,
+    toastDuration: const Duration(seconds: 2),
   );
 }
 

@@ -10,6 +10,7 @@ import 'package:caldensmart/Devices/relay.dart';
 import 'package:caldensmart/Devices/rele1i1o.dart';
 import 'package:caldensmart/Global/profile.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:upgrader/upgrader.dart';
 import 'Devices/domotica.dart';
@@ -128,12 +129,18 @@ class MyAppState extends State<MyApp> {
     });
     listenToTopics();
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      fToast = FToast();
+      fToast.init(context);
+    });
+
     printLog('Empezamos');
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      builder: FToastBuilder(),
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       title: nameOfApp(app),

@@ -1468,77 +1468,78 @@ class DetectorPageState extends State<DetectorPage> {
                       ),
                       const SizedBox(height: 20),
                       // Botón 2: Activar/Desactivar notificación de desconexión
-                      SizedBox(
-                        key: discNotificationKey,
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            if (discNotfActivated) {
-                              showAlertDialog(
-                                context,
-                                true,
-                                const Text('Confirmar Desactivación'),
-                                const Text(
-                                    '¿Estás seguro de que deseas desactivar la notificación de desconexión?'),
-                                [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                    child: const Text('Cancelar'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () async {
-                                      setState(() {
-                                        discNotfActivated = false;
-                                        _showNotificationOptions = false;
-                                      });
+                      // SizedBox(
+                      //   key: discNotificationKey,
+                      //   width: double.infinity,
+                      //   child: ElevatedButton(
+                      //     onPressed: () async {
+                      //       if (discNotfActivated) {
+                      //         showAlertDialog(
+                      //           context,
+                      //           true,
+                      //           const Text('Confirmar Desactivación'),
+                      //           const Text(
+                      //               '¿Estás seguro de que deseas desactivar la notificación de desconexión?'),
+                      //           [
+                      //             TextButton(
+                      //               onPressed: () {
+                      //                 Navigator.of(context).pop();
+                      //               },
+                      //               child: const Text('Cancelar'),
+                      //             ),
+                      //             TextButton(
+                      //               onPressed: () async {
+                      //                 setState(() {
+                      //                   discNotfActivated = false;
+                      //                   _showNotificationOptions = false;
+                      //                 });
 
-                                      configNotiDsc.removeWhere(
-                                          (key, value) => key == deviceName);
-                                      await saveconfigNotiDsc(configNotiDsc);
+                      //                 configNotiDsc.removeWhere(
+                      //                     (key, value) => key == deviceName);
+                      //                 await saveconfigNotiDsc(configNotiDsc);
 
-                                      if (context.mounted) {
-                                        Navigator.of(context).pop();
-                                      }
-                                    },
-                                    child: const Text('Aceptar'),
-                                  ),
-                                ],
-                              );
-                            } else {
-                              setState(() {
-                                _showNotificationOptions =
-                                    !_showNotificationOptions;
-                              });
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: color0,
-                            backgroundColor: color3,
-                            padding: EdgeInsets.symmetric(
-                                vertical: buttonHeight * 0.6),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                              side: const BorderSide(
-                                color: Color(0xFF10BB96),
-                                width: 2,
-                              ),
-                            ),
-                          ),
-                          child: Text(
-                            discNotfActivated
-                                ? 'Desactivar notificación\nde desconexión'
-                                : 'Activar notificación\nde desconexión',
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              color: color0,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
+                      //                 if (context.mounted) {
+                      //                   Navigator.of(context).pop();
+                      //                 }
+                      //               },
+                      //               child: const Text('Aceptar'),
+                      //             ),
+                      //           ],
+                      //         );
+                      //       } else {
+                      //         setState(() {
+                      //           _showNotificationOptions =
+                      //               !_showNotificationOptions;
+                      //         });
+                      //       }
+                      //     },
+                      //     style: ElevatedButton.styleFrom(
+                      //       foregroundColor: color0,
+                      //       backgroundColor: color3,
+                      //       padding: EdgeInsets.symmetric(
+                      //           vertical: buttonHeight * 0.6),
+                      //       shape: RoundedRectangleBorder(
+                      //         borderRadius: BorderRadius.circular(30),
+                      //         side: const BorderSide(
+                      //           color: Color(0xFF10BB96),
+                      //           width: 2,
+                      //         ),
+                      //       ),
+                      //     ),
+                      //     child: Text(
+                      //       discNotfActivated
+                      //           ? 'Desactivar notificación\nde desconexión'
+                      //           : 'Activar notificación\nde desconexión',
+                      //       style: GoogleFonts.poppins(
+                      //         fontSize: 18,
+                      //         color: color0,
+                      //         fontWeight: FontWeight.bold,
+                      //       ),
+                      //       textAlign: TextAlign.center,
+                      //     ),
+                      //   ),
+                      // ),
+                      
                       // Tarjeta con descripción y opciones de notificación
                       AnimatedSize(
                         duration: const Duration(milliseconds: 300),

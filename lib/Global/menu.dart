@@ -28,6 +28,8 @@ class MenuPageState extends State<MenuPage> {
       _pageController.jumpToPage(_selectedIndex);
       checkForUpdate(context);
     });
+
+    fToast.init(navigatorKey.currentState!.context);
   }
 
   @override

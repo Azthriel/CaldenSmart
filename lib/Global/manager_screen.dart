@@ -187,7 +187,7 @@ class ManagerScreenState extends State<ManagerScreen> {
             ),
             const SizedBox(height: 40),
             //! Opción - Reclamar propiedad del equipo o dejar de ser propietario
-            if (!tenant) ...{
+            if (!tenant && (owner == currentUserEmail || owner == '')) ...{
               InkWell(
                 key: claimKey,
                 onTap: () async {
@@ -1118,91 +1118,91 @@ class ManagerScreenState extends State<ManagerScreen> {
               ),
               const SizedBox(height: 10),
             ],
-            //! activar notificación
 
-            if (owner == '' || owner == currentUserEmail || secondaryAdmin) ...{
-              ElevatedButton(
-                key: discNotificationKey,
-                onPressed: () async {
-                  if (discNotfActivated) {
-                    showAlertDialog(
-                      context,
-                      true,
-                      Text(
-                        'Confirmar Desactivación',
-                        style: GoogleFonts.poppins(color: color0),
-                      ),
-                      Text(
-                        '¿Estás seguro de que deseas desactivar la notificación de desconexión?',
-                        style: GoogleFonts.poppins(color: color0),
-                      ),
-                      [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: Text(
-                            'Cancelar',
-                            style: GoogleFonts.poppins(color: color0),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            // Actualizar el estado para desactivar la notificación
-                            setState(() {
-                              discNotfActivated = false;
-                              showNotificationOptions = false;
-                            });
+            //! activar notificación de desconexión
+            // if (owner == '' || owner == currentUserEmail || secondaryAdmin) ...{
+            //   ElevatedButton(
+            //     key: discNotificationKey,
+            //     onPressed: () async {
+            //       if (discNotfActivated) {
+            //         showAlertDialog(
+            //           context,
+            //           true,
+            //           Text(
+            //             'Confirmar Desactivación',
+            //             style: GoogleFonts.poppins(color: color0),
+            //           ),
+            //           Text(
+            //             '¿Estás seguro de que deseas desactivar la notificación de desconexión?',
+            //             style: GoogleFonts.poppins(color: color0),
+            //           ),
+            //           [
+            //             TextButton(
+            //               onPressed: () {
+            //                 Navigator.of(context).pop();
+            //               },
+            //               child: Text(
+            //                 'Cancelar',
+            //                 style: GoogleFonts.poppins(color: color0),
+            //               ),
+            //             ),
+            //             TextButton(
+            //               onPressed: () async {
+            //                 // Actualizar el estado para desactivar la notificación
+            //                 setState(() {
+            //                   discNotfActivated = false;
+            //                   showNotificationOptions = false;
+            //                 });
 
-                            // Eliminar la configuración de notificación para el dispositivo actual
-                            configNotiDsc
-                                .removeWhere((key, value) => key == deviceName);
-                            await saveconfigNotiDsc(configNotiDsc);
+            //                 // Eliminar la configuración de notificación para el dispositivo actual
+            //                 configNotiDsc
+            //                     .removeWhere((key, value) => key == deviceName);
+            //                 await saveconfigNotiDsc(configNotiDsc);
 
-                            if (context.mounted) {
-                              Navigator.of(context).pop();
-                            }
-                          },
-                          child: Text(
-                            'Aceptar',
-                            style: GoogleFonts.poppins(color: color0),
-                          ),
-                        ),
-                      ],
-                    );
-                  } else {
-                    setState(() {
-                      showNotificationOptions = !showNotificationOptions;
-                    });
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: color0,
-                  backgroundColor: color3,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      discNotfActivated
-                          ? 'Desactivar notificación\nde desconexión'
-                          : 'Activar notificación\nde desconexión',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        color: color0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            },
+            //                 if (context.mounted) {
+            //                   Navigator.of(context).pop();
+            //                 }
+            //               },
+            //               child: Text(
+            //                 'Aceptar',
+            //                 style: GoogleFonts.poppins(color: color0),
+            //               ),
+            //             ),
+            //           ],
+            //         );
+            //       } else {
+            //         setState(() {
+            //           showNotificationOptions = !showNotificationOptions;
+            //         });
+            //       }
+            //     },
+            //     style: ElevatedButton.styleFrom(
+            //       foregroundColor: color0,
+            //       backgroundColor: color3,
+            //       padding:
+            //           const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
+            //       shape: RoundedRectangleBorder(
+            //         borderRadius: BorderRadius.circular(20),
+            //       ),
+            //     ),
+            //     child: Row(
+            //       mainAxisAlignment: MainAxisAlignment.center,
+            //       children: [
+            //         Text(
+            //           discNotfActivated
+            //               ? 'Desactivar notificación\nde desconexión'
+            //               : 'Activar notificación\nde desconexión',
+            //           style: GoogleFonts.poppins(
+            //             fontSize: 18,
+            //             color: color0,
+            //             fontWeight: FontWeight.bold,
+            //           ),
+            //           textAlign: TextAlign.center,
+            //         ),
+            //       ],
+            //     ),
+            //   ),
+            // },
 
             // Tarjeta de opciones de notificación
             AnimatedSize(

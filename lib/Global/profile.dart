@@ -593,8 +593,10 @@ class ProfilePageState extends State<ProfilePage> {
                   // ),
                   // const Divider(color: color3),
                   ListTile(
-                    leading: const Icon(HugeIcons.strokeRoundedContactBook,
-                        color: color3),
+                    leading: const Icon(
+                      HugeIcons.strokeRoundedContactBook,
+                      color: color3,
+                    ),
                     title: Text(
                       "Contáctanos",
                       style: GoogleFonts.poppins(
