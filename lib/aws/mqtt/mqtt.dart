@@ -104,7 +104,6 @@ void unSubToTopicMQTT(String topic) {
   mqttAWSFlutterClient!.unsubscribe(topic);
   printLog('Me desuscribo de $topic');
   topicsToSub.remove(topic);
-  saveTopicList(topicsToSub);
 }
 //*-Subscribir y desuscribir a los topics-*\\
 
@@ -126,14 +125,8 @@ void listenToTopics() {
 
       printLog('Mensaje decodificado: $messageMap');
 
-      bool specialDevice = (listNames[1] == '020010_IOT' &&
-              !messageMap.keys.contains('cstate')) ||
-          (listNames[1] == '020020_IOT' &&
-              !messageMap.keys.contains('cstate')) ||
-          (listNames[1] == '027313_IOT' &&
-              !messageMap.keys.contains('cstate') &&
-              !oldRelay.contains(DeviceManager.recoverDeviceName(
-                  listNames[1], listNames[2])));
+      bool specialDevice = (messageMap.keys.contains('index') &&
+          !messageMap.keys.contains('cstate'));
 
       printLog('Special device: $specialDevice', 'rojo');
 
@@ -157,6 +150,8 @@ void listenToTopics() {
         GlobalDataNotifier notifier = Provider.of<GlobalDataNotifier>(
             navigatorKey.currentContext!,
             listen: false);
+        // printLog('Notificando a $keyName');
+        // printLog('Mensaje: $messageMap');
         notifier.updateData(keyName, messageMap);
       }
 

@@ -84,17 +84,16 @@ class LoadState extends State<LoadingPage> {
       printLog('Valores info: $infoValues');
       if (!previusConnections.contains(deviceName)) {
         previusConnections.add(deviceName);
-        saveDeviceList(previusConnections);
+        putPreviusConnections(service, currentUserEmail, previusConnections);
+        todosLosDispositivos.add(MapEntry('individual', deviceName));
         topicsToSub.add(
             'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}');
-        saveTopicList(topicsToSub);
         subToTopicMQTT(
             'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}');
 
         if (DeviceManager.isAvailableForAlexa(deviceName) &&
             !alexaDevices.contains(deviceName)) {
           alexaDevices.add(deviceName);
-          saveAlexaDevices(alexaDevices);
           putDevicesForAlexa(service, currentUserEmail, alexaDevices);
         }
       }

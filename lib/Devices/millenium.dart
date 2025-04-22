@@ -63,7 +63,7 @@ class MilleniumPageState extends State<MilleniumPage> {
   void initItems() {
     items.addAll({
       TutorialItem(
-        globalKey: estadoKey,
+        globalKey: KeyManager.millenium.estadoKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(0),
         shapeFocus: ShapeFocus.oval,
@@ -76,7 +76,7 @@ class MilleniumPageState extends State<MilleniumPage> {
         ),
       ),
       TutorialItem(
-        globalKey: titleKey,
+        globalKey: KeyManager.millenium.titleKey,
         color: Colors.black.withValues(alpha: 0.6),
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(10.0),
@@ -89,7 +89,7 @@ class MilleniumPageState extends State<MilleniumPage> {
         ),
       ),
       TutorialItem(
-        globalKey: wifiKey,
+        globalKey: KeyManager.millenium.wifiKey,
         color: Colors.black.withValues(alpha: 0.6),
         shapeFocus: ShapeFocus.oval,
         borderRadius: const Radius.circular(15.0),
@@ -102,7 +102,7 @@ class MilleniumPageState extends State<MilleniumPage> {
         ),
       ),
       TutorialItem(
-        globalKey: bottomKey,
+        globalKey: KeyManager.millenium.bottomKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(10),
         radius: 90,
@@ -113,10 +113,8 @@ class MilleniumPageState extends State<MilleniumPage> {
           content: 'Puedes encender o apagar el equipo al presionar el botón',
         ),
       ),
-    });
-    items.addAll({
       TutorialItem(
-        globalKey: tempKey,
+        globalKey: KeyManager.millenium.tempKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(0),
         shapeFocus: ShapeFocus.oval,
@@ -130,7 +128,7 @@ class MilleniumPageState extends State<MilleniumPage> {
         ),
       ),
       TutorialItem(
-        globalKey: tempBarKey,
+        globalKey: KeyManager.millenium.tempBarKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(35),
         shapeFocus: ShapeFocus.roundedSquare,
@@ -142,7 +140,7 @@ class MilleniumPageState extends State<MilleniumPage> {
         ),
       ),
       TutorialItem(
-        globalKey: consumeKey,
+        globalKey: KeyManager.millenium.consumeKey,
         color: Colors.black.withValues(alpha: 0.6),
         shapeFocus: ShapeFocus.oval,
         borderRadius: const Radius.circular(0),
@@ -156,7 +154,7 @@ class MilleniumPageState extends State<MilleniumPage> {
         ),
       ),
       TutorialItem(
-        globalKey: valorKey,
+        globalKey: KeyManager.millenium.valorKey,
         color: Colors.black.withValues(alpha: 0.6),
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(15.0),
@@ -166,11 +164,9 @@ class MilleniumPageState extends State<MilleniumPage> {
           content: 'Podrás ingresar el valor de tu tarifa',
         ),
       ),
-    });
-    if (valueConsuption == null) {
-      items.addAll({
+      if (valueConsuption == null) ...{
         TutorialItem(
-          globalKey: consuptionKey,
+          globalKey: KeyManager.millenium.consuptionKey,
           color: Colors.black.withValues(alpha: 0.6),
           shapeFocus: ShapeFocus.roundedSquare,
           borderRadius: const Radius.circular(15.0),
@@ -180,12 +176,9 @@ class MilleniumPageState extends State<MilleniumPage> {
             content: 'Podrás ingresar el valor de tu tarifa',
           ),
         ),
-      });
-    }
-
-    items.addAll({
+      },
       TutorialItem(
-        globalKey: calculateKey,
+        globalKey: KeyManager.millenium.calculateKey,
         color: Colors.black.withValues(alpha: 0.6),
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(15.0),
@@ -196,7 +189,7 @@ class MilleniumPageState extends State<MilleniumPage> {
         ),
       ),
       TutorialItem(
-        globalKey: mesKey,
+        globalKey: KeyManager.millenium.mesKey,
         color: Colors.black.withValues(alpha: 0.6),
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(15.0),
@@ -207,7 +200,7 @@ class MilleniumPageState extends State<MilleniumPage> {
         ),
       ),
       TutorialItem(
-        globalKey: adminKey,
+        globalKey: KeyManager.managerScreen.adminKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(0),
         shapeFocus: ShapeFocus.oval,
@@ -220,7 +213,7 @@ class MilleniumPageState extends State<MilleniumPage> {
         ),
       ),
       TutorialItem(
-        globalKey: claimKey,
+        globalKey: KeyManager.managerScreen.claimKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
@@ -232,12 +225,9 @@ class MilleniumPageState extends State<MilleniumPage> {
               'Presiona este botón para reclamar la administración del equipo',
         ),
       ),
-    });
-    // SOLO PARA LOS ADMINS
-    if (currentUserEmail == owner) {
-      items.addAll({
+      if (currentUserEmail == owner) ...{
         TutorialItem(
-          globalKey: agreeAdminKey,
+          globalKey: KeyManager.managerScreen.agreeAdminKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -249,7 +239,7 @@ class MilleniumPageState extends State<MilleniumPage> {
           ),
         ),
         TutorialItem(
-          globalKey: viewAdminKey,
+          globalKey: KeyManager.managerScreen.viewAdminKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -261,7 +251,7 @@ class MilleniumPageState extends State<MilleniumPage> {
           ),
         ),
         TutorialItem(
-          globalKey: habitKey,
+          globalKey: KeyManager.managerScreen.habitKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -272,11 +262,9 @@ class MilleniumPageState extends State<MilleniumPage> {
                 'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
           ),
         ),
-      });
-    }
-    items.addAll({
+      },
       TutorialItem(
-        globalKey: fastBotonKey,
+        globalKey: KeyManager.managerScreen.fastBotonKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
@@ -287,7 +275,7 @@ class MilleniumPageState extends State<MilleniumPage> {
         ),
       ),
       TutorialItem(
-        globalKey: discNotificationKey,
+        globalKey: KeyManager.managerScreen.discNotificationKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
@@ -298,7 +286,7 @@ class MilleniumPageState extends State<MilleniumPage> {
         ),
       ),
       TutorialItem(
-        globalKey: imageKey,
+        globalKey: KeyManager.millenium.imageKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
@@ -731,7 +719,7 @@ class MilleniumPageState extends State<MilleniumPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  key: estadoKey,
+                  key: KeyManager.millenium.estadoKey,
                   'Estado del Dispositivo',
                   style: GoogleFonts.poppins(
                     fontSize: 28,
@@ -742,7 +730,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                 ),
                 const SizedBox(height: 40),
                 GestureDetector(
-                  key: bottomKey,
+                  key: KeyManager.millenium.bottomKey,
                   onTap: () {
                     if (isOwner || isSecondaryAdmin || owner == '') {
                       turnDeviceOn(!turnOn);
@@ -818,7 +806,7 @@ class MilleniumPageState extends State<MilleniumPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  key: tempKey,
+                  key: KeyManager.millenium.tempKey,
                   'Temperatura de corte',
                   style: GoogleFonts.poppins(
                     fontSize: 28,
@@ -862,7 +850,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                         ),
                         const SizedBox(height: 10),
                         Container(
-                          key: tempBarKey,
+                          key: KeyManager.millenium.tempBarKey,
                           height: 350,
                           width: 70,
                           decoration: BoxDecoration(
@@ -960,7 +948,7 @@ class MilleniumPageState extends State<MilleniumPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  key: consumeKey,
+                  key: KeyManager.millenium.consumeKey,
                   'Calculadora de Consumo',
                   style: GoogleFonts.poppins(
                     fontSize: 32,
@@ -971,7 +959,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                 ),
                 const SizedBox(height: 50),
                 Container(
-                  key: valorKey,
+                  key: KeyManager.millenium.valorKey,
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
                       horizontal: 20.0, vertical: 10.0),
@@ -1008,7 +996,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                 if (valueConsuption == null) ...[
                   const SizedBox(height: 30),
                   Container(
-                    key: consuptionKey,
+                    key: KeyManager.millenium.consuptionKey,
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20.0, vertical: 10.0),
@@ -1073,7 +1061,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                 ],
                 const SizedBox(height: 30),
                 ElevatedButton(
-                  key: calculateKey,
+                  key: KeyManager.millenium.calculateKey,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: color3,
                     foregroundColor: color0,
@@ -1115,7 +1103,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  key: mesKey,
+                  key: KeyManager.millenium.mesKey,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: color3,
                     foregroundColor: color0,
@@ -1268,7 +1256,6 @@ class MilleniumPageState extends State<MilleniumPage> {
                         String newNickname = nicknameController.text;
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
-                        saveNicknamesMap(nicknamesMap);
                         putNicknames(service, currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
@@ -1280,7 +1267,7 @@ class MilleniumPageState extends State<MilleniumPage> {
             child: Row(
               children: [
                 Expanded(
-                  key: titleKey,
+                  key: KeyManager.millenium.titleKey,
                   child: ScrollingText(
                     text: nickname,
                     style: poppinsStyle.copyWith(color: color0),
@@ -1331,7 +1318,7 @@ class MilleniumPageState extends State<MilleniumPage> {
           ),
           actions: [
             IconButton(
-              key: wifiKey,
+              key: KeyManager.millenium.wifiKey,
               icon: Icon(wifiNotifier.wifiIcon, color: color0),
               onPressed: () {
                 if (_isTutorialActive) return;

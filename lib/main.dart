@@ -9,6 +9,7 @@ import 'package:caldensmart/Devices/modulo.dart';
 import 'package:caldensmart/Devices/relay.dart';
 import 'package:caldensmart/Devices/rele1i1o.dart';
 import 'package:caldensmart/Global/profile.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -40,6 +41,10 @@ Future<void> main() async {
     printLog("Iniciando Firebase", "Cyan");
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
+    );
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
     );
     printLog("Firebase inicializado", "Cyan");
   } catch (e) {
@@ -117,17 +122,7 @@ class MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
 
-    loadValues();
-
-    setupMqtt().then((value) {
-      if (value) {
-        for (var topic in topicsToSub) {
-          printLog('Subscribiendo a $topic');
-          subToTopicMQTT(topic);
-        }
-      }
-    });
-    listenToTopics();
+    initAsync();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       fToast = FToast();
@@ -135,6 +130,13 @@ class MyAppState extends State<MyApp> {
     });
 
     printLog('Empezamos');
+  }
+
+  void initAsync() async {
+    await loadValues();
+    printLog('Valores cargados', 'Cyan');
+    await setupMqtt();
+    listenToTopics();
   }
 
   @override

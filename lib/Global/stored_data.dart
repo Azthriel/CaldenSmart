@@ -1,6 +1,4 @@
 import 'dart:convert';
-import '/aws/dynamo/dynamo_certificates.dart';
-import '/aws/dynamo/dynamo.dart';
 import '../master.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,10 +6,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 //*-Cargo toda la data-*\\
 Future<void> loadValues() async {
   globalDATA = await loadGlobalData();
-  previusConnections = await loadDeviceList();
-  alexaDevices = await loadAlexaDevices();
-  topicsToSub = await loadTopicList();
-  nicknamesMap = await loadNicknamesMap();
+  // previusConnections = await loadDeviceList();
+  // alexaDevices = await loadAlexaDevices();
+  // topicsToSub = await loadTopicList();
+  // nicknamesMap = await loadNicknamesMap();
   tokensOfDevices = await loadToken();
   notificationMap = await loadNotificationMap();
   deviceImages = await loadDeviceImages();
@@ -23,59 +21,10 @@ Future<void> loadValues() async {
   quickAccess = await loadquickAccess();
   pinQuickAccess = await loadpinQuickAccess();
   lastPage = await loadLastPage();
-  oldRelay = await loadOldRelay();
   tutorial = await loadTutorial();
-
-  await DeviceManager.init();
-
-  for (String device in previusConnections) {
-    await queryItems(service, DeviceManager.getProductCode(device),
-        DeviceManager.extractSerialNumber(device));
-  }
 }
 //*-Cargo toda la data-*\\
 // MASTERLOAD \\
-
-//*-Dispositivos conectados-*\\
-Future<void> saveDeviceList(List<String> listaDispositivos) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setStringList('CSconnectedDevices', listaDispositivos);
-}
-
-Future<List<String>> loadDeviceList() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList('CSconnectedDevices') ?? [];
-}
-//*-Dispositivos conectados-*\\
-
-//*-Topics mqtt-*\\
-Future<void> saveTopicList(List<String> listatopics) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setStringList('CSTopics', listatopics);
-}
-
-Future<List<String>> loadTopicList() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList('CSTopics') ?? [];
-}
-//*-Topics mqtt-*\\
-
-//*-Nicknames-*\\
-Future<void> saveNicknamesMap(Map<String, String> nicknamesMap) async {
-  final prefs = await SharedPreferences.getInstance();
-  String nicknamesString = json.encode(nicknamesMap);
-  await prefs.setString('CSnicknamesMap', nicknamesString);
-}
-
-Future<Map<String, String>> loadNicknamesMap() async {
-  final prefs = await SharedPreferences.getInstance();
-  String? nicknamesString = prefs.getString('CSnicknamesMap');
-  if (nicknamesString != null) {
-    return Map<String, String>.from(json.decode(nicknamesString));
-  }
-  return {}; // Devuelve un mapa vacío si no hay nada almacenado
-}
-//*-Nicknames-*\\
 
 //*-GlobalDATA-*\\
 Future<void> saveGlobalData(
@@ -374,18 +323,6 @@ Future<Map<String, int>> loadconfigNotiDsc() async {
 }
 //*-Notificación Desconexión-*\\
 
-//*-Alexa devices -*\\
-Future<void> saveAlexaDevices(List<String> listaDispositivos) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setStringList('CSAlexaDevices', listaDispositivos);
-}
-
-Future<List<String>> loadAlexaDevices() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList('CSAlexaDevices') ?? [];
-}
-//*-Alexa devices -*\\
-
 //*- Guardar y cargar última página-*\\
 Future<void> saveLastPage(int index) async {
   final prefs = await SharedPreferences.getInstance();
@@ -398,16 +335,6 @@ Future<int?> loadLastPage() async {
 }
 //*- Guardar y cargar última página-*\\
 
-//*- Guardar y cargar si el rele es antiguo-*\\
-Future<void> saveOldRelay(List<String> reles) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setStringList('CSOldRelay', reles);
-}
-
-Future<List<String>> loadOldRelay() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList('CSOldRelay') ?? [];
-}
 //*- Guardar y cargar si el rele es antiguo-*\\
 
 //*- Guardar si el tutorial esta activado -*\\
@@ -423,3 +350,15 @@ Future<bool> loadTutorial() async {
 }
 
 //*- Guardar si el tutorial esta activado -*\\
+
+//*- Guardar email -*\\
+Future<void> saveEmail(String email) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setString('CSEmail', email);
+}
+
+Future<String> loadEmail() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getString('CSEmail') ?? '';
+}
+//*- Guardar email -*\\

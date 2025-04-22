@@ -8,22 +8,6 @@ import '../aws/dynamo/dynamo_certificates.dart';
 import '../master.dart';
 import 'stored_data.dart';
 
-//*- Keys para gestión -*\\
-final adminKey = GlobalKey(); // key para la pantalla de gestión
-final claimKey = GlobalKey(); // key para el boton de reclamar admin
-final fastBotonKey = GlobalKey(); // key para el boton de acceso rápido
-final ledKey = GlobalKey(); // key para el boton de led
-final imageKey = GlobalKey(); // key para la imagen del equipo
-//*- Keys para gestión -*\\
-
-//*- Keys para gestión siendo admin-*\\
-final agreeAdminKey =
-    GlobalKey(); // key para el boton de agregar administradores
-final viewAdminKey = GlobalKey(); // key para ver la lista de administradores
-final habitKey = GlobalKey(); // key para el boton de habitantes
-final discNotificationKey = GlobalKey(); // key para el boton de acceso rápido
-//*- Keys para gestión siendo admin-*\\
-
 class ManagerScreen extends StatefulWidget {
   const ManagerScreen({super.key});
 
@@ -176,7 +160,7 @@ class ManagerScreenState extends State<ManagerScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              key: adminKey,
+              key: KeyManager.managerScreen.adminKey,
               'Gestión del equipo',
               style: GoogleFonts.poppins(
                 fontSize: 28,
@@ -189,7 +173,7 @@ class ManagerScreenState extends State<ManagerScreen> {
             //! Opción - Reclamar propiedad del equipo o dejar de ser propietario
             if (!tenant && (owner == currentUserEmail || owner == '')) ...{
               InkWell(
-                key: claimKey,
+                key: KeyManager.managerScreen.claimKey,
                 onTap: () async {
                   if (owner == currentUserEmail) {
                     showAlertDialog(
@@ -308,7 +292,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                           if (owner == currentUserEmail) ...[
                             //! Opción 2 - Añadir administradores secundarios
                             InkWell(
-                              key: agreeAdminKey,
+                              key: KeyManager.managerScreen.agreeAdminKey,
                               onTap: () {
                                 setState(() {
                                   showSecondaryAdminFields =
@@ -500,7 +484,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                             const SizedBox(height: 10),
                             //! Opción 3 - Ver administradores secundarios
                             InkWell(
-                              key: viewAdminKey,
+                              key: KeyManager.managerScreen.viewAdminKey,
                               onTap: () {
                                 setState(() {
                                   showSecondaryAdminList =
@@ -610,7 +594,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                             const SizedBox(height: 10),
                             //! Opción 4 - Alquiler temporario
                             InkWell(
-                              key: habitKey,
+                              key: KeyManager.managerScreen.habitKey,
                               onTap: () {
                                 if (activatedAT) {
                                   setState(() {
@@ -1043,7 +1027,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                 DeviceManager.getProductCode(deviceName) != '027131_IOT' &&
                 DeviceManager.getProductCode(deviceName) != '024011_IOT') ...[
               SizedBox(
-                key: fastBotonKey,
+                key: KeyManager.managerScreen.fastBotonKey,
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
@@ -1122,7 +1106,7 @@ class ManagerScreenState extends State<ManagerScreen> {
             //! activar notificación de desconexión
             // if (owner == '' || owner == currentUserEmail || secondaryAdmin) ...{
             //   ElevatedButton(
-            //     key: discNotificationKey,
+            //     key: KeyManager.managerScreen.discNotificationKey,
             //     onPressed: () async {
             //       if (discNotfActivated) {
             //         showAlertDialog(
@@ -1310,7 +1294,7 @@ class ManagerScreenState extends State<ManagerScreen> {
             if (DeviceManager.getProductCode(deviceName) == '022000_IOT' ||
                 DeviceManager.getProductCode(deviceName) == '027000_IOT') ...[
               Container(
-                key: ledKey,
+                key: KeyManager.managerScreen.ledKey,
                 width: MediaQuery.of(context).size.width * 1.5,
                 padding:
                     const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
@@ -1371,7 +1355,7 @@ class ManagerScreenState extends State<ManagerScreen> {
             ],
 
             SizedBox(
-              key: imageKey,
+              key: KeyManager.managerScreen.imageKey,
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
@@ -1441,11 +1425,12 @@ class ManagerScreenState extends State<ManagerScreen> {
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Beneficios de termotanque smart',
-                    style: TextStyle(
-                      fontSize: 18,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
+                      fontSize: 18,
                     ),
                   ),
                 ),

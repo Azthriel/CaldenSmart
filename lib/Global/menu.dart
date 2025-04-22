@@ -1,4 +1,6 @@
 import 'package:caldensmart/Global/stored_data.dart';
+import 'package:caldensmart/aws/dynamo/dynamo.dart';
+import 'package:caldensmart/aws/dynamo/dynamo_certificates.dart';
 import 'package:flutter/material.dart';
 import '/Global/scan.dart';
 import '/Global/wifi.dart';
@@ -20,16 +22,32 @@ class MenuPageState extends State<MenuPage> {
   @override
   void initState() {
     super.initState();
-    setState(() {
-      _selectedIndex = lastPage ?? 0;
-    });
-    getMail();
+    _selectedIndex = lastPage ?? 0;
+
+    initAsync();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _pageController.jumpToPage(_selectedIndex);
-      checkForUpdate(context);
+      if (mounted) {
+        checkForUpdate(context);
+      }
     });
 
-    fToast.init(navigatorKey.currentState!.context);
+    if (mounted) {
+      fToast.init(navigatorKey.currentState!.context);
+    }
+  }
+
+  Future<void> initAsync() async {
+    currentUserEmail = await getUserMail();
+    if (currentUserEmail != '') {
+      await getDevices(service, currentUserEmail);
+      await getGroups(service, currentUserEmail);
+      eventosCreados = await getEventos(service, currentUserEmail);
+    }
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -104,9 +122,7 @@ class MenuPageState extends State<MenuPage> {
                       iconSize: _selectedIndex == 0 ? 35.0 : 30.0,
                       icon: Icon(
                         HugeIcons.strokeRoundedBluetoothSearch,
-                        color: _selectedIndex == 0
-                            ? color6
-                            : Colors.grey,
+                        color: _selectedIndex == 0 ? color6 : Colors.grey,
                       ),
                       onPressed: () => _onItemTapped(0),
                     ),
@@ -118,9 +134,7 @@ class MenuPageState extends State<MenuPage> {
                       iconSize: _selectedIndex == 1 ? 35.0 : 30.0,
                       icon: Icon(
                         HugeIcons.strokeRoundedWifi02,
-                        color: _selectedIndex == 1
-                            ? color6
-                            : Colors.grey,
+                        color: _selectedIndex == 1 ? color6 : Colors.grey,
                       ),
                       onPressed: () => _onItemTapped(1),
                     ),

@@ -60,11 +60,10 @@ class HeladeraPageState extends State<HeladeraPage> {
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
 
-
   void initItems() {
     items.addAll({
       TutorialItem(
-        globalKey: estadoKey,
+        globalKey: KeyManager.heladera.estadoKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(0),
         shapeFocus: ShapeFocus.oval,
@@ -78,7 +77,7 @@ class HeladeraPageState extends State<HeladeraPage> {
         ),
       ),
       TutorialItem(
-        globalKey: titleKey,
+        globalKey: KeyManager.heladera.titleKey,
         color: Colors.black.withValues(alpha: 0.6),
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(10.0),
@@ -91,7 +90,7 @@ class HeladeraPageState extends State<HeladeraPage> {
         ),
       ),
       TutorialItem(
-        globalKey: wifiKey,
+        globalKey: KeyManager.heladera.wifiKey,
         color: Colors.black.withValues(alpha: 0.6),
         shapeFocus: ShapeFocus.oval,
         borderRadius: const Radius.circular(15.0),
@@ -105,7 +104,7 @@ class HeladeraPageState extends State<HeladeraPage> {
         ),
       ),
       TutorialItem(
-        globalKey: bottomKey,
+        globalKey: KeyManager.heladera.bottomKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(10),
         radius: 80,
@@ -116,42 +115,29 @@ class HeladeraPageState extends State<HeladeraPage> {
           content: 'Puedes encender o apagar el equipo al presionar el botón',
         ),
       ),
-    });
-    if (DeviceManager.getProductCode(deviceName) == '027000_IOT') {
-      items.addAll({
+      TutorialItem(
+        globalKey: KeyManager.heladera.tempKey,
+        color: Colors.black.withValues(alpha: 0.6),
+        borderRadius: const Radius.circular(0),
+        shapeFocus: ShapeFocus.oval,
+        contentPosition: ContentPosition.below,
+        pageIndex: 1,
+        radius: 0,
+        child: !tenant
+            ? const TutorialItemContent(
+                title: 'Temperatura',
+                content:
+                    'En esta pantalla podrás ajustar la temperatura de corte del equipo',
+              )
+            : const TutorialItemContent(
+                title: 'Inquilino',
+                content:
+                    'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
+              ),
+      ),
+      if (!tenant) ...{
         TutorialItem(
-          globalKey: sparkKey,
-          color: Colors.black.withValues(alpha: 0.6),
-          borderRadius: const Radius.circular(10),
-          radius: 50,
-          shapeFocus: ShapeFocus.oval,
-          pageIndex: 0,
-          child: const TutorialItemContent(
-            title: 'Chispero',
-            content:
-                'Podrás activar o desactivar el chispero apretando el botón',
-          ),
-        ),
-      });
-    }
-    if (!tenant) {
-      items.addAll({
-        TutorialItem(
-          globalKey: tempKey,
-          color: Colors.black.withValues(alpha: 0.6),
-          borderRadius: const Radius.circular(0),
-          shapeFocus: ShapeFocus.oval,
-          contentPosition: ContentPosition.below,
-          pageIndex: 1,
-          radius: 0,
-          child: const TutorialItemContent(
-            title: 'Temperatura',
-            content:
-                'En esta pantalla podrás ajustar la temperatura de corte del equipo',
-          ),
-        ),
-        TutorialItem(
-          globalKey: tempBarKey,
+          globalKey: KeyManager.heladera.tempBarKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(35),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -162,28 +148,9 @@ class HeladeraPageState extends State<HeladeraPage> {
                 'Podrás manejar la temperatura a la que el equipo debe cortar',
           ),
         ),
-      });
-    } else {
-      items.addAll({
-        TutorialItem(
-          globalKey: tempKey,
-          color: Colors.black.withValues(alpha: 0.6),
-          borderRadius: const Radius.circular(0),
-          shapeFocus: ShapeFocus.oval,
-          contentPosition: ContentPosition.below,
-          pageIndex: 1,
-          radius: 0,
-          child: const TutorialItemContent(
-            title: 'Inquilino',
-            content:
-                'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
-          ),
-        ),
-      });
-    }
-    items.addAll({
+      },
       TutorialItem(
-        globalKey: distanceKey,
+        globalKey: KeyManager.heladera.distanceKey,
         color: Colors.black.withValues(alpha: 0.6),
         shapeFocus: ShapeFocus.oval,
         borderRadius: const Radius.circular(0),
@@ -196,7 +163,7 @@ class HeladeraPageState extends State<HeladeraPage> {
         ),
       ),
       TutorialItem(
-        globalKey: distanceBottomKey,
+        globalKey: KeyManager.heladera.distanceBottomKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(10),
         radius: 90,
@@ -207,11 +174,9 @@ class HeladeraPageState extends State<HeladeraPage> {
           content: 'Podrás activar esta función y configurar la distancia',
         ),
       ),
-    });
-    if (!tenant) {
-      items.addAll({
+      if (!tenant) ...{
         TutorialItem(
-          globalKey: consumeKey,
+          globalKey: KeyManager.heladera.consumeKey,
           color: Colors.black.withValues(alpha: 0.6),
           shapeFocus: ShapeFocus.oval,
           borderRadius: const Radius.circular(0),
@@ -225,7 +190,7 @@ class HeladeraPageState extends State<HeladeraPage> {
           ),
         ),
         TutorialItem(
-          globalKey: valorKey,
+          globalKey: KeyManager.heladera.valorKey,
           color: Colors.black.withValues(alpha: 0.6),
           shapeFocus: ShapeFocus.roundedSquare,
           borderRadius: const Radius.circular(15.0),
@@ -235,11 +200,9 @@ class HeladeraPageState extends State<HeladeraPage> {
             content: 'Podrás ingresar el valor de tu tarifa',
           ),
         ),
-      });
-    } else {
-      items.addAll({
+      } else ...{
         TutorialItem(
-          globalKey: consumeKey,
+          globalKey: KeyManager.heladera.consumeKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(0),
           shapeFocus: ShapeFocus.oval,
@@ -252,12 +215,10 @@ class HeladeraPageState extends State<HeladeraPage> {
                 'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
           ),
         ),
-      });
-    }
-    if (valueConsuption == null && !tenant) {
-      items.addAll({
+      },
+      if (valueConsuption == null && !tenant) ...{
         TutorialItem(
-          globalKey: consuptionKey,
+          globalKey: KeyManager.heladera.consuptionKey,
           color: Colors.black.withValues(alpha: 0.6),
           shapeFocus: ShapeFocus.roundedSquare,
           borderRadius: const Radius.circular(15.0),
@@ -267,12 +228,10 @@ class HeladeraPageState extends State<HeladeraPage> {
             content: 'Podrás ingresar el valor de tu tarifa',
           ),
         ),
-      });
-    }
-    if (!tenant) {
-      items.addAll({
+      },
+      if (!tenant) ...{
         TutorialItem(
-          globalKey: calculateKey,
+          globalKey: KeyManager.heladera.calculateKey,
           color: Colors.black.withValues(alpha: 0.6),
           shapeFocus: ShapeFocus.roundedSquare,
           borderRadius: const Radius.circular(15.0),
@@ -283,7 +242,7 @@ class HeladeraPageState extends State<HeladeraPage> {
           ),
         ),
         TutorialItem(
-          globalKey: mesKey,
+          globalKey: KeyManager.heladera.mesKey,
           color: Colors.black.withValues(alpha: 0.6),
           shapeFocus: ShapeFocus.roundedSquare,
           borderRadius: const Radius.circular(15.0),
@@ -293,12 +252,9 @@ class HeladeraPageState extends State<HeladeraPage> {
             content: 'Podrás reiniciar el mes de consumo',
           ),
         ),
-      });
-    }
-
-    items.addAll({
+      },
       TutorialItem(
-        globalKey: adminKey,
+        globalKey: KeyManager.managerScreen.adminKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(0),
         shapeFocus: ShapeFocus.oval,
@@ -310,11 +266,9 @@ class HeladeraPageState extends State<HeladeraPage> {
           content: 'Podrás reclamar el equipo y gestionar sus funciones',
         ),
       ),
-    });
-    if (!tenant) {
-      items.addAll({
+      if (!tenant) ...{
         TutorialItem(
-          globalKey: claimKey,
+          globalKey: KeyManager.managerScreen.claimKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -326,14 +280,10 @@ class HeladeraPageState extends State<HeladeraPage> {
                 'Presiona este botón para reclamar la administración del equipo',
           ),
         ),
-      });
-    }
-
-    // SOLO PARA LOS ADMINS
-    if (owner == currentUserEmail) {
-      items.addAll({
+      },
+      if (owner == currentUserEmail) ...{
         TutorialItem(
-          globalKey: agreeAdminKey,
+          globalKey: KeyManager.managerScreen.agreeAdminKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -345,7 +295,7 @@ class HeladeraPageState extends State<HeladeraPage> {
           ),
         ),
         TutorialItem(
-          globalKey: viewAdminKey,
+          globalKey: KeyManager.managerScreen.viewAdminKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -357,7 +307,7 @@ class HeladeraPageState extends State<HeladeraPage> {
           ),
         ),
         TutorialItem(
-          globalKey: habitKey,
+          globalKey: KeyManager.managerScreen.habitKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -368,12 +318,10 @@ class HeladeraPageState extends State<HeladeraPage> {
                 'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
           ),
         ),
-      });
-    }
-    if (!tenant) {
-      items.addAll({
+      },
+      if (!tenant) ...{
         TutorialItem(
-          globalKey: fastBotonKey,
+          globalKey: KeyManager.managerScreen.fastBotonKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -383,13 +331,10 @@ class HeladeraPageState extends State<HeladeraPage> {
             content: 'Podrás encender y apagar el dispositivo desde el menú',
           ),
         ),
-      });
-    }
-
-    if (!tenant) {
-      items.addAll({
+      },
+      if (!tenant) ...{
         TutorialItem(
-          globalKey: discNotificationKey,
+          globalKey: KeyManager.managerScreen.discNotificationKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -399,11 +344,9 @@ class HeladeraPageState extends State<HeladeraPage> {
             content: 'Puedes establecer una alerta si el equipo se desconecta',
           ),
         ),
-      });
-    }
-    items.addAll({
+      },
       TutorialItem(
-        globalKey: imageKey,
+        globalKey: KeyManager.heladera.imageKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
@@ -836,7 +779,7 @@ class HeladeraPageState extends State<HeladeraPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  key: estadoKey,
+                  key: KeyManager.heladera.estadoKey,
                   'Estado de la heladera',
                   style: GoogleFonts.poppins(
                     fontSize: 28,
@@ -858,7 +801,7 @@ class HeladeraPageState extends State<HeladeraPage> {
                     }
                   },
                   child: AnimatedContainer(
-                    key: bottomKey,
+                    key: KeyManager.heladera.bottomKey,
                     duration: const Duration(milliseconds: 500),
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -923,7 +866,7 @@ class HeladeraPageState extends State<HeladeraPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  key: tempKey,
+                  key: KeyManager.heladera.tempKey,
                   'Temperatura de corte',
                   style: GoogleFonts.poppins(
                     fontSize: 28,
@@ -967,7 +910,7 @@ class HeladeraPageState extends State<HeladeraPage> {
                         ),
                         const SizedBox(height: 10),
                         Container(
-                          key: tempBarKey,
+                          key: KeyManager.heladera.tempBarKey,
                           height: 350,
                           width: 70,
                           decoration: BoxDecoration(
@@ -1066,7 +1009,7 @@ class HeladeraPageState extends State<HeladeraPage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      key: distanceKey,
+                      key: KeyManager.heladera.distanceKey,
                       'Control por distancia',
                       style: GoogleFonts.poppins(
                         fontSize: 28,
@@ -1110,7 +1053,7 @@ class HeladeraPageState extends State<HeladeraPage> {
                         }
                       },
                       child: AnimatedContainer(
-                        key: distanceBottomKey,
+                        key: KeyManager.heladera.distanceBottomKey,
                         duration: const Duration(milliseconds: 500),
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -1370,7 +1313,7 @@ class HeladeraPageState extends State<HeladeraPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  key: consumeKey,
+                  key: KeyManager.heladera.consumeKey,
                   'Calculadora de Consumo',
                   style: GoogleFonts.poppins(
                     fontSize: 32,
@@ -1381,7 +1324,7 @@ class HeladeraPageState extends State<HeladeraPage> {
                 ),
                 const SizedBox(height: 50),
                 Container(
-                  key: valorKey,
+                  key: KeyManager.heladera.valorKey,
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
                       horizontal: 20.0, vertical: 10.0),
@@ -1418,7 +1361,7 @@ class HeladeraPageState extends State<HeladeraPage> {
                 if (valueConsuption == null) ...[
                   const SizedBox(height: 30),
                   Container(
-                    key: consuptionKey,
+                    key: KeyManager.heladera.consuptionKey,
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20.0, vertical: 10.0),
@@ -1483,7 +1426,7 @@ class HeladeraPageState extends State<HeladeraPage> {
                 ],
                 const SizedBox(height: 30),
                 ElevatedButton(
-                  key: calculateKey,
+                  key: KeyManager.heladera.calculateKey,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: color3,
                     foregroundColor: color0,
@@ -1525,7 +1468,7 @@ class HeladeraPageState extends State<HeladeraPage> {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  key: mesKey,
+                  key: KeyManager.heladera.mesKey,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: color3,
                     foregroundColor: color0,
@@ -1677,7 +1620,6 @@ class HeladeraPageState extends State<HeladeraPage> {
                         String newNickname = nicknameController.text;
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
-                        saveNicknamesMap(nicknamesMap);
                         putNicknames(service, currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
@@ -1690,7 +1632,7 @@ class HeladeraPageState extends State<HeladeraPage> {
               children: [
                 Expanded(
                   child: ScrollingText(
-                    key: titleKey,
+                    key: KeyManager.heladera.titleKey,
                     text: nickname,
                     style: poppinsStyle.copyWith(color: color0),
                   ),
@@ -1739,7 +1681,7 @@ class HeladeraPageState extends State<HeladeraPage> {
           ),
           actions: [
             IconButton(
-              key: wifiKey,
+              key: KeyManager.heladera.wifiKey,
               icon: Icon(wifiNotifier.wifiIcon, color: color0),
               onPressed: () {
                 if (_isTutorialActive) return;

@@ -6,7 +6,6 @@ import 'dart:ui';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:caldensmart/firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/gestures.dart';
@@ -18,6 +17,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:hugeicons/hugeicons.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -122,6 +122,7 @@ List<String> topicsToSub = [];
 List<String> previusConnections = [];
 List<String> adminDevices = [];
 List<String> alexaDevices = [];
+List<MapEntry<String, String>> todosLosDispositivos = [];
 //*-Equipos registrados-*\\
 
 //*-Nicknames-*\\
@@ -250,7 +251,6 @@ List<String> common = [];
 //*-Relé-*\\
 bool isNC = false;
 bool isAgreeChecked = false;
-List<String> oldRelay = [];
 //*-Relé-*\\
 
 //*-Acceso rápido BLE-*\\
@@ -281,70 +281,16 @@ int? lastPage;
 enum ShapeFocus { oval, square, roundedSquare }
 
 bool tutorial = true;
-
-//*- Keys para funciones de la appbar -*\\
-final titleKey = GlobalKey(); // key para el nombre del equipo
-final wifiKey = GlobalKey(); // key para el wifi del equipo
-//*- Keys para funciones de la appbar -*\\
-
-//*- Keys estado del dispositivo -*\\
-final estadoKey = GlobalKey(); // key para la pantalla de estado
-final bottomKey = GlobalKey(); // key para el boton de encendido
-final sparkKey = GlobalKey();
-//*- Keys estado del dispositivo-*\\
-
-//*- Keys temperatura del equipo -*\\
-final tempKey = GlobalKey(); //key para la pantalla de temperatura
-final tempBarKey = GlobalKey(); //key para la barra de temperatura
-//*- Keys temperatura del equipo -*\\
-
-//*- Keys para control por distancia -*\\
-final distanceKey =
-    GlobalKey(); // key para la pantalla de control por distancia
-final distanceBottomKey = GlobalKey(); // key para el boton de encendido
-//*- Keys para control por distancia -*\\
-
-//*- Keys para consumo -*\\
-final consumeKey = GlobalKey(); // key para la pantalla de consumo
-final valorKey = GlobalKey(); // key para el valor de la tarifa
-final consuptionKey = GlobalKey(); // key para el valor de consumo
-final calculateKey = GlobalKey();
-final mesKey = GlobalKey(); // key para el mes de consumo
-//*- Keys para consumo -*\\
-
-//*- Keys Atmosfera explosiva y monóxido de carbono -*\\
-final gasKey = GlobalKey(); // key para la pantalla de gas
-final coKey = GlobalKey(); // key para la pantalla de co
-//*- Keys Atmosfera explosiva y monóxido de carbono -*\\
-
-//*- Keys Atmosfera explosiva y monóxido de carbono 2 -*\\
-final gas2Key = GlobalKey(); // key para la pantalla de gas2
-final co2Key = GlobalKey(); // key para la pantalla de co2
-//*- Keys Atmosfera explosiva y monóxido de carbono -*\\
-
-//*- Keys Atmosfera explosiva y monóxido de carbono 3 -*\\
-final gas3Key = GlobalKey(); // key para la pantalla de gas2
-final co3Key = GlobalKey(); // key para la pantalla de co2
-//*- Keys Atmosfera explosiva y monóxido de carbono -*\\
-
-//*- Keys para brillo display -*\\
-final brightnessKey = GlobalKey(); // key para el brillo del display
-final barBrightnessKey = GlobalKey(); // key para la barra de brillo
-//*- Keys para brillo display -*\\
-
-//*- keys para configuraciones -*\\
-final configKey = GlobalKey(); // key para la pantalla de configuraciones
-//*- keys para configuraciones -*\\
-
-//*- Keys para cambio de Modo de Pines -*\\
-final pinModeKey = GlobalKey(); // key para el cambio de modo de pines
-//*- Keys para cambio de Modo de Pines -*\\
-
 //*- Tutorial -*\\
 
 //*- Toast -*\\
 late FToast fToast;
 //*- Toast -*\\
+
+//*- Escenas -*\\
+Map<String, List<String>> groupsOfDevices = {};
+List<Map<String, dynamic>> eventosCreados = [];
+//*- Escenas -*\\
 
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
@@ -978,6 +924,7 @@ void showToast(String message) {
             softWrap: true,
             maxLines: 10,
             overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
           ),
         ),
       ],
@@ -1880,7 +1827,8 @@ Future<void> handleNotifications(RemoteMessage message) async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    nicknamesMap = await loadNicknamesMap();
+    currentUserEmail = await loadEmail();
+    await getDevices(service, currentUserEmail);
     soundOfNotification = await loadSounds();
     await DeviceManager.init();
     printLog('Llegó esta notif: ${message.data}', 'rojo');
@@ -2194,22 +2142,22 @@ Future<bool> isUserSignedIn() async {
 }
 
 Future<String> getUserMail() async {
+  String email = '';
   try {
     final attributes = await Amplify.Auth.fetchUserAttributes();
     for (final attribute in attributes) {
       if (attribute.userAttributeKey.key == 'email') {
-        return attribute.value; // Retorna el correo electrónico del usuario
+        email = attribute.value; // Retorna el correo electrónico del usuario
       }
     }
   } on AuthException catch (e) {
     printLog('Error fetching user attributes: ${e.message}');
   }
-  return ''; // Retorna nulo si no se encuentra el correo electrónico
+
+  await saveEmail(email);
+  return email;
 }
 
-void getMail() async {
-  currentUserEmail = await getUserMail();
-}
 //*-Cognito user flow-*\\
 
 //*-Background functions-*\\
@@ -2451,8 +2399,9 @@ Future<bool> backFunctionDS() async {
     DeviceManager.init();
     Map<String, double> latitudes = await loadLatitude();
     Map<String, double> longitudes = await loadLongitud();
-    Map<String, String> nicks = await loadNicknamesMap();
-    List<String> old = await loadOldRelay();
+    currentUserEmail = await loadEmail();
+    await getDevices(service, currentUserEmail);
+    Map<String, String> nicks = nicknamesMap;
 
     for (int index = 0; index < devicesStored.length; index++) {
       String name = devicesStored[index];
@@ -2526,8 +2475,8 @@ Future<bool> backFunctionDS() async {
         if (distance2 <= distanceOn && distance1 > distance2) {
           printLog('Usuario cerca, encendiendo');
 
-          if ((DeviceManager.getProductCode(name) == '027313_IOT' &&
-              !old.contains(name))) {
+          if (DeviceManager.getProductCode(name) == '027313_IOT' &&
+              globalDATA['$productCode/$sn']!.keys.contains('io')) {
             showNotification(
                 'Encendimos ${nicknamesMap['${name}_0'] ?? 'Salida 0'} en ${nicks[name] ?? name}',
                 'Te acercaste a menos de $distanceOn metros',
@@ -2565,8 +2514,8 @@ Future<bool> backFunctionDS() async {
         } else if (distance2 >= distanceOff && distance1 < distance2) {
           printLog('Usuario lejos, apagando');
 
-          if ((DeviceManager.getProductCode(name) == '027313_IOT' &&
-              !old.contains(name))) {
+          if (DeviceManager.getProductCode(name) == '027313_IOT' &&
+              globalDATA['$productCode/$sn']!.keys.contains('io')) {
             showNotification(
                 'Apagamos ${nicknamesMap['${name}_0'] ?? 'Salida 0'} en ${nicks[name] ?? name}',
                 'Te alejaste a más de $distanceOff metros',
@@ -2889,10 +2838,14 @@ void showAlertDialog(BuildContext context, bool dismissible, Widget? title,
 //*-Acceso rápido BLE-*\\
 Future<void> controlDeviceBLE(String name, bool newState) async {
   printLog("Voy a ${newState ? 'Encender' : 'Apagar'} el equipo $name", "Rojo");
+
   if (DeviceManager.getProductCode(name) == '020010_IOT' ||
       DeviceManager.getProductCode(name) == '020020_IOT' ||
       (DeviceManager.getProductCode(name) == '027313_IOT' &&
-          !oldRelay.contains(name))) {
+          globalDATA[
+                  '${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}']!
+              .keys
+              .contains('io'))) {
     String fun = '${pinQuickAccess[name]!}#${newState ? '1' : '0'}';
     myDevice.ioUuid.write(fun.codeUnits);
     String topic =
@@ -3124,7 +3077,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                   ],
                   if (!updating && !error) ...[
                     Text(
-                      'Tu equipo no está actualizado y por lo tanto podría presentar fallas de funcionamiento, se solicita que por favor actualice el equipo.',
+                      'Tu equipo no está actualizado y por lo tanto podría perderse de las últimas novedades, se solicita que por favor actualice el equipo.\nSi el equipo no está conectado a WiFi se actualizara por Bluetooth',
                       style: GoogleFonts.poppins(
                         color: color0,
                         fontWeight: FontWeight.normal,
@@ -3186,56 +3139,65 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                     String url =
                         'https://github.com/barberop/sime-domotica/raw/refs/heads/main/${DeviceManager.getProductCode(deviceName)}/OTA_FW/W/hv${hardwareVersion}sv$lastSV.bin';
 
-                    printLog(url);
+                    printLog(url, "Rojo");
 
                     try {
-                      String dir =
-                          (await getApplicationDocumentsDirectory()).path;
-                      File file = File('$dir/firmware.bin');
+                      if (isWifiConnected) {
+                        String data =
+                            '${DeviceManager.getProductCode(deviceName)}[2]($url)';
+                        await myDevice.toolsUuid.write(data.codeUnits);
+                        printLog('Si mandé ota Wifi');
+                      } else {
+                        printLog('Arranca por la derecha la OTA BLE');
+                        String dir =
+                            (await getApplicationDocumentsDirectory()).path;
+                        File file = File('$dir/firmware.bin');
 
-                      if (await file.exists()) {
-                        await file.delete();
-                      }
-
-                      var req = await Dio().get(url);
-                      var bytes = req.data.toString().codeUnits;
-
-                      await file.writeAsBytes(bytes);
-
-                      var firmware = await file.readAsBytes();
-
-                      // printLog(
-                      //     "Comprobando cosas ${bytes == bytes2}", "verde");
-
-                      String data =
-                          '${DeviceManager.getProductCode(deviceName)}[3](${bytes.length})';
-                      printLog(data);
-                      await myDevice.toolsUuid.write(data.codeUnits);
-                      printLog("Arranco OTA", "verde");
-                      try {
-                        // int chunk = 255 - 3;
-                        int chunk = 1;
-                        for (int i = 0; i < firmware.length; i += chunk) {
-                          // printLog('Mande chunk');
-                          List<int> subvalue = firmware.sublist(
-                            i,
-                            min(i + chunk, firmware.length),
-                          );
-                          await myDevice.infoUuid
-                              .write(subvalue, withoutResponse: false);
-                          // recordedData.add([i, subvalue]);
-                          // setState(() {
-                          //   porcentaje = ((i * 100) / firmware.length).round();
-                          // });
+                        if (await file.exists()) {
+                          await file.delete();
                         }
-                        printLog('Acabe');
-                      } catch (e, stackTrace) {
-                        printLog('El error es: $e $stackTrace');
-                        setState(() {
-                          updating = false;
-                          error = true;
-                        });
-                        // handleManualError(e, stackTrace);
+
+                        var req = await http.get(Uri.parse(url));
+
+                        var bytes = req.bodyBytes;
+
+                        await file.writeAsBytes(bytes);
+
+                        var firmware = await file.readAsBytes();
+
+                        // printLog(
+                        //     "Comprobando cosas ${bytes == bytes2}", "verde");
+
+                        String data =
+                            '${DeviceManager.getProductCode(deviceName)}[3](${bytes.length})';
+                        printLog(data);
+                        await myDevice.toolsUuid.write(data.codeUnits);
+                        printLog("Arranco OTA", "verde");
+                        try {
+                          // int chunk = 255 - 3;
+                          int chunk = 1;
+                          for (int i = 0; i < firmware.length; i += chunk) {
+                            // printLog('Mande chunk');
+                            List<int> subvalue = firmware.sublist(
+                              i,
+                              min(i + chunk, firmware.length),
+                            );
+                            await myDevice.infoUuid
+                                .write(subvalue, withoutResponse: false);
+                            // recordedData.add([i, subvalue]);
+                            // setState(() {
+                            //   porcentaje = ((i * 100) / firmware.length).round();
+                            // });
+                          }
+                          printLog('Acabe');
+                        } catch (e, stackTrace) {
+                          printLog('El error es: $e $stackTrace');
+                          setState(() {
+                            updating = false;
+                            error = true;
+                          });
+                          // handleManualError(e, stackTrace);
+                        }
                       }
                     } catch (e, stackTrace) {
                       printLog('Error al enviar la OTA $e $stackTrace');
@@ -3724,7 +3686,7 @@ class GlobalDataNotifier extends ChangeNotifier {
   void updateData(String topic, Map<String, dynamic> newData) {
     if (_data[topic] != newData) {
       _data[topic] = newData;
-      notifyListeners(); // Esto notifica a todos los oyentes que algo cambió
+      notifyListeners();
     }
   }
 }
@@ -5025,6 +4987,8 @@ class ImageManager {
         return 'assets/devices/028000.png';
       case '024011_IOT':
         return 'assets/devices/024011.jpg';
+      case '020020_IOT':
+        return 'assets/devices/020020.jpeg';
       default:
         return 'assets/branch/Logo.png';
     }
@@ -5852,3 +5816,529 @@ class _FloatingTutorialButtonState extends State<FloatingTutorialButton> {
   }
 }
 //*- Botón de tutorial -*\\
+
+//*- Maneja las global keys -*\\
+class KeyManager {
+  static final calefactores = _CalefactoresKey();
+  static final detectores = _DetectoresKey();
+  static final domotica = _DomoticaKey();
+  static final heladera = _HeladeraKey();
+  static final millenium = _MilleniumKey();
+  static final modulo = _ModuloKey();
+  static final relay = _RelayKey();
+  static final rele1i1o = _Rele1i1oKey();
+  static final managerScreen = _ManagerScreenKey();
+}
+
+class _CalefactoresKey {
+  final estadoKey = GlobalKey(); // key para la pantalla de estado
+  final titleKey = GlobalKey(); // key para el nombre del equipo
+  final wifiKey = GlobalKey(); // key para el wifi del equipo
+  final bottomKey = GlobalKey(); // key para el boton de encendido
+  final sparkKey = GlobalKey();
+  final tempKey = GlobalKey(); //key para la pantalla de temperatura
+  final tempBarKey = GlobalKey(); //key para la barra de temperatura
+  final distanceKey =
+      GlobalKey(); // key para la pantalla de control por distancia
+  final distanceBottomKey = GlobalKey(); // key para el boton de encendido
+  final consumeKey = GlobalKey(); // key para la pantalla de consumo
+  final valorKey = GlobalKey(); // key para el valor de la tarifa
+  final consuptionKey = GlobalKey(); // key para el valor de consumo
+  final calculateKey = GlobalKey();
+  final mesKey = GlobalKey(); // key para el mes de consumo
+  final imageKey = GlobalKey(); // key para la imagen del equipo
+}
+
+class _DetectoresKey {
+  final estadoKey = GlobalKey(); // key para la pantalla de estado
+  final titleKey = GlobalKey(); // key para el nombre del equipo
+  final wifiKey = GlobalKey(); // key para el wifi del equipo
+  final gasKey = GlobalKey(); // key para la pantalla de gas
+  final coKey = GlobalKey(); // key para la pantalla de co
+  final gas2Key = GlobalKey(); // key para la pantalla de gas2
+  final co2Key = GlobalKey(); // key para la pantalla de co2
+  final gas3Key = GlobalKey(); // key para la pantalla de gas2
+  final co3Key = GlobalKey(); // key para la pantalla de co2
+  final brightnessKey = GlobalKey(); // key para el brillo del display
+  final barBrightnessKey = GlobalKey(); // key para la barra de brillo
+  final configKey = GlobalKey(); // key para la pantalla de configuraciones
+  final imageKey = GlobalKey(); // key para la imagen del equipo
+  final discNotificationKey = GlobalKey(); // key para el boton de desconexión
+}
+
+class _DomoticaKey {
+  final estadoKey = GlobalKey(); // key para la pantalla de estado
+  final titleKey = GlobalKey(); // key para el nombre del equipo
+  final wifiKey = GlobalKey(); // key para el wifi del equipo
+  final pinModeKey = GlobalKey(); // key para el cambio de modo de pines
+  final imageKey = GlobalKey(); // key para la imagen del equipo
+}
+
+class _HeladeraKey {
+  final estadoKey = GlobalKey(); // key para la pantalla de estado
+  final titleKey = GlobalKey(); // key para el nombre del equipo
+  final wifiKey = GlobalKey(); // key para el wifi del equipo
+  final bottomKey = GlobalKey(); // key para el boton de encendido
+  final tempKey = GlobalKey(); //key para la pantalla de temperatura
+  final tempBarKey = GlobalKey(); //key para la barra de temperatura
+  final distanceKey =
+      GlobalKey(); // key para la pantalla de control por distancia
+  final distanceBottomKey = GlobalKey(); // key para el boton de encendido
+  final consumeKey = GlobalKey(); // key para la pantalla de consumo
+  final valorKey = GlobalKey(); // key para el valor de la tarifa
+  final consuptionKey = GlobalKey(); // key para el valor de consumo
+  final calculateKey = GlobalKey();
+  final mesKey = GlobalKey(); // key para el mes de consumo
+  final imageKey = GlobalKey(); // key para la imagen del equipo
+}
+
+class _MilleniumKey {
+  final estadoKey = GlobalKey(); // key para la pantalla de estado
+  final titleKey = GlobalKey(); // key para el nombre del equipo
+  final wifiKey = GlobalKey(); // key para el wifi del equipo
+  final bottomKey = GlobalKey(); // key para el boton de encendido
+  final tempKey = GlobalKey(); //key para la pantalla de temperatura
+  final tempBarKey = GlobalKey(); //key para la barra de temperatura
+  final consumeKey = GlobalKey(); // key para la pantalla de consumo
+  final valorKey = GlobalKey(); // key para el valor de la tarifa
+  final consuptionKey = GlobalKey(); // key para el valor de consumo
+  final calculateKey = GlobalKey();
+  final mesKey = GlobalKey(); // key para el mes de consumo
+  final imageKey = GlobalKey(); // key para la imagen del equipo
+}
+
+class _ModuloKey {
+  final estadoKey = GlobalKey(); // key para la pantalla de estado
+  final titleKey = GlobalKey(); // key para el nombre del equipo
+  final wifiKey = GlobalKey(); // key para el wifi del equipo
+  final pinModeKey = GlobalKey(); // key para el cambio de modo de pines
+  final imageKey = GlobalKey(); // key para la imagen del equipo
+}
+
+class _RelayKey {
+  final estadoKey = GlobalKey(); // key para la pantalla de estado
+  final bottomKey = GlobalKey(); // key para el boton de encendido
+  final titleKey = GlobalKey(); // key para el nombre del equipo
+  final wifiKey = GlobalKey(); // key para el wifi del equipo
+  final distanceKey =
+      GlobalKey(); // key para la pantalla de control por distancia
+  final distanceBottomKey = GlobalKey(); // key para el boton de encendido
+  final pinModeKey = GlobalKey(); // key para el cambio de modo de pines
+  final imageKey = GlobalKey(); // key para la imagen del equipo
+}
+
+class _Rele1i1oKey {
+  final estadoKey = GlobalKey(); // key para la pantalla de estado
+  final titleKey = GlobalKey(); // key para el nombre del equipo
+  final wifiKey = GlobalKey(); // key para el wifi del equipo
+  final distanceKey =
+      GlobalKey(); // key para la pantalla de control por distancia
+  final distanceBottomKey = GlobalKey(); // key para el boton de encendido
+  final pinModeKey = GlobalKey(); // key para el cambio de modo de pines
+  final imageKey = GlobalKey(); // key para la imagen del equipo
+}
+
+class _ManagerScreenKey {
+  final adminKey = GlobalKey(); // key para la pantalla de gestión
+  final claimKey = GlobalKey(); // key para el boton de reclamar admin
+  final agreeAdminKey =
+      GlobalKey(); // key para el boton de agregar administradores
+  final viewAdminKey = GlobalKey(); // key para ver la lista de administradores
+  final habitKey = GlobalKey(); // key para el boton de habitantes
+  final fastBotonKey = GlobalKey(); // key para el boton de acceso rápido
+  final ledKey = GlobalKey(); // key para el boton de led
+  final imageKey = GlobalKey(); // key para la imagen del equipo
+  final discNotificationKey = GlobalKey(); // key para el boton de desconexión
+}
+
+//*- Maneja las global keys -*\\
+
+//*- Selector de dias -*\\
+
+class DayInWeek {
+  DayInWeek(
+    this.dayName, {
+    required this.dayKey,
+    this.isSelected = false,
+  });
+
+  String dayName;
+  String dayKey;
+  bool isSelected = false;
+
+  void toggleIsSelected() {
+    isSelected = !isSelected;
+  }
+}
+
+class SelectWeekDays extends StatefulWidget {
+  /// `SelectWeekDays` takes a list of days of type `DayInWeek`.
+  /// `onSelect` property will return `list` of days that are selected.
+  const SelectWeekDays({
+    required this.onSelect,
+    required this.days,
+    this.backgroundColor,
+    this.fontWeight,
+    this.fontSize,
+    this.selectedDaysFillColor,
+    this.unselectedDaysFillColor,
+    this.selectedDaysBorderColor,
+    this.unselectedDaysBorderColor,
+    this.selectedDayTextColor,
+    this.unSelectedDayTextColor,
+    this.border = true,
+    this.boxDecoration,
+    this.padding = 8.0,
+    this.width,
+    this.borderWidth,
+    this.elevation = 2.0,
+    super.key,
+  });
+
+  /// [onSelect] callBack to handle the Selected days
+  final void Function(List<String> days) onSelect;
+
+  /// List of days of type `DayInWeek`
+  final List<DayInWeek> days;
+
+  /// [backgroundColor] - property to change the color of the container.
+  final Color? backgroundColor;
+
+  /// [fontWeight] - property to change the weight of selected text
+  final FontWeight? fontWeight;
+
+  /// [fontSize] - property to change the size of selected text
+  final double? fontSize;
+
+  /// [selectedDaysFillColor] -  property to change the button color of days
+  /// when the button is selected.
+  final Color? selectedDaysFillColor;
+
+  /// [unselectedDaysFillColor] -  property to change the button color of days
+  /// when the button is not selected.
+  final Color? unselectedDaysFillColor;
+
+  /// [selectedDaysBorderColor] - property to change the border color of the
+  /// rounded buttons when day is selected.
+  final Color? selectedDaysBorderColor;
+
+  /// [unselectedDaysBorderColor] - property to change the border color of
+  /// the rounded buttons when day is unselected.
+  final Color? unselectedDaysBorderColor;
+
+  /// [selectedDayTextColor] - property to change the color of text when the
+  /// day is selected.
+  final Color? selectedDayTextColor;
+
+  /// [unSelectedDayTextColor] - property to change the text color when
+  /// the day is not selected.
+  final Color? unSelectedDayTextColor;
+
+  /// [border] Boolean to handle the day button border by
+  /// default the border will be true.
+  final bool border;
+
+  /// [boxDecoration] to handle the decoration of the container.
+  final BoxDecoration? boxDecoration;
+
+  /// [padding] property  to handle the padding between the
+  /// container and buttons by default it is 8.0
+  final double padding;
+
+  /// The property that can be used to specify the [width] of
+  /// the [SelectWeekDays] container.
+  /// By default this property will take the full width of the screen.
+  final double? width;
+
+  /// [borderWidth] property  to handle the width border of
+  /// the container by default it is 2.0
+  final double? borderWidth;
+
+  /// [elevation] property  to change the elevation of  RawMaterialButton
+  /// by default it is 2.0
+  final double elevation;
+
+  @override
+  SelectWeekDaysState createState() => SelectWeekDaysState();
+}
+
+class SelectWeekDaysState extends State<SelectWeekDays> {
+  // list to insert the selected days.
+  List<String> selectedDays = [];
+
+  // list of days in a week.
+  List<DayInWeek> _daysInWeek = [];
+
+  @override
+  void initState() {
+    _daysInWeek = widget.days;
+    for (final day in _daysInWeek) {
+      if (day.isSelected) {
+        selectedDays.add(day.dayKey);
+      }
+    }
+    super.initState();
+  }
+
+  // Set days to new value
+  void setDaysState(List<DayInWeek> newDays) {
+    selectedDays = [];
+    for (final dayInWeek in newDays) {
+      if (dayInWeek.isSelected) {
+        selectedDays.add(dayInWeek.dayKey);
+      }
+    }
+    setState(() {
+      _daysInWeek = newDays;
+    });
+  }
+
+  void _getSelectedWeekDays(bool isSelected, String day) {
+    if (isSelected == true) {
+      if (!selectedDays.contains(day)) {
+        selectedDays.add(day);
+      }
+    } else if (isSelected == false) {
+      if (selectedDays.contains(day)) {
+        selectedDays.remove(day);
+      }
+    }
+    widget.onSelect(selectedDays.toList());
+  }
+
+  // getter to handle background color of container.
+  Color? get _handleBackgroundColor {
+    if (widget.backgroundColor == null) {
+      return Theme.of(context).colorScheme.secondary;
+    } else {
+      return widget.backgroundColor;
+    }
+  }
+
+  // getter to handle fill color of buttons.
+  Color? _handleDaysFillColor(bool onSelect) {
+    if (!onSelect && widget.unselectedDaysFillColor == null) {
+      return null;
+    }
+
+    return _selectedUnselectedLogic(
+      onSelect: onSelect,
+      selectedColor: widget.selectedDaysFillColor,
+      unSelectedColor: widget.unselectedDaysFillColor,
+      defaultSelectedColor: Colors.white,
+      defaultUnselectedColor: Colors.white,
+    );
+  }
+
+  // getter to handle border color of days[buttons].
+  Color _handleBorderColorOfDays(bool onSelect) {
+    return _selectedUnselectedLogic(
+      onSelect: onSelect,
+      selectedColor: widget.selectedDaysBorderColor,
+      unSelectedColor: widget.unselectedDaysBorderColor,
+      defaultSelectedColor: Colors.white,
+      defaultUnselectedColor: Colors.white,
+    );
+  }
+
+  // Handler to change the text color when the button is pressed
+  // and not pressed.
+  Color? _handleTextColor(bool onSelect) {
+    return _selectedUnselectedLogic(
+      onSelect: onSelect,
+      selectedColor: widget.selectedDayTextColor,
+      unSelectedColor: widget.unSelectedDayTextColor,
+      defaultSelectedColor: Colors.black,
+      defaultUnselectedColor: Colors.white,
+    );
+  }
+
+  Color _selectedUnselectedLogic({
+    required bool onSelect,
+    required Color? selectedColor,
+    required Color? unSelectedColor,
+    required Color defaultSelectedColor,
+    required Color defaultUnselectedColor,
+  }) {
+    if (onSelect) {
+      return selectedColor ?? defaultSelectedColor;
+    }
+    return unSelectedColor ?? defaultUnselectedColor;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: widget.width ?? MediaQuery.of(context).size.width,
+      decoration: widget.boxDecoration ??
+          BoxDecoration(
+            color: _handleBackgroundColor,
+            borderRadius: BorderRadius.circular(0),
+          ),
+      child: Padding(
+        padding: EdgeInsets.all(widget.padding),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: _daysInWeek.map(
+            (day) {
+              return Expanded(
+                child: RawMaterialButton(
+                  fillColor: _handleDaysFillColor(day.isSelected),
+                  shape: CircleBorder(
+                    side: widget.border
+                        ? BorderSide(
+                            color: _handleBorderColorOfDays(day.isSelected),
+                            width: widget.borderWidth ?? 2.0,
+                          )
+                        : BorderSide.none,
+                  ),
+                  elevation: widget.elevation,
+                  onPressed: () {
+                    setState(() {
+                      day.toggleIsSelected();
+                    });
+                    _getSelectedWeekDays(day.isSelected, day.dayKey);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Text(
+                      day.dayName.length < 3
+                          ? day.dayName
+                          : day.dayName.substring(0, 3),
+                      style: TextStyle(
+                        fontSize: widget.fontSize,
+                        fontWeight: widget.fontWeight,
+                        color: _handleTextColor(day.isSelected),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ).toList(),
+        ),
+      ),
+    );
+  }
+}
+//*- Selector de dias -*\\
+
+//*- Selector de horas -*\\
+class TimeSelector extends StatefulWidget {
+  final Function(TimeOfDay) onTimeChanged;
+
+  const TimeSelector({super.key, required this.onTimeChanged});
+
+  @override
+  State<TimeSelector> createState() => TimeSelectorState();
+}
+
+class TimeSelectorState extends State<TimeSelector> {
+  int selectedHour = 12;
+  int selectedMinute = 30;
+
+  static List<int> hours = List.generate(24, (index) => index);
+  static List<int> minutes = List.generate(60, (index) => index);
+
+  late FixedExtentScrollController hourController;
+  late FixedExtentScrollController minuteController;
+
+  @override
+  void initState() {
+    super.initState();
+    hourController = FixedExtentScrollController(initialItem: selectedHour);
+    minuteController = FixedExtentScrollController(initialItem: selectedMinute);
+  }
+
+  @override
+  void dispose() {
+    hourController.dispose();
+    minuteController.dispose();
+    super.dispose();
+  }
+
+  void _notifyChange() {
+    widget.onTimeChanged(TimeOfDay(hour: selectedHour, minute: selectedMinute));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: NumberWheel(
+                controller: hourController,
+                values: hours,
+                onChanged: (index) {
+                  selectedHour = hours[index];
+                  _notifyChange();
+                },
+              ),
+            ),
+            const Text(
+              ':',
+              style: NumberWheel.wheelTextStyle,
+            ),
+            Expanded(
+              child: NumberWheel(
+                controller: minuteController,
+                values: minutes,
+                onChanged: (index) {
+                  selectedMinute = minutes[index];
+                  _notifyChange();
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class NumberWheel extends StatelessWidget {
+  final FixedExtentScrollController controller;
+  final List<int> values;
+  final Function(int) onChanged;
+
+  const NumberWheel({
+    super.key,
+    required this.controller,
+    required this.values,
+    required this.onChanged,
+  });
+
+  static const TextStyle wheelTextStyle = TextStyle(
+    color: color1,
+    fontSize: 36,
+    fontWeight: FontWeight.bold,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 200,
+      child: ListWheelScrollView.useDelegate(
+        controller: controller,
+        itemExtent: 50,
+        diameterRatio: 1.2,
+        perspective: 0.002,
+        physics: const FixedExtentScrollPhysics(),
+        onSelectedItemChanged: onChanged,
+        childDelegate: ListWheelChildBuilderDelegate(
+          childCount: values.length,
+          builder: (context, index) => Center(
+            child: Text(
+              values[index].toString().padLeft(2, '0'),
+              style: wheelTextStyle,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+//*- Selector de horas -*\\

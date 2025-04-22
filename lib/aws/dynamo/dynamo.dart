@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:aws_dynamodb_api/dynamodb-2012-08-10.dart';
+import 'package:caldensmart/aws/mqtt/mqtt.dart';
 import '/master.dart';
 import '../../Global/stored_data.dart';
 
@@ -384,36 +385,53 @@ Future<void> saveNC(DynamoDB service, String pc, String sn, bool data) async {
 }
 //*-Guardar si un equipo es NA o NC-*\\
 
-///*-Guardar equipos para la Alexa Skill-*\\\
+///*-Guardar equipos en dynamo-*\\\
 Future<void> putDevicesForAlexa(
     DynamoDB service, String email, List<String> data) async {
-  // printLog('Voy a guardar : $data', 'magenta');
   if (data.isEmpty) {
-    // printLog('xd', 'magenta');
-    try {
-      service.deleteItem(key: {
+    data.add('');
+  }
+  try {
+    // Se actualiza el ítem, asignando 'devices' con la lista proporcionada (vacía o no).
+    final response = await service.updateItem(
+      tableName: 'Alexa-Devices',
+      key: {
         'email': AttributeValue(s: email),
-      }, tableName: 'Alexa-Devices');
-    } catch (e) {
-      printLog('Error borrando el item alexa $e');
-    }
-  } else {
-    try {
-      final response =
-          await service.updateItem(tableName: 'Alexa-Devices', key: {
-        'email': AttributeValue(s: email),
-      }, attributeUpdates: {
+      },
+      attributeUpdates: {
         'devices': AttributeValueUpdate(value: AttributeValue(ss: data)),
-      });
-
-      printLog('Item escrito perfectamente $response');
-    } catch (e) {
-      printLog('Error guardando alexa item: $e');
-    }
+      },
+    );
+    printLog('Item actualizado correctamente: $response');
+  } catch (e) {
+    printLog('Error actualizando el ítem de Alexa: $e');
   }
 }
 
-///*-Guardar equipos para la Alexa Skill-*\\\
+void putPreviusConnections(
+    DynamoDB service, String email, List<String> data) async {
+  if (data.isEmpty) {
+    data.add('');
+  }
+  try {
+    // Se actualiza el ítem, asignando 'devices' con la lista proporcionada (vacía o no).
+    final response = await service.updateItem(
+      tableName: 'Alexa-Devices',
+      key: {
+        'email': AttributeValue(s: email),
+      },
+      attributeUpdates: {
+        'previusConnections':
+            AttributeValueUpdate(value: AttributeValue(ss: data)),
+      },
+    );
+    printLog('Item actualizado correctamente: $response');
+  } catch (e) {
+    printLog('Error actualizando el ítem de Alexa: $e');
+  }
+}
+
+///*-Guardar equipos en dynamo-*\\\
 
 ///*-Guardar Nicknames de los equipo-*\\\
 Future<void> putNicknames(
@@ -437,6 +455,7 @@ Future<void> putNicknames(
     printLog('Error guardando alexa item: $e');
   }
 }
+
 ///*-Guardar Nicknames de los equipo-*\\\
 
 ///*-Guardar el largo del Roller-*\\\
@@ -455,4 +474,229 @@ Future<void> putRollerLength(
     printLog('Error inserting item: $e');
   }
 }
+
 ///*-Guardar el largo del Roller-*\\\
+
+///*-Leer las conexiones previas y los grupos-*\\\
+///Está función lee los equipos y grupos de la base de datos de DynamoDB
+///y los guarda en las variables previusConnections y groupsOfDevices respectivamente.
+///También lee los dispositivos de Asistentes por voz y los guarda en la variable alexaDevices.
+///A su vez, guarda los topics a los que se va a suscribir el cliente MQTT en la variable topicsToSub.
+///Por último, guarda los nicknames de los dispositivos en la variable nicknamesMap.
+Future<void> getDevices(DynamoDB service, String email) async {
+  try {
+    final response = await service.getItem(
+      tableName: 'Alexa-Devices',
+      key: {'email': AttributeValue(s: email)},
+    );
+    if (response.item != null) {
+      // Convertir AttributeValue a String
+      var item = response.item!;
+      List<String> equipos = item['previusConnections']?.ss ?? [];
+      if (equipos.contains('') && equipos.length == 1) {
+        equipos = [];
+      }
+
+      previusConnections = equipos;
+
+      for (String equipo in previusConnections) {
+        topicsToSub.add(
+            'devices_tx/${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}');
+
+        subToTopicMQTT(
+            'devices_tx/${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}');
+      }
+
+      printLog('Se encontro el siguiente item: $equipos');
+
+      alexaDevices = item['devices']?.ss ?? [];
+      if (alexaDevices.contains('') && alexaDevices.length == 1) {
+        alexaDevices = [];
+      }
+      printLog('Equipos de asistentes por voz: $alexaDevices');
+
+      Map<String, AttributeValue> mapa = item['nicknames']?.m ?? {};
+      mapa.forEach((key, value) {
+        nicknamesMap.addAll({key: value.s ?? ''});
+      });
+      printLog('Nicknames encontrados: $nicknamesMap');
+
+      await DeviceManager.init();
+
+      for (String device in previusConnections) {
+        await queryItems(service, DeviceManager.getProductCode(device),
+            DeviceManager.extractSerialNumber(device));
+      }
+    } else {
+      printLog('Item no encontrado. No está el mail en la database');
+    }
+  } catch (e) {
+    printLog('Error al obtener el item: $e');
+  }
+}
+
+Future<void> getGroups(DynamoDB service, String email) async {
+  try {
+    final response = await service.getItem(
+      tableName: 'Alexa-Devices',
+      key: {'email': AttributeValue(s: email)},
+    );
+    if (response.item != null) {
+      // Convertir AttributeValue a String
+      var item = response.item!;
+      final raw = item['groups']?.m ?? <String, AttributeValue>{};
+      final Map<String, List<String>> grupos = {
+        for (final e in raw.entries)
+          e.key: (e.value.ss ?? []).where((s) => s.isNotEmpty).toList()
+      };
+
+      if (grupos.isNotEmpty) {
+        grupos.forEach((k, v) => printLog('$k: $v'));
+        groupsOfDevices = grupos;
+      } else {
+        printLog('No se encontraron grupos.');
+      }
+    } else {
+      printLog('Item no encontrado. No está el mail en la database');
+    }
+  } catch (e) {
+    printLog('Error al obtener el item: $e');
+  }
+}
+//*-Leer las conexiones previas y los grupos-*\\\
+
+//*-Guardar los grupos de dispositivos-*\\
+void putGroupsOfDevices(
+    DynamoDB service, String email, Map<String, List<String>> data) async {
+  try {
+    final response = await service.updateItem(tableName: 'Alexa-Devices', key: {
+      'email': AttributeValue(s: email),
+    }, attributeUpdates: {
+      'groups': AttributeValueUpdate(
+        value: AttributeValue(
+          m: {
+            for (final entry in data.entries)
+              entry.key: AttributeValue(ss: entry.value),
+          },
+        ),
+      ),
+    });
+
+    printLog('Item escrito perfectamente $response');
+  } catch (e) {
+    printLog('Error guardando alexa item: $e');
+  }
+}
+//*-Guardar los grupos de dispositivos-*\\
+
+/// Guarda la lista [eventosCreados] (List<Map<String, dynamic>>) bajo la clave primaria [email]
+void putEventos(
+  DynamoDB service,
+  String email,
+  List<Map<String, dynamic>> eventosCreados,
+) async {
+  try {
+    // Convertir cada Map a AttributeValue(M)
+    final attributeList = eventosCreados.map((evento) {
+      final m = <String, AttributeValue>{};
+      evento.forEach((key, value) {
+        if (value is String) {
+          m[key] = AttributeValue(s: value);
+        } else if (value is num) {
+          m[key] = AttributeValue(n: value.toString());
+        } else if (value is bool) {
+          m[key] = AttributeValue(boolValue: value);
+        } else if (value is List) {
+          m[key] = AttributeValue(
+              l: value.map((e) {
+            if (e is String) return AttributeValue(s: e);
+            if (e is num) return AttributeValue(n: e.toString());
+            if (e is bool) return AttributeValue(boolValue: e);
+            return AttributeValue(s: e.toString());
+          }).toList());
+        } else if (value is Map<String, dynamic>) {
+          final nested = <String, AttributeValue>{};
+          value.forEach((k, v) {
+            if (v is String) {
+              nested[k] = AttributeValue(s: v);
+            } else if (v is num) {
+              nested[k] = AttributeValue(n: v.toString());
+            } else if (v is bool) {
+              nested[k] = AttributeValue(boolValue: v);
+            } else {
+              nested[k] = AttributeValue(s: v.toString());
+            }
+          });
+          m[key] = AttributeValue(m: nested);
+        } else {
+          m[key] = AttributeValue(s: value.toString());
+        }
+      });
+      return AttributeValue(m: m);
+    }).toList();
+
+    // Actualizar el item en DynamoDB
+    await service.updateItem(
+      tableName: 'Alexa-Devices',
+      key: {'email': AttributeValue(s: email)},
+      attributeUpdates: {
+        'events': AttributeValueUpdate(value: AttributeValue(l: attributeList)),
+      },
+    );
+    printLog('Eventos guardados correctamente');
+  } catch (e) {
+    printLog('Error al guardar eventos: $e');
+  }
+}
+
+/// Carga y convierte de vuelta a List<Map<String, dynamic>> desde DynamoDB
+Future<List<Map<String, dynamic>>> getEventos(
+  DynamoDB service,
+  String email,
+) async {
+  try {
+    final response = await service.getItem(
+      tableName: 'Alexa-Devices',
+      key: {'email': AttributeValue(s: email)},
+    );
+
+    final listAttr = response.item?['events']?.l;
+    if (listAttr == null) return [];
+
+    return listAttr.map((av) {
+      final map = <String, dynamic>{};
+      av.m?.forEach((key, val) {
+        if (val.s != null) {
+          map[key] = val.s;
+        } else if (val.n != null) {
+          map[key] = num.parse(val.n!);
+        } else if (val.boolValue != null) {
+          map[key] = val.boolValue;
+        } else if (val.l != null) {
+          map[key] =
+              val.l!.map((e) => e.s ?? e.n ?? e.boolValue ?? e.m).toList();
+        } else if (val.m != null) {
+          final nested = <String, dynamic>{};
+          val.m!.forEach((k, v) {
+            if (v.s != null) {
+              nested[k] = v.s;
+            } else if (v.n != null) {
+              nested[k] = num.parse(v.n!);
+            } else if (v.boolValue != null) {
+              nested[k] = v.boolValue;
+            } else {
+              nested[k] = null;
+            }
+          });
+          map[key] = nested;
+        } else {
+          map[key] = null;
+        }
+      });
+      return map;
+    }).toList();
+  } catch (e) {
+    printLog('Error al cargar eventos: $e');
+    return [];
+  }
+}

@@ -51,7 +51,7 @@ class DomoticaPageState extends State<DomoticaPage> {
   void initItems() {
     items.addAll({
       TutorialItem(
-        globalKey: estadoKey,
+        globalKey: KeyManager.domotica.estadoKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(0),
         shapeFocus: ShapeFocus.oval,
@@ -65,7 +65,7 @@ class DomoticaPageState extends State<DomoticaPage> {
         ),
       ),
       TutorialItem(
-        globalKey: titleKey,
+        globalKey: KeyManager.domotica.titleKey,
         color: Colors.black.withValues(alpha: 0.6),
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(10.0),
@@ -78,7 +78,7 @@ class DomoticaPageState extends State<DomoticaPage> {
         ),
       ),
       TutorialItem(
-        globalKey: wifiKey,
+        globalKey: KeyManager.domotica.wifiKey,
         color: Colors.black.withValues(alpha: 0.6),
         shapeFocus: ShapeFocus.oval,
         borderRadius: const Radius.circular(15.0),
@@ -91,48 +91,30 @@ class DomoticaPageState extends State<DomoticaPage> {
               'Podrás observar el estado de la conexión wifi del dispositivo',
         ),
       ),
-    });
-    if (hardwareVersion == '240422A') {
-      isPinMode = true;
-      if (!tenant) {
-        items.addAll({
-          TutorialItem(
-            globalKey: pinModeKey,
-            color: Colors.black.withValues(alpha: 0.6),
-            shapeFocus: ShapeFocus.oval,
-            borderRadius: const Radius.circular(0),
-            radius: 0,
-            contentPosition: ContentPosition.below,
-            pageIndex: 1,
-            child: const TutorialItemContent(
-              title: 'Cambio de modo de pines',
-              content:
-                  'si introduces la clave del manual podrás modificar el estado comun de los pines y alterar las entradas/salidas',
-            ),
-          ),
-        });
-      } else {
-        items.addAll({
-          TutorialItem(
-            globalKey: pinModeKey,
-            color: Colors.black.withValues(alpha: 0.6),
-            shapeFocus: ShapeFocus.oval,
-            borderRadius: const Radius.circular(0),
-            radius: 0,
-            contentPosition: ContentPosition.below,
-            pageIndex: 1,
-            child: const TutorialItemContent(
-              title: 'Inquilino',
-              content:
-                  'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
-            ),
-          ),
-        });
-      }
-    }
-    items.addAll({
+      if (hardwareVersion == '240422A') ...{
+        TutorialItem(
+          globalKey: KeyManager.domotica.pinModeKey,
+          color: Colors.black.withValues(alpha: 0.6),
+          shapeFocus: ShapeFocus.oval,
+          borderRadius: const Radius.circular(0),
+          radius: 0,
+          contentPosition: ContentPosition.below,
+          pageIndex: 2,
+          child: !tenant
+              ? const TutorialItemContent(
+                  title: 'Cambio de modo de pines',
+                  content:
+                      'si introduces la clave del manual podrás modificar el estado comun de las salidas',
+                )
+              : const TutorialItemContent(
+                  title: 'Inquilino',
+                  content:
+                      'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
+                ),
+        ),
+      },
       TutorialItem(
-        globalKey: adminKey,
+        globalKey: KeyManager.managerScreen.adminKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(0),
         shapeFocus: ShapeFocus.oval,
@@ -144,11 +126,9 @@ class DomoticaPageState extends State<DomoticaPage> {
           content: 'Podrás reclamar el equipo y gestionar sus funciones',
         ),
       ),
-    });
-    if (!tenant) {
-      items.addAll({
+      if (!tenant) ...{
         TutorialItem(
-          globalKey: claimKey,
+          globalKey: KeyManager.managerScreen.claimKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -159,14 +139,10 @@ class DomoticaPageState extends State<DomoticaPage> {
             content: 'Podras reclamar la administración del equipo',
           ),
         ),
-      });
-    }
-
-    // SOLO PARA LOS ADMINS
-    if (owner == currentUserEmail) {
-      items.addAll({
+      },
+      if (owner == currentUserEmail) ...{
         TutorialItem(
-          globalKey: agreeAdminKey,
+          globalKey: KeyManager.managerScreen.agreeAdminKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -178,7 +154,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           ),
         ),
         TutorialItem(
-          globalKey: viewAdminKey,
+          globalKey: KeyManager.managerScreen.viewAdminKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -190,7 +166,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           ),
         ),
         TutorialItem(
-          globalKey: habitKey,
+          globalKey: KeyManager.managerScreen.habitKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -201,12 +177,10 @@ class DomoticaPageState extends State<DomoticaPage> {
                 'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
           ),
         ),
-      });
-    }
-    if (!tenant) {
-      items.addAll({
+      },
+      if (!tenant) ...{
         TutorialItem(
-          globalKey: fastBotonKey,
+          globalKey: KeyManager.managerScreen.fastBotonKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -217,7 +191,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           ),
         ),
         TutorialItem(
-          globalKey: discNotificationKey,
+          globalKey: KeyManager.managerScreen.discNotificationKey,
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
@@ -227,11 +201,9 @@ class DomoticaPageState extends State<DomoticaPage> {
             content: 'Puedes establecer una alerta si el equipo se desconecta',
           ),
         ),
-      });
-    }
-    items.addAll({
+      },
       TutorialItem(
-        globalKey: imageKey,
+        globalKey: KeyManager.domotica.imageKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
@@ -533,7 +505,6 @@ class DomoticaPageState extends State<DomoticaPage> {
         String dv = '${deviceName}_$i';
         if (!alexaDevices.contains(dv)) {
           alexaDevices.add(dv);
-          saveAlexaDevices(alexaDevices);
           putDevicesForAlexa(service, currentUserEmail, alexaDevices);
         }
       }
@@ -993,7 +964,6 @@ class DomoticaPageState extends State<DomoticaPage> {
                                             nicknameController.text;
                                         nicknamesMap['${deviceName}_$index'] =
                                             newName;
-                                        saveNicknamesMap(nicknamesMap);
                                         putNicknames(service, currentUserEmail,
                                             nicknamesMap);
                                       });
@@ -1087,7 +1057,6 @@ class DomoticaPageState extends State<DomoticaPage> {
                                               nicknamesMap[
                                                       '${deviceName}_$index'] =
                                                   newName;
-                                              saveNicknamesMap(nicknamesMap);
                                               putNicknames(
                                                   service,
                                                   currentUserEmail,
@@ -1257,7 +1226,6 @@ class DomoticaPageState extends State<DomoticaPage> {
 
       //*- Página 2 trackeo -*\\
 
-      //TODO se quita temporalmente
       // Stack(
       //   children: [
       //     Center(
@@ -1447,7 +1415,7 @@ class DomoticaPageState extends State<DomoticaPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  key: pinModeKey,
+                  key: KeyManager.domotica.pinModeKey,
                   'Cambio de Modo de Pines',
                   style: GoogleFonts.poppins(
                     fontSize: 28,
@@ -1861,7 +1829,6 @@ class DomoticaPageState extends State<DomoticaPage> {
                         String newNickname = nicknameController.text;
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
-                        saveNicknamesMap(nicknamesMap);
                         putNicknames(service, currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
@@ -1873,7 +1840,7 @@ class DomoticaPageState extends State<DomoticaPage> {
             child: Row(
               children: [
                 Expanded(
-                  key: titleKey,
+                  key: KeyManager.domotica.titleKey,
                   child: ScrollingText(
                     text: nickname,
                     style: poppinsStyle.copyWith(color: color0),
@@ -1885,7 +1852,7 @@ class DomoticaPageState extends State<DomoticaPage> {
             ),
           ),
           leading: IconButton(
-            key: estadoKey,
+            key: KeyManager.domotica.estadoKey,
             icon: const Icon(Icons.arrow_back_ios_new),
             color: color0,
             onPressed: () {
@@ -1925,7 +1892,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           ),
           actions: [
             IconButton(
-              key: wifiKey,
+              key: KeyManager.domotica.wifiKey,
               icon: Icon(wifiNotifier.wifiIcon, color: color0),
               onPressed: () {
                 if (_isTutorialActive) return;
@@ -1988,6 +1955,7 @@ class DomoticaPageState extends State<DomoticaPage> {
               child: FloatingActionButton(
                 onPressed: () {
                   items = [];
+                  hardwareVersion == '240422A' ? isPinMode = true : null;
                   initItems();
                   setState(() {
                     _isAnimating = true;

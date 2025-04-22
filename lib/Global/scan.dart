@@ -78,15 +78,28 @@ class ScanPageState extends State<ScanPage>
     super.dispose();
   }
 
-  void scan() {
+  void scan() async {
     printLog('Jiji');
     if (bluetoothOn) {
       printLog('Entre a escanear');
       toastFlag = false;
       try {
         FlutterBluePlus.isScanningNow ? FlutterBluePlus.stopScan() : null;
-        FlutterBluePlus.startScan(
+        await FlutterBluePlus.startScan(
+          withMsd: [
+            MsdFilter(0x6143),
+          ],
+          timeout: const Duration(seconds: 30),
+          androidUsesFineLocation: true,
+          continuousUpdates: true,
+          removeIfGone: const Duration(seconds: 30),
+        );
+        await Future.delayed(
+          const Duration(seconds: 1),
+        );
+        await FlutterBluePlus.startScan(
           withKeywords: keywords,
+          timeout: const Duration(seconds: 30),
           androidUsesFineLocation: true,
           continuousUpdates: true,
           removeIfGone: const Duration(seconds: 30),
@@ -102,9 +115,9 @@ class ScanPageState extends State<ScanPage>
                   setState(() {
                     devices.add(result.device);
 
-                    devices.sort(
-                      (a, b) => a.platformName.compareTo(b.platformName),
-                    );
+                    // devices.sort(
+                    //   (a, b) => a.platformName.compareTo(b.platformName),
+                    // );
                     sortedDevices = devices;
                   });
                 }
@@ -147,6 +160,7 @@ class ScanPageState extends State<ScanPage>
 
   void connectToDevice(BluetoothDevice device) async {
     try {
+      printLog('Marca de tiempo ${DateTime.now().toIso8601String()}');
       await device.connect(timeout: const Duration(seconds: 6));
       deviceName = device.platformName;
 

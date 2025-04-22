@@ -1,7 +1,7 @@
 name: caldensmart
 description: "Caldén Smart"
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
-version: 1.0.26+31
+version: 1.0.27+32
 
 environment:
   sdk: ^3.5.1
@@ -24,7 +24,6 @@ dependencies:
   firebase_messaging: ^14.7.10
   firebase_core: ^2.27.1
   aws_dynamodb_api: ^2.0.0
-  dio: ^5.7.0
   flutter_background_service: ^5.0.10
   flutter_local_notifications: ^17.1.1
   mobile_scanner: ^5.2.1
@@ -38,6 +37,7 @@ dependencies:
   firebase_crashlytics: ^3.5.7
   fluttertoast: ^8.2.11
   home_widget: ^0.7.0+1
+  http: ^1.3.0
 
 dev_dependencies:
   flutter_test:
@@ -83,6 +83,7 @@ flutter:
     - assets/devices/028000.png
     - assets/devices/041220.jpg
     - assets/devices/024011.jpg
+    - assets/devices/020020.jpeg
     - assets/misc/fondo.png
     - assets/misc/google.png
     - assets/branch/Logo_sitio.png

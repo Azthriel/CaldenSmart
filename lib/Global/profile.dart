@@ -7,9 +7,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:caldensmart/aws/mqtt/mqtt.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 
-import '../aws/dynamo/dynamo.dart';
-import '../aws/dynamo/dynamo_certificates.dart';
-
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
@@ -740,19 +737,15 @@ class ProfilePageState extends State<ProfilePage> {
 
                   await Future.delayed(const Duration(milliseconds: 500));
 
-                  // Proceso de cierre de sesión
                   previusConnections.clear();
-                  saveDeviceList(previusConnections);
                   alexaDevices.clear();
-                  saveAlexaDevices(alexaDevices);
-                  putDevicesForAlexa(service, currentUserEmail, alexaDevices);
+                  currentUserEmail = '';
 
                   for (int i = 0; i < topicsToSub.length; i++) {
                     unSubToTopicMQTT(topicsToSub[i]);
                   }
 
                   topicsToSub.clear();
-                  saveTopicList(topicsToSub);
                   backTimerDS?.cancel();
 
                   await Amplify.Auth.signOut();
