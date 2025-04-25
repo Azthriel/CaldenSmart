@@ -190,20 +190,20 @@ class ModuloPageState extends State<ModuloPage> {
             content: 'Podrás encender y apagar el dispositivo desde el menú',
           ),
         ),
-        TutorialItem(
-          globalKey: KeyManager.managerScreen.discNotificationKey,
-          color: Colors.black.withValues(alpha: 0.6),
-          borderRadius: const Radius.circular(20),
-          shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 2,
-          child: const TutorialItemContent(
-            title: 'Notificación de desconexión',
-            content: 'Puedes establecer una alerta si el equipo se desconecta',
-          ),
-        ),
+        // TutorialItem(
+        //   globalKey: KeyManager.managerScreen.discNotificationKey,
+        //   color: Colors.black.withValues(alpha: 0.6),
+        //   borderRadius: const Radius.circular(20),
+        //   shapeFocus: ShapeFocus.roundedSquare,
+        //   pageIndex: 2,
+        //   child: const TutorialItemContent(
+        //     title: 'Notificación de desconexión',
+        //     content: 'Puedes establecer una alerta si el equipo se desconecta',
+        //   ),
+        // ),
       },
       TutorialItem(
-        globalKey: KeyManager.modulo.imageKey,
+        globalKey: KeyManager.managerScreen.imageKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(40),
         shapeFocus: ShapeFocus.roundedSquare,

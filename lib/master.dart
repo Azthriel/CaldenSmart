@@ -74,6 +74,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 String deviceName = '';
 String softwareVersion = '';
 String hardwareVersion = '';
+late bool factoryMode;
 String owner = '';
 bool deviceOwner = false;
 int lastUser = 0;
@@ -238,6 +239,7 @@ bool alreadySubTools = false;
 bool trueStatus = false;
 late bool nightMode;
 late bool canControlDistance;
+bool manualControl = false;
 //*-Calefactores-*\\
 
 //*-Domótica-*\\
@@ -3232,6 +3234,25 @@ double? equipmentConsumption(String productCode) {
 }
 //*- valor de consumo -*\\
 
+bool hasLED(String productCode, String hwVersion) {
+  String versionWithLED = '';
+  switch (productCode) {
+    case '022000_IOT':
+      versionWithLED = '240924A';
+    case '027000_IOT':
+      versionWithLED = '241003A';
+    case '041220_IOT':
+      versionWithLED = '241003A';
+    default:
+      versionWithLED = '991231A';
+  }
+
+  bool hasIt = Versioner.isPrevious(hwVersion, versionWithLED) ||
+      hwVersion == versionWithLED;
+
+  return hasIt;
+}
+
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
 //! CLASES !\\
@@ -3413,6 +3434,7 @@ class MyDevice {
       var partes = str.split(':');
       softwareVersion = partes[2];
       hardwareVersion = partes[3];
+      factoryMode = softwareVersion.contains('_F');
       printLog(
           'Product code: ${DeviceManager.getProductCode(device.platformName)}');
       printLog(

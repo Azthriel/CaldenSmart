@@ -195,18 +195,18 @@ class DetectorPageState extends State<DetectorPage> {
           content: 'Podrás ajustar la imagen del equipo en el menú',
         ),
       ),
-      TutorialItem(
-        globalKey: KeyManager.detectores.discNotificationKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        shapeFocus: ShapeFocus.roundedSquare,
-        borderRadius: const Radius.circular(30.0),
-        pageIndex: 5,
-        contentPosition: ContentPosition.below,
-        child: const TutorialItemContent(
-          title: 'Notificación de desconexión',
-          content: 'Puedes establecer una alerta si el equipo se desconecta',
-        ),
-      ),
+      // TutorialItem(
+      //   globalKey: KeyManager.detectores.discNotificationKey,
+      //   color: Colors.black.withValues(alpha: 0.6),
+      //   shapeFocus: ShapeFocus.roundedSquare,
+      //   borderRadius: const Radius.circular(30.0),
+      //   pageIndex: 5,
+      //   contentPosition: ContentPosition.below,
+      //   child: const TutorialItemContent(
+      //     title: 'Notificación de desconexión',
+      //     content: 'Puedes establecer una alerta si el equipo se desconecta',
+      //   ),
+      // ),
     });
   }
 

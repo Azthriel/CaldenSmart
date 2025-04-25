@@ -91,7 +91,7 @@ class DomoticaPageState extends State<DomoticaPage> {
               'Podrás observar el estado de la conexión wifi del dispositivo',
         ),
       ),
-      if (hardwareVersion == '240422A') ...{
+      
         TutorialItem(
           globalKey: KeyManager.domotica.pinModeKey,
           color: Colors.black.withValues(alpha: 0.6),
@@ -99,7 +99,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           borderRadius: const Radius.circular(0),
           radius: 0,
           contentPosition: ContentPosition.below,
-          pageIndex: 2,
+          pageIndex: 1,
           child: !tenant
               ? const TutorialItemContent(
                   title: 'Cambio de modo de pines',
@@ -112,13 +112,13 @@ class DomoticaPageState extends State<DomoticaPage> {
                       'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
                 ),
         ),
-      },
+      
       TutorialItem(
         globalKey: KeyManager.managerScreen.adminKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(0),
         shapeFocus: ShapeFocus.oval,
-        pageIndex: 4,
+        pageIndex: 2,
         radius: isPinMode ? 2 : 1,
         contentPosition: ContentPosition.below,
         child: const TutorialItemContent(
@@ -132,7 +132,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: isPinMode ? 2 : 1,
+          pageIndex: 2,
           contentPosition: ContentPosition.below,
           child: const TutorialItemContent(
             title: 'Reclamar administrador',
@@ -146,7 +146,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: isPinMode ? 2 : 1,
+          pageIndex: 2,
           contentPosition: ContentPosition.below,
           child: const TutorialItemContent(
             title: 'Añadir administradores secundarios',
@@ -158,7 +158,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: isPinMode ? 2 : 1,
+          pageIndex: 2,
           contentPosition: ContentPosition.below,
           child: const TutorialItemContent(
             title: 'Ver administradores secundarios',
@@ -170,7 +170,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: isPinMode ? 2 : 1,
+          pageIndex: 2,
           child: const TutorialItemContent(
             title: 'Alquiler temporario',
             content:
@@ -184,30 +184,30 @@ class DomoticaPageState extends State<DomoticaPage> {
           color: Colors.black.withValues(alpha: 0.6),
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: isPinMode ? 2 : 1,
+          pageIndex: 2,
           child: const TutorialItemContent(
             title: 'Accesso rápido',
             content: 'Podrás encender y apagar el dispositivo desde el menú',
           ),
         ),
-        TutorialItem(
-          globalKey: KeyManager.managerScreen.discNotificationKey,
-          color: Colors.black.withValues(alpha: 0.6),
-          borderRadius: const Radius.circular(20),
-          shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: isPinMode ? 2 : 1,
-          child: const TutorialItemContent(
-            title: 'Notificación de desconexión',
-            content: 'Puedes establecer una alerta si el equipo se desconecta',
-          ),
-        ),
+        // TutorialItem(
+        //   globalKey: KeyManager.managerScreen.discNotificationKey,
+        //   color: Colors.black.withValues(alpha: 0.6),
+        //   borderRadius: const Radius.circular(20),
+        //   shapeFocus: ShapeFocus.roundedSquare,
+        //   pageIndex: isPinMode ? 2 : 1,
+        //   child: const TutorialItemContent(
+        //     title: 'Notificación de desconexión',
+        //     content: 'Puedes establecer una alerta si el equipo se desconecta',
+        //   ),
+        // ),
       },
       TutorialItem(
-        globalKey: KeyManager.domotica.imageKey,
+        globalKey: KeyManager.managerScreen.imageKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: isPinMode ? 2 : 1,
+        pageIndex: 2,
         child: const TutorialItemContent(
           title: 'Imagen del dispositivo',
           content: 'Podrás ajustar la imagen del equipo en el menú',

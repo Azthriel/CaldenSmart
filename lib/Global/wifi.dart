@@ -35,6 +35,8 @@ class WifiPageState extends State<WifiPage> {
       charging = true;
     });
 
+    currentUserEmail = await getUserMail();
+
     todosLosDispositivos.clear();
     await getDevices(service, currentUserEmail);
     await getGroups(service, currentUserEmail);

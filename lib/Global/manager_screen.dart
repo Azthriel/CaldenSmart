@@ -1291,8 +1291,11 @@ class ManagerScreenState extends State<ManagerScreen> {
             ),
 
             const SizedBox(height: 10),
-            if (DeviceManager.getProductCode(deviceName) == '022000_IOT' ||
-                DeviceManager.getProductCode(deviceName) == '027000_IOT') ...[
+            if ((DeviceManager.getProductCode(deviceName) == '022000_IOT' ||
+                    DeviceManager.getProductCode(deviceName) == '027000_IOT' ||
+                    DeviceManager.getProductCode(deviceName) == '041220_IOT') &&
+                hasLED(DeviceManager.getProductCode(deviceName),
+                    hardwareVersion)) ...[
               Container(
                 key: KeyManager.managerScreen.ledKey,
                 width: MediaQuery.of(context).size.width * 1.5,

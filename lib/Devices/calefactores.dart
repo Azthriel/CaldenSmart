@@ -346,17 +346,17 @@ class CalefactorPageState extends State<CalefactorPage> {
             content: 'Podrás encender y apagar el dispositivo desde el menú',
           ),
         ),
-        TutorialItem(
-          globalKey: KeyManager.managerScreen.discNotificationKey,
-          color: Colors.black.withValues(alpha: 0.6),
-          borderRadius: const Radius.circular(20),
-          shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 4,
-          child: const TutorialItemContent(
-            title: 'Notificación de desconexión',
-            content: 'Puedes establecer una alerta si el equipo se desconecta',
-          ),
-        ),
+        // TutorialItem(
+        //   globalKey: KeyManager.managerScreen.discNotificationKey,
+        //   color: Colors.black.withValues(alpha: 0.6),
+        //   borderRadius: const Radius.circular(20),
+        //   shapeFocus: ShapeFocus.roundedSquare,
+        //   pageIndex: 4,
+        //   child: const TutorialItemContent(
+        //     title: 'Notificación de desconexión',
+        //     content: 'Puedes establecer una alerta si el equipo se desconecta',
+        //   ),
+        // ),
       },
       TutorialItem(
         globalKey: KeyManager.managerScreen.ledKey,
@@ -370,7 +370,7 @@ class CalefactorPageState extends State<CalefactorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.calefactores.imageKey,
+        globalKey: KeyManager.managerScreen.imageKey,
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,

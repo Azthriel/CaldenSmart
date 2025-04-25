@@ -187,6 +187,8 @@ class ScanPageState extends State<ScanPage>
                 varsValues.clear();
                 ioValues.clear();
                 infoValues.clear();
+                hardwareVersion = '';
+                softwareVersion = '';
                 printLog(
                     'Razon: ${myDevice.device.disconnectReason?.description}');
                 navigatorKey.currentState?.pushReplacementNamed('/menu');

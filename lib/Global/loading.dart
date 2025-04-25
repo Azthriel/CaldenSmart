@@ -135,6 +135,9 @@ class LoadState extends State<LoadingPage> {
           trueStatus = parts2[4] == '1';
           nightMode = parts2[5] == '1';
           printLog('Estado: $turnOn');
+          // if (parts2.length >= 9) {
+          //   manualControl = factoryMode ? parts2[9] == '1' : parts2[8] == '1';
+          // }
           lastUser = users;
           owner = globalDATA[
                       '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
