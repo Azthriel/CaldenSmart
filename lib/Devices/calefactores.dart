@@ -414,6 +414,11 @@ class CalefactorPageState extends State<CalefactorPage> {
     updateWifiValues(toolsValues);
     subscribeToWifiStatus();
     subscribeTrueStatus();
+
+    if (!alexaDevices.contains(deviceName)) {
+      alexaDevices.add(deviceName);
+      putDevicesForAlexa(service, currentUserEmail, alexaDevices);
+    }
   }
 
   @override

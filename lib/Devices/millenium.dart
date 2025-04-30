@@ -329,6 +329,11 @@ class MilleniumPageState extends State<MilleniumPage> {
     updateWifiValues(toolsValues);
     subscribeToWifiStatus();
     subscribeTrueStatus();
+
+    if (!alexaDevices.contains(deviceName)) {
+      alexaDevices.add(deviceName);
+      putDevicesForAlexa(service, currentUserEmail, alexaDevices);
+    }
   }
 
   @override

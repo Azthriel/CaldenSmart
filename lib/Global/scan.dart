@@ -85,18 +85,18 @@ class ScanPageState extends State<ScanPage>
       toastFlag = false;
       try {
         FlutterBluePlus.isScanningNow ? FlutterBluePlus.stopScan() : null;
-        await FlutterBluePlus.startScan(
-          withMsd: [
-            MsdFilter(0x6143),
-          ],
-          timeout: const Duration(seconds: 30),
-          androidUsesFineLocation: true,
-          continuousUpdates: true,
-          removeIfGone: const Duration(seconds: 30),
-        );
-        await Future.delayed(
-          const Duration(seconds: 1),
-        );
+        // await FlutterBluePlus.startScan(
+        //   withMsd: [
+        //     MsdFilter(0x6143),
+        //   ],
+        //   timeout: const Duration(seconds: 30),
+        //   androidUsesFineLocation: true,
+        //   continuousUpdates: true,
+        //   removeIfGone: const Duration(seconds: 30),
+        // );
+        // await Future.delayed(
+        //   const Duration(seconds: 1),
+        // );
         await FlutterBluePlus.startScan(
           withKeywords: keywords,
           timeout: const Duration(seconds: 30),

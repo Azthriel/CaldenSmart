@@ -63,7 +63,8 @@ late String appName;
 //*-Estado de app-*\\
 const bool xProfileMode = bool.fromEnvironment('dart.vm.profile');
 const bool xReleaseMode = bool.fromEnvironment('dart.vm.product');
-const bool xDebugMode = !xProfileMode && !xReleaseMode;
+// const bool xDebugMode = !xProfileMode && !xReleaseMode;
+const bool xDebugMode = true;
 //*-Estado de app-*\\
 
 //*-Key de la app (uso de navegación y contextos)-*\\

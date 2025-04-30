@@ -82,7 +82,7 @@ void sendMessagemqtt(String topic, String message) {
 
   try {
     mqttAWSFlutterClient!
-        .publishMessage(topic, MqttQos.atLeastOnce, builder.payload!);
+        .publishMessage(topic, MqttQos.atLeastOnce, builder.payload!, retain: true);
     printLog('Mensaje enviado');
   } catch (e, s) {
     printLog('Error sending message $e $s');
