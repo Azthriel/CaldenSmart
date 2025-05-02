@@ -27,6 +27,12 @@ class WifiPageState extends State<WifiPage> {
     if (!_hasInitialized) {
       _hasInitialized = true;
       initAsync();
+    } else {
+      setState(() {
+        todosLosDispositivos;
+
+        printLog('Lista de dispositivos: $todosLosDispositivos', 'cyan');
+      });
     }
   }
 
@@ -40,6 +46,7 @@ class WifiPageState extends State<WifiPage> {
     todosLosDispositivos.clear();
     await getDevices(service, currentUserEmail);
     await getGroups(service, currentUserEmail);
+    eventosCreados = await getEventos(service, currentUserEmail);
 
     // Agregar individuales
     for (String device in previusConnections) {
@@ -271,10 +278,14 @@ class WifiPageState extends State<WifiPage> {
         ),
         backgroundColor: color3,
         actions: [
-          IconButton(
-            icon: const Icon(HugeIcons.strokeRoundedSettings02, color: color0),
-            onPressed: () => Navigator.pushNamed(context, '/escenas'),
-          ),
+          charging
+              ? const SizedBox.shrink()
+              : IconButton(
+                  icon: const Icon(HugeIcons.strokeRoundedSettings02,
+                      color: color0),
+                  onPressed: () =>
+                      Navigator.pushReplacementNamed(context, '/escenas'),
+                ),
         ],
       ),
       body: Container(
@@ -2599,7 +2610,7 @@ class WifiPageState extends State<WifiPage> {
                               String displayName = '';
                               if (equipo.contains('_')) {
                                 final parts = equipo.split('_');
-                                displayName = nicknamesMap[parts[0]] ??
+                                displayName = nicknamesMap[equipo.trim()] ??
                                     '${parts[0]} salida ${parts[1]}';
                               } else {
                                 displayName = nicknamesMap[equipo.trim()] ??
@@ -2680,7 +2691,9 @@ class WifiPageState extends State<WifiPage> {
                                   children: <Widget>[
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0, vertical: 5.0),
+                                        horizontal: 16.0,
+                                        vertical: 5.0,
+                                      ),
                                       child: Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,

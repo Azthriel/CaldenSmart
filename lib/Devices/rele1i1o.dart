@@ -2247,8 +2247,9 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
               children: [
                 Expanded(
                   key: KeyManager.rele1i1o.titleKey,
-                  child: ScrollingText(
-                    text: nickname,
+                  child: Text(
+                    nickname,
+                    overflow: TextOverflow.ellipsis,
                     style: poppinsStyle.copyWith(color: color0),
                   ),
                 ),
@@ -2296,6 +2297,13 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
             },
           ),
           actions: [
+            Icon(
+              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                      'cstate']
+                  ? Icons.cloud
+                  : Icons.cloud_off,
+              color: color0,
+            ),
             IconButton(
               key: KeyManager.rele1i1o.wifiKey,
               icon: Icon(wifiNotifier.wifiIcon, color: color0),

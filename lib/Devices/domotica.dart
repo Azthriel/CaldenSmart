@@ -91,28 +91,26 @@ class DomoticaPageState extends State<DomoticaPage> {
               'Podrás observar el estado de la conexión wifi del dispositivo',
         ),
       ),
-      
-        TutorialItem(
-          globalKey: KeyManager.domotica.pinModeKey,
-          color: Colors.black.withValues(alpha: 0.6),
-          shapeFocus: ShapeFocus.oval,
-          borderRadius: const Radius.circular(0),
-          radius: 0,
-          contentPosition: ContentPosition.below,
-          pageIndex: 1,
-          child: !tenant
-              ? const TutorialItemContent(
-                  title: 'Cambio de modo de pines',
-                  content:
-                      'si introduces la clave del manual podrás modificar el estado comun de las salidas',
-                )
-              : const TutorialItemContent(
-                  title: 'Inquilino',
-                  content:
-                      'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
-                ),
-        ),
-      
+      TutorialItem(
+        globalKey: KeyManager.domotica.pinModeKey,
+        color: Colors.black.withValues(alpha: 0.6),
+        shapeFocus: ShapeFocus.oval,
+        borderRadius: const Radius.circular(0),
+        radius: 0,
+        contentPosition: ContentPosition.below,
+        pageIndex: 1,
+        child: !tenant
+            ? const TutorialItemContent(
+                title: 'Cambio de modo de pines',
+                content:
+                    'si introduces la clave del manual podrás modificar el estado comun de las salidas',
+              )
+            : const TutorialItemContent(
+                title: 'Inquilino',
+                content:
+                    'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
+              ),
+      ),
       TutorialItem(
         globalKey: KeyManager.managerScreen.adminKey,
         color: Colors.black.withValues(alpha: 0.6),
@@ -1840,12 +1838,17 @@ class DomoticaPageState extends State<DomoticaPage> {
             child: Row(
               children: [
                 Expanded(
-                  key: KeyManager.domotica.titleKey,
-                  child: ScrollingText(
-                    text: nickname,
-                    style: poppinsStyle.copyWith(color: color0),
-                  ),
-                ),
+                    key: KeyManager.domotica.titleKey,
+                    child: Text(
+                      nickname,
+                      overflow: TextOverflow.ellipsis,
+                      style: poppinsStyle.copyWith(color: color0),
+                    ),
+                    // ScrollingText(
+                    //   text: nickname,
+                    //   style: poppinsStyle.copyWith(color: color0),
+                    // ),
+                    ),
                 const SizedBox(width: 3),
                 const Icon(Icons.edit, size: 20, color: color0)
               ],
@@ -1891,6 +1894,13 @@ class DomoticaPageState extends State<DomoticaPage> {
             },
           ),
           actions: [
+            Icon(
+              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                      'cstate']
+                  ? Icons.cloud
+                  : Icons.cloud_off,
+              color: color0,
+            ),
             IconButton(
               key: KeyManager.domotica.wifiKey,
               icon: Icon(wifiNotifier.wifiIcon, color: color0),

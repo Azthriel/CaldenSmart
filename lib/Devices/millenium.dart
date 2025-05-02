@@ -1273,8 +1273,9 @@ class MilleniumPageState extends State<MilleniumPage> {
               children: [
                 Expanded(
                   key: KeyManager.millenium.titleKey,
-                  child: ScrollingText(
-                    text: nickname,
+                  child: Text(
+                    nickname,
+                    overflow: TextOverflow.ellipsis,
                     style: poppinsStyle.copyWith(color: color0),
                   ),
                 ),
@@ -1322,6 +1323,13 @@ class MilleniumPageState extends State<MilleniumPage> {
             },
           ),
           actions: [
+            Icon(
+              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                      'cstate']
+                  ? Icons.cloud
+                  : Icons.cloud_off,
+              color: color0,
+            ),
             IconButton(
               key: KeyManager.millenium.wifiKey,
               icon: Icon(wifiNotifier.wifiIcon, color: color0),

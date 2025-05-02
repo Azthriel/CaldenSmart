@@ -1742,8 +1742,9 @@ class CalefactorPageState extends State<CalefactorPage> {
               children: [
                 Expanded(
                   key: KeyManager.calefactores.titleKey,
-                  child: ScrollingText(
-                    text: nickname,
+                  child: Text(
+                    nickname,
+                    overflow: TextOverflow.ellipsis,
                     style: poppinsStyle.copyWith(color: color0),
                   ),
                 ),
@@ -1790,6 +1791,13 @@ class CalefactorPageState extends State<CalefactorPage> {
             },
           ),
           actions: [
+            Icon(
+              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                      'cstate']
+                  ? Icons.cloud
+                  : Icons.cloud_off,
+              color: color0,
+            ),
             IconButton(
               key: KeyManager.calefactores.wifiKey,
               icon: Icon(wifiNotifier.wifiIcon, color: color0),

@@ -1713,7 +1713,9 @@ class ModuloPageState extends State<ModuloPage> {
                     margin: const EdgeInsets.only(left: 15),
                     child: const Text(
                       "Desconectando...",
-                      style: TextStyle(color: Color(0xFFFFFFFF)),
+                      style: TextStyle(
+                        color: Color(0xFFFFFFFF),
+                      ),
                     ),
                   ),
                 ],
@@ -1793,8 +1795,9 @@ class ModuloPageState extends State<ModuloPage> {
               children: [
                 Expanded(
                   key: KeyManager.modulo.titleKey,
-                  child: ScrollingText(
-                    text: nickname,
+                  child: Text(
+                    nickname,
+                    overflow: TextOverflow.ellipsis,
                     style: poppinsStyle.copyWith(color: color0),
                   ),
                 ),
@@ -1843,6 +1846,13 @@ class ModuloPageState extends State<ModuloPage> {
             },
           ),
           actions: [
+            Icon(
+              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                      'cstate']
+                  ? Icons.cloud
+                  : Icons.cloud_off,
+              color: color0,
+            ),
             IconButton(
               key: KeyManager.modulo.wifiKey,
               icon: Icon(wifiNotifier.wifiIcon, color: color0),

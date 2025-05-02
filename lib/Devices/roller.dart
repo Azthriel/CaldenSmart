@@ -854,11 +854,10 @@ class RollerPageState extends State<RollerPage> {
             child: Row(
               children: [
                 Expanded(
-                  child: ScrollingText(
-                    text: nickname,
-                    style: poppinsStyle.copyWith(
-                      color: color0,
-                    ),
+                  child: Text(
+                    nickname,
+                    overflow: TextOverflow.ellipsis,
+                    style: poppinsStyle.copyWith(color: color0),
                   ),
                 ),
                 const SizedBox(width: 3),
@@ -907,6 +906,13 @@ class RollerPageState extends State<RollerPage> {
             },
           ),
           actions: [
+            Icon(
+              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                      'cstate']
+                  ? Icons.cloud
+                  : Icons.cloud_off,
+              color: color0,
+            ),
             IconButton(
               icon: Icon(wifiNotifier.wifiIcon, color: color0),
               onPressed: () {

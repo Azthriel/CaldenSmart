@@ -1636,9 +1636,9 @@ class HeladeraPageState extends State<HeladeraPage> {
             child: Row(
               children: [
                 Expanded(
-                  child: ScrollingText(
-                    key: KeyManager.heladera.titleKey,
-                    text: nickname,
+                  child: Text(
+                    nickname,
+                    overflow: TextOverflow.ellipsis,
                     style: poppinsStyle.copyWith(color: color0),
                   ),
                 ),
@@ -1685,6 +1685,13 @@ class HeladeraPageState extends State<HeladeraPage> {
             },
           ),
           actions: [
+            Icon(
+              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+                      'cstate']
+                  ? Icons.cloud
+                  : Icons.cloud_off,
+              color: color0,
+            ),
             IconButton(
               key: KeyManager.heladera.wifiKey,
               icon: Icon(wifiNotifier.wifiIcon, color: color0),

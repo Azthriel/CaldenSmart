@@ -1098,7 +1098,7 @@ void wifiText(BuildContext context) {
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
-                    )
+                    ),
                   ],
                 ),
                 content: SingleChildScrollView(
