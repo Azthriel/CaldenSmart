@@ -1,4 +1,5 @@
 import 'package:caldensmart/Global/stored_data.dart';
+import 'package:caldensmart/Global/watchers.dart';
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
 import 'package:caldensmart/aws/dynamo/dynamo_certificates.dart';
 import 'package:flutter/material.dart';
@@ -24,7 +25,11 @@ class MenuPageState extends State<MenuPage> {
     super.initState();
     _selectedIndex = lastPage ?? 0;
 
-    initAsync();
+    BluetoothWatcher().start();
+
+    LocationWatcher().start();
+
+    _initAsync();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _pageController.jumpToPage(_selectedIndex);
@@ -38,7 +43,7 @@ class MenuPageState extends State<MenuPage> {
     }
   }
 
-  Future<void> initAsync() async {
+  Future<void> _initAsync() async {
     currentUserEmail = await getUserMail();
     if (currentUserEmail != '') {
       await getDevices(service, currentUserEmail);

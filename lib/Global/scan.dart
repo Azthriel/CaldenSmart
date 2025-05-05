@@ -34,7 +34,6 @@ class ScanPageState extends State<ScanPage>
   @override
   void initState() {
     super.initState();
-    startBluetoothMonitoring();
     startLocationMonitoring();
     List<dynamic> lista = fbData['Keywords'] ??
         [

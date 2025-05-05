@@ -1119,8 +1119,8 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                       children: [
                                         SizedBox(
                                           width: 150,
-                                          child: ScrollingText(
-                                            text: nicknamesMap[
+                                          child: Text(
+                                            nicknamesMap[
                                                     '${deviceName}_$index'] ??
                                                 '${tipo[index]} $index',
                                             style: GoogleFonts.poppins(
@@ -1128,7 +1128,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                               fontSize: 20,
                                               fontWeight: FontWeight.bold,
                                             ),
-                                            // overflow: TextOverflow.ellipsis,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
                                         IconButton(

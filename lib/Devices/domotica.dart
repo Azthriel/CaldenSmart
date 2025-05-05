@@ -980,16 +980,15 @@ class DomoticaPageState extends State<DomoticaPage> {
                               children: [
                                 SizedBox(
                                   width: 160,
-                                  child: ScrollingText(
-                                    text:
-                                        nicknamesMap['${deviceName}_$index'] ??
-                                            '${tipo[index]} $index',
+                                  child: Text(
+                                    nicknamesMap['${deviceName}_$index'] ??
+                                        '${tipo[index]} $index',
                                     style: GoogleFonts.poppins(
                                       color: color0,
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                     ),
-                                    // overflow: TextOverflow.ellipsis,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 IconButton(
@@ -1838,17 +1837,17 @@ class DomoticaPageState extends State<DomoticaPage> {
             child: Row(
               children: [
                 Expanded(
-                    key: KeyManager.domotica.titleKey,
-                    child: Text(
-                      nickname,
-                      overflow: TextOverflow.ellipsis,
-                      style: poppinsStyle.copyWith(color: color0),
-                    ),
-                    // ScrollingText(
-                    //   text: nickname,
-                    //   style: poppinsStyle.copyWith(color: color0),
-                    // ),
-                    ),
+                  key: KeyManager.domotica.titleKey,
+                  child: Text(
+                    nickname,
+                    overflow: TextOverflow.ellipsis,
+                    style: poppinsStyle.copyWith(color: color0),
+                  ),
+                  // ScrollingText(
+                  //   text: nickname,
+                  //   style: poppinsStyle.copyWith(color: color0),
+                  // ),
+                ),
                 const SizedBox(width: 3),
                 const Icon(Icons.edit, size: 20, color: color0)
               ],

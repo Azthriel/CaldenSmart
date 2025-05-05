@@ -1595,6 +1595,8 @@ void wifiText(BuildContext context) {
                         printLog('$manualSSID#$manualPassword');
 
                         sendWifitoBle(manualSSID, manualPassword);
+                        wifiNotifier.updateStatus(
+                            'CONECTANDO...', Colors.blue, Icons.wifi_find);
                         Navigator.of(context).pop();
                       } else {}
                     },
@@ -1766,6 +1768,20 @@ Future<void> openQRScanner(BuildContext context) async {
       if (qrResult != null) {
         var wifiData = parseWifiQR(qrResult!);
         sendWifitoBle(wifiData['SSID']!, wifiData['password']!);
+
+        // <-- Aquí definimos wifiNotifier antes de usarlo:
+        if (context.mounted) {
+          final wifiNotifier = Provider.of<WifiNotifier>(
+            context,
+            listen: false,
+          );
+          wifiNotifier.updateStatus(
+            'CONECTANDO...',
+            Colors.blue,
+            Icons.wifi_find,
+          );
+        }
+
         qrResult = null;
       }
     });
@@ -2022,14 +2038,6 @@ void locationStatus() async {
   await NativeService.isLocationServiceEnabled();
 }
 
-void startBluetoothMonitoring() {
-  bluetoothTimer = Timer.periodic(
-      const Duration(seconds: 10), (Timer t) => bluetoothStatus());
-}
-
-void bluetoothStatus() async {
-  await NativeService.isBluetoothServiceEnabled();
-}
 //*-Monitoreo Localizacion y Bluetooth*-\\
 
 //*-Admin secundarios y alquiler temporario-*\\
@@ -3359,15 +3367,6 @@ class DeviceManager {
     return cn;
   }
 
-  ///Devuelve si el equipo esta disponible para Alexa
-  static bool isAvailableForAlexa(String name) {
-    List<dynamic> lista = fbData['Assistant'] ?? [];
-    final List<String> alexaAvailable =
-        lista.map((item) => item.toString()).toList();
-    String code = getProductCode(name);
-    return alexaAvailable.contains(code);
-  }
-
   ///Recupera la data de Firestore para que funcione la clase
   static FutureOr<void> init() async {
     try {
@@ -3554,27 +3553,6 @@ class MyDevice {
 class NativeService {
   static const platform = MethodChannel('com.caldensmart.sime/native');
 
-  void playNativeSound(String soundName, int delay) {
-    try {
-      printLog("Invoking playSound with: $soundName", 'verde');
-      platform
-          .invokeMethod('playSound', {'soundName': soundName, 'delay': delay});
-    } on PlatformException catch (e) {
-      printLog("Failed to play sound: '${e.message}'.", 'verde');
-    }
-  }
-
-  static Future<bool> isLocationServiceEnabled() async {
-    try {
-      final bool isEnabled =
-          await platform.invokeMethod("isLocationServiceEnabled");
-      return isEnabled;
-    } on PlatformException catch (e) {
-      printLog('Error verificando ubicación: $e');
-      return false;
-    }
-  }
-
   static Future<void> isBluetoothServiceEnabled() async {
     try {
       final bool isBluetoothOn = await platform.invokeMethod('isBluetoothOn');
@@ -3595,6 +3573,27 @@ class NativeService {
           : null;
 
       bleFlag = false;
+    }
+  }
+
+  void playNativeSound(String soundName, int delay) {
+    try {
+      printLog("Invoking playSound with: $soundName", 'verde');
+      platform
+          .invokeMethod('playSound', {'soundName': soundName, 'delay': delay});
+    } on PlatformException catch (e) {
+      printLog("Failed to play sound: '${e.message}'.", 'verde');
+    }
+  }
+
+  static Future<bool> isLocationServiceEnabled() async {
+    try {
+      final bool isEnabled =
+          await platform.invokeMethod("isLocationServiceEnabled");
+      return isEnabled;
+    } on PlatformException catch (e) {
+      printLog('Error verificando ubicación: $e');
+      return false;
     }
   }
 
@@ -5077,119 +5076,6 @@ class IconThumbSlider extends SliderComponentShape {
   }
 }
 //*- icono en el boton de la slide -*\\
-
-//*-Desplazamiento de texto horizontal*-\\
-class ScrollingText extends StatefulWidget {
-  final String text;
-  final TextStyle style;
-  final double scrollSpeed;
-
-  const ScrollingText({
-    super.key,
-    required this.text,
-    required this.style,
-    this.scrollSpeed = 20.0,
-  });
-
-  @override
-  ScrollingTextState createState() => ScrollingTextState();
-}
-
-class ScrollingTextState extends State<ScrollingText> {
-  final ScrollController _scrollController = ScrollController();
-  Timer? _timer;
-  bool _shouldScroll = false;
-
-  @override
-  void initState() {
-    super.initState();
-    if (context.mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _checkTextWidth());
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant ScrollingText oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.text != widget.text && context.mounted) {
-      _timer?.cancel();
-      _scrollController.jumpTo(0.0);
-      if (context.mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) => _checkTextWidth());
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _checkTextWidth() {
-    if (context.mounted) {
-      final renderBox = context.findRenderObject() as RenderBox?;
-      if (renderBox != null) {
-        final containerWidth = renderBox.size.width;
-
-        final textPainter = TextPainter(
-          text: TextSpan(text: widget.text, style: widget.style),
-          maxLines: 1,
-          textDirection: TextDirection.ltr,
-        )..layout();
-
-        final textWidth = textPainter.size.width + 10;
-
-        // printLog("Container width: $containerWidth");
-        // printLog("Text width: $textWidth");
-
-        if (textWidth > containerWidth) {
-          _shouldScroll = true;
-          _startScrolling();
-        } else {
-          _shouldScroll = false;
-          _timer?.cancel();
-        }
-      }
-    }
-  }
-
-  void _startScrolling() {
-    if (_shouldScroll && _timer == null && context.mounted) {
-      _timer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
-        final currentPosition = _scrollController.offset;
-
-        if (currentPosition < _scrollController.position.maxScrollExtent) {
-          _scrollController.jumpTo(currentPosition + (widget.scrollSpeed / 60));
-        } else {
-          _scrollController.jumpTo(0.0);
-        }
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SizedBox(
-          width: constraints.maxWidth,
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            scrollDirection: Axis.horizontal,
-            physics: const NeverScrollableScrollPhysics(),
-            child: Text(
-              widget.text,
-              style: widget.style,
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-//*-Desplazamiento de texto horizontal*-\\
 
 //*- Cerrando sesión -*\\
 class ClosingSessionScreen extends StatefulWidget {

@@ -412,12 +412,22 @@ class WifiPageState extends State<WifiPage> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                Text(
-                                                  nicknamesMap[deviceName] ??
-                                                      deviceName,
-                                                  style: GoogleFonts.poppins(
-                                                    color: color0,
-                                                    fontWeight: FontWeight.bold,
+                                                SizedBox(
+                                                  width: MediaQuery.of(context)
+                                                          .size
+                                                          .width *
+                                                      0.7,
+                                                  child: Text(
+                                                    nicknamesMap[deviceName] ??
+                                                        deviceName,
+                                                    style: GoogleFonts.poppins(
+                                                      color: color0,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 1,
                                                   ),
                                                 ),
                                                 Row(
@@ -562,12 +572,22 @@ class WifiPageState extends State<WifiPage> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                Text(
-                                                  nicknamesMap[deviceName] ??
-                                                      deviceName,
-                                                  style: GoogleFonts.poppins(
-                                                    color: color0,
-                                                    fontWeight: FontWeight.bold,
+                                                SizedBox(
+                                                  width: MediaQuery.of(context)
+                                                          .size
+                                                          .width *
+                                                      0.7,
+                                                  child: Text(
+                                                    nicknamesMap[deviceName] ??
+                                                        deviceName,
+                                                    style: GoogleFonts.poppins(
+                                                      color: color0,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 1,
                                                   ),
                                                 ),
                                                 Row(
@@ -745,12 +765,22 @@ class WifiPageState extends State<WifiPage> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                Text(
-                                                  nicknamesMap[deviceName] ??
-                                                      deviceName,
-                                                  style: GoogleFonts.poppins(
-                                                    color: color0,
-                                                    fontWeight: FontWeight.bold,
+                                                SizedBox(
+                                                  width: MediaQuery.of(context)
+                                                          .size
+                                                          .width *
+                                                      0.7,
+                                                  child: Text(
+                                                    nicknamesMap[deviceName] ??
+                                                        deviceName,
+                                                    style: GoogleFonts.poppins(
+                                                      color: color0,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 1,
                                                   ),
                                                 ),
                                                 Row(
@@ -931,12 +961,22 @@ class WifiPageState extends State<WifiPage> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                Text(
-                                                  nicknamesMap[deviceName] ??
-                                                      deviceName,
-                                                  style: GoogleFonts.poppins(
-                                                    color: color0,
-                                                    fontWeight: FontWeight.bold,
+                                                SizedBox(
+                                                  width: MediaQuery.of(context)
+                                                          .size
+                                                          .width *
+                                                      0.7,
+                                                  child: Text(
+                                                    nicknamesMap[deviceName] ??
+                                                        deviceName,
+                                                    style: GoogleFonts.poppins(
+                                                      color: color0,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 1,
                                                   ),
                                                 ),
                                                 Row(
@@ -1282,12 +1322,22 @@ class WifiPageState extends State<WifiPage> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                Text(
-                                                  nicknamesMap[deviceName] ??
-                                                      deviceName,
-                                                  style: GoogleFonts.poppins(
-                                                    color: color0,
-                                                    fontWeight: FontWeight.bold,
+                                                SizedBox(
+                                                  width: MediaQuery.of(context)
+                                                          .size
+                                                          .width *
+                                                      0.7,
+                                                  child: Text(
+                                                    nicknamesMap[deviceName] ??
+                                                        deviceName,
+                                                    style: GoogleFonts.poppins(
+                                                      color: color0,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 1,
                                                   ),
                                                 ),
                                                 Row(
@@ -1695,12 +1745,22 @@ class WifiPageState extends State<WifiPage> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                Text(
-                                                  nicknamesMap[deviceName] ??
-                                                      deviceName,
-                                                  style: GoogleFonts.poppins(
-                                                    color: color0,
-                                                    fontWeight: FontWeight.bold,
+                                                SizedBox(
+                                                  width: MediaQuery.of(context)
+                                                          .size
+                                                          .width *
+                                                      0.7,
+                                                  child: Text(
+                                                    nicknamesMap[deviceName] ??
+                                                        deviceName,
+                                                    style: GoogleFonts.poppins(
+                                                      color: color0,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 1,
                                                   ),
                                                 ),
                                                 Row(
@@ -1877,12 +1937,22 @@ class WifiPageState extends State<WifiPage> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                Text(
-                                                  nicknamesMap[deviceName] ??
-                                                      deviceName,
-                                                  style: GoogleFonts.poppins(
-                                                    color: color0,
-                                                    fontWeight: FontWeight.bold,
+                                                SizedBox(
+                                                  width: MediaQuery.of(context)
+                                                          .size
+                                                          .width *
+                                                      0.7,
+                                                  child: Text(
+                                                    nicknamesMap[deviceName] ??
+                                                        deviceName,
+                                                    style: GoogleFonts.poppins(
+                                                      color: color0,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 1,
                                                   ),
                                                 ),
                                                 Row(
@@ -2216,12 +2286,22 @@ class WifiPageState extends State<WifiPage> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                Text(
-                                                  nicknamesMap[deviceName] ??
-                                                      deviceName,
-                                                  style: GoogleFonts.poppins(
-                                                    color: color0,
-                                                    fontWeight: FontWeight.bold,
+                                                SizedBox(
+                                                  width: MediaQuery.of(context)
+                                                          .size
+                                                          .width *
+                                                      0.7,
+                                                  child: Text(
+                                                    nicknamesMap[deviceName] ??
+                                                        deviceName,
+                                                    style: GoogleFonts.poppins(
+                                                      color: color0,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 1,
                                                   ),
                                                 ),
                                                 Row(
@@ -2402,12 +2482,22 @@ class WifiPageState extends State<WifiPage> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                Text(
-                                                  nicknamesMap[deviceName] ??
-                                                      deviceName,
-                                                  style: GoogleFonts.poppins(
-                                                    color: color0,
-                                                    fontWeight: FontWeight.bold,
+                                                SizedBox(
+                                                  width: MediaQuery.of(context)
+                                                          .size
+                                                          .width *
+                                                      0.7,
+                                                  child: Text(
+                                                    nicknamesMap[deviceName] ??
+                                                        deviceName,
+                                                    style: GoogleFonts.poppins(
+                                                      color: color0,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 1,
                                                   ),
                                                 ),
                                                 Row(

@@ -824,16 +824,15 @@ class ModuloPageState extends State<ModuloPage> {
                                   children: [
                                     SizedBox(
                                       width: 160,
-                                      child: ScrollingText(
-                                        text: nicknamesMap[
-                                                '${deviceName}_$index'] ??
+                                      child: Text(
+                                        nicknamesMap['${deviceName}_$index'] ??
                                             '${tipo[index]} $index',
                                         style: GoogleFonts.poppins(
                                           color: color0,
                                           fontSize: 20,
                                           fontWeight: FontWeight.bold,
                                         ),
-                                        // overflow: TextOverflow.ellipsis,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                     IconButton(
@@ -1119,15 +1118,15 @@ class ModuloPageState extends State<ModuloPage> {
                                   child: SizedBox(
                                     height: 30,
                                     width: 180,
-                                    child: ScrollingText(
-                                      text: nicknamesMap[
-                                              '${deviceName}_$index'] ??
+                                    child: Text(
+                                      nicknamesMap['${deviceName}_$index'] ??
                                           '${tipo[index]} $index',
                                       style: GoogleFonts.poppins(
                                         color: color0,
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
                                       ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ),
