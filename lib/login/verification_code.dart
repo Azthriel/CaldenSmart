@@ -22,7 +22,7 @@ Widget buildEnterCodeForm(WelcomePageState state) {
               const SizedBox(height: 10),
               const Text(
                 'Ingrese el código enviado a su correo y su nueva contraseña',
-                style: TextStyle(fontSize: 18, color: color3),
+                style: TextStyle(fontSize: 18, color: color1),
               ),
               const SizedBox(height: 15),
               state.buildTextFormField(
@@ -126,7 +126,7 @@ Widget buildEnterCodeForm(WelcomePageState state) {
                   style: TextButton.styleFrom(foregroundColor: color3),
                   child: const Text(
                     'Reenviar código',
-                    style: TextStyle(color: color3, fontSize: 14),
+                    style: TextStyle(color: color1, fontSize: 14),
                   ),
                 ),
               ),
@@ -175,7 +175,7 @@ Widget buildRegisterVerificationCodeForm(WelcomePageState state) {
                 'Ingrese el código enviado a su correo para completar el registro',
                 style: TextStyle(
                   fontSize: 18,
-                  color: color3,
+                  color: color1,
                 ),
               ),
               const SizedBox(height: 15),
@@ -230,7 +230,7 @@ Widget buildRegisterVerificationCodeForm(WelcomePageState state) {
                   style: TextButton.styleFrom(foregroundColor: color3),
                   child: const Text(
                     'Reenviar código de verificación',
-                    style: TextStyle(color: color3, fontSize: 14),
+                    style: TextStyle(color: color1, fontSize: 14),
                   ),
                 ),
               ),

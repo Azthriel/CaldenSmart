@@ -12,6 +12,7 @@ import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../Global/stored_data.dart';
+import 'package:caldensmart/logger.dart';
 
 // CLASES \\
 
@@ -382,11 +383,16 @@ class HeladeraPageState extends State<HeladeraPage> {
     valueConsuption =
         equipmentConsumption(DeviceManager.getProductCode(deviceName));
 
-    printLog('Valor temp: $tempValue');
-    printLog('¿Encendido? $turnOn');
-    printLog('¿Alquiler temporario? $activatedAT');
-    printLog('¿Inquilino? $tenant');
-    updateWifiValues(toolsValues);
+    printLog.i('Valor temp: $tempValue');
+    printLog.i('¿Encendido? $turnOn');
+    printLog.i('¿Alquiler temporario? $activatedAT');
+    printLog.i('¿Inquilino? $tenant');
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      updateWifiValues(toolsValues);
+      if (shouldUpdateDevice) {
+        await showUpdateDialog(context);
+      }
+    });
     subscribeToWifiStatus();
     subscribeTrueStatus();
 
@@ -454,7 +460,7 @@ class HeladeraPageState extends State<HeladeraPage> {
 
     if (partes.length > 2) {
       tiempo = partes[3];
-      printLog('Tiempo: ${utf8.decode(list).split(':')}');
+      printLog.i('Tiempo: ${utf8.decode(list).split(':')}');
     } else {
       timeData();
     }
@@ -468,7 +474,7 @@ class HeladeraPageState extends State<HeladeraPage> {
           loading = true;
         });
 
-        printLog('Estoy haciendo calculaciones místicas');
+        printLog.i('Estoy haciendo calculaciones místicas');
 
         if (valueConsuption != null) {
           result = double.parse(tiempo) *
@@ -481,7 +487,7 @@ class HeladeraPageState extends State<HeladeraPage> {
         }
         await Future.delayed(const Duration(seconds: 1));
 
-        printLog('Calculaciones terminadas');
+        printLog.i('Calculaciones terminadas');
 
         if (context.mounted) {
           setState(() {
@@ -500,12 +506,12 @@ class HeladeraPageState extends State<HeladeraPage> {
   void updateWifiValues(List<int> data) {
     var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-    printLog(fun);
+    printLog.i(fun);
     var parts = fun.split(':');
     final regex = RegExp(r'\((\d+)\)');
     final match = regex.firstMatch(parts[2]);
     int users = int.parse(match!.group(1).toString());
-    printLog('Hay $users conectados');
+    printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
     WifiNotifier wifiNotifier =
@@ -515,7 +521,7 @@ class HeladeraPageState extends State<HeladeraPage> {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
-      printLog('sis $isWifiConnected');
+      printLog.i('sis $isWifiConnected');
       errorMessage = '';
       errorSintax = '';
       werror = false;
@@ -528,7 +534,7 @@ class HeladeraPageState extends State<HeladeraPage> {
           'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
-      printLog('non $isWifiConnected');
+      printLog.i('non $isWifiConnected');
 
       nameOfWifi = '';
       wifiNotifier.updateStatus(
@@ -558,12 +564,12 @@ class HeladeraPageState extends State<HeladeraPage> {
   }
 
   void subscribeToWifiStatus() async {
-    printLog('Se subscribio a wifi');
+    printLog.i('Se subscribio a wifi');
     await myDevice.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
         myDevice.toolsUuid.onValueReceived.listen((List<int> status) {
-      printLog('Llegaron cositas wifi');
+      printLog.i('Llegaron cositas wifi');
       updateWifiValues(status);
     });
 
@@ -571,7 +577,7 @@ class HeladeraPageState extends State<HeladeraPage> {
   }
 
   void subscribeTrueStatus() async {
-    printLog('Me subscribo a vars');
+    printLog.i('Me subscribo a vars');
     await myDevice.varsUuid.setNotifyValue(true);
 
     final trueStatusSub =
@@ -611,7 +617,7 @@ class HeladeraPageState extends State<HeladeraPage> {
       sendMessagemqtt(topic, message);
       sendMessagemqtt(topic2, message);
     } catch (e, s) {
-      printLog('Error al enviar valor a firebase $e $s');
+      printLog.i('Error al enviar valor a firebase $e $s');
     }
   }
 
@@ -640,7 +646,7 @@ class HeladeraPageState extends State<HeladeraPage> {
         List<String> deviceControl = await loadDevicesForDistanceControl();
         deviceControl.add(deviceName);
         saveDevicesForDistanceControl(deviceControl);
-        printLog(
+        printLog.i(
             'Hay ${deviceControl.length} equipos con el control x distancia');
         Position position = await _determinePosition();
         Map<String, double> maplatitude = await loadLatitude();
@@ -655,11 +661,11 @@ class HeladeraPageState extends State<HeladeraPage> {
           final backService = FlutterBackgroundService();
           await backService.startService();
           backService.invoke('distanceControl');
-          printLog('Servicio iniciado a las ${DateTime.now()}');
+          printLog.i('Servicio iniciado a las ${DateTime.now()}');
         }
       } catch (e) {
         showToast('Error al iniciar control por distancia.');
-        printLog('Error al setear la ubicación $e');
+        printLog.i('Error al setear la ubicación $e');
       }
     } else {
       // Cancelar la tarea.
@@ -669,7 +675,7 @@ class HeladeraPageState extends State<HeladeraPage> {
       List<String> deviceControl = await loadDevicesForDistanceControl();
       deviceControl.remove(deviceName);
       saveDevicesForDistanceControl(deviceControl);
-      printLog(
+      printLog.i(
           'Quedan ${deviceControl.length} equipos con el control x distancia');
       Map<String, double> maplatitude = await loadLatitude();
       maplatitude.remove(deviceName);
@@ -682,7 +688,7 @@ class HeladeraPageState extends State<HeladeraPage> {
         final backService = FlutterBackgroundService();
         backService.invoke("stopService");
         backTimerDS?.cancel();
-        printLog('Servicio apagado');
+        printLog.i('Servicio apagado');
       }
     }
   }
@@ -726,8 +732,8 @@ class HeladeraPageState extends State<HeladeraPage> {
                       permissionStatus4 =
                           await Permission.locationAlways.status;
                     } catch (e, s) {
-                      printLog(e);
-                      printLog(s);
+                      printLog.i(e);
+                      printLog.i(s);
                     }
                     Navigator.of(navigatorKey.currentContext ?? context)
                         .pop(); // Cierra el AlertDialog
@@ -747,8 +753,8 @@ class HeladeraPageState extends State<HeladeraPage> {
         return false;
       }
     } catch (e, s) {
-      printLog('Error al habilitar la ubi: $e');
-      printLog(s);
+      printLog.i('Error al habilitar la ubi: $e');
+      printLog.i(s);
       return false;
     }
   }
@@ -971,7 +977,7 @@ class HeladeraPageState extends State<HeladeraPage> {
                                         });
                                       },
                                       onChangeEnd: (value) {
-                                        printLog('$value');
+                                        printLog.i('$value');
                                         sendTemperature(value.round());
                                       },
                                     ),
@@ -1167,7 +1173,7 @@ class HeladeraPageState extends State<HeladeraPage> {
                                                 });
                                               },
                                               onChangeEnd: (value) {
-                                                printLog(
+                                                printLog.i(
                                                     'Valor enviado: ${value.round()}');
                                                 putDistanceOff(
                                                   service,
@@ -1263,7 +1269,7 @@ class HeladeraPageState extends State<HeladeraPage> {
                                                 });
                                               },
                                               onChangeEnd: (value) {
-                                                printLog(
+                                                printLog.i(
                                                     'Valor enviado: ${value.round()}');
                                                 putDistanceOn(
                                                   service,
@@ -1782,7 +1788,7 @@ class HeladeraPageState extends State<HeladeraPage> {
                           setState(() {
                             _isTutorialActive = false;
                           });
-                          printLog('Tutorial is complete!', 'verde');
+                          printLog.i('Tutorial is complete!');
                         },
                       );
                     }

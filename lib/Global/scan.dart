@@ -6,6 +6,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../master.dart';
+import 'package:caldensmart/logger.dart';
 
 class ScanPage extends StatefulWidget {
   const ScanPage({super.key});
@@ -34,7 +35,6 @@ class ScanPageState extends State<ScanPage>
   @override
   void initState() {
     super.initState();
-    startLocationMonitoring();
     List<dynamic> lista = fbData['Keywords'] ??
         [
           'Detector',
@@ -78,9 +78,9 @@ class ScanPageState extends State<ScanPage>
   }
 
   void scan() async {
-    printLog('Jiji');
+    printLog.i('Jiji');
     if (bluetoothOn) {
-      printLog('Entre a escanear');
+      printLog.i('Entre a escanear');
       toastFlag = false;
       try {
         FlutterBluePlus.isScanningNow ? FlutterBluePlus.stopScan() : null;
@@ -130,7 +130,7 @@ class ScanPageState extends State<ScanPage>
           },
         );
       } catch (e, stackTrace) {
-        printLog('Error al escanear $e $stackTrace');
+        printLog.i('Error al escanear $e $stackTrace');
         showToast('Error al escanear, intentelo nuevamente');
       }
     }
@@ -146,7 +146,7 @@ class ScanPageState extends State<ScanPage>
         devices.removeWhere((device) {
           final lastSeen = lastSeenDevices[device.remoteId.toString()];
           if (lastSeen != null && now.difference(lastSeen).inSeconds > 30) {
-            printLog('Borre ${device.platformName}');
+            printLog.i('Borre ${device.platformName}');
             lastSeenDevices.remove(device.remoteId.toString());
             return true;
           }
@@ -159,22 +159,22 @@ class ScanPageState extends State<ScanPage>
 
   void connectToDevice(BluetoothDevice device) async {
     try {
-      printLog('Marca de tiempo ${DateTime.now().toIso8601String()}');
+      printLog.i('Marca de tiempo ${DateTime.now().toIso8601String()}');
       await device.connect(timeout: const Duration(seconds: 6));
       deviceName = device.platformName;
 
-      printLog('Teoricamente estoy conectado');
+      printLog.i('Teoricamente estoy conectado');
 
       MyDevice myDevice = MyDevice();
 
       var conenctionSub =
           device.connectionState.listen((BluetoothConnectionState state) {
-        printLog('Estado de conexión: $state');
+        printLog.i('Estado de conexión: $state');
         switch (state) {
           case BluetoothConnectionState.disconnected:
             {
               if (!quickAction) {
-                printLog("Para que mierda hago yo las cosas DIOS", "cyan");
+                printLog.i("Para que mierda hago yo las cosas DIOS");
                 if (!toastFlag) {
                   showToast('Dispositivo desconectado');
                   toastFlag = true;
@@ -188,7 +188,7 @@ class ScanPageState extends State<ScanPage>
                 infoValues.clear();
                 hardwareVersion = '';
                 softwareVersion = '';
-                printLog(
+                printLog.i(
                     'Razon: ${myDevice.device.disconnectReason?.description}');
                 navigatorKey.currentState?.pushReplacementNamed('/menu');
               }
@@ -197,27 +197,27 @@ class ScanPageState extends State<ScanPage>
           case BluetoothConnectionState.connected:
             {
               if (!quickAction) {
-                printLog("Para que mierda hago yo las cosas DIOS", "cyan");
+                printLog.i("Para que mierda hago yo las cosas DIOS");
                 if (!connectionFlag) {
                   connectionFlag = true;
                   FlutterBluePlus.isScanningNow
                       ? FlutterBluePlus.stopScan()
                       : null;
                   myDevice.setup(device).then((valor) {
-                    printLog('RETORNASHE $valor');
+                    printLog.i('RETORNASHE $valor');
                     connectionTry = 0;
                     if (valor) {
                       navigatorKey.currentState
                           ?.pushReplacementNamed('/loading');
                     } else {
                       connectionFlag = false;
-                      printLog('Fallo en el setup');
+                      printLog.i('Fallo en el setup');
                       showToast('Error en el dispositivo, intente nuevamente');
                       myDevice.device.disconnect();
                     }
                   });
                 } else {
-                  printLog('Las chistosadas se apoderan del mundo');
+                  printLog.i('Las chistosadas se apoderan del mundo');
                 }
               }
               break;
@@ -229,16 +229,16 @@ class ScanPageState extends State<ScanPage>
       device.cancelWhenDisconnected(conenctionSub, delayed: true);
     } catch (e, stackTrace) {
       if (connectionTry < 3) {
-        printLog('Retry');
+        printLog.i('Retry');
         connectionTry++;
         connectToDevice(device);
       } else {
         connectionTry = 0;
         if (e is FlutterBluePlusException && e.code == 133) {
-          printLog('Error específico de Android con código 133: $e');
+          printLog.i('Error específico de Android con código 133: $e');
           showToast('Error de conexión, intentelo nuevamente');
         } else {
-          printLog('Error al conectar: $e $stackTrace');
+          printLog.i('Error al conectar: $e $stackTrace');
           showToast('Error al conectar, intentelo nuevamente');
         }
       }
@@ -277,7 +277,7 @@ class ScanPageState extends State<ScanPage>
             textController: searchController,
             onSuffixTap: () {
               setState(() {
-                printLog('ANASHARDO TERRARIUM EPICARDOPOLIS');
+                printLog.i('ANASHARDO TERRARIUM EPICARDOPOLIS');
                 searchQuery = '';
                 toggle = 0;
               });
@@ -313,7 +313,7 @@ class ScanPageState extends State<ScanPage>
             ),
             onTap: () {
               setState(() {
-                printLog('Eso Tilin si fuera campana, tilin tilin');
+                printLog.i('Eso Tilin si fuera campana, tilin tilin');
                 toggle = 1;
               });
             },
@@ -586,22 +586,22 @@ class ScanPageState extends State<ScanPage>
                                                             seconds: 6),
                                                       );
                                                       if (device.isConnected) {
-                                                        printLog(
-                                                            "Arranca por la derecha la maquina del sexo tilin",
-                                                            "cyan");
+                                                        printLog.i(
+                                                          "Arranca por la derecha la maquina del sexo tilin",
+                                                        );
                                                         MyDevice myDevice =
                                                             MyDevice();
                                                         myDevice
                                                             .setup(device)
                                                             .then(
                                                                 (valor) async {
-                                                          printLog(
+                                                          printLog.i(
                                                               'RETORNASHE $valor');
                                                           connectionTry = 0;
                                                           if (valor) {
-                                                            printLog(
-                                                                "Tengo sexo en monopatin",
-                                                                "cyan");
+                                                            printLog.i(
+                                                              "Tengo sexo en monopatin",
+                                                            );
                                                             await controlDeviceBLE(
                                                                 device
                                                                     .platformName,
@@ -613,11 +613,11 @@ class ScanPageState extends State<ScanPage>
                                                               quickAction =
                                                                   false;
                                                             });
-                                                            printLog(
-                                                                "¿Se me cayo la pichula? ${device.isDisconnected}",
-                                                                "cyan");
+                                                            printLog.i(
+                                                              "¿Se me cayo la pichula? ${device.isDisconnected}",
+                                                            );
                                                           } else {
-                                                            printLog(
+                                                            printLog.i(
                                                                 'Fallo en el setup');
                                                             showToast(
                                                                 "Error con el acceso rápido\nIntente nuevamente");
@@ -626,9 +626,8 @@ class ScanPageState extends State<ScanPage>
                                                           }
                                                         });
                                                       } else {
-                                                        printLog(
+                                                        printLog.i(
                                                           "Fallecio el sexo",
-                                                          "cyan",
                                                         );
                                                         showToast(
                                                             "Error con el acceso rápido\nIntente nuevamente");

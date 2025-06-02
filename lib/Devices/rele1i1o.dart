@@ -14,6 +14,7 @@ import '../aws/dynamo/dynamo_certificates.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
 import '../Global/stored_data.dart';
+import 'package:caldensmart/logger.dart';
 
 // CLASES \\
 
@@ -249,7 +250,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
             '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}'] ??
         List<bool>.filled(parts.length, false);
 
-    printLog(_notis, 'amarillo');
+    printLog.i(_notis);
 
     tracking = devicesToTrack.contains(deviceName);
 
@@ -268,19 +269,15 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
     }
 
     nickname = nicknamesMap[deviceName] ?? deviceName;
-    updateWifiValues(toolsValues);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      updateWifiValues(toolsValues);
+      if (shouldUpdateDevice) {
+        await showUpdateDialog(context);
+      }
+    });
     subscribeToWifiStatus();
     subToIO();
     processValues(ioValues);
-    // notificationMap.putIfAbsent(
-    //     '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
-    //     () => List<bool>.filled(parts.length, false));
-
-    // WidgetsBinding.instance.addPostFrameCallback((_) async {
-    //   if (shouldUpdateDevice) {
-    //     await showUpdateDialog(context);
-    //   }
-    // });
   }
 
   @override
@@ -373,12 +370,12 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
   void updateWifiValues(List<int> data) {
     var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-    printLog(fun);
+    printLog.i(fun);
     var parts = fun.split(':');
     final regex = RegExp(r'\((\d+)\)');
     final match = regex.firstMatch(parts[2]);
     int users = int.parse(match!.group(1).toString());
-    printLog('Hay $users conectados');
+    printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
     WifiNotifier wifiNotifier =
@@ -388,7 +385,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
-      printLog('sis $isWifiConnected');
+      printLog.i('sis $isWifiConnected');
       errorMessage = '';
       errorSintax = '';
       werror = false;
@@ -401,7 +398,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
           'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
-      printLog('non $isWifiConnected');
+      printLog.i('non $isWifiConnected');
 
       nameOfWifi = '';
 
@@ -432,7 +429,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
   }
 
   void subscribeToWifiStatus() async {
-    printLog('Se subscribio a wifi');
+    printLog.i('Se subscribio a wifi');
     await myDevice.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
@@ -446,7 +443,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
   void processValues(List<int> values) {
     ioValues = values;
     var parts = utf8.decode(values).split('/');
-    printLog('Valores: $parts', "Amarillo");
+    printLog.i('Valores: $parts');
     tipo.clear();
     estado.clear();
     common.clear();
@@ -495,10 +492,10 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
 
   void subToIO() async {
     await myDevice.ioUuid.setNotifyValue(true);
-    printLog('Subscrito a IO');
+    printLog.i('Subscrito a IO');
 
     var ioSub = myDevice.ioUuid.onValueReceived.listen((event) {
-      printLog('Cambio en IO');
+      printLog.i('Cambio en IO');
       processValues(event);
     });
 
@@ -626,12 +623,12 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                           await savePinToTrack(
                                               pins, deviceName);
 
-                                          printLog(
+                                          printLog.i(
                                               'When haces tus momos en flutter :v');
                                           fun = true;
                                           context.mounted
                                               ? Navigator.of(context).pop()
-                                              : printLog("Contextn't");
+                                              : printLog.i("Contextn't");
                                         } else {
                                           showToast(
                                               'Por favor, selecciona al menos una opción.');
@@ -688,27 +685,27 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
       },
     );
 
-    printLog('ME WHEN YOUR MOM WHEN ME WHEN YOUR MOM $fun');
+    printLog.i('ME WHEN YOUR MOM WHEN ME WHEN YOUR MOM $fun');
     if (fun) {
-      printLog('Pov: Sos re onichan mal');
+      printLog.i('Pov: Sos re onichan mal');
       setState(() {
         tracking = true;
       });
       devicesToTrack.add(deviceName);
       await saveDeviceListToTrack(devicesToTrack);
-      printLog('Equipo $devicesToTrack');
+      printLog.i('Equipo $devicesToTrack');
       SharedPreferences prefs = await SharedPreferences.getInstance();
       bool hasInitService = prefs.getBool('hasInitService') ?? false;
-      printLog('Se inició el servicio? $hasInitService');
+      printLog.i('Se inició el servicio? $hasInitService');
       if (!hasInitService) {
-        printLog('Empiezo');
+        printLog.i('Empiezo');
         await initializeService();
-        printLog('Acabe');
+        printLog.i('Acabe');
       }
 
       await Future.delayed(const Duration(seconds: 30));
       final backService = FlutterBackgroundService();
-      printLog('Xd');
+      printLog.i('Xd');
       backService.invoke('presenceControl');
     }
   }
@@ -748,7 +745,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
 
       showToast('Administrador añadido correctamente.');
     } catch (e) {
-      printLog('Error al añadir administrador secundario: $e');
+      printLog.i('Error al añadir administrador secundario: $e');
       showToast('Error al añadir el administrador. Inténtalo de nuevo.');
     }
   }
@@ -769,7 +766,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
 
       showToast('Administrador eliminado correctamente.');
     } catch (e) {
-      printLog('Error al eliminar administrador secundario: $e');
+      printLog.i('Error al eliminar administrador secundario: $e');
       showToast('Error al eliminar el administrador. Inténtalo de nuevo.');
     }
   }
@@ -859,7 +856,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
         List<String> deviceControl = await loadDevicesForDistanceControl();
         deviceControl.add(deviceName);
         saveDevicesForDistanceControl(deviceControl);
-        printLog(
+        printLog.i(
             'Hay ${deviceControl.length} equipos con el control x distancia');
         Position position = await _determinePosition();
         Map<String, double> maplatitude = await loadLatitude();
@@ -874,11 +871,11 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
           final backService = FlutterBackgroundService();
           await backService.startService();
           backService.invoke('distanceControl');
-          printLog('Servicio iniciado a las ${DateTime.now()}');
+          printLog.i('Servicio iniciado a las ${DateTime.now()}');
         }
       } catch (e) {
         showToast('Error al iniciar control por distancia.');
-        printLog('Error al setear la ubicación $e');
+        printLog.i('Error al setear la ubicación $e');
       }
     } else {
       // Cancelar la tarea.
@@ -888,7 +885,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
       List<String> deviceControl = await loadDevicesForDistanceControl();
       deviceControl.remove(deviceName);
       saveDevicesForDistanceControl(deviceControl);
-      printLog(
+      printLog.i(
           'Quedan ${deviceControl.length} equipos con el control x distancia');
       Map<String, double> maplatitude = await loadLatitude();
       maplatitude.remove(deviceName);
@@ -901,7 +898,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
         final backService = FlutterBackgroundService();
         backService.invoke("stopService");
         backTimerDS?.cancel();
-        printLog('Servicio apagado');
+        printLog.i('Servicio apagado');
       }
     }
   }
@@ -946,8 +943,8 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                   completer.complete();
                   Navigator.of(navigatorKey.currentContext ?? context).pop();
                 } catch (e, s) {
-                  printLog(e);
-                  printLog(s);
+                  printLog.i(e);
+                  printLog.i(s);
                   completer.completeError(
                       e); // Completa con error si ocurre una excepción
                 }
@@ -969,8 +966,8 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
         return false;
       }
     } catch (e, s) {
-      printLog('Error al habilitar la ubicación: $e');
-      printLog(s);
+      printLog.i('Error al habilitar la ubicación: $e');
+      printLog.i(s);
       return false;
     }
   }
@@ -1431,7 +1428,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
       //                           }
       //                           await Future.delayed(
       //                               const Duration(seconds: 30));
-      //                           printLog("Achi");
+      //                           printLog.i("Achi");
       //                           final backService = FlutterBackgroundService();
       //                           backService.invoke('presenceControl');
       //                         } else {
@@ -1708,7 +1705,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                                   });
                                                 },
                                                 onChangeEnd: (value) {
-                                                  printLog(
+                                                  printLog.i(
                                                       'Valor enviado: ${value.round()}');
                                                   putDistanceOff(
                                                     service,
@@ -1807,7 +1804,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                                   });
                                                 },
                                                 onChangeEnd: (value) {
-                                                  printLog(
+                                                  printLog.i(
                                                       'Valor enviado: ${value.round()}');
                                                   putDistanceOn(
                                                     service,
@@ -2025,7 +2022,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                                   setState(() {
                                                     String data =
                                                         '${DeviceManager.getProductCode(deviceName)}[14]($i#0)';
-                                                    printLog(data);
+                                                    printLog.i(data);
                                                     myDevice.toolsUuid
                                                         .write(data.codeUnits);
                                                     common[i] = '0';
@@ -2073,7 +2070,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                                   setState(() {
                                                     String data =
                                                         '${DeviceManager.getProductCode(deviceName)}[14]($i#1)';
-                                                    printLog(data);
+                                                    printLog.i(data);
                                                     myDevice.toolsUuid
                                                         .write(data.codeUnits);
                                                     common[i] = '1';
@@ -2393,7 +2390,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                           setState(() {
                             _isTutorialActive = false;
                           });
-                          printLog('Tutorial is complete!', 'verde');
+                          printLog.i('Tutorial is complete!');
                         },
                       );
                     }

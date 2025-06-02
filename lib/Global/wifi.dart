@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
+import 'package:caldensmart/logger.dart';
 
 class WifiPage extends StatefulWidget {
   const WifiPage({super.key});
@@ -31,7 +32,7 @@ class WifiPageState extends State<WifiPage> {
       setState(() {
         todosLosDispositivos;
 
-        printLog('Lista de dispositivos: $todosLosDispositivos', 'cyan');
+        printLog.i('Lista de dispositivos: $todosLosDispositivos');
       });
     }
   }
@@ -55,12 +56,12 @@ class WifiPageState extends State<WifiPage> {
 
     // Agregar los grupos
     groupsOfDevices.forEach((key, value) {
-      printLog('Grupo: $key', 'cyan');
-      printLog('Dispositivos: $value', 'cyan');
+      printLog.i('Grupo: $key');
+      printLog.i('Dispositivos: $value');
       todosLosDispositivos.add(MapEntry(key, value.toString()));
     });
 
-    printLog('Lista de dispositivos: $todosLosDispositivos', 'cyan');
+    printLog.i('Lista de dispositivos: $todosLosDispositivos');
     charging = false;
     if (mounted) {
       setState(() {});
@@ -245,24 +246,28 @@ class WifiPageState extends State<WifiPage> {
 
   //*-Controlar el grupo-*\\
   void controlGroup(String email, bool state, String grupo) async {
-    String url =
-        'https://3zo0pu883b.execute-api.sa-east-1.amazonaws.com/PROD/Escenas';
+    String url = urlEscenas;
     Uri uri = Uri.parse(url);
 
-    var response = await http.post(uri,
-        body: jsonEncode({
-          'caso': 'Grupos',
-          'email': email,
-          'on': state,
-          'grupo': grupo,
-        }));
+    String bd = jsonEncode(
+      {
+        'caso': 'Grupos',
+        'email': email,
+        'on': state,
+        'grupo': grupo,
+      },
+    );
+
+    printLog.i('Body: $bd');
+
+    var response = await http.post(uri, body: bd);
 
     if (response.statusCode == 200) {
-      printLog('Grupo controlado', 'cyan');
+      printLog.i('Grupo controlado');
       showToast('Grupo ${state ? 'encendido' : 'apagado'} correctamente');
     } else {
-      printLog('Error al controlar el grupo', 'rojo');
-      printLog(response.body, 'rojo');
+      printLog.e('Error al controlar el grupo');
+      printLog.e(response.body);
       showToast('Error al controlar el grupo');
     }
   }
@@ -359,18 +364,18 @@ class WifiPageState extends State<WifiPage> {
                                 DeviceManager.extractSerialNumber(deviceName);
                             Map<String, dynamic> topicData =
                                 notifier.getData('$equipo/$serial');
-                            // printLog('Llego un cambio en ${'$equipo/$serial'}',
+                            // printLog.i('Llego un cambio en ${'$equipo/$serial'}',
                             //     'Magenta');
-                            // printLog('Y fue el siguiente: $topicData', 'magenta');
+                            // printLog.i('Y fue el siguiente: $topicData', 'magenta');
                             globalDATA
                                 .putIfAbsent('$equipo/$serial', () => {})
                                 .addAll(topicData);
                             saveGlobalData(globalDATA);
                             Map<String, dynamic> deviceDATA =
                                 globalDATA['$equipo/$serial'] ?? {};
-                            // printLog(deviceDATA, 'cyan');
+                            // printLog.i(deviceDATA, 'cyan');
 
-                            // printLog(
+                            // printLog.i(
                             //     "Las keys del equipo ${deviceDATA.keys}", 'rojo');
 
                             bool online = deviceDATA['cstate'] ?? false;
@@ -1049,9 +1054,9 @@ class WifiPageState extends State<WifiPage> {
                                                             equipo = jsonDecode(
                                                                 deviceDATA[
                                                                     'io$i']);
-                                                        printLog(
-                                                            'Voy a realizar el cambio: $equipo',
-                                                            'amarillo');
+                                                        printLog.i(
+                                                          'Voy a realizar el cambio: $equipo',
+                                                        );
                                                         String tipoWifi = equipo[
                                                                         'pinType']
                                                                     .toString() ==
@@ -1504,9 +1509,9 @@ class WifiPageState extends State<WifiPage> {
                                                               jsonDecode(
                                                                   deviceDATA[
                                                                       'io$i']);
-                                                          printLog(
-                                                              'Voy a realizar el cambio: $equipo',
-                                                              'amarillo');
+                                                          printLog.i(
+                                                            'Voy a realizar el cambio: $equipo',
+                                                          );
                                                           String tipoWifi =
                                                               equipo['pinType']
                                                                           .toString() ==
@@ -2022,9 +2027,9 @@ class WifiPageState extends State<WifiPage> {
                                                             equipo = jsonDecode(
                                                                 deviceDATA[
                                                                     'io$i']);
-                                                        printLog(
-                                                            'Voy a realizar el cambio: $equipo',
-                                                            'amarillo');
+                                                        printLog.i(
+                                                          'Voy a realizar el cambio: $equipo',
+                                                        );
                                                         String tipoWifi = equipo[
                                                                         'pinType']
                                                                     .toString() ==

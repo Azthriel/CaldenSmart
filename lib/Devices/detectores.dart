@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../master.dart';
 import '../Global/stored_data.dart';
+import 'package:caldensmart/logger.dart';
 
 // CLASES \\
 
@@ -217,12 +218,18 @@ class DetectorPageState extends State<DetectorPage> {
     nickname = nicknamesMap[deviceName] ?? deviceName;
     _subscribeToWorkCharacteristic();
     subscribeToWifiStatus();
-    updateWifiValues(toolsValues);
 
     onlineInCloud = globalDATA[
                 '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
             'cstate'] ??
         false;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      updateWifiValues(toolsValues);
+      if (shouldUpdateDevice) {
+        await showUpdateDialog(context);
+      }
+    });
   }
 
   @override
@@ -234,12 +241,12 @@ class DetectorPageState extends State<DetectorPage> {
   void updateWifiValues(List<int> data) {
     var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-    printLog(fun);
+    printLog.i(fun);
     var parts = fun.split(':');
     final regex = RegExp(r'\((\d+)\)');
     final match = regex.firstMatch(parts[2]);
     int users = int.parse(match!.group(1).toString());
-    printLog('Hay $users conectados');
+    printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
     WifiNotifier wifiNotifier =
@@ -249,7 +256,7 @@ class DetectorPageState extends State<DetectorPage> {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
-      printLog('sis $isWifiConnected');
+      printLog.i('sis $isWifiConnected');
       errorMessage = '';
       errorSintax = '';
       werror = false;
@@ -262,7 +269,7 @@ class DetectorPageState extends State<DetectorPage> {
           'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
-      printLog('non $isWifiConnected');
+      printLog.i('non $isWifiConnected');
 
       nameOfWifi = '';
       wifiNotifier.updateStatus(
@@ -292,7 +299,7 @@ class DetectorPageState extends State<DetectorPage> {
   }
 
   void subscribeToWifiStatus() async {
-    printLog('Se subscribio a wifi');
+    printLog.i('Se subscribio a wifi');
     await myDevice.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
@@ -305,10 +312,10 @@ class DetectorPageState extends State<DetectorPage> {
 
   void _subscribeToWorkCharacteristic() async {
     await myDevice.workUuid.setNotifyValue(true);
-    printLog('Me suscribí a work');
+    printLog.i('Me suscribí a work');
     final workSub =
         myDevice.workUuid.onValueReceived.listen((List<int> status) {
-      printLog('Cositas: $status');
+      printLog.i('Cositas: $status');
       setState(() {
         alert = status[4] == 1;
         ppmCO = status[5] + (status[6] << 8);
@@ -318,14 +325,15 @@ class DetectorPageState extends State<DetectorPage> {
         promedioppmCO = status[17] + (status[18] << 8);
         promedioppmCH4 = status[19] + (status[20] << 8);
         daysToExpire = status[21] + (status[22] << 8);
-        printLog('Parte baja CO: ${status[9]} // Parte alta CO: ${status[10]}');
-        printLog('PPMCO: $ppmCO');
-        printLog(
+        printLog
+            .i('Parte baja CO: ${status[9]} // Parte alta CO: ${status[10]}');
+        printLog.i('PPMCO: $ppmCO');
+        printLog.i(
             'Parte baja CH4: ${status[11]} // Parte alta CH4: ${status[12]}');
-        printLog('PPMCH4: $ppmCH4');
-        printLog('Alerta: $alert');
+        printLog.i('PPMCH4: $ppmCH4');
+        printLog.i('Alerta: $alert');
         _textToShow = alert ? 'PELIGRO' : 'AIRE PURO';
-        printLog(_textToShow);
+        printLog.i(_textToShow);
       });
     });
 
@@ -379,7 +387,7 @@ class DetectorPageState extends State<DetectorPage> {
       final data = [value];
       myDevice.lightUuid.write(data, withoutResponse: true);
     } catch (e, stackTrace) {
-      printLog('Error al mandar el valor del brillo $e $stackTrace');
+      printLog.i('Error al mandar el valor del brillo $e $stackTrace');
       // handleManualError(e, stackTrace);
     }
   }
@@ -1877,8 +1885,9 @@ class DetectorPageState extends State<DetectorPage> {
           ),
           actions: [
             Icon(
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                      'cstate']
+              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                          ?['cstate'] ??
+                      false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,
@@ -1974,7 +1983,7 @@ class DetectorPageState extends State<DetectorPage> {
                           setState(() {
                             _isTutorialActive = false;
                           });
-                          printLog('Tutorial is complete!', 'verde');
+                          printLog.i('Tutorial is complete!');
                         },
                       );
                     }

@@ -33,12 +33,13 @@ import 'package:provider/provider.dart';
 import 'login/welcome.dart';
 import 'master.dart';
 import 'Global/stored_data.dart';
+import 'package:caldensmart/logger.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    printLog("Iniciando Firebase", "Cyan");
+    printLog.i("Iniciando Firebase");
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
@@ -46,21 +47,21 @@ Future<void> main() async {
       persistenceEnabled: true,
       cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
     );
-    printLog("Firebase inicializado", "Cyan");
+    printLog.i("Firebase inicializado");
   } catch (e) {
-    printLog("Error al configurar Firebase: $e");
+    printLog.e("Error al configurar Firebase: $e");
   }
 
   try {
-    printLog("Añadiendo plugin de Amplify", "Cyan");
+    printLog.i("Añadiendo plugin de Amplify");
     await Amplify.addPlugin(
       AmplifyAuthCognito(),
     );
-    printLog("Configurando Amplify", "Cyan");
+    printLog.i("Configurando Amplify");
     await Amplify.configure(amplifyconfig);
-    printLog("Amplify configurado", "Cyan");
+    printLog.i("Amplify configurado");
   } catch (e) {
-    printLog("Error al configurar Amplify: $e");
+    printLog.e("Error al configurar Amplify: $e");
   }
 
   //! IOS O ANDROID !\\
@@ -94,7 +95,7 @@ Future<void> main() async {
     return true;
   };
 
-  printLog('Todo configurado, iniciando app');
+  printLog.i('Todo configurado, iniciando app');
 
   runApp(
     MultiProvider(
@@ -129,12 +130,12 @@ class MyAppState extends State<MyApp> {
       fToast.init(context);
     });
 
-    printLog('Empezamos');
+    printLog.i('Empezamos');
   }
 
   void initAsync() async {
     await loadValues();
-    printLog('Valores cargados', 'Cyan');
+    printLog.i('Valores cargados');
     await setupMqtt();
     listenToTopics();
   }

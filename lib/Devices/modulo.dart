@@ -11,7 +11,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:caldensmart/logger.dart';
 import '../Global/manager_screen.dart';
 
 class ModuloPage extends StatefulWidget {
@@ -219,7 +219,7 @@ class ModuloPageState extends State<ModuloPage> {
   @override
   void initState() {
     super.initState();
-    printLog('Marca de tiempo ${DateTime.now().toIso8601String()}');
+    printLog.i('Marca de tiempo ${DateTime.now().toIso8601String()}');
     _selectedPins = List<bool>.filled(parts.length, false);
 
     tracking = devicesToTrack.contains(deviceName);
@@ -239,19 +239,18 @@ class ModuloPageState extends State<ModuloPage> {
     }
 
     nickname = nicknamesMap[deviceName] ?? deviceName;
-    updateWifiValues(toolsValues);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      updateWifiValues(toolsValues);
+      if (shouldUpdateDevice) {
+        await showUpdateDialog(context);
+      }
+    });
     subscribeToWifiStatus();
     subToIO();
     processValues(ioValues);
     notificationMap.putIfAbsent(
         '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
         () => List<bool>.filled(4, false));
-
-    // WidgetsBinding.instance.addPostFrameCallback((_) async {
-    //   if (shouldUpdateDevice) {
-    //     await showUpdateDialog(context);
-    //   }
-    // });
   }
 
   @override
@@ -344,12 +343,12 @@ class ModuloPageState extends State<ModuloPage> {
   void updateWifiValues(List<int> data) {
     var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-    printLog(fun);
+    printLog.i(fun);
     var parts = fun.split(':');
     final regex = RegExp(r'\((\d+)\)');
     final match = regex.firstMatch(parts[2]);
     int users = int.parse(match!.group(1).toString());
-    printLog('Hay $users conectados');
+    printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
     WifiNotifier wifiNotifier =
@@ -359,7 +358,7 @@ class ModuloPageState extends State<ModuloPage> {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
-      printLog('sis $isWifiConnected');
+      printLog.i('sis $isWifiConnected');
       errorMessage = '';
       errorSintax = '';
       werror = false;
@@ -372,7 +371,7 @@ class ModuloPageState extends State<ModuloPage> {
           'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
-      printLog('non $isWifiConnected');
+      printLog.i('non $isWifiConnected');
 
       nameOfWifi = '';
       wifiNotifier.updateStatus(
@@ -402,7 +401,7 @@ class ModuloPageState extends State<ModuloPage> {
   }
 
   void subscribeToWifiStatus() async {
-    printLog('Se subscribio a wifi');
+    printLog.i('Se subscribio a wifi');
     await myDevice.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
@@ -416,7 +415,7 @@ class ModuloPageState extends State<ModuloPage> {
   void processValues(List<int> values) {
     ioValues = values;
     var parts = utf8.decode(values).split('/');
-    printLog('Valores: $parts', "Amarillo");
+    printLog.i('Valores: $parts');
     tipo.clear();
     estado.clear();
     common.clear();
@@ -462,7 +461,7 @@ class ModuloPageState extends State<ModuloPage> {
         })
       });
 
-      printLog('¿La entrada $j esta en alerta?: ${alertIO[j]}');
+      printLog.i('¿La entrada $j esta en alerta?: ${alertIO[j]}');
     }
 
     for (int i = 0; i < parts.length; i++) {
@@ -481,10 +480,10 @@ class ModuloPageState extends State<ModuloPage> {
 
   void subToIO() async {
     await myDevice.ioUuid.setNotifyValue(true);
-    printLog('Subscrito a IO');
+    printLog.i('Subscrito a IO');
 
     var ioSub = myDevice.ioUuid.onValueReceived.listen((event) {
-      printLog('Cambio en IO');
+      printLog.i('Cambio en IO');
       processValues(event);
     });
 
@@ -612,12 +611,12 @@ class ModuloPageState extends State<ModuloPage> {
                                           await savePinToTrack(
                                               pins, deviceName);
 
-                                          printLog(
+                                          printLog.i(
                                               'When haces tus momos en flutter :v');
                                           fun = true;
                                           context.mounted
                                               ? Navigator.of(context).pop()
-                                              : printLog("Contextn't");
+                                              : printLog.i("Contextn't");
                                         } else {
                                           showToast(
                                               'Por favor, selecciona al menos una opción.');
@@ -674,27 +673,27 @@ class ModuloPageState extends State<ModuloPage> {
       },
     );
 
-    printLog('ME WHEN YOUR MOM WHEN ME WHEN YOUR MOM $fun');
+    printLog.i('ME WHEN YOUR MOM WHEN ME WHEN YOUR MOM $fun');
     if (fun) {
-      printLog('Pov: Sos re onichan mal');
+      printLog.i('Pov: Sos re onichan mal');
       setState(() {
         tracking = true;
       });
       devicesToTrack.add(deviceName);
       await saveDeviceListToTrack(devicesToTrack);
-      printLog('Equipo $devicesToTrack');
+      printLog.i('Equipo $devicesToTrack');
       SharedPreferences prefs = await SharedPreferences.getInstance();
       bool hasInitService = prefs.getBool('hasInitService') ?? false;
-      printLog('Se inició el servicio? $hasInitService');
+      printLog.i('Se inició el servicio? $hasInitService');
       if (!hasInitService) {
-        printLog('Empiezo');
+        printLog.i('Empiezo');
         await initializeService();
-        printLog('Acabe');
+        printLog.i('Acabe');
       }
 
       await Future.delayed(const Duration(seconds: 30));
       final backService = FlutterBackgroundService();
-      printLog('Xd');
+      printLog.i('Xd');
       backService.invoke('presenceControl');
     }
   }
@@ -1269,7 +1268,7 @@ class ModuloPageState extends State<ModuloPage> {
       //                               savePinToTrack(jijeo, deviceName);
       //                               context.mounted
       //                                   ? Navigator.of(context).pop()
-      //                                   : printLog("Contextn't");
+      //                                   : printLog.i("Contextn't");
       //                             },
       //                             child: const Text('Aceptar'),
       //                           ),
@@ -1571,7 +1570,7 @@ class ModuloPageState extends State<ModuloPage> {
                                                   setState(() {
                                                     String data =
                                                         '${DeviceManager.getProductCode(deviceName)}[14]($i#0)';
-                                                    printLog(data);
+                                                    printLog.i(data);
                                                     myDevice.toolsUuid
                                                         .write(data.codeUnits);
                                                     common[i] = '0';
@@ -1618,7 +1617,7 @@ class ModuloPageState extends State<ModuloPage> {
                                                   setState(() {
                                                     String data =
                                                         '${DeviceManager.getProductCode(deviceName)}[14]($i#1)';
-                                                    printLog(data);
+                                                    printLog.i(data);
                                                     myDevice.toolsUuid
                                                         .write(data.codeUnits);
                                                     common[i] = '1';
@@ -1943,7 +1942,7 @@ class ModuloPageState extends State<ModuloPage> {
                           setState(() {
                             _isTutorialActive = false;
                           });
-                          printLog('Tutorial is complete!', 'verde');
+                          printLog.i('Tutorial is complete!');
                         },
                       );
                     }

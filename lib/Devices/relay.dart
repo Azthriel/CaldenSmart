@@ -7,7 +7,7 @@ import 'package:hugeicons/hugeicons.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-
+import 'package:caldensmart/logger.dart';
 import '../Global/manager_screen.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
@@ -259,11 +259,16 @@ class RelayPageState extends State<RelayPage> {
     nickname = nicknamesMap[deviceName] ?? deviceName;
     showOptions = currentUserEmail == owner;
 
-    printLog('¿Encendido? $turnOn');
-    printLog('¿Alquiler temporario? $activatedAT');
-    printLog('¿Inquilino? $tenant');
+    printLog.i('¿Encendido? $turnOn');
+    printLog.i('¿Alquiler temporario? $activatedAT');
+    printLog.i('¿Inquilino? $tenant');
 
-    updateWifiValues(toolsValues);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      updateWifiValues(toolsValues);
+      if (shouldUpdateDevice) {
+        await showUpdateDialog(context);
+      }
+    });
     subscribeToWifiStatus();
     subscribeTrueStatus();
 
@@ -271,12 +276,6 @@ class RelayPageState extends State<RelayPage> {
       alexaDevices.add(deviceName);
       putDevicesForAlexa(service, currentUserEmail, alexaDevices);
     }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (shouldUpdateDevice) {
-        await showUpdateDialog(context);
-      }
-    });
   }
 
   @override
@@ -331,12 +330,12 @@ class RelayPageState extends State<RelayPage> {
   void updateWifiValues(List<int> data) {
     var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-    printLog(fun);
+    printLog.i(fun);
     var parts = fun.split(':');
     final regex = RegExp(r'\((\d+)\)');
     final match = regex.firstMatch(parts[2]);
     int users = int.parse(match!.group(1).toString());
-    printLog('Hay $users conectados');
+    printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
     WifiNotifier wifiNotifier =
@@ -346,7 +345,7 @@ class RelayPageState extends State<RelayPage> {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
-      printLog('sis $isWifiConnected');
+      printLog.i('sis $isWifiConnected');
       errorMessage = '';
       errorSintax = '';
       werror = false;
@@ -359,7 +358,7 @@ class RelayPageState extends State<RelayPage> {
           'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
-      printLog('non $isWifiConnected');
+      printLog.i('non $isWifiConnected');
 
       nameOfWifi = '';
       wifiNotifier.updateStatus(
@@ -389,12 +388,12 @@ class RelayPageState extends State<RelayPage> {
   }
 
   void subscribeToWifiStatus() async {
-    printLog('Se subscribió a wifi');
+    printLog.i('Se subscribió a wifi');
     await myDevice.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
         myDevice.toolsUuid.onValueReceived.listen((List<int> status) {
-      printLog('Llegaron cositas wifi');
+      printLog.i('Llegaron cositas wifi');
       updateWifiValues(status);
     });
 
@@ -402,7 +401,7 @@ class RelayPageState extends State<RelayPage> {
   }
 
   void subscribeTrueStatus() async {
-    printLog('Me subscribo a vars');
+    printLog.i('Me subscribo a vars');
     await myDevice.varsUuid.setNotifyValue(true);
 
     final trueStatusSub =
@@ -433,7 +432,7 @@ class RelayPageState extends State<RelayPage> {
       sendMessagemqtt(topic, message);
       sendMessagemqtt(topic2, message);
     } catch (e, s) {
-      printLog('Error al enviar valor a firebase $e $s');
+      printLog.i('Error al enviar valor a firebase $e $s');
     }
   }
 
@@ -462,7 +461,7 @@ class RelayPageState extends State<RelayPage> {
         List<String> deviceControl = await loadDevicesForDistanceControl();
         deviceControl.add(deviceName);
         saveDevicesForDistanceControl(deviceControl);
-        printLog(
+        printLog.i(
             'Hay ${deviceControl.length} equipos con el control x distancia');
         Position position = await _determinePosition();
         Map<String, double> maplatitude = await loadLatitude();
@@ -477,11 +476,11 @@ class RelayPageState extends State<RelayPage> {
           final backService = FlutterBackgroundService();
           await backService.startService();
           backService.invoke('distanceControl');
-          printLog('Servicio iniciado a las ${DateTime.now()}');
+          printLog.i('Servicio iniciado a las ${DateTime.now()}');
         }
       } catch (e) {
         showToast('Error al iniciar control por distancia.');
-        printLog('Error al setear la ubicación $e');
+        printLog.i('Error al setear la ubicación $e');
       }
     } else {
       // Cancelar la tarea.
@@ -491,7 +490,7 @@ class RelayPageState extends State<RelayPage> {
       List<String> deviceControl = await loadDevicesForDistanceControl();
       deviceControl.remove(deviceName);
       saveDevicesForDistanceControl(deviceControl);
-      printLog(
+      printLog.i(
           'Quedan ${deviceControl.length} equipos con el control x distancia');
       Map<String, double> maplatitude = await loadLatitude();
       maplatitude.remove(deviceName);
@@ -504,7 +503,7 @@ class RelayPageState extends State<RelayPage> {
         final backService = FlutterBackgroundService();
         backService.invoke("stopService");
         backTimerDS?.cancel();
-        printLog('Servicio apagado');
+        printLog.i('Servicio apagado');
       }
     }
   }
@@ -549,8 +548,8 @@ class RelayPageState extends State<RelayPage> {
                   completer.complete();
                   Navigator.of(navigatorKey.currentContext ?? context).pop();
                 } catch (e, s) {
-                  printLog(e);
-                  printLog(s);
+                  printLog.i(e);
+                  printLog.i(s);
                   completer.completeError(
                       e); // Completa con error si ocurre una excepción
                 }
@@ -572,8 +571,8 @@ class RelayPageState extends State<RelayPage> {
         return false;
       }
     } catch (e, s) {
-      printLog('Error al habilitar la ubicación: $e');
-      printLog(s);
+      printLog.i('Error al habilitar la ubicación: $e');
+      printLog.i(s);
       return false;
     }
   }
@@ -895,7 +894,7 @@ class RelayPageState extends State<RelayPage> {
       //                           }
       //                           await Future.delayed(
       //                               const Duration(seconds: 30));
-      //                           printLog("Achi");
+      //                           printLog.i("Achi");
       //                           final backService = FlutterBackgroundService();
       //                           backService.invoke('presenceControl');
       //                         } else {
@@ -1171,7 +1170,7 @@ class RelayPageState extends State<RelayPage> {
                                                 });
                                               },
                                               onChangeEnd: (value) {
-                                                printLog(
+                                                printLog.i(
                                                     'Valor enviado: ${value.round()}');
                                                 putDistanceOff(
                                                   service,
@@ -1269,7 +1268,7 @@ class RelayPageState extends State<RelayPage> {
                                                 });
                                               },
                                               onChangeEnd: (value) {
-                                                printLog(
+                                                printLog.i(
                                                     'Valor enviado: ${value.round()}');
                                                 putDistanceOn(
                                                   service,
@@ -1821,7 +1820,7 @@ class RelayPageState extends State<RelayPage> {
                           setState(() {
                             _isTutorialActive = false;
                           });
-                          printLog('Tutorial is complete!', 'verde');
+                          printLog.i('Tutorial is complete!');
                         },
                       );
                     }

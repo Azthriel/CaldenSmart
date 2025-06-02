@@ -32,6 +32,7 @@ import 'aws/dynamo/dynamo.dart';
 import 'aws/dynamo/dynamo_certificates.dart';
 import 'aws/mqtt/mqtt.dart';
 import 'Global/stored_data.dart';
+import 'package:caldensmart/logger.dart';
 
 //! VARIABLES !\\
 
@@ -63,8 +64,8 @@ late String appName;
 //*-Estado de app-*\\
 const bool xProfileMode = bool.fromEnvironment('dart.vm.profile');
 const bool xReleaseMode = bool.fromEnvironment('dart.vm.product');
-// const bool xDebugMode = !xProfileMode && !xReleaseMode;
-const bool xDebugMode = true;
+const bool xDebugMode = !xProfileMode && !xReleaseMode;
+// const bool xDebugMode = true;
 //*-Estado de app-*\\
 
 //*-Key de la app (uso de navegación y contextos)-*\\
@@ -105,6 +106,7 @@ bool werror = false;
 MaterialColor statusColor = Colors.grey;
 int signalPower = 0;
 String? qrResult;
+bool wifiUnstable = false;
 //*-Relacionado al wifi-*\\
 
 //*-Relacionado al ble-*\\
@@ -114,6 +116,7 @@ List<int> toolsValues = [];
 List<int> varsValues = [];
 bool bluetoothOn = true;
 List<String> keywords = [];
+Map<String, DateTime> lastSeenDevices = {};
 //*-Relacionado al ble-*\\
 
 //*-Topics mqtt-*\\
@@ -191,7 +194,6 @@ Map<String, List<String>> detectorOff = {};
 
 //*-Omnipresencia-*\\
 List<String> devicesToTrack = [];
-Map<String, DateTime> lastSeenDevices = {};
 Map<String, bool> msgFlag = {};
 Timer? bleScanTimer;
 late bool tracking;
@@ -293,59 +295,14 @@ late FToast fToast;
 //*- Escenas -*\\
 Map<String, List<String>> groupsOfDevices = {};
 List<Map<String, dynamic>> eventosCreados = [];
+const String urlEscenas =
+    'https://3zo0pu883b.execute-api.sa-east-1.amazonaws.com/PROD/Escenas'; //PROD
+// const String urlEscenas = 'https://3zo0pu883b.execute-api.sa-east-1.amazonaws.com/DEV/EscenasDEV'; //DEV
 //*- Escenas -*\\
 
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
 //! FUNCIONES !\\
-
-///*-Permite hacer prints seguros, solo en modo debug-*\\\
-///Colores permitidos para [color] son:
-///rojo, verde, amarillo, azul, magenta y cyan.
-///
-///Si no colocas ningún color se pondra por defecto...
-void printLog(var text, [String? color]) {
-  if (color != null) {
-    switch (color.toLowerCase()) {
-      case 'rojo':
-        color = '\x1B[31m';
-        break;
-      case 'verde':
-        color = '\x1B[32m';
-        break;
-      case 'amarillo':
-        color = '\x1B[33m';
-        break;
-      case 'azul':
-        color = '\x1B[34m';
-        break;
-      case 'magenta':
-        color = '\x1B[35m';
-        break;
-      case 'cyan':
-        color = '\x1B[36m';
-        break;
-      case 'reset':
-        color = '\x1B[0m';
-        break;
-      default:
-        color = '\x1B[0m';
-        break;
-    }
-  } else {
-    color = '\x1B[0m';
-  }
-  if (xDebugMode) {
-    if (Platform.isAndroid) {
-      // ignore: avoid_print
-      print('${color}PrintData: $text\x1B[0m');
-    } else {
-      // ignore: avoid_print
-      print("PrintData: $text");
-    }
-  }
-}
-//*-Permite hacer prints seguros, solo en modo debug-*\\
 
 //*-Tipo de Aplicación y parametros-*\\
 String nameOfApp(int type) {
@@ -894,7 +851,7 @@ String linksOfApp(int type, String link) {
 
 //*-Funciones diversas-*\\
 void showToast(String message) {
-  printLog('Toast: $message');
+  printLog.i('Toast: $message');
   fToast.removeCustomToast();
   Widget toast = Container(
     padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
@@ -991,7 +948,7 @@ void launchWebURL(String url) async {
   if (await canLaunchUrl(uri)) {
     await launchUrl(uri);
   } else {
-    printLog('No se pudo abrir $url');
+    printLog.i('No se pudo abrir $url');
   }
 }
 //*-Funciones diversas-*\\
@@ -1001,14 +958,14 @@ Future<void> sendWifitoBle(String ssid, String pass) async {
   MyDevice myDevice = MyDevice();
   String value = '$ssid#$pass';
   String deviceCommand = DeviceManager.getProductCode(deviceName);
-  // printLog(deviceCommand);
+  // printLog.i(deviceCommand);
   String dataToSend = '$deviceCommand[1]($value)';
-  printLog(dataToSend);
+  printLog.i(dataToSend);
   try {
     await myDevice.toolsUuid.write(dataToSend.codeUnits);
-    printLog('Se mando el wifi ANASHE');
+    printLog.i('Se mando el wifi ANASHE');
   } catch (e) {
-    printLog('Error al conectarse a Wifi $e');
+    printLog.i('Error al conectarse a Wifi $e');
   }
   ssid != 'DSC' ? atemp = true : null;
 }
@@ -1040,13 +997,13 @@ Future<List<WiFiAccessPoint>> _fetchWiFiNetworks() async {
           }
         }
       } else {
-        printLog('No se puede iniciar el escaneo.');
+        printLog.i('No se puede iniciar el escaneo.');
       }
     } else {
-      printLog('Permiso de ubicación denegado.');
+      printLog.i('Permiso de ubicación denegado.');
     }
   } catch (e) {
-    printLog('Error durante el escaneo de WiFi: $e');
+    printLog.i('Error durante el escaneo de WiFi: $e');
   } finally {
     _scanInProgress = false;
   }
@@ -1194,7 +1151,7 @@ void wifiText(BuildContext context) {
                                   itemBuilder: (context, index) {
                                     final network = _wifiNetworksList[index];
                                     int nivel = network.level;
-                                    // printLog('${network.ssid}: $nivel dBm ');
+                                    // printLog.i('${network.ssid}: $nivel dBm ');
                                     return nivel >= -80
                                         ? SizedBox(
                                             child: ExpansionTile(
@@ -1468,7 +1425,7 @@ void wifiText(BuildContext context) {
                           if (_currentlySelectedSSID != null &&
                               _wifiPasswordsMap[_currentlySelectedSSID] !=
                                   null) {
-                            printLog(
+                            printLog.i(
                                 '$_currentlySelectedSSID#${_wifiPasswordsMap[_currentlySelectedSSID]}');
                             sendWifitoBle(_currentlySelectedSSID!,
                                 _wifiPasswordsMap[_currentlySelectedSSID]!);
@@ -1592,7 +1549,7 @@ void wifiText(BuildContext context) {
                   TextButton(
                     onPressed: () {
                       if (manualSSID.isNotEmpty && manualPassword.isNotEmpty) {
-                        printLog('$manualSSID#$manualPassword');
+                        printLog.i('$manualSSID#$manualPassword');
 
                         sendWifitoBle(manualSSID, manualPassword);
                         wifiNotifier.updateStatus(
@@ -1789,12 +1746,12 @@ Future<void> openQRScanner(BuildContext context) async {
       wifiText(context);
     }
   } catch (e) {
-    printLog("Error during navigation: $e");
+    printLog.i("Error during navigation: $e");
   }
 }
 
 Map<String, String> parseWifiQR(String qrContent) {
-  printLog(qrContent);
+  printLog.i(qrContent);
   final ssidMatch = RegExp(r'S:([^;]+)').firstMatch(qrContent);
   final passwordMatch = RegExp(r'P:([^;]+)').firstMatch(qrContent);
 
@@ -1836,7 +1793,7 @@ Future<void> initNotifications() async {
           IOSFlutterLocalNotificationsPlugin>()
       ?.requestPermissions(alert: true, badge: true, sound: true);
 
-  printLog('Notificaciones iniciadas');
+  printLog.i('Notificaciones iniciadas');
 }
 
 @pragma('vm:entry-point')
@@ -1850,14 +1807,14 @@ Future<void> handleNotifications(RemoteMessage message) async {
     await getDevices(service, currentUserEmail);
     soundOfNotification = await loadSounds();
     await DeviceManager.init();
-    printLog('Llegó esta notif: ${message.data}', 'rojo');
+    printLog.i('Llegó esta notif: ${message.data}');
     String product = message.data['pc']!;
     String number = message.data['sn']!;
     String device = DeviceManager.recoverDeviceName(product, number);
     String sound = soundOfNotification[product] ?? 'alarm2';
     String caso = message.data['case']!;
 
-    printLog('El caso que llego es $caso');
+    printLog.i('El caso que llego es $caso');
 
     if (caso == 'Alarm') {
       if (product == '015773_IOT') {
@@ -1866,12 +1823,12 @@ Future<void> handleNotifications(RemoteMessage message) async {
         String displayMessage =
             'El detector disparó una alarma.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
         showNotification(displayTitle.toUpperCase(), displayMessage, sound);
-        printLog('Esta el cortito ${detectorOff.keys.contains(device)}');
+        printLog.i('Esta el cortito ${detectorOff.keys.contains(device)}');
         if (detectorOff.keys.contains(device)) {
           List<String> equipos = detectorOff[device] ?? [];
 
           for (String equipo in equipos) {
-            printLog('Apago $equipo');
+            printLog.i('Apago $equipo');
             String deviceSerialNumber =
                 DeviceManager.extractSerialNumber(equipo);
             String productCode = DeviceManager.getProductCode(equipo);
@@ -1893,7 +1850,7 @@ Future<void> handleNotifications(RemoteMessage message) async {
         String displayMessage =
             'La $entry disparó una alarma.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
         if (notis[int.parse(message.data['entry']!)]) {
-          printLog(
+          printLog.i(
               'En la lista: ${notificationMap['$product/$number']!} en la posición ${message.data['entry']!} hay un true');
           showNotification(displayTitle.toUpperCase(), displayMessage, sound);
         }
@@ -1912,15 +1869,15 @@ Future<void> handleNotifications(RemoteMessage message) async {
       if (configNotiDsc.keys.toList().contains(device)) {
         final now = DateTime.now();
         int espera = configNotiDsc[device] ?? 0;
-        printLog('La espera son $espera minutos', "cyan");
-        printLog('Empezo la espera ${DateTime.now()}', "cyan");
+        printLog.i('La espera son $espera minutos');
+        printLog.i('Empezo la espera ${DateTime.now()}');
         await Future.delayed(
           Duration(minutes: espera),
         );
-        printLog('Termino la espera ${DateTime.now()}', "cyan");
+        printLog.i('Termino la espera ${DateTime.now()}');
         await queryItems(service, product, number);
         bool cstate = globalDATA['$product/$number']?['cstate'] ?? false;
-        printLog('El cstate después de la espera es $cstate');
+        printLog.i('El cstate después de la espera es $cstate');
         if (!cstate) {
           String displayTitle =
               '¡El equipo ${nicknamesMap[device] ?? device} se desconecto!';
@@ -1931,15 +1888,15 @@ Future<void> handleNotifications(RemoteMessage message) async {
       }
     }
   } catch (e, s) {
-    printLog("Error: $e");
-    printLog("Trace: $s");
+    printLog.e("Error: $e");
+    printLog.t("Trace: $s");
   }
 }
 
 void showNotification(String title, String body, String sonido) async {
-  printLog('Titulo: $title');
-  printLog('Body: $body');
-  printLog('Sonido: $sonido');
+  printLog.i('Titulo: $title');
+  printLog.i('Body: $body');
+  printLog.i('Sonido: $sonido');
   try {
     int notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     await flutterLocalNotificationsPlugin.show(
@@ -1961,10 +1918,10 @@ void showNotification(String title, String body, String sonido) async {
         ),
       ),
     );
-    // printLog("Notificacion enviada anacardamente nasharda");
+    // printLog.i("Notificacion enviada anacardamente nasharda");
   } catch (e, s) {
-    printLog('Error enviando notif: $e');
-    printLog(s);
+    printLog.i('Error enviando notif: $e');
+    printLog.i(s);
   }
 }
 
@@ -1973,9 +1930,9 @@ void setupToken(String pc, String sn, String device) async {
     // Si es IOS recibo el APNS primero
     if (!android) {
       final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-      printLog("Token APNS: $apnsToken");
+      printLog.i("Token APNS: $apnsToken");
       if (apnsToken == null) {
-        printLog("Error al obtener el APNS");
+        printLog.i("Error al obtener el APNS");
         showToast("Error al obtener token");
         return;
       }
@@ -1983,10 +1940,10 @@ void setupToken(String pc, String sn, String device) async {
 
     // Obtener token actual
     String? token = await FirebaseMessaging.instance.getToken();
-    printLog("Token actual de Firebase: $token", 'Magenta');
+    printLog.i("Token actual de Firebase: $token");
     // Obtén los tokens existentes
     List<String> tokens = await getTokens(service, pc, sn);
-    printLog('Tokens: $tokens');
+    printLog.i('Tokens: $tokens');
     if (token != null) {
       // Remueve el token previo del dispositivo si existe
       if (tokensOfDevices[device] != null &&
@@ -2000,11 +1957,11 @@ void setupToken(String pc, String sn, String device) async {
       // Actualiza el diccionario local con el nuevo token
       tokensOfDevices[device] = token;
       saveToken(tokensOfDevices);
-      printLog('Token agregado exitosamente');
+      printLog.i('Token agregado exitosamente');
     }
     // Escucha cuando el token cambie
     FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-      printLog('Token actualizado: $newToken', 'Magenta');
+      printLog.i('Token actualizado: $newToken');
       // Obtén los tokens actualizados
       List<String> tokens = await getTokens(service, pc, sn);
       // Elimina el token anterior, si existe
@@ -2019,26 +1976,14 @@ void setupToken(String pc, String sn, String device) async {
       // Guarda el nuevo token localmente
       tokensOfDevices[device] = newToken;
       saveToken(tokensOfDevices);
-      printLog('Token actualizado exitosamente');
+      printLog.i('Token actualizado exitosamente');
     });
   } catch (e, s) {
-    printLog('Error setupear token $e');
-    printLog('Tracke anashardopolis $s');
+    printLog.i('Error setupear token $e');
+    printLog.i('Tracke anashardopolis $s');
   }
 }
 //*-Notificaciones-*\\
-
-//*-Monitoreo Localizacion y Bluetooth*-\\
-void startLocationMonitoring() {
-  locationTimer = Timer.periodic(
-      const Duration(seconds: 10), (Timer t) => locationStatus());
-}
-
-void locationStatus() async {
-  await NativeService.isLocationServiceEnabled();
-}
-
-//*-Monitoreo Localizacion y Bluetooth*-\\
 
 //*-Admin secundarios y alquiler temporario-*\\
 Future<void> analizePayment(
@@ -2051,21 +1996,21 @@ Future<void> analizePayment(
 
   payAdmSec = vencimientoAdmSec > 0;
 
-  printLog('--------------Administradores secundarios--------------');
-  printLog(expDates[0].toIso8601String());
-  printLog('Se vence en $vencimientoAdmSec dias');
-  printLog('¿Esta pago? ${payAdmSec ? 'Si' : 'No'}');
-  printLog('--------------Administradores secundarios--------------');
+  printLog.i('--------------Administradores secundarios--------------');
+  printLog.i(expDates[0].toIso8601String());
+  printLog.i('Se vence en $vencimientoAdmSec dias');
+  printLog.i('¿Esta pago? ${payAdmSec ? 'Si' : 'No'}');
+  printLog.i('--------------Administradores secundarios--------------');
 
   vencimientoAT = expDates[1].difference(DateTime.now()).inDays;
 
   payAT = vencimientoAT > 0;
 
-  printLog('--------------Alquiler Temporario--------------');
-  printLog(expDates[1].toIso8601String());
-  printLog('Se vence en $vencimientoAT dias');
-  printLog('¿Esta pago? ${payAT ? 'Si' : 'No'}');
-  printLog('--------------Alquiler Temporario--------------');
+  printLog.i('--------------Alquiler Temporario--------------');
+  printLog.i(expDates[1].toIso8601String());
+  printLog.i('Se vence en $vencimientoAT dias');
+  printLog.i('¿Esta pago? ${payAT ? 'Si' : 'No'}');
+  printLog.i('--------------Alquiler Temporario--------------');
 }
 
 void showPaymentTest(bool adm, int vencimiento, BuildContext context) {
@@ -2128,8 +2073,8 @@ void showPaymentTest(bool adm, int vencimiento, BuildContext context) {
       ],
     );
   } catch (e, s) {
-    printLog(e);
-    printLog(s);
+    printLog.i(e);
+    printLog.i(s);
   }
 }
 //*-Admin secundarios y alquiler temporario-*\\
@@ -2139,10 +2084,10 @@ void asking() async {
   bool alreadyLog = await isUserSignedIn();
 
   if (!alreadyLog) {
-    printLog('Usuario no está logueado');
+    printLog.i('Usuario no está logueado');
     navigatorKey.currentState?.pushReplacementNamed('/welcome');
   } else {
-    printLog('Usuario logueado');
+    printLog.i('Usuario logueado');
     navigatorKey.currentState?.pushReplacementNamed('/menu');
   }
 }
@@ -2162,7 +2107,7 @@ Future<String> getUserMail() async {
       }
     }
   } on AuthException catch (e) {
-    printLog('Error fetching user attributes: ${e.message}');
+    printLog.i('Error fetching user attributes: ${e.message}');
   }
 
   await saveEmail(email);
@@ -2202,12 +2147,12 @@ Future<void> initializeService() async {
 
     await backService.isRunning() ? null : await backService.startService();
 
-    printLog('Se inició piola');
+    printLog.i('Se inició piola');
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('hasInitService', true);
   } catch (e, s) {
-    printLog('Error al inicializar servicio $e');
-    printLog('$s');
+    printLog.i('Error al inicializar servicio $e');
+    printLog.i('$s');
   }
 }
 
@@ -2262,7 +2207,7 @@ Future<bool> onIosStart(ServiceInstance service) async {
 
   service.on('presenceControl').listen(
     (event) {
-      printLog('Se llamo el cosito coson');
+      printLog.i('Se llamo el cosito coson');
       showNotification(
           'Se inició el trackeo',
           'Recuerde tener la ubicación y bluetooth del telefono encendida',
@@ -2344,7 +2289,7 @@ void onStart(ServiceInstance service) async {
 
   service.on('presenceControl').listen(
     (event) {
-      printLog('Se llamo el cosito coson');
+      printLog.i('Se llamo el cosito coson');
       showNotification(
           'Se inició el trackeo',
           'Recuerde tener la ubicación y bluetooth del telefono encendida',
@@ -2352,7 +2297,7 @@ void onStart(ServiceInstance service) async {
 
       // NativeService.enableWakelock();
       bleScanTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
-        printLog("Voy a hacer un escaneo zarpado asi re kawai xd", "Verde");
+        printLog.i("Voy a hacer un escaneo zarpado asi re kawai xd");
         FlutterBluePlus.startScan(
           withKeywords: [
             'Electrico',
@@ -2369,7 +2314,7 @@ void onStart(ServiceInstance service) async {
 
         // Detener el escaneo después de un tiempo fijo
         Future.delayed(const Duration(seconds: 30), () {
-          printLog("Paro el escaneo anashajavaibe", "Verde");
+          printLog.i("Paro el escaneo anashajavaibe");
           FlutterBluePlus.stopScan();
         });
       });
@@ -2395,14 +2340,14 @@ void onStart(ServiceInstance service) async {
   );
 
   service.on('CancelpresenceControl').listen((event) {
-    printLog("Pincho el trackeo AÑA", "rojo");
+    printLog.i("Pincho el trackeo AÑA");
     bleScanTimer?.cancel();
     FlutterBluePlus.stopScan();
   });
 }
 
 Future<bool> backFunctionDS() async {
-  printLog('Entre a hacer locuritas. ${DateTime.now()}');
+  printLog.i('Entre a hacer locuritas. ${DateTime.now()}');
   // showNotification('Entre a la función', '${DateTime.now()}');
   try {
     List<String> devicesStored = await loadDevicesForDistanceControl();
@@ -2444,13 +2389,13 @@ Future<bool> backFunctionDS() async {
         headingAccuracy: 0.0,
       );
 
-      printLog('Ubicación guardada $storedLocation');
+      printLog.i('Ubicación guardada $storedLocation');
 
       // showNotification('Ubicación guardada', '$storedLocation');
 
       Position currentPosition1 = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high);
-      printLog('$currentPosition1');
+      printLog.i('$currentPosition1');
 
       double distance1 = Geolocator.distanceBetween(
         currentPosition1.latitude,
@@ -2458,12 +2403,12 @@ Future<bool> backFunctionDS() async {
         storedLocation.latitude,
         storedLocation.longitude,
       );
-      printLog('Distancia 1 : $distance1 metros');
+      printLog.i('Distancia 1 : $distance1 metros');
 
       // showNotification('Distancia 1', '$distance1 metros');
 
       if (distance1 > 100.0) {
-        printLog('Esperando 30 segundos ${DateTime.now()}');
+        printLog.i('Esperando 30 segundos ${DateTime.now()}');
 
         // showNotification('Esperando 30 segundos', '${DateTime.now()}');
 
@@ -2471,7 +2416,7 @@ Future<bool> backFunctionDS() async {
 
         Position currentPosition2 = await Geolocator.getCurrentPosition(
             desiredAccuracy: LocationAccuracy.high);
-        printLog('$currentPosition2');
+        printLog.i('$currentPosition2');
 
         double distance2 = Geolocator.distanceBetween(
           currentPosition2.latitude,
@@ -2479,12 +2424,12 @@ Future<bool> backFunctionDS() async {
           storedLocation.latitude,
           storedLocation.longitude,
         );
-        printLog('Distancia 2 : $distance2 metros');
+        printLog.i('Distancia 2 : $distance2 metros');
 
         // showNotification('Distancia 2', '$distance2 metros');
 
         if (distance2 <= distanceOn && distance1 > distance2) {
-          printLog('Usuario cerca, encendiendo');
+          printLog.i('Usuario cerca, encendiendo');
 
           if (DeviceManager.getProductCode(name) == '027313_IOT' &&
               globalDATA['$productCode/$sn']!.keys.contains('io')) {
@@ -2523,7 +2468,7 @@ Future<bool> backFunctionDS() async {
           }
           //Ta cerca prendo
         } else if (distance2 >= distanceOff && distance1 < distance2) {
-          printLog('Usuario lejos, apagando');
+          printLog.i('Usuario lejos, apagando');
 
           if (DeviceManager.getProductCode(name) == '027313_IOT' &&
               globalDATA['$productCode/$sn']!.keys.contains('io')) {
@@ -2563,19 +2508,19 @@ Future<bool> backFunctionDS() async {
 
           //Estas re lejos apago el calefactor
         } else {
-          printLog('Ningun caso');
+          printLog.i('Ningun caso');
 
           // showNotification('No se cumplio ningún caso', 'No hicimos nada');
         }
       } else {
-        printLog('Esta en home');
+        printLog.i('Esta en home');
       }
     }
 
     return Future.value(true);
   } catch (e, s) {
-    printLog('Error en segundo plano $e');
-    printLog(s);
+    printLog.i('Error en segundo plano $e');
+    printLog.i(s);
 
     // showNotification('Error en segundo plano $e', '$e');
 
@@ -2592,23 +2537,22 @@ Future<void> backFunctionTrack(List<ScanResult> results) async {
   List<String> foundDeviceNames =
       equipos.map((device) => device.platformName.toLowerCase()).toList();
 
-  printLog("Los anashe equipos son: $foundDeviceNames", "Cyan");
+  printLog.i("Los anashe equipos son: $foundDeviceNames");
   List<String> devicesTrack = await loadDeviceListToTrack();
   Map<String, Map<String, dynamic>> globalDATA = await loadGlobalData();
   Map<String, bool> flags = await loadmsgFlag();
-  // printLog('Vamos a buscar en la lista: $devicesTrack');
+  // printLog.i('Vamos a buscar en la lista: $devicesTrack');
   for (String trackedDevice in devicesTrack) {
     if (foundDeviceNames.contains(trackedDevice.toLowerCase())) {
       bool flag = flags[trackedDevice] ?? false;
-      // printLog('Flag: $flag');
+      // printLog.i('Flag: $flag');
       if (!flag) {
-        printLog(
-            'Dispositivo $trackedDevice encontrado en el escaneo.', "verde");
+        printLog.i('Dispositivo $trackedDevice encontrado en el escaneo.');
         if (DeviceManager.getProductCode(trackedDevice) == '020010_IOT') {
           List<String> pinToTrack = await loadPinToTrack(trackedDevice);
-          printLog('Encontre $pinToTrack');
+          printLog.i('Encontre $pinToTrack');
           for (String pin in pinToTrack) {
-            printLog('Voy a mandar al pin $pin');
+            printLog.i('Voy a mandar al pin $pin');
             globalDATA
                 .putIfAbsent(
                     '${DeviceManager.getProductCode(trackedDevice)}/${DeviceManager.extractSerialNumber(trackedDevice)}',
@@ -2624,7 +2568,7 @@ Future<void> backFunctionTrack(List<ScanResult> results) async {
               sendMessagemqtt(topic, message);
               sendMessagemqtt(topic2, message);
             } catch (e, s) {
-              printLog('Error al enviar valor $e $s');
+              printLog.i('Error al enviar valor $e $s');
             }
           }
         } else {
@@ -2643,7 +2587,7 @@ Future<void> backFunctionTrack(List<ScanResult> results) async {
             sendMessagemqtt(topic, message);
             sendMessagemqtt(topic2, message);
           } catch (e, s) {
-            printLog('Error al enviar valor $e $s');
+            printLog.i('Error al enviar valor $e $s');
           }
         }
       }
@@ -2652,13 +2596,12 @@ Future<void> backFunctionTrack(List<ScanResult> results) async {
     } else {
       bool flag = flags[trackedDevice] ?? false;
       if (flag) {
-        printLog(
-            'Dispositivo $trackedDevice NO encontrado en el escaneo.', "verde");
+        printLog.i('Dispositivo $trackedDevice NO encontrado en el escaneo.');
         if (DeviceManager.getProductCode(trackedDevice) == '020010_IOT') {
           List<String> pinToTrack = await loadPinToTrack(trackedDevice);
-          printLog('Encontre $pinToTrack');
+          printLog.i('Encontre $pinToTrack');
           for (String pin in pinToTrack) {
-            printLog('Es el pin io$pin');
+            printLog.i('Es el pin io$pin');
             globalDATA
                 .putIfAbsent(
                     '${DeviceManager.getProductCode(trackedDevice)}/${DeviceManager.extractSerialNumber(trackedDevice)}',
@@ -2674,7 +2617,7 @@ Future<void> backFunctionTrack(List<ScanResult> results) async {
               sendMessagemqtt(topic, message);
               sendMessagemqtt(topic2, message);
             } catch (e, s) {
-              printLog('Error al enviar valor $e $s');
+              printLog.i('Error al enviar valor $e $s');
             }
           }
         } else {
@@ -2693,7 +2636,7 @@ Future<void> backFunctionTrack(List<ScanResult> results) async {
             sendMessagemqtt(topic, message);
             sendMessagemqtt(topic2, message);
           } catch (e, s) {
-            printLog('Error al enviar valor $e $s');
+            printLog.i('Error al enviar valor $e $s');
           }
         }
       }
@@ -2848,7 +2791,7 @@ void showAlertDialog(BuildContext context, bool dismissible, Widget? title,
 
 //*-Acceso rápido BLE-*\\
 Future<void> controlDeviceBLE(String name, bool newState) async {
-  printLog("Voy a ${newState ? 'Encender' : 'Apagar'} el equipo $name", "Rojo");
+  printLog.i("Voy a ${newState ? 'Encender' : 'Apagar'} el equipo $name");
 
   if (DeviceManager.getProductCode(name) == '020010_IOT' ||
       DeviceManager.getProductCode(name) == '020020_IOT' ||
@@ -2896,7 +2839,7 @@ Future<void> controlDeviceBLE(String name, bool newState) async {
       sendMessagemqtt(topic, message);
       sendMessagemqtt(topic2, message);
     } catch (e, s) {
-      printLog('Error al enviar valor en cdBLE $e $s');
+      printLog.i('Error al enviar valor en cdBLE $e $s');
     }
   }
 }
@@ -2911,15 +2854,15 @@ void checkForUpdate(BuildContext context) async {
 
   await upgrader.initialize();
 
-  printLog("Vamos a revisar el skibidi toilet", "verde");
+  printLog.i("Vamos a revisar el skibidi toilet");
 
   // Verifica si hay una actualización disponible
   final shouldDisplay = upgrader.shouldDisplayUpgrade();
 
-  printLog("Papu :v $shouldDisplay", "verde");
+  printLog.i("Papu :v $shouldDisplay");
 
   if (shouldDisplay) {
-    printLog("Papure papa pure", "verde");
+    printLog.i("Papure papa pure");
     final actualVer = upgrader.currentInstalledVersion;
     final newVer = upgrader.currentAppStoreVersion;
     showAlertDialog(
@@ -2978,35 +2921,6 @@ void checkForUpdate(BuildContext context) async {
 //*-Revisión de actualización-*\\
 
 //*-Device update-*\\
-Future<String?> getLastSoftVersion(String pc, String hardV) async {
-  try {
-    DocumentReference document =
-        FirebaseFirestore.instance.collection('Calden Smart').doc('Versiones');
-
-    DocumentSnapshot snapshot = await document.get();
-
-    if (snapshot.exists) {
-      Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
-
-      Map<String, String> versions = (data[pc] as Map<String, dynamic>).map(
-        (key, value) => MapEntry(
-          key,
-          value.toString(),
-        ),
-      );
-
-      printLog("Ultima version: ${versions[hardV]}", "cyan");
-
-      return versions[hardV];
-    } else {
-      throw Exception("El documento no existe");
-    }
-  } catch (e) {
-    printLog("Error al leer Firestore: $e");
-    return null;
-  }
-}
-
 Future<void> showUpdateDialog(BuildContext ctx) {
   bool updating = false;
   bool error = false;
@@ -3134,32 +3048,36 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                         .listen((List<int> event) {
                       var fun = utf8.decode(event);
                       fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-                      printLog(fun);
+                      printLog.i(fun);
                       var parts = fun.split(':');
                       if (parts[0] == 'OTAPR') {
-                        printLog('Se recibio');
+                        printLog.i('Se recibio');
                         setState(() {
-                          porcentaje = (int.parse(parts[1]) / 100).round();
+                          porcentaje = int.parse(parts[1]);
                         });
-                        printLog('Progreso: ${parts[1]}');
+                        printLog.i('Progreso: ${parts[1]}');
                       }
                     });
 
                     myDevice.device.cancelWhenDisconnected(otaSub);
 
-                    String url =
-                        'https://github.com/barberop/sime-domotica/raw/refs/heads/main/${DeviceManager.getProductCode(deviceName)}/OTA_FW/W/hv${hardwareVersion}sv$lastSV.bin';
+                    final fileName = await Versioner.fetchLatestFirmwareFile(
+                        DeviceManager.getProductCode(deviceName),
+                        hardwareVersion);
 
-                    printLog(url, "Rojo");
+                    String url = Versioner.buildFirmwareUrl(
+                        DeviceManager.getProductCode(deviceName), fileName);
+                    printLog.i(url);
 
                     try {
                       if (isWifiConnected) {
+                        printLog.i('Si mandé ota Wifi');
+                        printLog.i('url: $url');
                         String data =
                             '${DeviceManager.getProductCode(deviceName)}[2]($url)';
                         await myDevice.toolsUuid.write(data.codeUnits);
-                        printLog('Si mandé ota Wifi');
                       } else {
-                        printLog('Arranca por la derecha la OTA BLE');
+                        printLog.i('Arranca por la derecha la OTA BLE');
                         String dir =
                             (await getApplicationDocumentsDirectory()).path;
                         File file = File('$dir/firmware.bin');
@@ -3176,19 +3094,19 @@ Future<void> showUpdateDialog(BuildContext ctx) {
 
                         var firmware = await file.readAsBytes();
 
-                        // printLog(
+                        // printLog.i(
                         //     "Comprobando cosas ${bytes == bytes2}", "verde");
 
                         String data =
                             '${DeviceManager.getProductCode(deviceName)}[3](${bytes.length})';
-                        printLog(data);
+                        printLog.i(data);
                         await myDevice.toolsUuid.write(data.codeUnits);
-                        printLog("Arranco OTA", "verde");
+                        printLog.i("Arranco OTA");
                         try {
                           // int chunk = 255 - 3;
                           int chunk = 1;
                           for (int i = 0; i < firmware.length; i += chunk) {
-                            // printLog('Mande chunk');
+                            // printLog.i('Mande chunk');
                             List<int> subvalue = firmware.sublist(
                               i,
                               min(i + chunk, firmware.length),
@@ -3200,9 +3118,9 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                             //   porcentaje = ((i * 100) / firmware.length).round();
                             // });
                           }
-                          printLog('Acabe');
+                          printLog.i('Acabe');
                         } catch (e, stackTrace) {
-                          printLog('El error es: $e $stackTrace');
+                          printLog.i('El error es: $e $stackTrace');
                           setState(() {
                             updating = false;
                             error = true;
@@ -3211,7 +3129,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                         }
                       }
                     } catch (e, stackTrace) {
-                      printLog('Error al enviar la OTA $e $stackTrace');
+                      printLog.i('Error al enviar la OTA $e $stackTrace');
                       // handleManualError(e, stackTrace);
                       setState(() {
                         updating = false;
@@ -3383,7 +3301,7 @@ class DeviceManager {
         throw Exception("El documento no existe");
       }
     } catch (e) {
-      printLog("Error al leer Firestore: $e");
+      printLog.i("Error al leer Firestore: $e");
       fbData = {};
     }
   }
@@ -3416,7 +3334,7 @@ class MyDevice {
 
       List<BluetoothService> services =
           await device.discoverServices(timeout: 3);
-      // printLog('Los servicios: $services');
+      // printLog.i('Los servicios: $services');
 
       BluetoothService infoService = services.firstWhere(
           (s) => s.uuid == Guid('6a3253b4-48bc-4e97-bacd-325a1d142038'));
@@ -3435,14 +3353,16 @@ class MyDevice {
       softwareVersion = partes[2];
       hardwareVersion = partes[3];
       factoryMode = softwareVersion.contains('_F');
-      printLog(
-          'Product code: ${DeviceManager.getProductCode(device.platformName)}');
-      printLog(
-          'Serial number: ${DeviceManager.extractSerialNumber(device.platformName)}');
+      printLog.i(
+          'Product code: ${DeviceManager.getProductCode(device.platformName)}',
+          color: 'cyan');
+      printLog.i(
+          'Serial number: ${DeviceManager.extractSerialNumber(device.platformName)}',
+          color: 'cyan');
 
-      printLog("Hardware Version: $hardwareVersion");
+      printLog.i("Hardware Version: $hardwareVersion", color: 'cyan');
 
-      printLog("Software Version: $softwareVersion");
+      printLog.i("Software Version: $softwareVersion", color: 'cyan');
 
       globalDATA.putIfAbsent(
           '${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}',
@@ -3541,7 +3461,7 @@ class MyDevice {
 
       return Future.value(true);
     } catch (e, stackTrace) {
-      printLog('Lcdtmbe $e $stackTrace');
+      printLog.i('Lcdtmbe $e $stackTrace');
 
       return Future.value(false);
     }
@@ -3564,12 +3484,12 @@ class NativeService {
         if (turnedOn) {
           bleFlag = false;
         } else {
-          printLog("El usuario rechazó encender Bluetooth");
+          printLog.i("El usuario rechazó encender Bluetooth");
         }
       }
     } on PlatformException catch (e) {
       android
-          ? printLog("Error al verificar o encender Bluetooth: ${e.message}")
+          ? printLog.i("Error al verificar o encender Bluetooth: ${e.message}")
           : null;
 
       bleFlag = false;
@@ -3578,11 +3498,11 @@ class NativeService {
 
   void playNativeSound(String soundName, int delay) {
     try {
-      printLog("Invoking playSound with: $soundName", 'verde');
+      printLog.i("Invoking playSound with: $soundName");
       platform
           .invokeMethod('playSound', {'soundName': soundName, 'delay': delay});
     } on PlatformException catch (e) {
-      printLog("Failed to play sound: '${e.message}'.", 'verde');
+      printLog.e("Failed to play sound: '${e.message}'.");
     }
   }
 
@@ -3592,7 +3512,7 @@ class NativeService {
           await platform.invokeMethod("isLocationServiceEnabled");
       return isEnabled;
     } on PlatformException catch (e) {
-      printLog('Error verificando ubicación: $e');
+      printLog.i('Error verificando ubicación: $e');
       return false;
     }
   }
@@ -3601,7 +3521,7 @@ class NativeService {
     try {
       await platform.invokeMethod("openLocationSettings");
     } on PlatformException catch (e) {
-      printLog('Error abriendo la configuración de ubicación: $e');
+      printLog.i('Error abriendo la configuración de ubicación: $e');
     }
   }
 
@@ -3609,90 +3529,138 @@ class NativeService {
     try {
       await platform.invokeMethod('stopSound');
     } catch (e) {
-      printLog("Error al detener sonido: $e");
+      printLog.i("Error al detener sonido: $e");
     }
   }
 }
 //*-Metodos, interacción con código Nativo-*\\
 
 //*-Versionador, comparador de versiones-*\\
+/// Clase para comparar y recuperar versiones de firmware,
+/// incluyendo la obtención de la última subversión (SV),
+/// el nombre del archivo .bin y la URL de descarga.
 class Versioner {
-  ///Compara si la primer versión que le envías salio después que la segunda
-  ///
-  ///Si son iguales también retorna true
+  // ---------------------- CONFIGURACIÓN ----------------------
+  static const String _owner = 'barberop';
+  static const String _repo = 'sime-domotica';
+  static const String _branch = 'main';
+
+  // ---------------------- COMPARADORES ----------------------
+  /// Compara si la primera versión (AAMMDDL) salió después o es igual a la segunda.
   static bool isPosterior(String myVersion, String versionToCompare) {
-    int year1 = int.parse('20${myVersion.substring(0, 2)}');
-    int month1 = int.parse(myVersion.substring(2, 4));
-    int day1 = int.parse(myVersion.substring(4, 6));
-    String letter1 = myVersion.substring(6, 7);
-
-    int year2 = int.parse('20${versionToCompare.substring(0, 2)}');
-    int month2 = int.parse(versionToCompare.substring(2, 4));
-    int day2 = int.parse(versionToCompare.substring(4, 6));
-    String letter2 = versionToCompare.substring(6, 7);
-
-    printLog('Year1: $year1');
-    printLog('Month1: $month1');
-    printLog('Day1: $day1');
-
-    printLog('Year2: $year2');
-    printLog('Month2: $month2');
-    printLog('Day2: $day2');
-
-    DateTime fecha1 = DateTime(year1, month1, day1);
-    DateTime fecha2 = DateTime(year2, month2, day2);
-
-    if (fecha1.isAtSameMomentAs(fecha2)) {
-      if (letter1.compareTo(letter2) > 0 || letter1.compareTo(letter2) == 0) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (fecha1.isAfter(fecha2)) {
-      return true;
-    } else {
-      return false;
+    final v1 = _parseVersion(myVersion);
+    final v2 = _parseVersion(versionToCompare);
+    if (v1.date.isAtSameMomentAs(v2.date)) {
+      return v1.letter.compareTo(v2.letter) >= 0;
     }
+    return v1.date.isAfter(v2.date);
   }
 
-  ///Compara si la primer versión que le envías salio antes que la segunda
-  ///
-  ///Si son iguales retorna false
+  /// Compara si la primera versión salió antes que la segunda.
   static bool isPrevious(String myVersion, String versionToCompare) {
-    int year1 = int.parse('20${myVersion.substring(0, 2)}');
-    int month1 = int.parse(myVersion.substring(2, 4));
-    int day1 = int.parse(myVersion.substring(4, 6));
-    String letter1 = myVersion.substring(6, 7);
-
-    int year2 = int.parse('20${versionToCompare.substring(0, 2)}');
-    int month2 = int.parse(versionToCompare.substring(2, 4));
-    int day2 = int.parse(versionToCompare.substring(4, 6));
-    String letter2 = versionToCompare.substring(6, 7);
-
-    printLog('Year1: $year1');
-    printLog('Month1: $month1');
-    printLog('Day1: $day1');
-
-    printLog('Year2: $year2');
-    printLog('Month2: $month2');
-    printLog('Day2: $day2');
-
-    DateTime fecha1 = DateTime(year1, month1, day1);
-    DateTime fecha2 = DateTime(year2, month2, day2);
-
-    if (fecha1.isAtSameMomentAs(fecha2)) {
-      if (letter1.compareTo(letter2) < 0) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (fecha1.isBefore(fecha2)) {
-      return true;
-    } else {
-      return false;
+    final v1 = _parseVersion(myVersion);
+    final v2 = _parseVersion(versionToCompare);
+    if (v1.date.isAtSameMomentAs(v2.date)) {
+      return v1.letter.compareTo(v2.letter) < 0;
     }
+    return v1.date.isBefore(v2.date);
+  }
+
+  // ---------------------- PARSEADO ----------------------
+  /// Auxiliar para parsear AAMMDD(Letra) en DateTime y letra.
+  static _VersionData _parseVersion(String version) {
+    final yy = int.parse('20${version.substring(0, 2)}');
+    final mm = int.parse(version.substring(2, 4));
+    final dd = int.parse(version.substring(4, 6));
+    final letter = version.substring(6, 7);
+    return _VersionData(DateTime(yy, mm, dd), letter);
+  }
+
+  // ---------------------- LISTADO Y OBTENCIÓN ----------------------
+
+  /// Lista los archivos .bin en GitHub bajo OTA_FW/W y devuelve
+  /// el nombre del archivo con la última subversión cuyo prefijo
+  /// coincida EXACTAMENTE con la versión de hardware (hwVersion) recibida.
+  ///
+  /// [productCode]: Carpeta del producto (ej. '015773_IOT').
+  /// [hwVersion]: Fecha+letra de hardware (ej. '240214A').
+  static Future<String> fetchLatestFirmwareFile(
+      String productCode, String hwVersion) async {
+    // Nos aseguramos de quitar espacios extras y mantener el case original.
+    final sanitizedHw = hwVersion.trim();
+    final prefix = 'hv${sanitizedHw}sv';
+    printLog.i('Prefix hardware: $prefix');
+
+    final path = '$productCode/OTA_FW/W';
+    final uri = Uri.https(
+      'api.github.com',
+      '/repos/$_owner/$_repo/contents/$path',
+      {'ref': _branch},
+    );
+    printLog.i('Fetching OTA_FW/W from: $uri');
+    final response = await http.get(uri, headers: {
+      'Accept': 'application/vnd.github.v3+json',
+    });
+    printLog.i('GitHub API status: ${response.statusCode}');
+    if (response.statusCode != 200) {
+      printLog.e('Error listing OTA_FW/W: ${response.body}');
+      throw Exception('Error al listar OTA_FW/W: ${response.statusCode}');
+    }
+
+    final List<dynamic> items = jsonDecode(response.body);
+    final firmwareFiles = <String>[];
+
+    for (final item in items) {
+      if (item['type'] == 'file') {
+        final name = item['name'] as String;
+        // Comprobamos que el nombre empiece exactamente con el prefijo y termine en ".bin"
+        final matchesPrefix = name.startsWith(prefix);
+        final isBin = name.endsWith('.bin');
+        printLog.i(
+            'Found item: $name (startsWith prefix? $matchesPrefix, endsWith .bin? $isBin)');
+        if (matchesPrefix && isBin) {
+          firmwareFiles.add(name);
+        }
+      }
+    }
+
+    if (firmwareFiles.isEmpty) {
+      printLog.e(
+          'No matching firmware found for HW $sanitizedHw with prefix $prefix');
+      throw Exception('No se encontró firmware para HW $sanitizedHw');
+    }
+
+    // Ordenamos alfabéticamente para que el último tenga la subversión más alta.
+    firmwareFiles.sort();
+    final latest = firmwareFiles.last;
+    printLog.i('Latest firmware file: $latest');
+    return latest;
+  }
+
+  /// A partir del nombre de archivo devuelto por fetchLatestFirmwareFile,
+  /// extrae y retorna solo la subversión (SV) sin prefijos ni extensión.
+  /// Ejemplo: de 'hv240214Asv240528H.bin' devuelve '240528H'.
+  static String extractSV(String firmwareFileName, String hwVersion) {
+    printLog
+        .i('Extracting SV from $firmwareFileName for HW version $hwVersion');
+    final prefix = 'hv${hwVersion}sv';
+    return firmwareFileName.replaceFirst(prefix, '').replaceFirst('.bin', '');
+  }
+
+  /// Construye la URL raw de GitHub para la última versión de firmware.
+  static String buildFirmwareUrl(String productCode, String firmwareFileName) {
+    return 'https://raw.githubusercontent.com/$_owner/$_repo/$_branch/'
+        '$productCode/OTA_FW/W/$firmwareFileName';
   }
 }
+
+/// Datos internos de versión.
+class _VersionData {
+  final DateTime date;
+  final String letter;
+  _VersionData(this.date, this.letter);
+}
+
 //*-Versionador, comparador de versiones-*\\
 
 //*-Provider, actualización de data en un widget-*\\
@@ -4426,7 +4394,7 @@ class AnimSearchBarState extends State<AnimSearchBar>
                           }
                         } catch (e) {
                           ///print the error if the try block fails
-                          printLog(e);
+                          printLog.i(e);
                         }
                       },
 

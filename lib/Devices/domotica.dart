@@ -12,6 +12,7 @@ import '../aws/dynamo/dynamo_certificates.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
 import '../Global/stored_data.dart';
+import 'package:caldensmart/logger.dart';
 
 class DomoticaPage extends StatefulWidget {
   const DomoticaPage({super.key});
@@ -222,7 +223,7 @@ class DomoticaPageState extends State<DomoticaPage> {
             '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}'] ??
         List<bool>.filled(parts.length, false);
 
-    printLog(_notis, 'amarillo');
+    printLog.i(_notis);
 
     tracking = devicesToTrack.contains(deviceName);
 
@@ -241,7 +242,12 @@ class DomoticaPageState extends State<DomoticaPage> {
     }
 
     nickname = nicknamesMap[deviceName] ?? deviceName;
-    updateWifiValues(toolsValues);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      updateWifiValues(toolsValues);
+      if (shouldUpdateDevice) {
+        await showUpdateDialog(context);
+      }
+    });
     subscribeToWifiStatus();
     subToIO();
     processValues(ioValues);
@@ -346,12 +352,12 @@ class DomoticaPageState extends State<DomoticaPage> {
   void updateWifiValues(List<int> data) {
     var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-    printLog(fun);
+    printLog.i(fun);
     var parts = fun.split(':');
     final regex = RegExp(r'\((\d+)\)');
     final match = regex.firstMatch(parts[2]);
     int users = int.parse(match!.group(1).toString());
-    printLog('Hay $users conectados');
+    printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
     WifiNotifier wifiNotifier =
@@ -361,7 +367,7 @@ class DomoticaPageState extends State<DomoticaPage> {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
-      printLog('sis $isWifiConnected');
+      printLog.i('sis $isWifiConnected');
       errorMessage = '';
       errorSintax = '';
       werror = false;
@@ -374,7 +380,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
-      printLog('non $isWifiConnected');
+      printLog.i('non $isWifiConnected');
 
       nameOfWifi = '';
       wifiNotifier.updateStatus(
@@ -404,7 +410,7 @@ class DomoticaPageState extends State<DomoticaPage> {
   }
 
   void subscribeToWifiStatus() async {
-    printLog('Se subscribio a wifi');
+    printLog.i('Se subscribio a wifi');
     await myDevice.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
@@ -418,7 +424,7 @@ class DomoticaPageState extends State<DomoticaPage> {
   void processValues(List<int> values) {
     ioValues = values;
     var parts = utf8.decode(values).split('/');
-    printLog('Valores: $parts', "Amarillo");
+    printLog.i('Valores: $parts');
     tipo.clear();
     estado.clear();
     common.clear();
@@ -445,7 +451,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           })
         });
 
-        printLog(
+        printLog.i(
             'En la posición $i el modo es ${tipo[i]} y su estado es ${estado[i]}');
       }
       setState(() {});
@@ -490,7 +496,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           })
         });
 
-        printLog('¿La entrada $j esta en alerta?: ${alertIO[j]}');
+        printLog.i('¿La entrada $j esta en alerta?: ${alertIO[j]}');
       }
 
       setState(() {});
@@ -511,10 +517,10 @@ class DomoticaPageState extends State<DomoticaPage> {
 
   void subToIO() async {
     await myDevice.ioUuid.setNotifyValue(true);
-    printLog('Subscrito a IO');
+    printLog.i('Subscrito a IO');
 
     var ioSub = myDevice.ioUuid.onValueReceived.listen((event) {
-      printLog('Cambio en IO');
+      printLog.i('Cambio en IO');
       processValues(event);
     });
 
@@ -642,12 +648,12 @@ class DomoticaPageState extends State<DomoticaPage> {
                                           await savePinToTrack(
                                               pins, deviceName);
 
-                                          printLog(
+                                          printLog.i(
                                               'When haces tus momos en flutter :v');
                                           fun = true;
                                           context.mounted
                                               ? Navigator.of(context).pop()
-                                              : printLog("Contextn't");
+                                              : printLog.i("Contextn't");
                                         } else {
                                           showToast(
                                               'Por favor, selecciona al menos una opción.');
@@ -704,27 +710,27 @@ class DomoticaPageState extends State<DomoticaPage> {
       },
     );
 
-    printLog('ME WHEN YOUR MOM WHEN ME WHEN YOUR MOM $fun');
+    printLog.i('ME WHEN YOUR MOM WHEN ME WHEN YOUR MOM $fun');
     if (fun) {
-      printLog('Pov: Sos re onichan mal');
+      printLog.i('Pov: Sos re onichan mal');
       setState(() {
         tracking = true;
       });
       devicesToTrack.add(deviceName);
       await saveDeviceListToTrack(devicesToTrack);
-      printLog('Equipo $devicesToTrack');
+      printLog.i('Equipo $devicesToTrack');
       SharedPreferences prefs = await SharedPreferences.getInstance();
       bool hasInitService = prefs.getBool('hasInitService') ?? false;
-      printLog('Se inició el servicio? $hasInitService');
+      printLog.i('Se inició el servicio? $hasInitService');
       if (!hasInitService) {
-        printLog('Empiezo');
+        printLog.i('Empiezo');
         await initializeService();
-        printLog('Acabe');
+        printLog.i('Acabe');
       }
 
       await Future.delayed(const Duration(seconds: 30));
       final backService = FlutterBackgroundService();
-      printLog('Xd');
+      printLog.i('Xd');
       backService.invoke('presenceControl');
     }
   }
@@ -764,7 +770,7 @@ class DomoticaPageState extends State<DomoticaPage> {
 
       showToast('Administrador añadido correctamente.');
     } catch (e) {
-      printLog('Error al añadir administrador secundario: $e');
+      printLog.i('Error al añadir administrador secundario: $e');
       showToast('Error al añadir el administrador. Inténtalo de nuevo.');
     }
   }
@@ -785,7 +791,7 @@ class DomoticaPageState extends State<DomoticaPage> {
 
       showToast('Administrador eliminado correctamente.');
     } catch (e) {
-      printLog('Error al eliminar administrador secundario: $e');
+      printLog.i('Error al eliminar administrador secundario: $e');
       showToast('Error al eliminar el administrador. Inténtalo de nuevo.');
     }
   }
@@ -810,7 +816,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                 child: ListBody(
                   children: List.generate(parts.length, (index) {
                     var equipo = parts[index].split(':');
-                    printLog(equipo);
+                    printLog.i(equipo);
                     return equipo[0] == '0'
                         ? RadioListTile<int>(
                             title: Text(
@@ -1271,7 +1277,7 @@ class DomoticaPageState extends State<DomoticaPage> {
       //                               savePinToTrack(jijeo, deviceName);
       //                               context.mounted
       //                                   ? Navigator.of(context).pop()
-      //                                   : printLog("Contextn't");
+      //                                   : printLog.i("Contextn't");
       //                             },
       //                             child: const Text('Aceptar'),
       //                           ),
@@ -1571,7 +1577,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                                                   setState(() {
                                                     String data =
                                                         '${DeviceManager.getProductCode(deviceName)}[14]($i#0)';
-                                                    printLog(data);
+                                                    printLog.i(data);
                                                     myDevice.toolsUuid
                                                         .write(data.codeUnits);
                                                     common[i] = '0';
@@ -1619,7 +1625,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                                                   setState(() {
                                                     String data =
                                                         '${DeviceManager.getProductCode(deviceName)}[14]($i#1)';
-                                                    printLog(data);
+                                                    printLog.i(data);
                                                     myDevice.toolsUuid
                                                         .write(data.codeUnits);
                                                     common[i] = '1';
@@ -1693,7 +1699,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                                         onPressed: () {
                                           String fun =
                                               '${DeviceManager.getProductCode(deviceName)}[13]($i#${tipo[i] == 'Entrada' ? '0' : '1'})';
-                                          printLog(fun);
+                                          printLog.i(fun);
                                           myDevice.toolsUuid
                                               .write(fun.codeUnits);
                                         },
@@ -1990,7 +1996,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                           setState(() {
                             _isTutorialActive = false;
                           });
-                          printLog('Tutorial is complete!', 'verde');
+                          printLog.i('Tutorial is complete!');
                         },
                       );
                     }

@@ -6,6 +6,7 @@ import '../Global/manager_screen.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
 import '../master.dart';
+import 'package:caldensmart/logger.dart';
 
 class RollerPage extends StatefulWidget {
   const RollerPage({super.key});
@@ -48,7 +49,12 @@ class RollerPageState extends State<RollerPage> {
     nickname = nicknamesMap[deviceName] ?? deviceName;
     showOptions = currentUserEmail == owner;
 
-    updateWifiValues(toolsValues);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      updateWifiValues(toolsValues);
+      if (shouldUpdateDevice) {
+        await showUpdateDialog(context);
+      }
+    });
     processValues(varsValues);
     subscribeToWifiStatus();
     subToVars();
@@ -112,12 +118,12 @@ class RollerPageState extends State<RollerPage> {
   void updateWifiValues(List<int> data) {
     var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-    printLog(fun);
+    printLog.i(fun);
     var parts = fun.split(':');
     final regex = RegExp(r'\((\d+)\)');
     final match = regex.firstMatch(parts[2]);
     int users = int.parse(match!.group(1).toString());
-    printLog('Hay $users conectados');
+    printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
     WifiNotifier wifiNotifier =
@@ -127,7 +133,7 @@ class RollerPageState extends State<RollerPage> {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
-      printLog('sis $isWifiConnected');
+      printLog.i('sis $isWifiConnected');
       errorMessage = '';
       errorSintax = '';
       werror = false;
@@ -140,7 +146,7 @@ class RollerPageState extends State<RollerPage> {
           'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
-      printLog('non $isWifiConnected');
+      printLog.i('non $isWifiConnected');
 
       nameOfWifi = '';
       wifiNotifier.updateStatus(
@@ -170,7 +176,7 @@ class RollerPageState extends State<RollerPage> {
   }
 
   void subscribeToWifiStatus() async {
-    printLog('Se subscribio a wifi');
+    printLog.i('Se subscribio a wifi');
     await myDevice.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
@@ -182,13 +188,13 @@ class RollerPageState extends State<RollerPage> {
   }
 
   void subToVars() async {
-    printLog('Me subscribo a vars');
+    printLog.i('Me subscribo a vars');
     await myDevice.varsUuid.setNotifyValue(true);
 
     final varsSub =
         myDevice.varsUuid.onValueReceived.listen((List<int> status) {
       var parts = utf8.decode(status).split(':');
-      // printLog('Posición nueva: ${parts[0]}');
+      // printLog.i('Posición nueva: ${parts[0]}');
       if (context.mounted) {
         setState(() {
           actualPosition = int.parse(parts[0]);
@@ -224,13 +230,13 @@ class RollerPageState extends State<RollerPage> {
 
   void setDistance(int pc) {
     String data = '${DeviceManager.getProductCode(deviceName)}[7]($pc%)';
-    printLog(data);
+    printLog.i(data);
     myDevice.toolsUuid.write(data.codeUnits);
   }
 
   void setLarge(int grades) {
     String data = '${DeviceManager.getProductCode(deviceName)}[7]($grades)';
-    printLog(data);
+    printLog.i(data);
     myDevice.toolsUuid.write(data.codeUnits);
   }
 
@@ -241,7 +247,7 @@ class RollerPageState extends State<RollerPage> {
 
   void setMotorSpeed(String rpm) {
     String data = '${DeviceManager.getProductCode(deviceName)}[10]($rpm)';
-    printLog(data);
+    printLog.i(data);
     myDevice.toolsUuid.write(data.codeUnits);
   }
 
@@ -310,7 +316,7 @@ class RollerPageState extends State<RollerPage> {
                         setState(() {
                           workingPosition = 0;
                         });
-                        printLog(data);
+                        printLog.i(data);
                       },
                       onLongPressEnd: (LongPressEndDetails a) {
                         String data =
@@ -319,7 +325,7 @@ class RollerPageState extends State<RollerPage> {
                         setState(() {
                           workingPosition = actualPosition;
                         });
-                        printLog(data);
+                        printLog.i(data);
                       },
                       child: Material(
                         color: Colors.transparent,
@@ -370,7 +376,7 @@ class RollerPageState extends State<RollerPage> {
                         setState(() {
                           workingPosition = 100;
                         });
-                        printLog(data);
+                        printLog.i(data);
                       },
                       onLongPressEnd: (LongPressEndDetails a) {
                         String data =
@@ -379,7 +385,7 @@ class RollerPageState extends State<RollerPage> {
                         setState(() {
                           workingPosition = actualPosition;
                         });
-                        printLog(data);
+                        printLog.i(data);
                       },
                       child: Material(
                         color: Colors.transparent,
@@ -613,13 +619,13 @@ class RollerPageState extends State<RollerPage> {
                           ),
                           ElevatedButton(
                             onPressed: () async {
-                              printLog("Guardo fin");
+                              printLog.i("Guardo fin");
                               List<int> fun = await myDevice.varsUuid.read();
                               processValues(fun);
                               rollerEnd = actualPositionGrades;
                               endSaved = true;
 
-                              printLog("Fin en grados: $rollerEnd");
+                              printLog.i("Fin en grados: $rollerEnd");
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: color6,
@@ -648,12 +654,12 @@ class RollerPageState extends State<RollerPage> {
                           ),
                           ElevatedButton(
                             onPressed: () async {
-                              printLog("Guardo inicio");
+                              printLog.i("Guardo inicio");
                               List<int> fun = await myDevice.varsUuid.read();
                               processValues(fun);
                               rollerStart = actualPositionGrades;
 
-                              printLog("Inicio en grados: $rollerStart");
+                              printLog.i("Inicio en grados: $rollerStart");
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: color6,
@@ -683,9 +689,9 @@ class RollerPageState extends State<RollerPage> {
                           ),
                           ElevatedButton(
                             onPressed: () async {
-                              printLog("Envio largo");
+                              printLog.i("Envio largo");
                               int largo = rollerEnd! - rollerStart!;
-                              printLog("Largo: $largo");
+                              printLog.i("Largo: $largo");
                               putRollerLength(
                                   service,
                                   DeviceManager.getProductCode(deviceName),

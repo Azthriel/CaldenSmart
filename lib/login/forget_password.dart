@@ -1,3 +1,4 @@
+import 'package:caldensmart/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:amplify_flutter/amplify_flutter.dart'; // Importa Amplify si no está importado.
 import 'package:hugeicons/hugeicons.dart';
@@ -19,7 +20,7 @@ Widget buildForgotPasswordForm(WelcomePageState state) {
       } else {
         ('Error al enviar el código de recuperación: ${e.message}');
       }
-      printLog('Error al enviar el código: ${e.message}');
+      printLog.e('Error al enviar el código: ${e.message}');
     }
   }
 
@@ -59,7 +60,7 @@ Widget buildForgotPasswordForm(WelcomePageState state) {
                 'Ingrese el correo electrónico de su cuenta',
                 style: TextStyle(
                   fontSize: 18,
-                  color: color3,
+                  color: color1,
                 ),
               ),
               const SizedBox(height: 15),
@@ -81,7 +82,7 @@ Widget buildForgotPasswordForm(WelcomePageState state) {
                 'Se le enviará un código de recuperación para su cuenta',
                 style: TextStyle(
                   fontSize: 14,
-                  color: color3,
+                  color: color1,
                 ),
                 textAlign: TextAlign.center,
               ),

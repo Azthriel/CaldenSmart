@@ -6,13 +6,14 @@ import '../../Global/stored_data.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:provider/provider.dart';
+import 'package:caldensmart/logger.dart';
 
 MqttServerClient? mqttAWSFlutterClient;
 
 //*-Conexión y desconexión IoT Core-*\\
 Future<bool> setupMqtt() async {
   try {
-    printLog('Haciendo setup');
+    printLog.i('Haciendo setup');
     String deviceId = 'FlutterDevice/${generateRandomNumbers(32)}';
     String broker = mqttBroker;
 
@@ -37,22 +38,22 @@ Future<bool> setupMqtt() async {
     mqttAWSFlutterClient!.keepAlivePeriod = 30;
     try {
       await mqttAWSFlutterClient!.connect();
-      printLog('Usuario conectado a mqtt');
+      printLog.i('Usuario conectado a mqtt');
 
       return true;
     } catch (e) {
-      printLog('Error intentando conectar: $e');
+      printLog.i('Error intentando conectar: $e');
 
       return false;
     }
   } catch (e, s) {
-    printLog('Error setup mqtt $e $s');
+    printLog.i('Error setup mqtt $e $s');
     return false;
   }
 }
 
 void mqttonDisconnected() {
-  printLog('Desconectado de mqtt');
+  printLog.i('Desconectado de mqtt');
   reconnectMqtt();
 }
 
@@ -60,7 +61,7 @@ void reconnectMqtt() async {
   await setupMqtt().then((value) {
     if (value) {
       for (var topic in topicsToSub) {
-        printLog('Subscribiendo a $topic');
+        printLog.i('Subscribiendo a $topic');
         subToTopicMQTT(topic);
       }
       listenToTopics();
@@ -73,19 +74,19 @@ void reconnectMqtt() async {
 
 //*-Envíar mensaje a los topics-*\\
 void sendMessagemqtt(String topic, String message) {
-  printLog('Voy a mandar $message');
-  printLog('A el topic $topic');
+  printLog.i('Voy a mandar $message');
+  printLog.i('A el topic $topic');
   final MqttClientPayloadBuilder builder = MqttClientPayloadBuilder();
   builder.addString(message);
 
-  printLog('${builder.payload} : ${utf8.decode(builder.payload!)}');
+  printLog.i('${builder.payload} : ${utf8.decode(builder.payload!)}');
 
   try {
     mqttAWSFlutterClient!
         .publishMessage(topic, MqttQos.atLeastOnce, builder.payload!, retain: true);
-    printLog('Mensaje enviado');
+    printLog.i('Mensaje enviado');
   } catch (e, s) {
-    printLog('Error sending message $e $s');
+    printLog.i('Error sending message $e $s');
   }
 }
 //*-Envíar mensaje a los topics-*\\
@@ -94,15 +95,15 @@ void sendMessagemqtt(String topic, String message) {
 void subToTopicMQTT(String topic) {
   try {
     mqttAWSFlutterClient!.subscribe(topic, MqttQos.atLeastOnce);
-    printLog('Subscrito correctamente a $topic');
+    printLog.i('Subscrito correctamente a $topic');
   } catch (e) {
-    printLog('Error al subscribir al topic $topic, $e');
+    printLog.i('Error al subscribir al topic $topic, $e');
   }
 }
 
 void unSubToTopicMQTT(String topic) {
   mqttAWSFlutterClient!.unsubscribe(topic);
-  printLog('Me desuscribo de $topic');
+  printLog.i('Me desuscribo de $topic');
   topicsToSub.remove(topic);
 }
 //*-Subscribir y desuscribir a los topics-*\\
@@ -110,28 +111,28 @@ void unSubToTopicMQTT(String topic) {
 //*-Recibe los mensajes que se envían a los topics-*\\
 void listenToTopics() {
   mqttAWSFlutterClient!.updates!.listen((c) {
-    printLog('LLego algo(mqtt)');
+    printLog.i('LLego algo(mqtt)');
     final MqttPublishMessage recMess = c[0].payload as MqttPublishMessage;
     final String topic = c[0].topic;
     var listNames = topic.split('/');
     final List<int> message = recMess.payload.message;
     String keyName = "${listNames[1]}/${listNames[2]}";
-    printLog('Keyname: $keyName');
+    printLog.i('Keyname: $keyName');
 
     final String messageString = utf8.decode(message);
-    printLog('Mensaje: $messageString');
+    printLog.i('Mensaje: $messageString');
     try {
       final Map<String, dynamic> messageMap = json.decode(messageString) ?? {};
 
-      printLog('Mensaje decodificado: $messageMap');
+      printLog.i('Mensaje decodificado: $messageMap');
 
       bool specialDevice = (messageMap.keys.contains('index') &&
           !messageMap.keys.contains('cstate'));
 
-      printLog('Special device: $specialDevice', 'rojo');
+      printLog.i('Special device: $specialDevice');
 
       if (specialDevice) {
-        printLog('Mensaje domotica $messageMap');
+        printLog.i('Mensaje domotica $messageMap');
         int index = messageMap["index"];
         globalDATA
             .putIfAbsent(keyName, () => {})
@@ -150,8 +151,8 @@ void listenToTopics() {
         GlobalDataNotifier notifier = Provider.of<GlobalDataNotifier>(
             navigatorKey.currentContext!,
             listen: false);
-        // printLog('Notificando a $keyName');
-        // printLog('Mensaje: $messageMap');
+        // printLog.i('Notificando a $keyName');
+        // printLog.i('Mensaje: $messageMap');
         notifier.updateData(keyName, messageMap);
       }
 
@@ -162,10 +163,10 @@ void listenToTopics() {
       //     listen: false);
       // notifier.updateData(keyName, messageMap);
 
-      printLog('Received message: $messageMap from topic: $topic');
+      printLog.i('Received message: $messageMap from topic: $topic');
     } catch (e, s) {
-      printLog('Error decoding message: $e');
-      printLog('Error decoding message: $s');
+      printLog.e('Error decoding message: $e');
+      printLog.t('Error decoding message: $s');
     }
   });
 }

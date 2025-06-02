@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -7,6 +6,7 @@ import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
 import '../master.dart';
 import 'stored_data.dart';
+import 'package:caldensmart/logger.dart';
 
 class ManagerScreen extends StatefulWidget {
   const ManagerScreen({super.key});
@@ -55,7 +55,7 @@ class ManagerScreenState extends State<ManagerScreen> {
 
       showToast('Administrador añadido correctamente.');
     } catch (e) {
-      printLog('Error al añadir administrador secundario: $e');
+      printLog.e('Error al añadir administrador secundario: $e');
       showToast('Error al añadir el administrador. Inténtalo de nuevo.');
     }
   }
@@ -76,7 +76,7 @@ class ManagerScreenState extends State<ManagerScreen> {
 
       showToast('Administrador eliminado correctamente.');
     } catch (e) {
-      printLog('Error al eliminar administrador secundario: $e');
+      printLog.i('Error al eliminar administrador secundario: $e');
       showToast('Error al eliminar el administrador. Inténtalo de nuevo.');
     }
   }
@@ -109,7 +109,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                 child: ListBody(
                   children: List.generate(parts.length, (index) {
                     var equipo = parts[index].split(':');
-                    printLog(equipo);
+                    printLog.i(equipo);
                     return equipo[0] == '0'
                         ? RadioListTile<int>(
                             title: Text(
@@ -219,7 +219,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                 deviceOwner = false;
                               });
                             } catch (e, s) {
-                              printLog('Error al borrar owner $e Trace: $s');
+                              printLog.i('Error al borrar owner $e Trace: $s');
                               showToast('Error al borrar el administrador.');
                             }
                           },
@@ -240,7 +240,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                       });
                       showToast('Ahora eres el propietario del equipo');
                     } catch (e, s) {
-                      printLog('Error al agregar owner $e Trace: $s');
+                      printLog.i('Error al agregar owner $e Trace: $s');
                       showToast('Error al agregar el administrador.');
                     }
                   } else {
@@ -382,7 +382,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                 addSecondaryAdmin(
                                                     emailController.text);
                                               } else {
-                                                printLog('¿Pago? $payAdmSec');
+                                                printLog.i('¿Pago? $payAdmSec');
                                                 if (payAdmSec) {
                                                   if (adminDevices.length < 6) {
                                                     addSecondaryAdmin(
@@ -1341,11 +1341,11 @@ class ManagerScreenState extends State<ManagerScreen> {
                         onChanged: (value) {
                           setState(() {
                             nightMode = value;
-                            printLog('Estado: $nightMode');
+                            printLog.i('Estado: $nightMode');
                             int fun = nightMode ? 1 : 0;
                             String data =
                                 '${DeviceManager.getProductCode(deviceName)}[9]($fun)';
-                            printLog(data);
+                            printLog.i(data);
                             myDevice.toolsUuid.write(data.codeUnits);
                           });
                         },

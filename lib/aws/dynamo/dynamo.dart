@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:caldensmart/logger.dart';
 import 'package:aws_dynamodb_api/dynamodb-2012-08-10.dart';
 import 'package:caldensmart/aws/mqtt/mqtt.dart';
 import '/master.dart';
@@ -8,7 +8,7 @@ import '../../Global/stored_data.dart';
 //*-Lee todos los datos de un equipo-*\\
 Future<void> queryItems(DynamoDB service, String pc, String sn) async {
   try {
-    printLog('Buscare en el equipo: $pc/$sn');
+    printLog.i('Buscare en el equipo: $pc/$sn');
     final response = await service.query(
       tableName: 'sime-domotica',
       keyConditionExpression: 'product_code = :pk AND device_id = :sk',
@@ -19,10 +19,10 @@ Future<void> queryItems(DynamoDB service, String pc, String sn) async {
     );
 
     if (response.items != null) {
-      printLog('Items encontrados');
-      // printLog(response.items);
+      printLog.i('Items encontrados');
+      // printLog.i(response.items);
       for (var item in response.items!) {
-        printLog("-----------Inicio de un item-----------");
+        printLog.i("-----------Inicio de un item-----------");
         for (var key in item.keys) {
           var value = item[key];
           var displayValue = value?.s ??
@@ -120,16 +120,16 @@ Future<void> queryItems(DynamoDB service, String pc, String sn) async {
                 break;
             }
           }
-          printLog("$key: $displayValue");
+          printLog.i("$key: $displayValue");
           saveGlobalData(globalDATA);
         }
-        printLog("-----------Fin de un item-----------");
+        printLog.i("-----------Fin de un item-----------");
       }
     } else {
-      printLog('Dispositivo no encontrado');
+      printLog.i('Dispositivo no encontrado');
     }
   } catch (e) {
-    printLog('Error durante la consulta: $e');
+    printLog.i('Error durante la consulta: $e');
   }
 }
 //*-Lee todos los datos de un equipo-*\\
@@ -148,9 +148,9 @@ Future<void> putTokens(
       'tokens': AttributeValueUpdate(value: AttributeValue(ss: data)),
     });
 
-    printLog('Item escrito perfectamente $response');
+    printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog('Error inserting item: $e');
+    printLog.i('Error inserting item: $e');
   }
 }
 
@@ -168,7 +168,7 @@ Future<List<String>> getTokens(DynamoDB service, String pc, String sn) async {
       var item = response.item!;
       List<String> tokens = item['tokens']?.ss ?? [];
 
-      printLog('Se encontro el siguiente item: $tokens');
+      printLog.i('Se encontro el siguiente item: $tokens');
 
       if (tokens.contains('') && tokens.length == 1) {
         return [];
@@ -176,11 +176,11 @@ Future<List<String>> getTokens(DynamoDB service, String pc, String sn) async {
         return tokens;
       }
     } else {
-      printLog('Item no encontrado.');
+      printLog.i('Item no encontrado.');
       return [];
     }
   } catch (e) {
-    printLog('Error al obtener el item: $e');
+    printLog.i('Error al obtener el item: $e');
     return [];
   }
 }
@@ -197,9 +197,9 @@ Future<void> putOwner(
       'owner': AttributeValueUpdate(value: AttributeValue(s: data)),
     });
 
-    printLog('Item escrito perfectamente $response');
+    printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog('Error inserting item: $e');
+    printLog.i('Error inserting item: $e');
   }
 }
 //*-Guarda el mail del owner de un equipo en dynamo-*\\
@@ -218,9 +218,9 @@ Future<void> putSecondaryAdmins(
       'secondary_admin': AttributeValueUpdate(value: AttributeValue(ss: data)),
     });
 
-    printLog('Item escrito perfectamente $response');
+    printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog('Error inserting item: $e');
+    printLog.i('Error inserting item: $e');
   }
 }
 
@@ -239,7 +239,7 @@ Future<List<String>> getSecondaryAdmins(
       var item = response.item!;
       List<String> secAdm = item['secondary_admin']?.ss ?? [];
 
-      printLog('Se encontro el siguiente item: $secAdm');
+      printLog.i('Se encontro el siguiente item: $secAdm');
 
       if (secAdm.contains('') && secAdm.length == 1) {
         return [];
@@ -247,11 +247,11 @@ Future<List<String>> getSecondaryAdmins(
         return secAdm;
       }
     } else {
-      printLog('Item no encontrado.');
+      printLog.i('Item no encontrado.');
       return [];
     }
   } catch (e) {
-    printLog('Error al obtener el item: $e');
+    printLog.i('Error al obtener el item: $e');
     return [];
   }
 }
@@ -272,7 +272,7 @@ Future<List<DateTime>> getDates(DynamoDB service, String pc, String sn) async {
       List<DateTime> fechaExp = [];
       String? date = item['DateSecAdm']?.s;
       String? date2 = item['DateAT']?.s;
-      printLog('Fecha encontrada');
+      printLog.i('Fecha encontrada');
 
       if (date != null && date != '') {
         var parts = date.split('/');
@@ -302,11 +302,11 @@ Future<List<DateTime>> getDates(DynamoDB service, String pc, String sn) async {
 
       return fechaExp;
     } else {
-      printLog('Item no encontrado.');
+      printLog.i('Item no encontrado.');
       return [DateTime.now(), DateTime.now()];
     }
   } catch (e) {
-    printLog('Error al obtener las fechas $e');
+    printLog.i('Error al obtener las fechas $e');
     return [DateTime.now(), DateTime.now()];
   }
 }
@@ -323,9 +323,9 @@ Future<void> putDistanceOn(
       'distanceOn': AttributeValueUpdate(value: AttributeValue(n: data)),
     });
 
-    printLog('Item escrito perfectamente $response');
+    printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog('Error inserting item: $e');
+    printLog.i('Error inserting item: $e');
   }
 }
 
@@ -339,9 +339,9 @@ Future<void> putDistanceOff(
       'distanceOff': AttributeValueUpdate(value: AttributeValue(n: data)),
     });
 
-    printLog('Item escrito perfectamente $response');
+    printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog('Error inserting item: $e');
+    printLog.i('Error inserting item: $e');
   }
 }
 //*-Escribe la distancia de encendido y apagado de el control por distancia de un equipo-*\\
@@ -361,9 +361,9 @@ Future<void> saveATData(DynamoDB service, String pc, String sn, bool activate,
     });
 
     activatedAT = activate;
-    printLog('Inquilino escrito perfectamente $response');
+    printLog.i('Inquilino escrito perfectamente $response');
   } catch (e) {
-    printLog('Error inserting item: $e');
+    printLog.i('Error inserting item: $e');
   }
 }
 //*-Guarda la data del alquiler temporario (airbnb) de un equipo-*\\
@@ -378,9 +378,9 @@ Future<void> saveNC(DynamoDB service, String pc, String sn, bool data) async {
       'isNC': AttributeValueUpdate(value: AttributeValue(boolValue: data)),
     });
 
-    printLog('Item escrito perfectamente $response');
+    printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog('Error inserting item: $e');
+    printLog.i('Error inserting item: $e');
   }
 }
 //*-Guardar si un equipo es NA o NC-*\\
@@ -402,9 +402,9 @@ Future<void> putDevicesForAlexa(
         'devices': AttributeValueUpdate(value: AttributeValue(ss: data)),
       },
     );
-    printLog('Item actualizado correctamente: $response');
+    printLog.i('Item actualizado correctamente: $response');
   } catch (e) {
-    printLog('Error actualizando el ítem de Alexa: $e');
+    printLog.i('Error actualizando el ítem de Alexa: $e');
   }
 }
 
@@ -425,9 +425,9 @@ void putPreviusConnections(
             AttributeValueUpdate(value: AttributeValue(ss: data)),
       },
     );
-    printLog('Item actualizado correctamente: $response');
+    printLog.i('Item actualizado correctamente: $response');
   } catch (e) {
-    printLog('Error actualizando el ítem de Alexa: $e');
+    printLog.i('Error actualizando el ítem de Alexa: $e');
   }
 }
 
@@ -450,9 +450,9 @@ Future<void> putNicknames(
       ),
     });
 
-    printLog('Item escrito perfectamente $response');
+    printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog('Error guardando alexa item: $e');
+    printLog.i('Error guardando alexa item: $e');
   }
 }
 
@@ -469,9 +469,9 @@ Future<void> putRollerLength(
       'rollerSavedLength': AttributeValueUpdate(value: AttributeValue(s: data)),
     });
 
-    printLog('Item escrito perfectamente $response');
+    printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog('Error inserting item: $e');
+    printLog.i('Error inserting item: $e');
   }
 }
 
@@ -507,19 +507,19 @@ Future<void> getDevices(DynamoDB service, String email) async {
             'devices_tx/${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}');
       }
 
-      printLog('Se encontro el siguiente item: $equipos');
+      printLog.i('Se encontro el siguiente item: $equipos');
 
       alexaDevices = item['devices']?.ss ?? [];
       if (alexaDevices.contains('') && alexaDevices.length == 1) {
         alexaDevices = [];
       }
-      printLog('Equipos de asistentes por voz: $alexaDevices');
+      printLog.i('Equipos de asistentes por voz: $alexaDevices');
 
       Map<String, AttributeValue> mapa = item['nicknames']?.m ?? {};
       mapa.forEach((key, value) {
         nicknamesMap.addAll({key: value.s ?? ''});
       });
-      printLog('Nicknames encontrados: $nicknamesMap');
+      printLog.i('Nicknames encontrados: $nicknamesMap');
 
       await DeviceManager.init();
 
@@ -528,10 +528,10 @@ Future<void> getDevices(DynamoDB service, String email) async {
             DeviceManager.extractSerialNumber(device));
       }
     } else {
-      printLog('Item no encontrado. No está el mail en la database');
+      printLog.i('Item no encontrado. No está el mail en la database');
     }
   } catch (e) {
-    printLog('Error al obtener el item: $e');
+    printLog.i('Error al obtener el item: $e');
   }
 }
 
@@ -551,16 +551,16 @@ Future<void> getGroups(DynamoDB service, String email) async {
       };
 
       if (grupos.isNotEmpty) {
-        grupos.forEach((k, v) => printLog('$k: $v'));
+        grupos.forEach((k, v) => printLog.i('$k: $v'));
         groupsOfDevices = grupos;
       } else {
-        printLog('No se encontraron grupos.');
+        printLog.i('No se encontraron grupos.');
       }
     } else {
-      printLog('Item no encontrado. No está el mail en la database');
+      printLog.i('Item no encontrado. No está el mail en la database');
     }
   } catch (e) {
-    printLog('Error al obtener el item: $e');
+    printLog.i('Error al obtener el item: $e');
   }
 }
 //*-Leer las conexiones previas y los grupos-*\\\
@@ -582,9 +582,9 @@ void putGroupsOfDevices(
       ),
     });
 
-    printLog('Item escrito perfectamente $response');
+    printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog('Error guardando alexa item: $e');
+    printLog.i('Error guardando alexa item: $e');
   }
 }
 //*-Guardar los grupos de dispositivos-*\\
@@ -643,9 +643,9 @@ void putEventos(
         'events': AttributeValueUpdate(value: AttributeValue(l: attributeList)),
       },
     );
-    printLog('Eventos guardados correctamente');
+    printLog.i('Eventos guardados correctamente');
   } catch (e) {
-    printLog('Error al guardar eventos: $e');
+    printLog.i('Error al guardar eventos: $e');
   }
 }
 
@@ -696,7 +696,23 @@ Future<List<Map<String, dynamic>>> getEventos(
       return map;
     }).toList();
   } catch (e) {
-    printLog('Error al cargar eventos: $e');
+    printLog.i('Error al cargar eventos: $e');
     return [];
+  }
+}
+
+///Guarda la ubicación del equipo en la base de datos
+Future<void> saveLocation(DynamoDB service, String pc, String sn, String data) async {
+  try {
+    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+      'product_code': AttributeValue(s: pc),
+      'device_id': AttributeValue(s: sn),
+    }, attributeUpdates: {
+      'deviceLocation': AttributeValueUpdate(value: AttributeValue(s: data)),
+    });
+
+    printLog.i('Item escrito perfectamente $response');
+  } catch (e) {
+    printLog.i('Error inserting item: $e');
   }
 }

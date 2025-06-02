@@ -1,7 +1,9 @@
 import 'package:amplify_flutter/amplify_flutter.dart';
+import 'package:caldensmart/login/welcome.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../master.dart';
+import 'package:caldensmart/logger.dart';
 
 class PermissionHandler extends StatefulWidget {
   const PermissionHandler({super.key});
@@ -40,10 +42,10 @@ class PermissionHandlerState extends State<PermissionHandler> {
     }
     permissionStatus4 = await Permission.notification.status;
 
-    printLog('Ble: ${permissionStatus1.isGranted} /// $permissionStatus1');
-    printLog('Ble Scan: ${permissionStatus2.isGranted} /// $permissionStatus2');
-    printLog('Locate: ${permissionStatus3.isGranted} /// $permissionStatus3');
-    printLog('Notif: ${permissionStatus4.isGranted} /// $permissionStatus4');
+    printLog.i('Ble: ${permissionStatus1.isGranted} /// $permissionStatus1');
+    printLog.i('Ble Scan: ${permissionStatus2.isGranted} /// $permissionStatus2');
+    printLog.i('Locate: ${permissionStatus3.isGranted} /// $permissionStatus3');
+    printLog.i('Notif: ${permissionStatus4.isGranted} /// $permissionStatus4');
 
     if (permissionStatus1.isGranted &&
         permissionStatus2.isGranted &&
@@ -84,9 +86,15 @@ class PermissionHandlerState extends State<PermissionHandler> {
         }
       }
     } catch (e) {
-      printLog('Error verificando la autenticación: $e');
+      printLog.i('Error verificando la autenticación: $e');
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/welcome');
+        Navigator.of(context).pushReplacement(PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const WelcomePage(),
+          // sin animación de página: sólo Hero
+          transitionDuration: const Duration(milliseconds: 800),
+          reverseTransitionDuration: const Duration(milliseconds: 800),
+          transitionsBuilder: (_, __, ___, child) => child,
+        ));
       }
     }
   }
@@ -96,11 +104,17 @@ class PermissionHandlerState extends State<PermissionHandler> {
     return FutureBuilder<void>(
       builder: (ctx, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
+          return Scaffold(
             backgroundColor: Colors.black,
             body: Center(
-              child: CircularProgressIndicator(
-                color: Colors.white,
+              child: Hero(
+                tag: 'dragonLogo',
+                child: Image.asset(
+                  'assets/branch/dragon.png',
+                  width: MediaQuery.of(context).size.width * 0.25,
+                  height: MediaQuery.of(context).size.height * 0.25,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           );

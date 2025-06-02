@@ -6,6 +6,7 @@ import 'package:hugeicons/hugeicons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:caldensmart/aws/mqtt/mqtt.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
+import 'package:caldensmart/logger.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -133,7 +134,7 @@ class ProfilePageState extends State<ProfilePage> {
                           const Divider(color: Colors.transparent),
                           TextButton(
                             onPressed: () {
-                              printLog('Hora: ${DateTime.now()}');
+                              printLog.i('Hora: ${DateTime.now()}');
                               showAlertDialog(
                                 context,
                                 false,
@@ -323,7 +324,7 @@ class ProfilePageState extends State<ProfilePage> {
                                   selectedSoundDomotica = null;
                                 } else {
                                   selectedSoundDomotica = value;
-                                  printLog('Elegí alarma${value! + 1}');
+                                  printLog.i('Elegí alarma${value! + 1}');
                                   soundOfNotification['020010_IOT'] =
                                       'alarm${value + 1}';
                                   saveSounds(soundOfNotification);
@@ -402,7 +403,7 @@ class ProfilePageState extends State<ProfilePage> {
                                   selectedSoundDetector = null;
                                 } else {
                                   selectedSoundDetector = value;
-                                  printLog('Elegí alarma${value! + 1}');
+                                  printLog.i('Elegí alarma${value! + 1}');
                                   soundOfNotification['015773_IOT'] =
                                       'alarm${value + 1}';
                                   saveSounds(soundOfNotification);

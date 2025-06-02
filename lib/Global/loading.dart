@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/dynamo/dynamo_certificates.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
 import 'stored_data.dart';
+import 'package:caldensmart/logger.dart';
 
 class LoadingPage extends StatefulWidget {
   const LoadingPage({super.key});
@@ -23,7 +25,7 @@ class LoadState extends State<LoadingPage> {
   @override
   void initState() {
     super.initState();
-    printLog('HOSTIAAAAAAAAAAAAAAAAAAAAAAAA');
+    printLog.i('HOSTIAAAAAAAAAAAAAAAAAAAAAAAA');
     _dotTimer =
         Timer.periodic(const Duration(milliseconds: 800), (Timer timer) {
       setState(
@@ -77,11 +79,11 @@ class LoadState extends State<LoadingPage> {
 
   Future<bool> precharge() async {
     try {
-      printLog('Estoy precargando');
+      printLog.i('Estoy precargando');
       android ? await myDevice.device.requestMtu(255) : null;
       toolsValues = await myDevice.toolsUuid.read();
-      printLog('Valores tools: $toolsValues');
-      printLog('Valores info: $infoValues');
+      printLog.i('Valores tools: $toolsValues');
+      printLog.i('Valores info: $infoValues');
       if (!previusConnections.contains(deviceName)) {
         previusConnections.add(deviceName);
         putPreviusConnections(service, currentUserEmail, previusConnections);
@@ -95,6 +97,11 @@ class LoadState extends State<LoadingPage> {
       setupToken(DeviceManager.getProductCode(deviceName),
           DeviceManager.extractSerialNumber(deviceName), deviceName);
 
+      String ubi = (await Geolocator.getCurrentPosition()).toString();
+
+      await saveLocation(service, DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName), ubi);
+
       await queryItems(service, DeviceManager.getProductCode(deviceName),
           DeviceManager.extractSerialNumber(deviceName));
 
@@ -104,45 +111,54 @@ class LoadState extends State<LoadingPage> {
       final regex = RegExp(r'\((\d+)\)');
       final match = regex.firstMatch(parts3[2]);
       int users = int.parse(match!.group(1).toString());
-      printLog('Hay $users conectados');
+      printLog.i('Hay $users conectados');
       userConnected = users > 1;
 
       quickAccesActivated = quickAccess.contains(deviceName);
 
-      lastSV = await getLastSoftVersion(pc, hardwareVersion);
+      final fileName = await Versioner.fetchLatestFirmwareFile(
+          DeviceManager.getProductCode(deviceName), hardwareVersion);
+
+      lastSV = Versioner.extractSV(fileName, hardwareVersion);
+
+      printLog.i('Ultimo firmware: $lastSV', color: 'Naranja');
 
       if (lastSV != null) {
-        shouldUpdateDevice = lastSV != softwareVersion;
+        shouldUpdateDevice =
+            (lastSV != softwareVersion) || softwareVersion.contains('_F');
       }
 
       switch (pc) {
         case '022000_IOT' || '027000_IOT' || '041220_IOT':
           varsValues = await myDevice.varsUuid.read();
           var parts2 = utf8.decode(varsValues).split(':');
-          printLog('Valores Vars: $parts2');
+          printLog.i('Valores Vars: $parts2');
           var list = await loadDevicesForDistanceControl();
           canControlDistance =
               list.contains(deviceName) ? true : parts2[0] == '0';
-          printLog(
+          printLog.i(
               'Puede utilizar el control por distancia: $canControlDistance');
           turnOn = parts2[2] == '1';
           trueStatus = parts2[4] == '1';
           nightMode = parts2[5] == '1';
-          printLog('Estado: $turnOn');
+          printLog.i('Estado: $turnOn');
           // if (parts2.length >= 9) {
           //   manualControl = factoryMode ? parts2[9] == '1' : parts2[8] == '1';
           // }
+          if (parts2.length > 10) {
+            wifiUnstable = parts2[10] == '1';
+          }
           lastUser = users;
           owner = globalDATA[
                       '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                   'owner'] ??
               '';
-          printLog('Owner actual: $owner');
+          printLog.i('Owner actual: $owner');
           adminDevices = await getSecondaryAdmins(
               service,
               DeviceManager.getProductCode(deviceName),
               DeviceManager.extractSerialNumber(deviceName));
-          printLog('Administradores: $adminDevices');
+          printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
             if (owner == currentUserEmail) {
@@ -203,7 +219,7 @@ class LoadState extends State<LoadingPage> {
           break;
         case '015773_IOT':
           workValues = await myDevice.workUuid.read();
-          printLog('Valores work: $workValues');
+          printLog.i('Valores work: $workValues');
 
           ppmCO = workValues[5] + (workValues[6] << 8);
           ppmCH4 = workValues[7] + (workValues[8] << 8);
@@ -232,26 +248,26 @@ class LoadState extends State<LoadingPage> {
           break;
         case '020010_IOT':
           ioValues = await myDevice.ioUuid.read();
-          printLog('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
+          printLog.i('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
           varsValues = await myDevice.varsUuid.read();
-          printLog('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
+          printLog.i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
           var parts = utf8.decode(varsValues).split(':');
           var list = await loadDevicesForDistanceControl();
           canControlDistance =
               list.contains(deviceName) ? true : parts[0] == '0';
-          printLog(
+          printLog.i(
               'Puede utilizar el control por distancia: $canControlDistance');
 
           owner = globalDATA[
                       '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                   'owner'] ??
               '';
-          printLog('Owner actual: $owner');
+          printLog.i('Owner actual: $owner');
           adminDevices = await getSecondaryAdmins(
               service,
               DeviceManager.getProductCode(deviceName),
               DeviceManager.extractSerialNumber(deviceName));
-          printLog('Administradores: $adminDevices');
+          printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
             if (owner == currentUserEmail) {
@@ -299,26 +315,26 @@ class LoadState extends State<LoadingPage> {
           break;
         case '020020_IOT':
           ioValues = await myDevice.ioUuid.read();
-          printLog('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
+          printLog.i('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
           varsValues = await myDevice.varsUuid.read();
-          printLog('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
+          printLog.i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
           var parts = utf8.decode(varsValues).split(':');
           var list = await loadDevicesForDistanceControl();
           canControlDistance =
               list.contains(deviceName) ? true : parts[0] == '0';
-          printLog(
+          printLog.i(
               'Puede utilizar el control por distancia: $canControlDistance');
 
           owner = globalDATA[
                       '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                   'owner'] ??
               '';
-          printLog('Owner actual: $owner');
+          printLog.i('Owner actual: $owner');
           adminDevices = await getSecondaryAdmins(
               service,
               DeviceManager.getProductCode(deviceName),
               DeviceManager.extractSerialNumber(deviceName));
-          printLog('Administradores: $adminDevices');
+          printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
             if (owner == currentUserEmail) {
@@ -367,12 +383,14 @@ class LoadState extends State<LoadingPage> {
         case '027313_IOT':
           if (Versioner.isPosterior(hardwareVersion, '241220A')) {
             ioValues = await myDevice.ioUuid.read();
-            printLog('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
+            printLog.i('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
             varsValues = await myDevice.varsUuid.read();
-            printLog('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
+            printLog
+                .i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
           } else {
             varsValues = await myDevice.varsUuid.read();
-            printLog('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
+            printLog
+                .i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
             var parts2 = utf8.decode(varsValues).split(':');
             turnOn = parts2[1] == '1';
           }
@@ -381,7 +399,7 @@ class LoadState extends State<LoadingPage> {
           var list = await loadDevicesForDistanceControl();
           canControlDistance =
               list.contains(deviceName) ? true : parts[0] == '0';
-          printLog(
+          printLog.i(
               'Puede utilizar el control por distancia: $canControlDistance');
 
           if (canControlDistance) {
@@ -405,12 +423,12 @@ class LoadState extends State<LoadingPage> {
                       '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                   'owner'] ??
               '';
-          printLog('Owner actual: $owner');
+          printLog.i('Owner actual: $owner');
           adminDevices = await getSecondaryAdmins(
               service,
               DeviceManager.getProductCode(deviceName),
               DeviceManager.extractSerialNumber(deviceName));
-          printLog('Administradores: $adminDevices');
+          printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
             if (owner == currentUserEmail) {
@@ -447,23 +465,23 @@ class LoadState extends State<LoadingPage> {
           break;
         case '024011_IOT':
           varsValues = await myDevice.varsUuid.read();
-          printLog('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
+          printLog.i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
           var parts = utf8.decode(varsValues).split(':');
           var list = await loadDevicesForDistanceControl();
           canControlDistance =
               list.contains(deviceName) ? true : parts[0] == '0';
-          printLog(
+          printLog.i(
               'Puede utilizar el control por distancia: $canControlDistance');
           owner = globalDATA[
                       '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                   'owner'] ??
               '';
-          printLog('Owner actual: $owner');
+          printLog.i('Owner actual: $owner');
           adminDevices = await getSecondaryAdmins(
               service,
               DeviceManager.getProductCode(deviceName),
               DeviceManager.extractSerialNumber(deviceName));
-          printLog('Administradores: $adminDevices');
+          printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
             if (owner == currentUserEmail) {
@@ -506,26 +524,26 @@ class LoadState extends State<LoadingPage> {
         case '050217_IOT' || '028000_IOT':
           varsValues = await myDevice.varsUuid.read();
           var parts2 = utf8.decode(varsValues).split(':');
-          printLog('Valores Vars: $parts2');
+          printLog.i('Valores Vars: $parts2');
           var list = await loadDevicesForDistanceControl();
           canControlDistance =
               list.contains(deviceName) ? true : parts2[0] == '0';
-          printLog(
+          printLog.i(
               'Puede utilizar el control por distancia: $canControlDistance');
           turnOn = parts2[2] == '1';
           trueStatus = parts2[4] == '1';
-          printLog('Estado: $turnOn');
+          printLog.i('Estado: $turnOn');
           lastUser = users;
           owner = globalDATA[
                       '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
                   'owner'] ??
               '';
-          printLog('Owner actual: $owner');
+          printLog.i('Owner actual: $owner');
           adminDevices = await getSecondaryAdmins(
               service,
               DeviceManager.getProductCode(deviceName),
               DeviceManager.extractSerialNumber(deviceName));
-          printLog('Administradores: $adminDevices');
+          printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
             if (owner == currentUserEmail) {
@@ -588,7 +606,7 @@ class LoadState extends State<LoadingPage> {
 
       return Future.value(true);
     } catch (e, stackTrace) {
-      printLog('Error en la precarga $e $stackTrace');
+      printLog.i('Error en la precarga $e $stackTrace');
       showToast('Error en la precarga');
       // handleManualError('$e', '$stackTrace');
       return Future.value(false);
