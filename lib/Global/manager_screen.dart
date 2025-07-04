@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../aws/dynamo/dynamo.dart';
-import '../aws/dynamo/dynamo_certificates.dart';
 import '../master.dart';
 import 'stored_data.dart';
 import 'package:caldensmart/logger.dart';
@@ -43,7 +42,7 @@ class ManagerScreenState extends State<ManagerScreen> {
       List<String> updatedAdmins = List.from(adminDevices)..add(email);
 
       await putSecondaryAdmins(
-          service,
+          
           DeviceManager.getProductCode(deviceName),
           DeviceManager.extractSerialNumber(deviceName),
           updatedAdmins);
@@ -65,7 +64,7 @@ class ManagerScreenState extends State<ManagerScreen> {
       List<String> updatedAdmins = List.from(adminDevices)..remove(email);
 
       await putSecondaryAdmins(
-          service,
+          
           DeviceManager.getProductCode(deviceName),
           DeviceManager.extractSerialNumber(deviceName),
           updatedAdmins);
@@ -160,7 +159,7 @@ class ManagerScreenState extends State<ManagerScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              key: KeyManager.managerScreen.adminKey,
+              key: keys['managerScreen:titulo']!,
               'Gestión del equipo',
               style: GoogleFonts.poppins(
                 fontSize: 28,
@@ -173,7 +172,7 @@ class ManagerScreenState extends State<ManagerScreen> {
             //! Opción - Reclamar propiedad del equipo o dejar de ser propietario
             if (!tenant && (owner == currentUserEmail || owner == '')) ...{
               InkWell(
-                key: KeyManager.managerScreen.claimKey,
+                key: keys['managerScreen:reclamar']!,
                 onTap: () async {
                   if (owner == currentUserEmail) {
                     showAlertDialog(
@@ -197,7 +196,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                           onPressed: () {
                             try {
                               putOwner(
-                                service,
+                                
                                 DeviceManager.getProductCode(deviceName),
                                 DeviceManager.extractSerialNumber(deviceName),
                                 '',
@@ -205,7 +204,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                               Navigator.of(context).pop();
 
                               saveATData(
-                                service,
+                                
                                 DeviceManager.getProductCode(deviceName),
                                 DeviceManager.extractSerialNumber(deviceName),
                                 false,
@@ -229,7 +228,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                   } else if (owner == '') {
                     try {
                       putOwner(
-                        service,
+                        
                         DeviceManager.getProductCode(deviceName),
                         DeviceManager.extractSerialNumber(deviceName),
                         currentUserEmail,
@@ -292,7 +291,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                           if (owner == currentUserEmail) ...[
                             //! Opción 2 - Añadir administradores secundarios
                             InkWell(
-                              key: KeyManager.managerScreen.agreeAdminKey,
+                              key: keys['managerScreen:agregarAdmin']!,
                               onTap: () {
                                 setState(() {
                                   showSecondaryAdminFields =
@@ -484,7 +483,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                             const SizedBox(height: 10),
                             //! Opción 3 - Ver administradores secundarios
                             InkWell(
-                              key: KeyManager.managerScreen.viewAdminKey,
+                              key: keys['managerScreen:verAdmin']!,
                               onTap: () {
                                 setState(() {
                                   showSecondaryAdminList =
@@ -594,7 +593,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                             const SizedBox(height: 10),
                             //! Opción 4 - Alquiler temporario
                             InkWell(
-                              key: KeyManager.managerScreen.habitKey,
+                              key: keys['managerScreen:alquiler']!,
                               onTap: () {
                                 if (activatedAT) {
                                   setState(() {
@@ -816,7 +815,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                             onPressed:
                                                                 () async {
                                                               await saveATData(
-                                                                service,
+                                                                
                                                                 DeviceManager
                                                                     .getProductCode(
                                                                         deviceName),
@@ -916,7 +915,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                         if (tenantController
                                                             .text.isNotEmpty) {
                                                           saveATData(
-                                                            service,
+                                                            
                                                             DeviceManager
                                                                 .getProductCode(
                                                                     deviceName),
@@ -1027,7 +1026,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                 DeviceManager.getProductCode(deviceName) != '027131_IOT' &&
                 DeviceManager.getProductCode(deviceName) != '024011_IOT') ...[
               SizedBox(
-                key: KeyManager.managerScreen.fastBotonKey,
+                key: keys['managerScreen:accesoRapido']!,
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
@@ -1106,7 +1105,7 @@ class ManagerScreenState extends State<ManagerScreen> {
             //! activar notificación de desconexión
             // if (owner == '' || owner == currentUserEmail || secondaryAdmin) ...{
             //   ElevatedButton(
-            //     key: KeyManager.managerScreen.discNotificationKey,
+            //     key: keys['managerScreen:desconexionNotificacion']!,
             //     onPressed: () async {
             //       if (discNotfActivated) {
             //         showAlertDialog(
@@ -1297,7 +1296,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                 hasLED(DeviceManager.getProductCode(deviceName),
                     hardwareVersion)) ...[
               Container(
-                key: KeyManager.managerScreen.ledKey,
+                key: keys['managerScreen:led']!,
                 width: MediaQuery.of(context).size.width * 1.5,
                 padding:
                     const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
@@ -1358,7 +1357,7 @@ class ManagerScreenState extends State<ManagerScreen> {
             ],
 
             SizedBox(
-              key: KeyManager.managerScreen.imageKey,
+              key: keys['managerScreen:imagen']!,
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {

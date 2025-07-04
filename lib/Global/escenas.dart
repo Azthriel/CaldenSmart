@@ -2,7 +2,6 @@
 
 import 'dart:convert';
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
-import 'package:caldensmart/aws/dynamo/dynamo_certificates.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -1358,7 +1357,7 @@ class EscenasPageState extends State<EscenasPage> {
                             'deviceGroup': List<String>.from(deviceGroup),
                           });
                           putEventos(
-                            service,
+                            
                             currentUserEmail,
                             eventosCreados,
                           );
@@ -1378,7 +1377,7 @@ class EscenasPageState extends State<EscenasPage> {
 
                           printLog.i(groupsOfDevices);
                           putGroupsOfDevices(
-                            service,
+                            
                             currentUserEmail,
                             groupsOfDevices,
                           );
@@ -2556,11 +2555,11 @@ class EscenasPageState extends State<EscenasPage> {
                                   onDelete: () {
                                     setState(() {
                                       eventosCreados.removeAt(index);
-                                      putEventos(service, currentUserEmail,
+                                      putEventos( currentUserEmail,
                                           eventosCreados);
                                       if (evento['evento'] == 'grupo') {
                                         groupsOfDevices.remove(evento['title']);
-                                        putGroupsOfDevices(service,
+                                        putGroupsOfDevices(
                                             currentUserEmail, groupsOfDevices);
                                         todosLosDispositivos.removeWhere(
                                             (entry) =>

@@ -3,24 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hugeicons/hugeicons.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../Global/manager_screen.dart';
 import '../aws/dynamo/dynamo.dart';
-import '../aws/dynamo/dynamo_certificates.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
 import '../Global/stored_data.dart';
 import 'package:caldensmart/logger.dart';
 
-class DomoticaPage extends StatefulWidget {
+class DomoticaPage extends ConsumerStatefulWidget {
   const DomoticaPage({super.key});
   @override
   DomoticaPageState createState() => DomoticaPageState();
 }
 
-class DomoticaPageState extends State<DomoticaPage> {
+class DomoticaPageState extends ConsumerState<DomoticaPage> {
   var parts = utf8.decode(ioValues).split('/');
   bool isChangeModeVisible = false;
   bool showOptions = false;
@@ -52,12 +50,9 @@ class DomoticaPageState extends State<DomoticaPage> {
   void initItems() {
     items.addAll({
       TutorialItem(
-        globalKey: KeyManager.domotica.estadoKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
-        radius: 0,
+        globalKey: keys['domotica:estado']!,
         pageIndex: 0,
+        fullBackground: true,
         contentPosition: ContentPosition.below,
         child: const TutorialItemContent(
           title: 'Entradas y Salidas',
@@ -66,8 +61,7 @@ class DomoticaPageState extends State<DomoticaPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.domotica.titleKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['domotica:titulo']!,
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(10.0),
         contentPosition: ContentPosition.below,
@@ -79,11 +73,9 @@ class DomoticaPageState extends State<DomoticaPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.domotica.wifiKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['domotica:wifi']!,
         shapeFocus: ShapeFocus.oval,
-        borderRadius: const Radius.circular(15.0),
-        radius: 25,
+        borderRadius: const Radius.circular(30.0),
         contentPosition: ContentPosition.below,
         pageIndex: 0,
         child: const TutorialItemContent(
@@ -93,12 +85,24 @@ class DomoticaPageState extends State<DomoticaPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.domotica.pinModeKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['domotica:servidor']!,
         shapeFocus: ShapeFocus.oval,
-        borderRadius: const Radius.circular(0),
-        radius: 0,
+        borderRadius: const Radius.circular(15.0),
         contentPosition: ContentPosition.below,
+        pageIndex: 0,
+        focusMargin: 15,
+        child: const TutorialItemContent(
+          title: 'Conexión al servidor',
+          content:
+              'Podrás observar el estado de la conexión del dispositivo con el servidor',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['domotica:modoPines']!,
+        shapeFocus: ShapeFocus.roundedSquare,
+        borderRadius: const Radius.circular(30),
+        contentPosition: ContentPosition.below,
+        focusMargin: 15,
         pageIndex: 1,
         child: !tenant
             ? const TutorialItemContent(
@@ -113,12 +117,11 @@ class DomoticaPageState extends State<DomoticaPage> {
               ),
       ),
       TutorialItem(
-        globalKey: KeyManager.managerScreen.adminKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
+        globalKey: keys['managerScreen:titulo']!,
+        borderRadius: const Radius.circular(15),
+        shapeFocus: ShapeFocus.roundedSquare,
+        focusMargin: 15,
         pageIndex: 2,
-        radius: isPinMode ? 2 : 1,
         contentPosition: ContentPosition.below,
         child: const TutorialItemContent(
           title: 'Gestión',
@@ -127,8 +130,7 @@ class DomoticaPageState extends State<DomoticaPage> {
       ),
       if (!tenant) ...{
         TutorialItem(
-          globalKey: KeyManager.managerScreen.claimKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:reclamar']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 2,
@@ -141,8 +143,7 @@ class DomoticaPageState extends State<DomoticaPage> {
       },
       if (owner == currentUserEmail) ...{
         TutorialItem(
-          globalKey: KeyManager.managerScreen.agreeAdminKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:agregarAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 2,
@@ -153,8 +154,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           ),
         ),
         TutorialItem(
-          globalKey: KeyManager.managerScreen.viewAdminKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:verAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 2,
@@ -165,8 +165,7 @@ class DomoticaPageState extends State<DomoticaPage> {
           ),
         ),
         TutorialItem(
-          globalKey: KeyManager.managerScreen.habitKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:alquiler']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 2,
@@ -179,8 +178,7 @@ class DomoticaPageState extends State<DomoticaPage> {
       },
       if (!tenant) ...{
         TutorialItem(
-          globalKey: KeyManager.managerScreen.fastBotonKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:accesoRapido']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 2,
@@ -190,8 +188,8 @@ class DomoticaPageState extends State<DomoticaPage> {
           ),
         ),
         // TutorialItem(
-        //   globalKey: KeyManager.managerScreen.discNotificationKey,
-        //   color: Colors.black.withValues(alpha: 0.6),
+        //   globalKey: keys['managerScreen:desconexionNotificacion']!,
+        //
         //   borderRadius: const Radius.circular(20),
         //   shapeFocus: ShapeFocus.roundedSquare,
         //   pageIndex: isPinMode ? 2 : 1,
@@ -202,8 +200,7 @@ class DomoticaPageState extends State<DomoticaPage> {
         // ),
       },
       TutorialItem(
-        globalKey: KeyManager.managerScreen.imageKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['managerScreen:imagen']!,
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
         pageIndex: 2,
@@ -214,6 +211,8 @@ class DomoticaPageState extends State<DomoticaPage> {
       ),
     });
   }
+
+  ///*- Elementos para tutoriales -*\\\
 
   @override
   void initState() {
@@ -360,8 +359,7 @@ class DomoticaPageState extends State<DomoticaPage> {
     printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
-    WifiNotifier wifiNotifier =
-        Provider.of<WifiNotifier>(context, listen: false);
+    final wifiNotifier = ref.read(wifiProvider.notifier);
 
     if (parts[0] == 'WCS_CONNECTED') {
       atemp = false;
@@ -509,7 +507,7 @@ class DomoticaPageState extends State<DomoticaPage> {
         String dv = '${deviceName}_$i';
         if (!alexaDevices.contains(dv)) {
           alexaDevices.add(dv);
-          putDevicesForAlexa(service, currentUserEmail, alexaDevices);
+          putDevicesForAlexa(currentUserEmail, alexaDevices);
         }
       }
     }
@@ -757,11 +755,8 @@ class DomoticaPageState extends State<DomoticaPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..add(email);
 
-      await putSecondaryAdmins(
-          service,
-          DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName),
-          updatedAdmins);
+      await putSecondaryAdmins(DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
 
       setState(() {
         adminDevices = updatedAdmins;
@@ -779,11 +774,8 @@ class DomoticaPageState extends State<DomoticaPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..remove(email);
 
-      await putSecondaryAdmins(
-          service,
-          DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName),
-          updatedAdmins);
+      await putSecondaryAdmins(DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
 
       setState(() {
         adminDevices.remove(email);
@@ -863,8 +855,7 @@ class DomoticaPageState extends State<DomoticaPage> {
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
     double bottomBarHeight = kBottomNavigationBarHeight;
-    WifiNotifier wifiNotifier =
-        Provider.of<WifiNotifier>(context, listen: false);
+    final wifiState = ref.watch(wifiProvider);
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
 
@@ -917,175 +908,176 @@ class DomoticaPageState extends State<DomoticaPage> {
                       Row(
                         children: [
                           const SizedBox(width: 6),
-                          GestureDetector(
-                            onTap: () async {
-                              TextEditingController nicknameController =
-                                  TextEditingController(
-                                text: nicknamesMap['${deviceName}_$index'] ??
-                                    '${tipo[index]} $index',
-                              );
-                              showAlertDialog(
-                                context,
-                                false,
-                                Text(
-                                  'Editar Nombre',
-                                  style: GoogleFonts.poppins(color: color0),
-                                ),
-                                TextField(
-                                  controller: nicknameController,
-                                  style: const TextStyle(color: color0),
-                                  cursorColor: color0,
-                                  decoration: InputDecoration(
-                                    hintText:
-                                        "Nuevo nombre para ${tipo[index]} $index",
-                                    hintStyle: TextStyle(
-                                      color: color0.withValues(alpha: 0.6),
-                                    ),
-                                    enabledBorder: UnderlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: color0.withValues(alpha: 0.5),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () async {
+                                TextEditingController nicknameController =
+                                    TextEditingController(
+                                  text: nicknamesMap['${deviceName}_$index'] ??
+                                      '${tipo[index]} $index',
+                                );
+                                showAlertDialog(
+                                  context,
+                                  false,
+                                  Text(
+                                    'Editar Nombre',
+                                    style: GoogleFonts.poppins(color: color0),
+                                  ),
+                                  TextField(
+                                    controller: nicknameController,
+                                    style: const TextStyle(color: color0),
+                                    cursorColor: color0,
+                                    decoration: InputDecoration(
+                                      hintText:
+                                          "Nuevo nombre para ${tipo[index]} $index",
+                                      hintStyle: TextStyle(
+                                        color: color0.withValues(alpha: 0.6),
+                                      ),
+                                      enabledBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: color0.withValues(alpha: 0.5),
+                                        ),
+                                      ),
+                                      focusedBorder: const UnderlineInputBorder(
+                                        borderSide: BorderSide(color: color0),
                                       ),
                                     ),
-                                    focusedBorder: const UnderlineInputBorder(
-                                      borderSide: BorderSide(color: color0),
+                                  ),
+                                  <Widget>[
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: const Text(
+                                        'Cancelar',
+                                        style: TextStyle(color: color0),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                                <Widget>[
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                    child: const Text(
-                                      'Cancelar',
-                                      style: TextStyle(color: color0),
+                                    TextButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          String newName =
+                                              nicknameController.text;
+                                          nicknamesMap['${deviceName}_$index'] =
+                                              newName;
+                                          putNicknames(
+                                              currentUserEmail, nicknamesMap);
+                                        });
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: const Text(
+                                        'Guardar',
+                                        style: TextStyle(color: color0),
+                                      ),
                                     ),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        String newName =
-                                            nicknameController.text;
-                                        nicknamesMap['${deviceName}_$index'] =
-                                            newName;
-                                        putNicknames(service, currentUserEmail,
-                                            nicknamesMap);
-                                      });
-                                      Navigator.of(context).pop();
-                                    },
-                                    child: const Text(
-                                      'Guardar',
-                                      style: TextStyle(color: color0),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  width: 160,
-                                  child: Text(
-                                    nicknamesMap['${deviceName}_$index'] ??
-                                        '${tipo[index]} $index',
-                                    style: GoogleFonts.poppins(
-                                      color: color0,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.edit,
-                                    size: 22,
-                                    color: color0,
-                                  ),
-                                  onPressed: () {
-                                    TextEditingController nicknameController =
-                                        TextEditingController(
-                                      text: nicknamesMap[
-                                              '${deviceName}_$index'] ??
+                                  ],
+                                );
+                              },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      nicknamesMap['${deviceName}_$index'] ??
                                           '${tipo[index]} $index',
-                                    );
-                                    showAlertDialog(
-                                      context,
-                                      false,
-                                      Text(
-                                        'Editar Nombre',
-                                        style:
-                                            GoogleFonts.poppins(color: color0),
+                                      style: GoogleFonts.poppins(
+                                        color: color0,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                      TextField(
-                                        controller: nicknameController,
-                                        style: const TextStyle(color: color0),
-                                        cursorColor: color0,
-                                        decoration: InputDecoration(
-                                          hintText:
-                                              "Nuevo nombre para ${tipo[index]} $index",
-                                          hintStyle: TextStyle(
-                                            color:
-                                                color0.withValues(alpha: 0.6),
-                                          ),
-                                          enabledBorder: UnderlineInputBorder(
-                                            borderSide: BorderSide(
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.edit,
+                                      size: 22,
+                                      color: color0,
+                                    ),
+                                    onPressed: () {
+                                      TextEditingController nicknameController =
+                                          TextEditingController(
+                                        text: nicknamesMap[
+                                                '${deviceName}_$index'] ??
+                                            '${tipo[index]} $index',
+                                      );
+                                      showAlertDialog(
+                                        context,
+                                        false,
+                                        Text(
+                                          'Editar Nombre',
+                                          style: GoogleFonts.poppins(
+                                              color: color0),
+                                        ),
+                                        TextField(
+                                          controller: nicknameController,
+                                          style: const TextStyle(color: color0),
+                                          cursorColor: color0,
+                                          decoration: InputDecoration(
+                                            hintText:
+                                                "Nuevo nombre para ${tipo[index]} $index",
+                                            hintStyle: TextStyle(
                                               color:
-                                                  color0.withValues(alpha: 0.5),
+                                                  color0.withValues(alpha: 0.6),
+                                            ),
+                                            enabledBorder: UnderlineInputBorder(
+                                              borderSide: BorderSide(
+                                                color: color0.withValues(
+                                                    alpha: 0.5),
+                                              ),
+                                            ),
+                                            focusedBorder:
+                                                const UnderlineInputBorder(
+                                              borderSide:
+                                                  BorderSide(color: color0),
                                             ),
                                           ),
-                                          focusedBorder:
-                                              const UnderlineInputBorder(
-                                            borderSide:
-                                                BorderSide(color: color0),
-                                          ),
                                         ),
-                                      ),
-                                      <Widget>[
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                          child: const Text(
-                                            'Cancelar',
-                                            style: TextStyle(color: color0),
+                                        <Widget>[
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                            child: const Text(
+                                              'Cancelar',
+                                              style: TextStyle(color: color0),
+                                            ),
                                           ),
-                                        ),
-                                        TextButton(
-                                          onPressed: () {
-                                            setState(() {
-                                              String newName =
-                                                  nicknameController.text;
-                                              nicknamesMap[
-                                                      '${deviceName}_$index'] =
-                                                  newName;
-                                              putNicknames(
-                                                  service,
-                                                  currentUserEmail,
-                                                  nicknamesMap);
-                                            });
-                                            Navigator.of(context).pop();
-                                          },
-                                          child: const Text(
-                                            'Guardar',
-                                            style: TextStyle(color: color0),
+                                          TextButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                String newName =
+                                                    nicknameController.text;
+                                                nicknamesMap[
+                                                        '${deviceName}_$index'] =
+                                                    newName;
+                                                putNicknames(currentUserEmail,
+                                                    nicknamesMap);
+                                              });
+                                              Navigator.of(context).pop();
+                                            },
+                                            child: const Text(
+                                              'Guardar',
+                                              style: TextStyle(color: color0),
+                                            ),
                                           ),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ),
-                              ],
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                          const Spacer(),
-                          Text(
-                            'Tipo: ${tipo[index]}',
-                            style: const TextStyle(
-                              color: color0,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                          Flexible(
+                            child: Text(
+                              'Tipo: ${tipo[index]}',
+                              style: const TextStyle(
+                                color: color0,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -1418,7 +1410,7 @@ class DomoticaPageState extends State<DomoticaPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  key: KeyManager.domotica.pinModeKey,
+                  key: keys['domotica:modoPines']!,
                   'Cambio de Modo de Pines',
                   style: GoogleFonts.poppins(
                     fontSize: 28,
@@ -1760,11 +1752,14 @@ class DomoticaPageState extends State<DomoticaPage> {
                 children: [
                   Image.asset('assets/branch/dragon.gif',
                       width: 100, height: 100),
-                  Container(
-                    margin: const EdgeInsets.only(left: 15),
-                    child: const Text(
-                      "Desconectando...",
-                      style: TextStyle(color: Color(0xFFFFFFFF)),
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 15),
+                      child: const Text(
+                        "Desconectando...",
+                        style: TextStyle(color: Color(0xFFFFFFFF)),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ],
@@ -1832,7 +1827,7 @@ class DomoticaPageState extends State<DomoticaPage> {
                         String newNickname = nicknameController.text;
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
-                        putNicknames(service, currentUserEmail, nicknamesMap);
+                        putNicknames(currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },
@@ -1843,7 +1838,7 @@ class DomoticaPageState extends State<DomoticaPage> {
             child: Row(
               children: [
                 Expanded(
-                  key: KeyManager.domotica.titleKey,
+                  key: keys['domotica:titulo']!,
                   child: Text(
                     nickname,
                     overflow: TextOverflow.ellipsis,
@@ -1860,7 +1855,7 @@ class DomoticaPageState extends State<DomoticaPage> {
             ),
           ),
           leading: IconButton(
-            key: KeyManager.domotica.estadoKey,
+            key: keys['domotica:estado']!,
             icon: const Icon(Icons.arrow_back_ios_new),
             color: color0,
             onPressed: () {
@@ -1876,11 +1871,14 @@ class DomoticaPageState extends State<DomoticaPage> {
                       children: [
                         Image.asset('assets/branch/dragon.gif',
                             width: 100, height: 100),
-                        Container(
-                          margin: const EdgeInsets.only(left: 15),
-                          child: const Text(
-                            "Desconectando...",
-                            style: TextStyle(color: Color(0xFFFFFFFF)),
+                        Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.only(left: 15),
+                            child: const Text(
+                              "Desconectando...",
+                              style: TextStyle(color: Color(0xFFFFFFFF)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
                       ],
@@ -1900,15 +1898,17 @@ class DomoticaPageState extends State<DomoticaPage> {
           ),
           actions: [
             Icon(
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                      'cstate']
+              key: keys['domotica:servidor']!,
+              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                          ?['cstate'] ??
+                      false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,
             ),
             IconButton(
-              key: KeyManager.domotica.wifiKey,
-              icon: Icon(wifiNotifier.wifiIcon, color: color0),
+              key: keys['domotica:wifi']!,
+              icon: Icon(wifiState.wifiIcon, color: color0),
               onPressed: () {
                 if (_isTutorialActive) return;
 

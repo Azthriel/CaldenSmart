@@ -5,7 +5,7 @@ import '/aws/mqtt/mqtt_certificates.dart';
 import '../../Global/stored_data.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:caldensmart/logger.dart';
 
 MqttServerClient? mqttAWSFlutterClient;
@@ -82,8 +82,9 @@ void sendMessagemqtt(String topic, String message) {
   printLog.i('${builder.payload} : ${utf8.decode(builder.payload!)}');
 
   try {
-    mqttAWSFlutterClient!
-        .publishMessage(topic, MqttQos.atLeastOnce, builder.payload!, retain: true);
+    mqttAWSFlutterClient!.publishMessage(
+        topic, MqttQos.atLeastOnce, builder.payload!,
+        retain: true);
     printLog.i('Mensaje enviado');
   } catch (e, s) {
     printLog.i('Error sending message $e $s');
@@ -134,26 +135,22 @@ void listenToTopics() {
       if (specialDevice) {
         printLog.i('Mensaje domotica $messageMap');
         int index = messageMap["index"];
-        globalDATA
-            .putIfAbsent(keyName, () => {})
-            .addAll({'io$index': json.encode(messageMap)});
+        final encoded = {'io$index': json.encode(messageMap)};
+        globalDATA.putIfAbsent(keyName, () => {}).addAll(encoded);
         saveGlobalData(globalDATA);
-        GlobalDataNotifier notifier = Provider.of<GlobalDataNotifier>(
-            navigatorKey.currentContext!,
-            listen: false);
-        notifier.updateData(
-          keyName,
-          {'io$index': json.encode(messageMap)},
-        );
+        final container =
+            riverpod.ProviderScope.containerOf(navigatorKey.currentContext!);
+        container
+            .read(globalDataProvider.notifier)
+            .updateData(keyName, encoded);
       } else {
         globalDATA.putIfAbsent(keyName, () => {}).addAll(messageMap);
         saveGlobalData(globalDATA);
-        GlobalDataNotifier notifier = Provider.of<GlobalDataNotifier>(
-            navigatorKey.currentContext!,
-            listen: false);
-        // printLog.i('Notificando a $keyName');
-        // printLog.i('Mensaje: $messageMap');
-        notifier.updateData(keyName, messageMap);
+        final container =
+            riverpod.ProviderScope.containerOf(navigatorKey.currentContext!);
+        container
+            .read(globalDataProvider.notifier)
+            .updateData(keyName, messageMap);
       }
 
       // globalDATA.putIfAbsent(keyName, () => {}).addAll(messageMap);

@@ -9,8 +9,10 @@ import 'package:caldensmart/Devices/modulo.dart';
 import 'package:caldensmart/Devices/relay.dart';
 import 'package:caldensmart/Devices/rele1i1o.dart';
 import 'package:caldensmart/Global/profile.dart';
+import 'package:caldensmart/Global/special_user.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:upgrader/upgrader.dart';
@@ -29,7 +31,6 @@ import 'firebase_options.dart';
 import 'Global/permission.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'login/welcome.dart';
 import 'master.dart';
 import 'Global/stored_data.dart';
@@ -98,16 +99,8 @@ Future<void> main() async {
   printLog.i('Todo configurado, iniciando app');
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(
-          create: (context) => GlobalDataNotifier(),
-        ),
-        ChangeNotifierProvider(
-          create: (context) => WifiNotifier(),
-        ),
-      ],
-      child: const MyApp(),
+    const ProviderScope(
+      child: MyApp(),
     ),
   );
 }
@@ -183,6 +176,7 @@ class MyAppState extends State<MyApp> {
         '/heladera': (context) => const HeladeraPage(),
         '/rele1i1o': (context) => const Rele1i1oPage(),
         '/qr': (context) => const QRScanPage(),
+        '/rejectScreen': (context) => const LabProcedureIncompletePage(),
       },
     );
   }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,8 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../master.dart';
+import '../aws/mqtt/mqtt.dart';
+import 'stored_data.dart';
 import 'package:caldensmart/logger.dart';
 
 class ScanPage extends StatefulWidget {
@@ -255,6 +258,130 @@ class ScanPageState extends State<ScanPage>
         : null;
     scan();
     _controller.finishRefresh();
+  }
+
+  void _runQuickAction(BluetoothDevice device, bool newValue) async {
+    printLog.i("=== INICIANDO ACCIÓN RÁPIDA ===");
+    printLog.i("Dispositivo: ${device.platformName}");
+    printLog.i("Nuevo valor: $newValue");
+
+    setState(() {
+      quickAction = true;
+    });
+
+    try {
+      await _quickConnectAndSend(device, newValue)
+          .timeout(const Duration(seconds: 15));
+
+      // Solo si fue exitoso, actualizar el switch visualmente
+      final String productCode =
+          DeviceManager.getProductCode(device.platformName);
+      final String serialNumber =
+          DeviceManager.extractSerialNumber(device.platformName);
+      setState(() {
+        globalDATA['$productCode/$serialNumber']?['w_status'] = newValue;
+        quickAction = false;
+      });
+
+      showToast('Comando enviado correctamente');
+    } catch (e) {
+      printLog.i("Error en acción rápida: $e");
+      setState(() {
+        quickAction = false;
+      });
+
+      if (e is TimeoutException) {
+        printLog.i("Timeout en acción rápida después de 15 segundos");
+        showToast('Timeout: Operación muy lenta, cancelada');
+      } else {
+        showToast('Error en acción rápida');
+      }
+    }
+  }
+
+  Future<void> _quickConnectAndSend(
+      BluetoothDevice device, bool newValue) async {
+    final String deviceName = device.platformName;
+    final String productCode = DeviceManager.getProductCode(deviceName);
+    final String serialNumber = DeviceManager.extractSerialNumber(deviceName);
+
+    // NO actualizar globalDATA aquí - solo si es exitoso
+    await device.connect(
+      timeout: const Duration(seconds: 6),
+    );
+    if (device.isConnected) {
+      printLog.i(
+        "Arranca por la derecha la maquina del sexo tilin",
+      );
+      MyDevice myDevice = MyDevice();
+      myDevice.setup(device).then((valor) async {
+        printLog.i('RETORNASHE $valor');
+        connectionTry = 0;
+        if (valor) {
+          printLog.i(
+            "Tengo sexo en monopatin",
+          );
+          printLog.i(
+              "Voy a ${newValue ? 'Encender' : 'Apagar'} el equipo $deviceName");
+
+          if (productCode == '020010_IOT' ||
+              productCode == '020020_IOT' ||
+              (productCode == '027313_IOT' &&
+                  Versioner.isPosterior(
+                      globalDATA['$productCode/$serialNumber']
+                          ?['HardwareVersion'],
+                      '241220A'))) {
+            String fun =
+                '${pinQuickAccess[deviceName]!}#${newValue ? '1' : '0'}';
+            myDevice.ioUuid.write(fun.codeUnits);
+            String topic = 'devices_rx/$productCode/$serialNumber';
+            String topic2 = 'devices_tx/$productCode/$serialNumber';
+            String message = jsonEncode({
+              'index': int.parse(pinQuickAccess[deviceName]!),
+              'w_status': newValue,
+              'r_state': "0",
+              'pinType': 0
+            });
+            sendMessagemqtt(topic, message);
+            sendMessagemqtt(topic2, message);
+
+            globalDATA
+                .putIfAbsent('$productCode/$serialNumber', () => {})
+                .addAll({'io${pinQuickAccess[deviceName]!}': message});
+
+            saveGlobalData(globalDATA);
+          } else {
+            int fun = newValue ? 1 : 0;
+            String data = '$productCode[11]($fun)';
+            myDevice.toolsUuid.write(data.codeUnits);
+            globalDATA['$productCode/$serialNumber']!['w_status'] = newValue;
+            saveGlobalData(globalDATA);
+            try {
+              String topic = 'devices_rx/$productCode/$serialNumber';
+              String topic2 = 'devices_tx/$productCode/$serialNumber';
+              String message = jsonEncode({'w_status': newValue});
+              sendMessagemqtt(topic, message);
+              sendMessagemqtt(topic2, message);
+            } catch (e, s) {
+              printLog.i('Error al enviar valor en cdBLE $e $s');
+            }
+          }
+          await myDevice.device.disconnect();
+          printLog.i(
+            "¿Se me cayo la pichula? ${device.isDisconnected}",
+          );
+        } else {
+          printLog.i('Fallo en el setup');
+          showToast("Error con el acceso rápido\nIntente nuevamente");
+          myDevice.device.disconnect();
+        }
+      });
+    } else {
+      printLog.i(
+        "Fallecio el sexo",
+      );
+      showToast("Error con el acceso rápido\nIntente nuevamente");
+    }
   }
 
   @override
@@ -574,65 +701,10 @@ class ScanPageState extends State<ScanPage>
                                                         false,
                                                     activeColor: color1,
                                                     onChanged:
-                                                        (bool newValue) async {
-                                                      setState(() {
-                                                        quickAction = true;
-                                                        globalDATA['${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}']
-                                                                ?['w_status'] =
-                                                            newValue;
-                                                      });
-                                                      await device.connect(
-                                                        timeout: const Duration(
-                                                            seconds: 6),
-                                                      );
-                                                      if (device.isConnected) {
-                                                        printLog.i(
-                                                          "Arranca por la derecha la maquina del sexo tilin",
-                                                        );
-                                                        MyDevice myDevice =
-                                                            MyDevice();
-                                                        myDevice
-                                                            .setup(device)
-                                                            .then(
-                                                                (valor) async {
-                                                          printLog.i(
-                                                              'RETORNASHE $valor');
-                                                          connectionTry = 0;
-                                                          if (valor) {
-                                                            printLog.i(
-                                                              "Tengo sexo en monopatin",
-                                                            );
-                                                            await controlDeviceBLE(
-                                                                device
-                                                                    .platformName,
-                                                                newValue);
-                                                            await myDevice
-                                                                .device
-                                                                .disconnect();
-                                                            setState(() {
-                                                              quickAction =
-                                                                  false;
-                                                            });
-                                                            printLog.i(
-                                                              "¿Se me cayo la pichula? ${device.isDisconnected}",
-                                                            );
-                                                          } else {
-                                                            printLog.i(
-                                                                'Fallo en el setup');
-                                                            showToast(
-                                                                "Error con el acceso rápido\nIntente nuevamente");
-                                                            myDevice.device
-                                                                .disconnect();
-                                                          }
-                                                        });
-                                                      } else {
-                                                        printLog.i(
-                                                          "Fallecio el sexo",
-                                                        );
-                                                        showToast(
-                                                            "Error con el acceso rápido\nIntente nuevamente");
-                                                      }
-                                                    },
+                                                        (bool newValue) =>
+                                                            _runQuickAction(
+                                                                device,
+                                                                newValue),
                                                   ),
                                                 ),
                                         ),

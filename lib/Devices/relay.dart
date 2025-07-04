@@ -6,24 +6,23 @@ import 'package:geolocator/geolocator.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caldensmart/logger.dart';
 import '../Global/manager_screen.dart';
 import '../aws/dynamo/dynamo.dart';
-import '../aws/dynamo/dynamo_certificates.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
 import '../Global/stored_data.dart';
 
 // CLASES \\
 
-class RelayPage extends StatefulWidget {
+class RelayPage extends ConsumerStatefulWidget {
   const RelayPage({super.key});
   @override
   RelayPageState createState() => RelayPageState();
 }
 
-class RelayPageState extends State<RelayPage> {
+class RelayPageState extends ConsumerState<RelayPage> {
   bool showSecondaryAdminFields = false;
   bool showAddAdminField = false;
   bool showSecondaryAdminList = false;
@@ -51,12 +50,13 @@ class RelayPageState extends State<RelayPage> {
   void initItems() {
     items.addAll({
       TutorialItem(
-        globalKey: KeyManager.relay.estadoKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
-        radius: 0,
+        globalKey: keys['rele:estado']!,
+        borderRadius: const Radius.circular(30),
+        shapeFocus: ShapeFocus.roundedSquare,
+        contentPosition: ContentPosition.above,
+        focusMargin: 15.0,
         pageIndex: 0,
+        fullBackground: true,
         child: const TutorialItemContent(
           title: 'Estado del equipo',
           content:
@@ -64,23 +64,11 @@ class RelayPageState extends State<RelayPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.relay.bottomKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(10),
-        radius: 90,
-        shapeFocus: ShapeFocus.oval,
-        pageIndex: 0,
-        child: const TutorialItemContent(
-          title: 'Botón de encendido',
-          content: 'Puedes encender o apagar el equipo al presionar el botón',
-        ),
-      ),
-      TutorialItem(
-        globalKey: KeyManager.relay.titleKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['rele:titulo']!,
         shapeFocus: ShapeFocus.roundedSquare,
-        borderRadius: const Radius.circular(10.0),
+        borderRadius: const Radius.circular(30.0),
         contentPosition: ContentPosition.below,
+        focusMargin: 15.0,
         pageIndex: 0,
         child: const TutorialItemContent(
           title: 'Nombre del equipo',
@@ -89,13 +77,12 @@ class RelayPageState extends State<RelayPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.relay.wifiKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['rele:wifi']!,
         shapeFocus: ShapeFocus.oval,
         borderRadius: const Radius.circular(15.0),
-        radius: 25,
         contentPosition: ContentPosition.below,
         pageIndex: 0,
+        focusMargin: 5.0,
         child: const TutorialItemContent(
           title: 'Menu Wifi',
           content:
@@ -103,11 +90,34 @@ class RelayPageState extends State<RelayPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.relay.distanceKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['rele:servidor']!,
         shapeFocus: ShapeFocus.oval,
-        borderRadius: const Radius.circular(0),
-        radius: 0,
+        borderRadius: const Radius.circular(15.0),
+        contentPosition: ContentPosition.below,
+        pageIndex: 0,
+        focusMargin: 15.0,
+        child: const TutorialItemContent(
+          title: 'Conexión al servidor',
+          content:
+              'Podrás observar el estado de la conexión del dispositivo con el servidor',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['rele:boton']!,
+        borderRadius: const Radius.circular(10),
+        shapeFocus: ShapeFocus.oval,
+        pageIndex: 0,
+        focusMargin: 20.0,
+        child: const TutorialItemContent(
+          title: 'Botón de encendido',
+          content: 'Puedes encender o apagar el equipo al presionar el botón',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['rele:controlDistancia']!,
+        shapeFocus: ShapeFocus.roundedSquare,
+        borderRadius: const Radius.circular(30),
+        focusMargin: 15.0,
         pageIndex: 1,
         child: const TutorialItemContent(
           title: 'Control por distancia',
@@ -116,10 +126,9 @@ class RelayPageState extends State<RelayPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.relay.distanceBottomKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(10),
-        radius: 90,
+        globalKey: keys['rele:controlBoton']!,
+        borderRadius: const Radius.circular(15),
+        focusMargin: 20.0,
         shapeFocus: ShapeFocus.oval,
         pageIndex: 1,
         child: const TutorialItemContent(
@@ -128,12 +137,11 @@ class RelayPageState extends State<RelayPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.relay.pinModeKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        shapeFocus: ShapeFocus.oval,
-        borderRadius: const Radius.circular(0),
-        radius: 0,
+        globalKey: keys['rele:modoPines']!,
+        shapeFocus: ShapeFocus.roundedSquare,
+        borderRadius: const Radius.circular(15),
         contentPosition: ContentPosition.below,
+        focusMargin: 15,
         pageIndex: 2,
         child: !tenant
             ? const TutorialItemContent(
@@ -148,12 +156,11 @@ class RelayPageState extends State<RelayPage> {
               ),
       ),
       TutorialItem(
-        globalKey: KeyManager.managerScreen.adminKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
+        globalKey: keys['managerScreen:titulo']!,
+        borderRadius: const Radius.circular(10),
+        shapeFocus: ShapeFocus.roundedSquare,
         pageIndex: 3,
-        radius: 0,
+        focusMargin: 15,
         contentPosition: ContentPosition.below,
         child: const TutorialItemContent(
           title: 'Gestión',
@@ -162,8 +169,7 @@ class RelayPageState extends State<RelayPage> {
       ),
       if (!tenant) ...{
         TutorialItem(
-          globalKey: KeyManager.managerScreen.claimKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:reclamar']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 3,
@@ -177,8 +183,7 @@ class RelayPageState extends State<RelayPage> {
       },
       if (owner == currentUserEmail) ...{
         TutorialItem(
-          globalKey: KeyManager.managerScreen.agreeAdminKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:agregarAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 3,
@@ -189,8 +194,7 @@ class RelayPageState extends State<RelayPage> {
           ),
         ),
         TutorialItem(
-          globalKey: KeyManager.managerScreen.viewAdminKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:verAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 3,
@@ -201,8 +205,7 @@ class RelayPageState extends State<RelayPage> {
           ),
         ),
         TutorialItem(
-          globalKey: KeyManager.managerScreen.habitKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:alquiler']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 3,
@@ -215,8 +218,7 @@ class RelayPageState extends State<RelayPage> {
       },
       if (!tenant) ...{
         TutorialItem(
-          globalKey: KeyManager.managerScreen.fastBotonKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:accesoRapido']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 3,
@@ -226,8 +228,8 @@ class RelayPageState extends State<RelayPage> {
           ),
         ),
         // TutorialItem(
-        //   globalKey: KeyManager.managerScreen.discNotificationKey,
-        //   color: Colors.black.withValues(alpha: 0.6),
+        //   globalKey: keys['managerScreen:desconexionNotificacion']!,
+        //
         //   borderRadius: const Radius.circular(20),
         //   shapeFocus: ShapeFocus.roundedSquare,
         //   pageIndex: 3,
@@ -238,8 +240,7 @@ class RelayPageState extends State<RelayPage> {
         // ),
       },
       TutorialItem(
-        globalKey: KeyManager.managerScreen.imageKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['managerScreen:imagen']!,
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
         pageIndex: 3,
@@ -250,6 +251,8 @@ class RelayPageState extends State<RelayPage> {
       ),
     });
   }
+
+  ///*- Elementos para tutoriales -*\\\
 
   @override
   void initState() {
@@ -274,7 +277,7 @@ class RelayPageState extends State<RelayPage> {
 
     if (!alexaDevices.contains(deviceName)) {
       alexaDevices.add(deviceName);
-      putDevicesForAlexa(service, currentUserEmail, alexaDevices);
+      putDevicesForAlexa( currentUserEmail, alexaDevices);
     }
   }
 
@@ -338,8 +341,7 @@ class RelayPageState extends State<RelayPage> {
     printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
-    WifiNotifier wifiNotifier =
-        Provider.of<WifiNotifier>(context, listen: false);
+    final wifiNotifier = ref.read(wifiProvider.notifier);
 
     if (parts[0] == 'WCS_CONNECTED') {
       atemp = false;
@@ -581,8 +583,7 @@ class RelayPageState extends State<RelayPage> {
   @override
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
-    WifiNotifier wifiNotifier =
-        Provider.of<WifiNotifier>(context, listen: false);
+    final wifiState = ref.watch(wifiProvider);
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
 
@@ -643,7 +644,7 @@ class RelayPageState extends State<RelayPage> {
                               }
                             },
                             child: AnimatedContainer(
-                              key: KeyManager.relay.bottomKey,
+                              key: keys['rele:boton']!,
                               duration: const Duration(milliseconds: 500),
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
@@ -679,7 +680,7 @@ class RelayPageState extends State<RelayPage> {
                           ),
                           const SizedBox(height: 20),
                           Text(
-                            key: KeyManager.relay.estadoKey,
+                            key: keys['rele:estado']!,
                             turnOn ? 'ENCENDIDO' : 'APAGADO',
                             style: GoogleFonts.poppins(
                               fontSize: 24,
@@ -728,7 +729,7 @@ class RelayPageState extends State<RelayPage> {
                           //                         isNC = false;
                           //                       });
                           //                       saveNC(
-                          //                         service,
+                          //                         
                           //                         DeviceManager.getProductCode(
                           //                             deviceName),
                           //                         DeviceManager
@@ -775,7 +776,7 @@ class RelayPageState extends State<RelayPage> {
                           //                         isNC = true;
                           //                       });
                           //                       saveNC(
-                          //                         service,
+                          //                         
                           //                         DeviceManager.getProductCode(
                           //                             deviceName),
                           //                         DeviceManager
@@ -1015,7 +1016,7 @@ class RelayPageState extends State<RelayPage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    key: KeyManager.relay.distanceKey,
+                    key: keys['rele:controlDistancia']!,
                     'Control por distancia',
                     style: GoogleFonts.poppins(
                       fontSize: 28,
@@ -1036,7 +1037,7 @@ class RelayPageState extends State<RelayPage> {
                   ),
                   const SizedBox(height: 30),
                   GestureDetector(
-                    key: KeyManager.relay.distanceBottomKey,
+                    key: keys['rele:controlBoton']!,
                     onTap: () {
                       if (deviceOwner || owner == '' || tenant) {
                         verifyPermission().then((result) {
@@ -1173,7 +1174,7 @@ class RelayPageState extends State<RelayPage> {
                                                 printLog.i(
                                                     'Valor enviado: ${value.round()}');
                                                 putDistanceOff(
-                                                  service,
+                                                  
                                                   DeviceManager.getProductCode(
                                                       deviceName),
                                                   DeviceManager
@@ -1271,7 +1272,7 @@ class RelayPageState extends State<RelayPage> {
                                                 printLog.i(
                                                     'Valor enviado: ${value.round()}');
                                                 putDistanceOn(
-                                                  service,
+                                                  
                                                   DeviceManager.getProductCode(
                                                       deviceName),
                                                   DeviceManager
@@ -1326,7 +1327,7 @@ class RelayPageState extends State<RelayPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  key: KeyManager.relay.pinModeKey,
+                  key: keys['rele:modoPines']!,
                   'Cambio de Modo de Pines',
                   style: GoogleFonts.poppins(
                     fontSize: 28,
@@ -1467,7 +1468,7 @@ class RelayPageState extends State<RelayPage> {
                                             isNC = false;
                                           });
                                           saveNC(
-                                            service,
+                                            
                                             DeviceManager.getProductCode(
                                                 deviceName),
                                             DeviceManager.extractSerialNumber(
@@ -1510,7 +1511,7 @@ class RelayPageState extends State<RelayPage> {
                                             isNC = true;
                                           });
                                           saveNC(
-                                            service,
+                                            
                                             DeviceManager.getProductCode(
                                                 deviceName),
                                             DeviceManager.extractSerialNumber(
@@ -1590,11 +1591,14 @@ class RelayPageState extends State<RelayPage> {
                 children: [
                   Image.asset('assets/branch/dragon.gif',
                       width: 100, height: 100),
-                  Container(
-                    margin: const EdgeInsets.only(left: 15),
-                    child: const Text(
-                      "Desconectando...",
-                      style: TextStyle(color: Color(0xFFFFFFFF)),
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 15),
+                      child: const Text(
+                        "Desconectando...",
+                        style: TextStyle(color: Color(0xFFFFFFFF)),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ],
@@ -1662,7 +1666,7 @@ class RelayPageState extends State<RelayPage> {
                         String newNickname = nicknameController.text;
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
-                        putNicknames(service, currentUserEmail, nicknamesMap);
+                        putNicknames( currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },
@@ -1673,7 +1677,7 @@ class RelayPageState extends State<RelayPage> {
             child: Row(
               children: [
                 Expanded(
-                  key: KeyManager.relay.titleKey,
+                  key: keys['rele:titulo']!,
                   child: Text(
                     nickname,
                     overflow: TextOverflow.ellipsis,
@@ -1701,11 +1705,14 @@ class RelayPageState extends State<RelayPage> {
                       children: [
                         Image.asset('assets/branch/dragon.gif',
                             width: 100, height: 100),
-                        Container(
-                          margin: const EdgeInsets.only(left: 15),
-                          child: const Text(
-                            "Desconectando...",
-                            style: TextStyle(color: Color(0xFFFFFFFF)),
+                        Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.only(left: 15),
+                            child: const Text(
+                              "Desconectando...",
+                              style: TextStyle(color: Color(0xFFFFFFFF)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
                       ],
@@ -1725,15 +1732,17 @@ class RelayPageState extends State<RelayPage> {
           ),
           actions: [
             Icon(
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                      'cstate']
+              key: keys['rele:servidor']!,
+              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                          ?['cstate'] ??
+                      false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,
             ),
             IconButton(
-              key: KeyManager.relay.wifiKey,
-              icon: Icon(wifiNotifier.wifiIcon, color: color0),
+              key: keys['rele:wifi']!,
+              icon: Icon(wifiState.wifiIcon, color: color0),
               onPressed: () {
                 if (_isTutorialActive) return;
 

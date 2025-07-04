@@ -1,20 +1,19 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../Global/manager_screen.dart';
 import '../aws/dynamo/dynamo.dart';
-import '../aws/dynamo/dynamo_certificates.dart';
 import '../master.dart';
 import 'package:caldensmart/logger.dart';
 
-class RollerPage extends StatefulWidget {
+class RollerPage extends ConsumerStatefulWidget {
   const RollerPage({super.key});
   @override
   RollerPageState createState() => RollerPageState();
 }
 
-class RollerPageState extends State<RollerPage> {
+class RollerPageState extends ConsumerState<RollerPage> {
   int _selectedIndex = 0;
 
   final TextEditingController tenantController = TextEditingController();
@@ -126,8 +125,7 @@ class RollerPageState extends State<RollerPage> {
     printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
-    WifiNotifier wifiNotifier =
-        Provider.of<WifiNotifier>(context, listen: false);
+    final wifiNotifier = ref.read(wifiProvider.notifier);
 
     if (parts[0] == 'WCS_CONNECTED') {
       atemp = false;
@@ -255,8 +253,7 @@ class RollerPageState extends State<RollerPage> {
   @override
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
-    WifiNotifier wifiNotifier =
-        Provider.of<WifiNotifier>(context, listen: false);
+    final wifiState = ref.watch(wifiProvider);
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
 
@@ -693,7 +690,7 @@ class RollerPageState extends State<RollerPage> {
                               int largo = rollerEnd! - rollerStart!;
                               printLog.i("Largo: $largo");
                               putRollerLength(
-                                  service,
+                                  
                                   DeviceManager.getProductCode(deviceName),
                                   DeviceManager.extractSerialNumber(deviceName),
                                   largo.toString());
@@ -778,11 +775,14 @@ class RollerPageState extends State<RollerPage> {
                 children: [
                   Image.asset('assets/branch/dragon.gif',
                       width: 100, height: 100),
-                  Container(
-                    margin: const EdgeInsets.only(left: 15),
-                    child: const Text(
-                      "Desconectando...",
-                      style: TextStyle(color: Color(0xFFFFFFFF)),
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 15),
+                      child: const Text(
+                        "Desconectando...",
+                        style: TextStyle(color: Color(0xFFFFFFFF)),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ],
@@ -849,7 +849,7 @@ class RollerPageState extends State<RollerPage> {
                         String newNickname = nicknameController.text;
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
-                        putNicknames(service, currentUserEmail, nicknamesMap);
+                        putNicknames( currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },
@@ -889,11 +889,14 @@ class RollerPageState extends State<RollerPage> {
                       children: [
                         Image.asset('assets/branch/dragon.gif',
                             width: 100, height: 100),
-                        Container(
-                          margin: const EdgeInsets.only(left: 15),
-                          child: const Text(
-                            "Desconectando...",
-                            style: TextStyle(color: Color(0xFFFFFFFF)),
+                        Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.only(left: 15),
+                            child: const Text(
+                              "Desconectando...",
+                              style: TextStyle(color: Color(0xFFFFFFFF)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
                       ],
@@ -913,14 +916,15 @@ class RollerPageState extends State<RollerPage> {
           ),
           actions: [
             Icon(
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                      'cstate']
+              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                          ?['cstate'] ??
+                      false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,
             ),
             IconButton(
-              icon: Icon(wifiNotifier.wifiIcon, color: color0),
+              icon: Icon(wifiState.wifiIcon, color: color0),
               onPressed: () {
                 wifiText(context);
               },

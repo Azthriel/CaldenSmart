@@ -1,7 +1,6 @@
 import 'package:caldensmart/Global/stored_data.dart';
 import 'package:caldensmart/Global/watchers.dart';
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
-import 'package:caldensmart/aws/dynamo/dynamo_certificates.dart';
 import 'package:flutter/material.dart';
 import '/Global/scan.dart';
 import '/Global/wifi.dart';
@@ -46,9 +45,9 @@ class MenuPageState extends State<MenuPage> {
   Future<void> _initAsync() async {
     currentUserEmail = await getUserMail();
     if (currentUserEmail != '') {
-      await getDevices(service, currentUserEmail);
-      await getGroups(service, currentUserEmail);
-      eventosCreados = await getEventos(service, currentUserEmail);
+      await getDevices( currentUserEmail);
+      await getGroups( currentUserEmail);
+      eventosCreados = await getEventos( currentUserEmail);
     }
     if (mounted) {
       setState(() {});

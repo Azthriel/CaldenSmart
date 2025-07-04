@@ -14,6 +14,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -23,13 +24,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wifi_scan/wifi_scan.dart';
 import 'aws/dynamo/dynamo.dart';
-import 'aws/dynamo/dynamo_certificates.dart';
 import 'aws/mqtt/mqtt.dart';
 import 'Global/stored_data.dart';
 import 'package:caldensmart/logger.dart';
@@ -243,6 +242,7 @@ bool trueStatus = false;
 late bool nightMode;
 late bool canControlDistance;
 bool manualControl = false;
+String actualTemp = '';
 //*-Calefactores-*\\
 
 //*-Domótica-*\\
@@ -285,8 +285,114 @@ int? lastPage;
 //*- Tutorial -*\\
 enum ShapeFocus { oval, square, roundedSquare }
 
+enum ContentPosition { above, below }
+
 bool tutorial = true;
 //*- Tutorial -*\\
+
+//*- Guía de usuario -*\\
+Map<String, GlobalKey> keys = {
+  //ManagerScreen
+  'managerScreen:titulo': GlobalKey(),
+  'managerScreen:reclamar': GlobalKey(),
+  'managerScreen:agregarAdmin': GlobalKey(),
+  'managerScreen:verAdmin': GlobalKey(),
+  'managerScreen:alquiler': GlobalKey(),
+  'managerScreen:accesoRapido': GlobalKey(),
+  'managerScreen:desconexionNotificacion': GlobalKey(),
+  'managerScreen:led': GlobalKey(),
+  'managerScreen:imagen': GlobalKey(),
+  //Calefactores
+  'calefactores:estado': GlobalKey(),
+  'calefactores:titulo': GlobalKey(),
+  'calefactores:wifi': GlobalKey(),
+  'calefactores:servidor': GlobalKey(),
+  'calefactores:boton': GlobalKey(),
+  'calefactores:chispero': GlobalKey(),
+  'calefactores:temperatura': GlobalKey(),
+  'calefactores:corte': GlobalKey(),
+  'calefactores:controlDistancia': GlobalKey(),
+  'calefactores:controlBoton': GlobalKey(),
+  'calefactores:consumo': GlobalKey(),
+  'calefactores:valor': GlobalKey(),
+  'calefactores:consumoManual': GlobalKey(),
+  'calefactores:calcular': GlobalKey(),
+  'calefactores:mes': GlobalKey(),
+  //Detectores
+  'detectores:estado': GlobalKey(),
+  'detectores:titulo': GlobalKey(),
+  'detectores:wifi': GlobalKey(),
+  'detectores:servidor': GlobalKey(),
+  'detectores:gas1': GlobalKey(),
+  'detectores:co1': GlobalKey(),
+  'detectores:gas2': GlobalKey(),
+  'detectores:co2': GlobalKey(),
+  'detectores:gas3': GlobalKey(),
+  'detectores:co3': GlobalKey(),
+  'detectores:brillo': GlobalKey(),
+  'detectores:barraBrillo': GlobalKey(),
+  'detectores:configuraciones': GlobalKey(),
+  'detectores:imagen': GlobalKey(),
+  'detectores:desconexion': GlobalKey(),
+  //Domotica
+  'domotica:estado': GlobalKey(),
+  'domotica:titulo': GlobalKey(),
+  'domotica:wifi': GlobalKey(),
+  'domotica:modoPines': GlobalKey(),
+  'domotica:servidor': GlobalKey(),
+  //Heladera
+  'heladera:estado': GlobalKey(),
+  'heladera:titulo': GlobalKey(),
+  'heladera:wifi': GlobalKey(),
+  'heladera:servidor': GlobalKey(),
+  'heladera:boton': GlobalKey(),
+  'heladera:temperatura': GlobalKey(),
+  'heladera:corte': GlobalKey(),
+  'heladera:controlDistancia': GlobalKey(),
+  'heladera:controlBoton': GlobalKey(),
+  'heladera:consumo': GlobalKey(),
+  'heladera:valor': GlobalKey(),
+  'heladera:consumoManual': GlobalKey(),
+  'heladera:calcular': GlobalKey(),
+  'heladera:mes': GlobalKey(),
+  //Millenium
+  'millenium:estado': GlobalKey(),
+  'millenium:titulo': GlobalKey(),
+  'millenium:wifi': GlobalKey(),
+  'millenium:servidor': GlobalKey(),
+  'millenium:boton': GlobalKey(),
+  'millenium:temperatura': GlobalKey(),
+  'millenium:corte': GlobalKey(),
+  'millenium:consumo': GlobalKey(),
+  'millenium:valor': GlobalKey(),
+  'millenium:consumoManual': GlobalKey(),
+  'millenium:calcular': GlobalKey(),
+  'millenium:mes': GlobalKey(),
+  //Modulo
+  'modulo:estado': GlobalKey(),
+  'modulo:titulo': GlobalKey(),
+  'modulo:wifi': GlobalKey(),
+  'modulo:modoPines': GlobalKey(),
+  'modulo:servidor': GlobalKey(),
+  //Rele
+  'rele:estado': GlobalKey(),
+  'rele:boton': GlobalKey(),
+  'rele:titulo': GlobalKey(),
+  'rele:wifi': GlobalKey(),
+  'rele:servidor': GlobalKey(),
+  'rele:controlDistancia': GlobalKey(),
+  'rele:controlBoton': GlobalKey(),
+  'rele:modoPines': GlobalKey(),
+  //Rele1i1o
+  'rele1i1o:estado': GlobalKey(),
+  'rele1i1o:titulo': GlobalKey(),
+  'rele1i1o:wifi': GlobalKey(),
+  'rele1i1o:servidor': GlobalKey(),
+  'rele1i1o:controlDistancia': GlobalKey(),
+  'rele1i1o:controlBoton': GlobalKey(),
+  'rele1i1o:modoPines': GlobalKey(),
+};
+//*-Guía de usuario -*\\
 
 //*- Toast -*\\
 late FToast fToast;
@@ -299,6 +405,21 @@ const String urlEscenas =
     'https://3zo0pu883b.execute-api.sa-east-1.amazonaws.com/PROD/Escenas'; //PROD
 // const String urlEscenas = 'https://3zo0pu883b.execute-api.sa-east-1.amazonaws.com/DEV/EscenasDEV'; //DEV
 //*- Escenas -*\\
+
+//*- Special Users -*\\
+bool specialUser = false;
+//*- Special Users -*\\
+
+//*- Riverpod -*\\
+final globalDataProvider = StateNotifierProvider<GlobalDataNotifier,
+    Map<String, Map<String, dynamic>>>(
+  (ref) => GlobalDataNotifier(),
+);
+
+final wifiProvider = StateNotifierProvider<WifiNotifier, WifiState>((ref) {
+  return WifiNotifier();
+});
+//*- Riverpod -*\\
 
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
@@ -1021,7 +1142,10 @@ void wifiText(BuildContext context) {
     barrierDismissible: true,
     context: context,
     builder: (BuildContext context) {
-      return Consumer<WifiNotifier>(builder: (context, wifiNotifier, child) {
+      return Consumer(
+          builder: (BuildContext context, WidgetRef ref, Widget? child) {
+        final wifiState = ref.watch(wifiProvider);
+        final wifiNotifier = ref.read(wifiProvider.notifier);
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             // Función para construir la vista principal
@@ -1049,9 +1173,9 @@ void wifiText(BuildContext context) {
                       ),
                     ),
                     Text(
-                      wifiNotifier.status,
+                      wifiState.status,
                       style: TextStyle(
-                        color: wifiNotifier.statusColor,
+                        color: wifiState.statusColor,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1132,7 +1256,12 @@ void wifiText(BuildContext context) {
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
                               Icon(Icons.signal_wifi_off),
-                              Text('Desconectar Red Actual')
+                              Flexible(
+                                child: Text(
+                                  'Desconectar Red Actual',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -1396,43 +1525,48 @@ void wifiText(BuildContext context) {
                           }
                         },
                       ),
-                      android
-                          ? TextButton(
-                              style: const ButtonStyle(),
-                              child: const Text(
-                                'Agregar\nRed',
-                                style: TextStyle(
-                                  color: Color(0xFFFFFFFF),
-                                ),
-                                textAlign: TextAlign.center,
+                      if (android)
+                        Flexible(
+                          child: TextButton(
+                            style: const ButtonStyle(),
+                            child: const Text(
+                              'Agregar\nRed',
+                              style: TextStyle(
+                                color: Color(0xFFFFFFFF),
+                                fontSize: 12,
                               ),
-                              onPressed: () {
-                                setState(() {
-                                  isAddingNetwork = true;
-                                });
-                              },
-                            )
-                          : const SizedBox.shrink(),
-                      TextButton(
-                        style: const ButtonStyle(),
-                        child: const Text(
-                          'Conectar',
-                          style: TextStyle(
-                            color: Color(0xFFFFFFFF),
+                              textAlign: TextAlign.center,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                isAddingNetwork = true;
+                              });
+                            },
                           ),
                         ),
-                        onPressed: () {
-                          if (_currentlySelectedSSID != null &&
-                              _wifiPasswordsMap[_currentlySelectedSSID] !=
-                                  null) {
-                            printLog.i(
-                                '$_currentlySelectedSSID#${_wifiPasswordsMap[_currentlySelectedSSID]}');
-                            sendWifitoBle(_currentlySelectedSSID!,
-                                _wifiPasswordsMap[_currentlySelectedSSID]!);
-                            wifiNotifier.updateStatus(
-                                'CONECTANDO...', Colors.blue, Icons.wifi_find);
-                          }
-                        },
+                      Flexible(
+                        child: TextButton(
+                          style: const ButtonStyle(),
+                          child: const Text(
+                            'Conectar',
+                            style: TextStyle(
+                              color: Color(0xFFFFFFFF),
+                              fontSize: 12,
+                            ),
+                          ),
+                          onPressed: () {
+                            if (_currentlySelectedSSID != null &&
+                                _wifiPasswordsMap[_currentlySelectedSSID] !=
+                                    null) {
+                              printLog.i(
+                                  '$_currentlySelectedSSID#${_wifiPasswordsMap[_currentlySelectedSSID]}');
+                              sendWifitoBle(_currentlySelectedSSID!,
+                                  _wifiPasswordsMap[_currentlySelectedSSID]!);
+                              wifiNotifier.updateStatus('CONECTANDO...',
+                                  Colors.blue, Icons.wifi_find);
+                            }
+                          },
+                        ),
                       ),
                     ],
                   ),
@@ -1726,12 +1860,11 @@ Future<void> openQRScanner(BuildContext context) async {
         var wifiData = parseWifiQR(qrResult!);
         sendWifitoBle(wifiData['SSID']!, wifiData['password']!);
 
-        // <-- Aquí definimos wifiNotifier antes de usarlo:
         if (context.mounted) {
-          final wifiNotifier = Provider.of<WifiNotifier>(
-            context,
-            listen: false,
-          );
+          final container = ProviderScope.containerOf(context);
+
+          final wifiNotifier = container.read(wifiProvider.notifier);
+
           wifiNotifier.updateStatus(
             'CONECTANDO...',
             Colors.blue,
@@ -1804,7 +1937,7 @@ Future<void> handleNotifications(RemoteMessage message) async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     currentUserEmail = await loadEmail();
-    await getDevices(service, currentUserEmail);
+    await getDevices(currentUserEmail);
     soundOfNotification = await loadSounds();
     await DeviceManager.init();
     printLog.i('Llegó esta notif: ${message.data}');
@@ -1875,7 +2008,7 @@ Future<void> handleNotifications(RemoteMessage message) async {
           Duration(minutes: espera),
         );
         printLog.i('Termino la espera ${DateTime.now()}');
-        await queryItems(service, product, number);
+        await queryItems(product, number);
         bool cstate = globalDATA['$product/$number']?['cstate'] ?? false;
         printLog.i('El cstate después de la espera es $cstate');
         if (!cstate) {
@@ -1942,7 +2075,7 @@ void setupToken(String pc, String sn, String device) async {
     String? token = await FirebaseMessaging.instance.getToken();
     printLog.i("Token actual de Firebase: $token");
     // Obtén los tokens existentes
-    List<String> tokens = await getTokens(service, pc, sn);
+    List<String> tokens = await getTokens(pc, sn);
     printLog.i('Tokens: $tokens');
     if (token != null) {
       // Remueve el token previo del dispositivo si existe
@@ -1953,7 +2086,7 @@ void setupToken(String pc, String sn, String device) async {
       // Agrega el token actual a la lista
       tokens.add(token);
       // Actualiza los tokens en tu backend
-      await putTokens(service, pc, sn, tokens);
+      await putTokens(pc, sn, tokens);
       // Actualiza el diccionario local con el nuevo token
       tokensOfDevices[device] = token;
       saveToken(tokensOfDevices);
@@ -1963,7 +2096,7 @@ void setupToken(String pc, String sn, String device) async {
     FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
       printLog.i('Token actualizado: $newToken');
       // Obtén los tokens actualizados
-      List<String> tokens = await getTokens(service, pc, sn);
+      List<String> tokens = await getTokens(pc, sn);
       // Elimina el token anterior, si existe
       if (tokensOfDevices[device] != null &&
           tokens.contains(tokensOfDevices[device])) {
@@ -1972,7 +2105,7 @@ void setupToken(String pc, String sn, String device) async {
       // Agrega el nuevo token
       tokens.add(newToken);
       // Actualiza el backend con los nuevos tokens
-      await putTokens(service, pc, sn, tokens);
+      await putTokens(pc, sn, tokens);
       // Guarda el nuevo token localmente
       tokensOfDevices[device] = newToken;
       saveToken(tokensOfDevices);
@@ -1990,7 +2123,7 @@ Future<void> analizePayment(
   String pc,
   String sn,
 ) async {
-  List<DateTime> expDates = await getDates(service, pc, sn);
+  List<DateTime> expDates = await getDates(pc, sn);
 
   vencimientoAdmSec = expDates[0].difference(DateTime.now()).inDays;
 
@@ -2356,7 +2489,7 @@ Future<bool> backFunctionDS() async {
     Map<String, double> latitudes = await loadLatitude();
     Map<String, double> longitudes = await loadLongitud();
     currentUserEmail = await loadEmail();
-    await getDevices(service, currentUserEmail);
+    await getDevices(currentUserEmail);
     Map<String, String> nicks = nicknamesMap;
 
     for (int index = 0; index < devicesStored.length; index++) {
@@ -2364,7 +2497,7 @@ Future<bool> backFunctionDS() async {
       String productCode = DeviceManager.getProductCode(name);
       String sn = DeviceManager.extractSerialNumber(name);
 
-      await queryItems(service, productCode, sn);
+      await queryItems(productCode, sn);
 
       double latitude = latitudes[name]!;
       double longitude = longitudes[name]!;
@@ -2789,62 +2922,6 @@ void showAlertDialog(BuildContext context, bool dismissible, Widget? title,
 }
 //*-show dialog generico-*\\
 
-//*-Acceso rápido BLE-*\\
-Future<void> controlDeviceBLE(String name, bool newState) async {
-  printLog.i("Voy a ${newState ? 'Encender' : 'Apagar'} el equipo $name");
-
-  if (DeviceManager.getProductCode(name) == '020010_IOT' ||
-      DeviceManager.getProductCode(name) == '020020_IOT' ||
-      (DeviceManager.getProductCode(name) == '027313_IOT' &&
-          globalDATA[
-                  '${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}']!
-              .keys
-              .contains('io'))) {
-    String fun = '${pinQuickAccess[name]!}#${newState ? '1' : '0'}';
-    myDevice.ioUuid.write(fun.codeUnits);
-    String topic =
-        'devices_rx/${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}';
-    String topic2 =
-        'devices_tx/${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}';
-    String message = jsonEncode({
-      'index': int.parse(pinQuickAccess[name]!),
-      'w_status': newState,
-      'r_state': "0",
-      'pinType': 0
-    });
-    sendMessagemqtt(topic, message);
-    sendMessagemqtt(topic2, message);
-
-    globalDATA
-        .putIfAbsent(
-            '${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}',
-            () => {})
-        .addAll({'io${pinQuickAccess[name]!}': message});
-
-    saveGlobalData(globalDATA);
-  } else {
-    int fun = newState ? 1 : 0;
-    String data = '${DeviceManager.getProductCode(name)}[11]($fun)';
-    myDevice.toolsUuid.write(data.codeUnits);
-    globalDATA[
-            '${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}']![
-        'w_status'] = newState;
-    saveGlobalData(globalDATA);
-    try {
-      String topic =
-          'devices_rx/${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}';
-      String topic2 =
-          'devices_tx/${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}';
-      String message = jsonEncode({'w_status': newState});
-      sendMessagemqtt(topic, message);
-      sendMessagemqtt(topic2, message);
-    } catch (e, s) {
-      printLog.i('Error al enviar valor en cdBLE $e $s');
-    }
-  }
-}
-//*-Acceso rápido BLE-*\\
-
 //*-Revisión de actualización-*\\
 void checkForUpdate(BuildContext context) async {
   final upgrader = Upgrader(
@@ -3103,8 +3180,8 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                         await myDevice.toolsUuid.write(data.codeUnits);
                         printLog.i("Arranco OTA");
                         try {
-                          // int chunk = 255 - 3;
-                          int chunk = 1;
+                          int chunk = 255 - 3;
+                          // int chunk = 1;
                           for (int i = 0; i < firmware.length; i += chunk) {
                             // printLog.i('Mande chunk');
                             List<int> subvalue = firmware.sublist(
@@ -3178,6 +3255,20 @@ bool hasLED(String productCode, String hwVersion) {
       hwVersion == versionWithLED;
 
   return hasIt;
+}
+
+Future<bool> isSpecialUser(String email) async {
+  printLog.i('Verificando si $email es un usuario especial');
+  if (fbData.isEmpty) {
+    await DeviceManager.init();
+    return isSpecialUser(email);
+  }
+  final specialUsers = (fbData['SpecialUser'] as List<dynamic>?)
+      ?.map((e) => e.toString().toLowerCase())
+      .toList();
+  if (specialUsers == null) return false;
+  printLog.i('Special users: $specialUsers');
+  return specialUsers.contains(email.toLowerCase());
 }
 
 // // -------------------------------------------------------------------------------------------------------------\\ \\
@@ -3616,8 +3707,8 @@ class Versioner {
         // Comprobamos que el nombre empiece exactamente con el prefijo y termine en ".bin"
         final matchesPrefix = name.startsWith(prefix);
         final isBin = name.endsWith('.bin');
-        printLog.i(
-            'Found item: $name (startsWith prefix? $matchesPrefix, endsWith .bin? $isBin)');
+        // printLog.i(
+        //     'Found item: $name (startsWith prefix? $matchesPrefix, endsWith .bin? $isBin)');
         if (matchesPrefix && isBin) {
           firmwareFiles.add(name);
         }
@@ -3664,39 +3755,64 @@ class _VersionData {
 //*-Versionador, comparador de versiones-*\\
 
 //*-Provider, actualización de data en un widget-*\\
-class GlobalDataNotifier extends ChangeNotifier {
-  final Map<String, Map<String, dynamic>> _data = {};
+
+class GlobalDataNotifier
+    extends StateNotifier<Map<String, Map<String, dynamic>>> {
+  GlobalDataNotifier() : super({});
 
   // Obtener datos por topic específico
   Map<String, dynamic> getData(String topic) {
-    return _data[topic] ?? {};
+    return state[topic] ?? {};
   }
 
   // Actualizar datos para un topic específico y notificar a los oyentes
   void updateData(String topic, Map<String, dynamic> newData) {
-    if (_data[topic] != newData) {
-      _data[topic] = newData;
-      notifyListeners();
+    final current = state[topic];
+    if (current != newData) {
+      state = {
+        ...state,
+        topic: newData,
+      };
     }
   }
 }
 
-class WifiNotifier extends ChangeNotifier {
-  String _status = 'DESCONECTADO';
-  Color _statusColor = Colors.red;
-  IconData _wifiIcon = Icons.signal_wifi_off;
+class WifiState {
+  final String status;
+  final Color statusColor;
+  final IconData wifiIcon;
 
-  String get status => _status;
-  Color get statusColor => _statusColor;
-  IconData get wifiIcon => _wifiIcon;
+  const WifiState({
+    this.status = 'DESCONECTADO',
+    this.statusColor = Colors.red,
+    this.wifiIcon = Icons.signal_wifi_off,
+  });
 
-  void updateStatus(String status, Color statusColor, IconData wifiIcon) {
-    _status = status;
-    _statusColor = statusColor;
-    _wifiIcon = wifiIcon;
-    notifyListeners();
+  WifiState copyWith({
+    String? status,
+    Color? statusColor,
+    IconData? wifiIcon,
+  }) {
+    return WifiState(
+      status: status ?? this.status,
+      statusColor: statusColor ?? this.statusColor,
+      wifiIcon: wifiIcon ?? this.wifiIcon,
+    );
   }
 }
+
+class WifiNotifier extends StateNotifier<WifiState> {
+  WifiNotifier() : super(const WifiState());
+
+  void updateStatus(String status, Color statusColor, IconData wifiIcon) {
+    state = state.copyWith(
+      status: status,
+      statusColor: statusColor,
+      wifiIcon: wifiIcon,
+    );
+  }
+}
+
 //*-Provider, actualización de data en un widget-*\\
 
 //*-QR Scan, lee datos de qr wifi-*\\
@@ -5213,441 +5329,413 @@ class AnimatedIconWidgetState extends State<AnimatedIconWidget>
 }
 //*- animacion para los iconos al estar calentando-*\\
 
-//*- tutorial -*\\
+//*- tutorial -*-\\
 
-/// This is the class that will be used to create the shapes
+/// Describe cada paso del tutorial:
+/// - globalKey: el widget a enfocar.
+/// - child: tu TutorialItemContent (título + texto).
+/// - pageIndex: página (si usas PageView).
+/// - shapeFocus: forma del halo (oval, roundedSquare, square).
+/// - contentPosition: si el texto va arriba o abajo.
+/// - focusMargin: separación extra antes de pintar.
+/// - borderRadius: esquinas del halo redondeado.
 class TutorialItem {
   final GlobalKey globalKey;
-  final ShapeFocus shapeFocus;
   final Widget child;
-  final double? radius;
-  final Color color;
-  final Radius borderRadius;
   final int? pageIndex;
+  final ShapeFocus shapeFocus;
   final ContentPosition contentPosition;
+  final double focusMargin;
+  final Radius borderRadius;
+  final bool fullBackground;
 
-  /// This is the constructor of the class
   TutorialItem({
     required this.globalKey,
     required this.child,
-    this.radius,
-    this.color = const Color.fromRGBO(0, 0, 0, 0.6),
-    this.borderRadius = const Radius.circular(10.0),
-    this.shapeFocus = ShapeFocus.roundedSquare,
     required this.pageIndex,
+    this.shapeFocus = ShapeFocus.roundedSquare,
     this.contentPosition = ContentPosition.above,
+    this.focusMargin = 8.0,
+    this.borderRadius = const Radius.circular(12.0),
+    this.fullBackground = false,
   });
 }
 
-/// A class that holds the data of the shapes
-class HolePainter extends CustomPainter {
-  final double dx;
-  final double dy;
-  final double width;
-  final double height;
-  final Color color;
-  final Radius borderRadius;
+class FillBackground extends CustomPainter {
+  final double dx, dy, width, height;
   final ShapeFocus shapeFocus;
-  final double? radius;
+  final double margin;
+  final Radius borderRadius;
+  final bool fullBackground;
 
-  /// A constructor that takes in the data of the shape
-  HolePainter({
+  static const Color _bgColor = Color(0xFF000000);
+  static const double _borderWidth = 2.0;
+  static const Radius _cornerRad = Radius.circular(12.0);
+
+  FillBackground({
     required this.dx,
     required this.dy,
     required this.width,
     required this.height,
-    required this.color,
-    required this.radius,
-    required this.borderRadius,
-    this.shapeFocus = ShapeFocus.oval,
+    this.shapeFocus = ShapeFocus.roundedSquare,
+    this.margin = 8.0,
+    this.borderRadius = _cornerRad,
+    this.fullBackground = false,
   });
 
   @override
-
-  /// A method that paints the shape
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color;
-    if (shapeFocus == ShapeFocus.oval) {
-      canvas.drawPath(
-          Path.combine(
-            PathOperation.difference,
-            Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height)),
-            Path()
-              ..addOval(Rect.fromCircle(
-                  center: Offset(dx, dy), radius: radius ?? width))
-              ..close(),
-          ),
-          paint);
-    } else if (shapeFocus == ShapeFocus.roundedSquare) {
-      canvas.drawPath(
-          Path.combine(
-            PathOperation.difference,
-            Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height)),
-            Path()
-              ..addRRect(RRect.fromRectAndCorners(
-                Rect.fromLTWH(
-                  dx - (width / 2),
-                  dy - (height / 2),
-                  width,
-                  height,
-                ),
-                topRight: borderRadius,
-                topLeft: borderRadius,
-                bottomRight: borderRadius,
-                bottomLeft: borderRadius,
-              ))
-              ..close(),
-          ),
-          paint);
-    } else {
-      canvas.drawPath(
-          Path.combine(
-            PathOperation.difference,
-            Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height)),
-            Path()
-              ..addRect(Rect.fromLTWH(
-                  dx - (width / 2), dy - (height / 2), width, height))
-              ..close(),
-          ),
-          paint);
+    final paintBg = Paint()..color = _bgColor.withValues(alpha: 0.8);
+
+    if (fullBackground) {
+      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paintBg);
+      return;
     }
+
+    final w = width + margin * 2;
+    final h = height + margin * 2;
+    final center = Offset(dx, dy);
+
+    Path path;
+    switch (shapeFocus) {
+      case ShapeFocus.oval:
+        path = Path()
+          ..addOval(Rect.fromCenter(center: center, width: w, height: h));
+        break;
+      case ShapeFocus.roundedSquare:
+        path = Path()
+          ..addRRect(RRect.fromRectAndCorners(
+            Rect.fromCenter(center: center, width: w, height: h),
+            topLeft: borderRadius,
+            topRight: borderRadius,
+            bottomLeft: borderRadius,
+            bottomRight: borderRadius,
+          ));
+        break;
+      case ShapeFocus.square:
+        path = Path()
+          ..addRect(Rect.fromCenter(center: center, width: w, height: h));
+    }
+    path.close();
+
+    canvas.drawPath(
+      Path.combine(
+        PathOperation.difference,
+        Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height)),
+        path,
+      ),
+      paintBg,
+    );
+
+    final paintBorder = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = _borderWidth;
+    canvas.drawPath(path, paintBorder);
   }
 
   @override
-
-  /// A method that returns whether the shape is a custom shape or not
-  bool shouldRepaint(CustomPainter oldDelegate) {
-    return false;
+  bool shouldRepaint(covariant FillBackground old) {
+    return old.dx != dx ||
+        old.dy != dy ||
+        old.width != width ||
+        old.height != height ||
+        old.margin != margin ||
+        old.borderRadius != borderRadius ||
+        old.fullBackground != fullBackground;
   }
 }
 
-enum ContentPosition {
-  above,
-  below,
+class AnimatedFocusHalo extends StatefulWidget {
+  final double dx, dy, width, height;
+  final ShapeFocus shapeFocus;
+  final double baseMargin;
+  final Radius borderRadius;
+  final bool fullBackground;
+
+  const AnimatedFocusHalo({
+    required this.dx,
+    required this.dy,
+    required this.width,
+    required this.height,
+    required this.shapeFocus,
+    this.baseMargin = 8.0,
+    this.borderRadius = const Radius.circular(12.0),
+    this.fullBackground = false,
+    super.key,
+  });
+
+  @override
+  AnimatedFocusHaloState createState() => AnimatedFocusHaloState();
+}
+
+class AnimatedFocusHaloState extends State<AnimatedFocusHalo>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+
+    _anim = Tween(begin: 0.9, end: 1.1).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final canvasSize = MediaQuery.of(context).size;
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) {
+        final m = widget.baseMargin * _anim.value;
+        return CustomPaint(
+          size: canvasSize,
+          painter: FillBackground(
+            dx: widget.dx,
+            dy: widget.dy,
+            width: widget.width,
+            height: widget.height,
+            shapeFocus: widget.shapeFocus,
+            margin: m,
+            borderRadius: widget.borderRadius,
+            fullBackground: widget.fullBackground,
+          ),
+        );
+      },
+    );
+  }
 }
 
 class Tutorial {
   static List<OverlayEntry> entries = [];
-  static late int count;
+  static late int _current;
 
   static Future<void> showTutorial(
     BuildContext context,
-    List<TutorialItem> children,
-    PageController pageController, {
+    List<TutorialItem> items,
+    PageController controller, {
     required VoidCallback onTutorialComplete,
   }) async {
     clearEntries();
-    final size = MediaQuery.of(context).size;
-    OverlayState overlayState = Overlay.of(context);
+    final overlay = Overlay.of(context);
+    _current = 0;
+    final completer = Completer<void>();
 
-    count = 0;
-
-    Completer<void> tutorialCompleter = Completer<void>();
-
-    void removeCurrentOverlay() {
-      if (entries.isNotEmpty) {
-        entries.last.remove();
-        entries.removeLast();
-      }
+    void removeLast() {
+      if (entries.isNotEmpty) entries.removeLast().remove();
     }
 
-    Future<void> showTutorialItem() async {
-      if (count >= children.length) {
-        tutorialCompleter.complete();
+    Future<void> showStep() async {
+      if (_current >= items.length) {
+        completer.complete();
         onTutorialComplete();
         return;
       }
+      removeLast();
+      final item = items[_current];
 
-      removeCurrentOverlay();
-
-      final element = children[count];
-      if (element.pageIndex != null &&
-          element.pageIndex != pageController.page?.toInt()) {
-        await pageController.animateToPage(
-          element.pageIndex!,
+      if (item.pageIndex != null &&
+          item.pageIndex != controller.page?.toInt()) {
+        await controller.animateToPage(
+          item.pageIndex!,
           duration: const Duration(milliseconds: 600),
           curve: Curves.easeInOut,
         );
         await Future.delayed(const Duration(milliseconds: 300));
       }
 
-      // Asegurar que el elemento esté visible en la pantalla
-      final renderObject = element.globalKey.currentContext?.findRenderObject();
-      if (renderObject != null && renderObject is RenderBox) {
+      final render = item.globalKey.currentContext?.findRenderObject();
+      if (render is RenderBox) {
         await Scrollable.ensureVisible(
-          element.globalKey.currentContext!,
+          item.globalKey.currentContext!,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
           alignment: 0.5,
         );
       }
 
-      final offset = _capturePositionWidget(element.globalKey);
-      final sizeWidget = _getSizeWidget(element.globalKey);
+      void next() {
+        if (_current == items.length - 1) {
+          clearEntries();
+          completer.complete();
+          onTutorialComplete();
+        } else {
+          _current++;
+          showStep();
+        }
+      }
 
-      final overlayEntry = OverlayEntry(
-        builder: (context) {
-          return Scaffold(
+      final box =
+          item.globalKey.currentContext!.findRenderObject() as RenderBox;
+      final offset = box.localToGlobal(Offset.zero);
+      final sizeW = box.size;
+
+      final entry = OverlayEntry(builder: (_) {
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: next,
+          child: Scaffold(
             backgroundColor: Colors.transparent,
             body: Stack(
               children: [
-                const ModalBarrier(
-                  dismissible: true,
-                  color: Colors.transparent,
+                AnimatedFocusHalo(
+                  dx: offset.dx + sizeW.width / 2,
+                  dy: offset.dy + sizeW.height / 2,
+                  width: sizeW.width,
+                  height: sizeW.height,
+                  shapeFocus: item.shapeFocus,
+                  baseMargin: item.focusMargin,
+                  borderRadius: item.borderRadius,
+                  fullBackground: item.fullBackground,
                 ),
-                CustomPaint(
-                  size: size,
-                  painter: HolePainter(
-                    shapeFocus: element.shapeFocus,
-                    dx: offset.dx + (sizeWidget.width / 2),
-                    dy: offset.dy + (sizeWidget.height / 2),
-                    width: sizeWidget.width,
-                    height: sizeWidget.height,
-                    color: element.color,
-                    borderRadius: element.borderRadius,
-                    radius: element.radius,
-                  ),
-                ),
-                _buildTutorialContent(
+                _buildTutorialText(
                   context: context,
-                  element: element,
+                  item: item,
                   targetOffset: offset,
-                  targetSize: sizeWidget,
+                  targetSize: sizeW,
                 ),
-
-                // Botones de anterior
                 Positioned(
-                  bottom: 150,
-                  left: 20,
+                  bottom: 32,
+                  right: 32,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFAEF0B0),
+                      backgroundColor: color6,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
                       padding: const EdgeInsets.symmetric(
                           vertical: 12, horizontal: 17),
                     ),
-                    icon: const Icon(Icons.arrow_back, color: color3),
-                    label:
-                        const Text('Anterior', style: TextStyle(color: color3)),
-                    onPressed: count > 0
-                        ? () {
-                            count--;
-                            showTutorialItem();
-                          }
-                        : null,
-                  ),
-                ),
-
-                //Boton de siguiente
-                Positioned(
-                  bottom: 150,
-                  right: 20,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFAEF0B0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 12, horizontal: 17),
-                    ),
-                    icon: Icon(
-                      count == children.length - 1
-                          ? Icons.check
-                          : Icons.arrow_forward,
-                      color: color3,
-                    ),
-                    label: Text(
-                      count == children.length - 1 ? 'Finalizar' : 'Siguiente',
-                      style: const TextStyle(color: color3),
-                    ),
+                    icon: const Icon(Icons.close, color: color0),
+                    label: const Text('Saltar Tutorial',
+                        style: TextStyle(color: color0)),
                     onPressed: () {
-                      if (count == children.length - 1) {
-                        clearEntries();
-                        tutorialCompleter.complete();
-                        onTutorialComplete();
-                      } else {
-                        count++;
-                        showTutorialItem();
-                      }
+                      clearEntries();
+                      completer.complete();
+                      onTutorialComplete();
                     },
-                  ),
-                ),
-
-                // Botón de Saltar Tutorial
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 100.0),
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: color6,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12, horizontal: 17),
-                      ),
-                      icon: const Icon(Icons.close, color: color0),
-                      label: const Text('Saltar Tutorial',
-                          style: TextStyle(color: color0)),
-                      onPressed: () {
-                        clearEntries();
-                        tutorialCompleter.complete();
-                        onTutorialComplete();
-                      },
-                    ),
                   ),
                 ),
               ],
             ),
-          );
-        },
-      );
+          ),
+        );
+      });
 
-      entries.add(overlayEntry);
-      overlayState.insert(overlayEntry);
+      entries.add(entry);
+      overlay.insert(entry);
     }
 
-    await showTutorialItem();
-
-    await tutorialCompleter.future;
+    await showStep();
+    return completer.future;
   }
 
-  static Widget _buildTutorialContent({
+  static Widget _buildTutorialText({
     required BuildContext context,
-    required TutorialItem element,
+    required TutorialItem item,
     required Offset targetOffset,
     required Size targetSize,
   }) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final contentWidth = screenWidth * 1;
+    final sw = MediaQuery.of(context).size.width;
+    final cw = sw * 0.8;
+    final textHeight = sw * 0.27;
 
-    // Calcula posición vertical (arriba/abajo)
-    double topPosition;
-    if (element.contentPosition == ContentPosition.above) {
-      topPosition = targetOffset.dy - 20 - _calculateContentHeight(context);
-    } else {
-      topPosition = targetOffset.dy + targetSize.height + 20;
+    final topY = item.contentPosition == ContentPosition.above
+        ? targetOffset.dy - textHeight - item.focusMargin
+        : targetOffset.dy + item.focusMargin + targetSize.height + 20;
+
+    final title = (item.child as TutorialItemContent).title;
+    final content = (item.child as TutorialItemContent).content;
+
+    Text strokedText(
+        String txt, double fontSize, FontWeight fw, Color fillColor) {
+      return Text(
+        txt,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: fw,
+          foreground: Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = fontSize * 0.08
+            ..color = Colors.black,
+        ),
+      );
     }
 
-    // Ajustar la posición si el contenido se superpone con la BottomAppBar
-    const bottomAppBarHeight = kBottomNavigationBarHeight;
-    final screenHeight = MediaQuery.of(context).size.height;
-    if (topPosition + _calculateContentHeight(context) >
-        screenHeight - bottomAppBarHeight) {
-      topPosition = screenHeight -
-          bottomAppBarHeight -
-          _calculateContentHeight(context) -
-          20;
+    Text filledText(
+        String txt, double fontSize, FontWeight fw, Color fillColor) {
+      return Text(
+        txt,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: fw,
+          color: fillColor,
+        ),
+      );
     }
 
     return Positioned(
-      top: topPosition,
-      left: (screenWidth - contentWidth) / 2,
-      child: Material(
-        color: Colors.transparent,
-        child: SizedBox(
-          width: contentWidth,
-          child: element.child,
-        ),
+      top: topY,
+      left: (sw - cw) / 2,
+      width: cw,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              strokedText(title, 20, FontWeight.bold, Colors.white),
+              filledText(title, 20, FontWeight.bold, Colors.white),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              strokedText(content, 16, FontWeight.normal, Colors.white70),
+              filledText(content, 16, FontWeight.normal, Colors.white70),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  static double _calculateContentHeight(BuildContext context) {
-    return MediaQuery.of(context).size.height * 0.20;
-  }
-
   static void clearEntries() {
-    for (var entry in entries) {
-      entry.remove();
+    for (var e in entries) {
+      e.remove();
     }
     entries.clear();
   }
-
-  static Offset _capturePositionWidget(GlobalKey key) {
-    RenderBox renderPosition =
-        key.currentContext?.findRenderObject() as RenderBox;
-    return renderPosition.localToGlobal(Offset.zero);
-  }
-
-  static Size _getSizeWidget(GlobalKey key) {
-    RenderBox renderSize = key.currentContext?.findRenderObject() as RenderBox;
-    return renderSize.size;
-  }
 }
 
-/// This is the enum that will be used to determine the shape of the focus
 class TutorialItemContent extends StatelessWidget {
+  final String title;
+  final String content;
+
   const TutorialItemContent({
     super.key,
     required this.title,
     required this.content,
   });
 
-  final String title;
-  final String content;
-
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-
-    return Center(
-      child: SizedBox(
-        width: width * 0.9,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: width * 0.05),
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFAEF0B0),
-              borderRadius: BorderRadius.circular(20.0),
-              boxShadow: [
-                BoxShadow(
-                  color: color6.withValues(alpha: 0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: color3,
-                    fontFamily: 'Poppins',
-                    fontSize: 22.0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Divider(
-                  color: color3,
-                  thickness: 1.0,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  content,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: color3,
-                    fontFamily: 'Poppins',
-                    fontSize: 16.0,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+    return const SizedBox.shrink();
   }
 }
 //*- tutorial -*\\
@@ -5693,142 +5781,6 @@ class _FloatingTutorialButtonState extends State<FloatingTutorialButton> {
   }
 }
 //*- Botón de tutorial -*\\
-
-//*- Maneja las global keys -*\\
-class KeyManager {
-  static final calefactores = _CalefactoresKey();
-  static final detectores = _DetectoresKey();
-  static final domotica = _DomoticaKey();
-  static final heladera = _HeladeraKey();
-  static final millenium = _MilleniumKey();
-  static final modulo = _ModuloKey();
-  static final relay = _RelayKey();
-  static final rele1i1o = _Rele1i1oKey();
-  static final managerScreen = _ManagerScreenKey();
-}
-
-class _CalefactoresKey {
-  final estadoKey = GlobalKey(); // key para la pantalla de estado
-  final titleKey = GlobalKey(); // key para el nombre del equipo
-  final wifiKey = GlobalKey(); // key para el wifi del equipo
-  final bottomKey = GlobalKey(); // key para el boton de encendido
-  final sparkKey = GlobalKey();
-  final tempKey = GlobalKey(); //key para la pantalla de temperatura
-  final tempBarKey = GlobalKey(); //key para la barra de temperatura
-  final distanceKey =
-      GlobalKey(); // key para la pantalla de control por distancia
-  final distanceBottomKey = GlobalKey(); // key para el boton de encendido
-  final consumeKey = GlobalKey(); // key para la pantalla de consumo
-  final valorKey = GlobalKey(); // key para el valor de la tarifa
-  final consuptionKey = GlobalKey(); // key para el valor de consumo
-  final calculateKey = GlobalKey();
-  final mesKey = GlobalKey(); // key para el mes de consumo
-  final imageKey = GlobalKey(); // key para la imagen del equipo
-}
-
-class _DetectoresKey {
-  final estadoKey = GlobalKey(); // key para la pantalla de estado
-  final titleKey = GlobalKey(); // key para el nombre del equipo
-  final wifiKey = GlobalKey(); // key para el wifi del equipo
-  final gasKey = GlobalKey(); // key para la pantalla de gas
-  final coKey = GlobalKey(); // key para la pantalla de co
-  final gas2Key = GlobalKey(); // key para la pantalla de gas2
-  final co2Key = GlobalKey(); // key para la pantalla de co2
-  final gas3Key = GlobalKey(); // key para la pantalla de gas2
-  final co3Key = GlobalKey(); // key para la pantalla de co2
-  final brightnessKey = GlobalKey(); // key para el brillo del display
-  final barBrightnessKey = GlobalKey(); // key para la barra de brillo
-  final configKey = GlobalKey(); // key para la pantalla de configuraciones
-  final imageKey = GlobalKey(); // key para la imagen del equipo
-  final discNotificationKey = GlobalKey(); // key para el boton de desconexión
-}
-
-class _DomoticaKey {
-  final estadoKey = GlobalKey(); // key para la pantalla de estado
-  final titleKey = GlobalKey(); // key para el nombre del equipo
-  final wifiKey = GlobalKey(); // key para el wifi del equipo
-  final pinModeKey = GlobalKey(); // key para el cambio de modo de pines
-  final imageKey = GlobalKey(); // key para la imagen del equipo
-}
-
-class _HeladeraKey {
-  final estadoKey = GlobalKey(); // key para la pantalla de estado
-  final titleKey = GlobalKey(); // key para el nombre del equipo
-  final wifiKey = GlobalKey(); // key para el wifi del equipo
-  final bottomKey = GlobalKey(); // key para el boton de encendido
-  final tempKey = GlobalKey(); //key para la pantalla de temperatura
-  final tempBarKey = GlobalKey(); //key para la barra de temperatura
-  final distanceKey =
-      GlobalKey(); // key para la pantalla de control por distancia
-  final distanceBottomKey = GlobalKey(); // key para el boton de encendido
-  final consumeKey = GlobalKey(); // key para la pantalla de consumo
-  final valorKey = GlobalKey(); // key para el valor de la tarifa
-  final consuptionKey = GlobalKey(); // key para el valor de consumo
-  final calculateKey = GlobalKey();
-  final mesKey = GlobalKey(); // key para el mes de consumo
-  final imageKey = GlobalKey(); // key para la imagen del equipo
-}
-
-class _MilleniumKey {
-  final estadoKey = GlobalKey(); // key para la pantalla de estado
-  final titleKey = GlobalKey(); // key para el nombre del equipo
-  final wifiKey = GlobalKey(); // key para el wifi del equipo
-  final bottomKey = GlobalKey(); // key para el boton de encendido
-  final tempKey = GlobalKey(); //key para la pantalla de temperatura
-  final tempBarKey = GlobalKey(); //key para la barra de temperatura
-  final consumeKey = GlobalKey(); // key para la pantalla de consumo
-  final valorKey = GlobalKey(); // key para el valor de la tarifa
-  final consuptionKey = GlobalKey(); // key para el valor de consumo
-  final calculateKey = GlobalKey();
-  final mesKey = GlobalKey(); // key para el mes de consumo
-  final imageKey = GlobalKey(); // key para la imagen del equipo
-}
-
-class _ModuloKey {
-  final estadoKey = GlobalKey(); // key para la pantalla de estado
-  final titleKey = GlobalKey(); // key para el nombre del equipo
-  final wifiKey = GlobalKey(); // key para el wifi del equipo
-  final pinModeKey = GlobalKey(); // key para el cambio de modo de pines
-  final imageKey = GlobalKey(); // key para la imagen del equipo
-}
-
-class _RelayKey {
-  final estadoKey = GlobalKey(); // key para la pantalla de estado
-  final bottomKey = GlobalKey(); // key para el boton de encendido
-  final titleKey = GlobalKey(); // key para el nombre del equipo
-  final wifiKey = GlobalKey(); // key para el wifi del equipo
-  final distanceKey =
-      GlobalKey(); // key para la pantalla de control por distancia
-  final distanceBottomKey = GlobalKey(); // key para el boton de encendido
-  final pinModeKey = GlobalKey(); // key para el cambio de modo de pines
-  final imageKey = GlobalKey(); // key para la imagen del equipo
-}
-
-class _Rele1i1oKey {
-  final estadoKey = GlobalKey(); // key para la pantalla de estado
-  final titleKey = GlobalKey(); // key para el nombre del equipo
-  final wifiKey = GlobalKey(); // key para el wifi del equipo
-  final distanceKey =
-      GlobalKey(); // key para la pantalla de control por distancia
-  final distanceBottomKey = GlobalKey(); // key para el boton de encendido
-  final pinModeKey = GlobalKey(); // key para el cambio de modo de pines
-  final imageKey = GlobalKey(); // key para la imagen del equipo
-}
-
-class _ManagerScreenKey {
-  final adminKey = GlobalKey(); // key para la pantalla de gestión
-  final claimKey = GlobalKey(); // key para el boton de reclamar admin
-  final agreeAdminKey =
-      GlobalKey(); // key para el boton de agregar administradores
-  final viewAdminKey = GlobalKey(); // key para ver la lista de administradores
-  final habitKey = GlobalKey(); // key para el boton de habitantes
-  final fastBotonKey = GlobalKey(); // key para el boton de acceso rápido
-  final ledKey = GlobalKey(); // key para el boton de led
-  final imageKey = GlobalKey(); // key para la imagen del equipo
-  final discNotificationKey = GlobalKey(); // key para el boton de desconexión
-}
-
-//*- Maneja las global keys -*\\
 
 //*- Selector de dias -*\\
 

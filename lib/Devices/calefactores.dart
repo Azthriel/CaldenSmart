@@ -6,24 +6,23 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../Global/manager_screen.dart';
 import '../aws/dynamo/dynamo.dart';
-import '../aws/dynamo/dynamo_certificates.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../Global/stored_data.dart';
 import 'package:caldensmart/logger.dart';
 
 // CLASES \\
 
-class CalefactorPage extends StatefulWidget {
+class CalefactorPage extends ConsumerStatefulWidget {
   const CalefactorPage({super.key});
 
   @override
-  CalefactorPageState createState() => CalefactorPageState();
+  ConsumerState<CalefactorPage> createState() => CalefactorPageState();
 }
 
-class CalefactorPageState extends State<CalefactorPage> {
+class CalefactorPageState extends ConsumerState<CalefactorPage> {
   var parts2 = utf8.decode(varsValues).split(':');
 
   late double tempValue;
@@ -65,6 +64,11 @@ class CalefactorPageState extends State<CalefactorPage> {
 
   DateTime? fechaSeleccionada;
 
+  final bool hasSpark = globalDATA[
+              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
+          'hasSpark'] ??
+      false;
+
   String tiempo = '';
 
   ///*- Elementos para tutoriales -*\\\
@@ -73,12 +77,11 @@ class CalefactorPageState extends State<CalefactorPage> {
   void initItems() {
     items.addAll({
       TutorialItem(
-        globalKey: KeyManager.calefactores.estadoKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
-        contentPosition: ContentPosition.below,
-        radius: 0,
+        globalKey: keys['calefactores:estado']!,
+        borderRadius: const Radius.circular(30),
+        shapeFocus: ShapeFocus.roundedSquare,
+        contentPosition: ContentPosition.above,
+        focusMargin: 15.0,
         pageIndex: 0,
         child: const TutorialItemContent(
           title: 'Estado del equipo',
@@ -87,11 +90,11 @@ class CalefactorPageState extends State<CalefactorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.calefactores.titleKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['calefactores:titulo']!,
         shapeFocus: ShapeFocus.roundedSquare,
-        borderRadius: const Radius.circular(10.0),
+        borderRadius: const Radius.circular(30.0),
         contentPosition: ContentPosition.below,
+        focusMargin: 15.0,
         pageIndex: 0,
         child: const TutorialItemContent(
           title: 'Nombre del equipo',
@@ -100,13 +103,12 @@ class CalefactorPageState extends State<CalefactorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.calefactores.wifiKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['calefactores:wifi']!,
         shapeFocus: ShapeFocus.oval,
         borderRadius: const Radius.circular(15.0),
-        radius: 25,
         contentPosition: ContentPosition.below,
         pageIndex: 0,
+        focusMargin: 5.0,
         child: const TutorialItemContent(
           title: 'Menu Wifi',
           content:
@@ -114,25 +116,37 @@ class CalefactorPageState extends State<CalefactorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.calefactores.bottomKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['calefactores:servidor']!,
+        shapeFocus: ShapeFocus.oval,
+        borderRadius: const Radius.circular(15.0),
+        contentPosition: ContentPosition.below,
+        pageIndex: 0,
+        focusMargin: 15.0,
+        child: const TutorialItemContent(
+          title: 'Conexión al servidor',
+          content:
+              'Podrás observar el estado de la conexión del dispositivo con el servidor',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['calefactores:boton']!,
         borderRadius: const Radius.circular(10),
-        radius: 80,
         shapeFocus: ShapeFocus.oval,
         pageIndex: 0,
+        focusMargin: 20.0,
         child: const TutorialItemContent(
           title: 'Botón de encendido',
           content: 'Puedes encender o apagar el equipo al presionar el botón',
         ),
       ),
-      if (DeviceManager.getProductCode(deviceName) == '027000_IOT') ...{
+      if (DeviceManager.getProductCode(deviceName) == '027000_IOT' &&
+          hasSpark) ...{
         TutorialItem(
-          globalKey: KeyManager.calefactores.sparkKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['calefactores:chispero']!,
           borderRadius: const Radius.circular(10),
-          radius: 50,
           shapeFocus: ShapeFocus.oval,
           pageIndex: 0,
+          focusMargin: 20.0,
           child: const TutorialItemContent(
             title: 'Chispero',
             content:
@@ -141,13 +155,12 @@ class CalefactorPageState extends State<CalefactorPage> {
         ),
       },
       TutorialItem(
-        globalKey: KeyManager.calefactores.tempKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
+        globalKey: keys['calefactores:temperatura']!,
+        borderRadius: const Radius.circular(30),
+        shapeFocus: ShapeFocus.roundedSquare,
         contentPosition: ContentPosition.below,
+        focusMargin: 15.0,
         pageIndex: 1,
-        radius: 0,
         child: !tenant
             ? const TutorialItemContent(
                 title: 'Temperatura',
@@ -162,8 +175,7 @@ class CalefactorPageState extends State<CalefactorPage> {
       ),
       if (!tenant) ...{
         TutorialItem(
-          globalKey: KeyManager.calefactores.tempBarKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['calefactores:corte']!,
           borderRadius: const Radius.circular(35),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 1,
@@ -175,11 +187,10 @@ class CalefactorPageState extends State<CalefactorPage> {
         ),
       },
       TutorialItem(
-        globalKey: KeyManager.calefactores.distanceKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        shapeFocus: ShapeFocus.oval,
-        borderRadius: const Radius.circular(0),
-        radius: 0,
+        globalKey: keys['calefactores:controlDistancia']!,
+        shapeFocus: ShapeFocus.roundedSquare,
+        borderRadius: const Radius.circular(30),
+        focusMargin: 15.0,
         pageIndex: 2,
         child: const TutorialItemContent(
           title: 'Control por distancia',
@@ -188,10 +199,9 @@ class CalefactorPageState extends State<CalefactorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.calefactores.distanceBottomKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(10),
-        radius: 90,
+        globalKey: keys['calefactores:controlBoton']!,
+        borderRadius: const Radius.circular(15),
+        focusMargin: 20.0,
         shapeFocus: ShapeFocus.oval,
         pageIndex: 2,
         child: const TutorialItemContent(
@@ -200,13 +210,12 @@ class CalefactorPageState extends State<CalefactorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.calefactores.consumeKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        shapeFocus: ShapeFocus.oval,
-        borderRadius: const Radius.circular(0),
-        radius: 0,
+        globalKey: keys['calefactores:consumo']!,
+        shapeFocus: ShapeFocus.roundedSquare,
+        borderRadius: const Radius.circular(30),
         contentPosition: ContentPosition.below,
         pageIndex: 3,
+        focusMargin: 0.0,
         child: !tenant
             ? const TutorialItemContent(
                 title: 'Calculadora de consumo',
@@ -221,8 +230,7 @@ class CalefactorPageState extends State<CalefactorPage> {
       ),
       if (!tenant) ...{
         TutorialItem(
-          globalKey: KeyManager.calefactores.valorKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['calefactores:valor']!,
           shapeFocus: ShapeFocus.roundedSquare,
           borderRadius: const Radius.circular(15.0),
           pageIndex: 3,
@@ -234,8 +242,7 @@ class CalefactorPageState extends State<CalefactorPage> {
       },
       if (valueConsuption == null && !tenant) ...{
         TutorialItem(
-          globalKey: KeyManager.calefactores.consuptionKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['calefactores:consumoManual']!,
           shapeFocus: ShapeFocus.roundedSquare,
           borderRadius: const Radius.circular(15.0),
           pageIndex: 3,
@@ -247,8 +254,7 @@ class CalefactorPageState extends State<CalefactorPage> {
       },
       if (!tenant) ...{
         TutorialItem(
-          globalKey: KeyManager.calefactores.calculateKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['calefactores:calcular']!,
           shapeFocus: ShapeFocus.roundedSquare,
           borderRadius: const Radius.circular(15.0),
           pageIndex: 3,
@@ -258,8 +264,7 @@ class CalefactorPageState extends State<CalefactorPage> {
           ),
         ),
         TutorialItem(
-          globalKey: KeyManager.calefactores.mesKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['calefactores:mes']!,
           shapeFocus: ShapeFocus.roundedSquare,
           borderRadius: const Radius.circular(15.0),
           pageIndex: 3,
@@ -270,12 +275,11 @@ class CalefactorPageState extends State<CalefactorPage> {
         ),
       },
       TutorialItem(
-        globalKey: KeyManager.managerScreen.adminKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
+        globalKey: keys['managerScreen:titulo']!,
+        borderRadius: const Radius.circular(30),
+        focusMargin: 15.0,
+        shapeFocus: ShapeFocus.roundedSquare,
         pageIndex: 4,
-        radius: 0,
         contentPosition: ContentPosition.below,
         child: const TutorialItemContent(
           title: 'Gestión',
@@ -284,8 +288,7 @@ class CalefactorPageState extends State<CalefactorPage> {
       ),
       if (!tenant) ...{
         TutorialItem(
-          globalKey: KeyManager.managerScreen.claimKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:reclamar']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 4,
@@ -299,8 +302,7 @@ class CalefactorPageState extends State<CalefactorPage> {
       },
       if (owner == currentUserEmail) ...{
         TutorialItem(
-          globalKey: KeyManager.managerScreen.agreeAdminKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:agregarAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 4,
@@ -311,8 +313,7 @@ class CalefactorPageState extends State<CalefactorPage> {
           ),
         ),
         TutorialItem(
-          globalKey: KeyManager.managerScreen.viewAdminKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:verAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 4,
@@ -323,8 +324,7 @@ class CalefactorPageState extends State<CalefactorPage> {
           ),
         ),
         TutorialItem(
-          globalKey: KeyManager.managerScreen.habitKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:alquiler']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 4,
@@ -337,8 +337,7 @@ class CalefactorPageState extends State<CalefactorPage> {
       },
       if (!tenant) ...{
         TutorialItem(
-          globalKey: KeyManager.managerScreen.fastBotonKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:accesoRapido']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 4,
@@ -348,8 +347,8 @@ class CalefactorPageState extends State<CalefactorPage> {
           ),
         ),
         // TutorialItem(
-        //   globalKey: KeyManager.managerScreen.discNotificationKey,
-        //   color: Colors.black.withValues(alpha: 0.6),
+        //   globalKey: keys['managerScreen:desconexionNotificacion']!,
+        //
         //   borderRadius: const Radius.circular(20),
         //   shapeFocus: ShapeFocus.roundedSquare,
         //   pageIndex: 4,
@@ -360,8 +359,7 @@ class CalefactorPageState extends State<CalefactorPage> {
         // ),
       },
       TutorialItem(
-        globalKey: KeyManager.managerScreen.ledKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['managerScreen:led']!,
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
         pageIndex: 4,
@@ -371,8 +369,7 @@ class CalefactorPageState extends State<CalefactorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.managerScreen.imageKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['managerScreen:imagen']!,
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
         pageIndex: 4,
@@ -385,6 +382,7 @@ class CalefactorPageState extends State<CalefactorPage> {
   }
 
   ///*- Elementos para tutoriales -*\\\
+
   @override
   void initState() {
     super.initState();
@@ -423,7 +421,7 @@ class CalefactorPageState extends State<CalefactorPage> {
 
     if (!alexaDevices.contains(deviceName)) {
       alexaDevices.add(deviceName);
-      putDevicesForAlexa(service, currentUserEmail, alexaDevices);
+      putDevicesForAlexa(currentUserEmail, alexaDevices);
     }
   }
 
@@ -539,8 +537,7 @@ class CalefactorPageState extends State<CalefactorPage> {
     // printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
-    WifiNotifier wifiNotifier =
-        Provider.of<WifiNotifier>(context, listen: false);
+    final wifiNotifier = ref.read(wifiProvider.notifier);
 
     if (parts[0] == 'WCS_CONNECTED') {
       atemp = false;
@@ -607,15 +604,20 @@ class CalefactorPageState extends State<CalefactorPage> {
     await myDevice.varsUuid.setNotifyValue(true);
 
     final trueStatusSub =
-        myDevice.varsUuid.onValueReceived.listen((List<int> status) {
+      myDevice.varsUuid.onValueReceived.listen((List<int> status) {
       var parts = utf8.decode(status).split(':');
+      printLog.i('Llegaron cositas vars: $parts', color: 'Naranja');
+      
+      if (parts.length <= 3) {
       setState(() {
         if (parts[0] == '1') {
-          trueStatus = true;
+        trueStatus = true;
         } else {
-          trueStatus = false;
+        trueStatus = false;
         }
+        actualTemp = parts[1];
       });
+      }
     });
 
     myDevice.device.cancelWhenDisconnected(trueStatusSub);
@@ -790,8 +792,7 @@ class CalefactorPageState extends State<CalefactorPage> {
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
 
-    WifiNotifier wifiNotifier =
-        Provider.of<WifiNotifier>(context, listen: false);
+    final wifiState = ref.watch(wifiProvider);
 
     bool isOwner = currentUserEmail == owner;
     bool isSecondaryAdmin = adminDevices.contains(currentUserEmail);
@@ -820,7 +821,7 @@ class CalefactorPageState extends State<CalefactorPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  key: KeyManager.calefactores.estadoKey,
+                  key: keys['calefactores:estado']!,
                   'Estado del Dispositivo',
                   style: GoogleFonts.poppins(
                     fontSize: 28,
@@ -842,7 +843,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                     }
                   },
                   child: AnimatedContainer(
-                    key: KeyManager.calefactores.bottomKey,
+                    key: keys['calefactores:boton']!,
                     duration: const Duration(milliseconds: 500),
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -888,13 +889,13 @@ class CalefactorPageState extends State<CalefactorPage> {
                     ),
                   ],
                 ),
-                if (DeviceManager.getProductCode(deviceName) ==
-                    '027000_IOT') ...{
+                if (DeviceManager.getProductCode(deviceName) == '027000_IOT' &&
+                    hasSpark) ...{
                   const SizedBox(
                     height: 30,
                   ),
                   GestureDetector(
-                    key: KeyManager.calefactores.sparkKey,
+                    key: keys['calefactores:chispero']!,
                     onLongPressStart: (LongPressStartDetails a) async {
                       setState(() {
                         ignite = true;
@@ -965,7 +966,7 @@ class CalefactorPageState extends State<CalefactorPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  key: KeyManager.calefactores.tempKey,
+                  key: keys['calefactores:temperatura']!,
                   'Temperatura de corte',
                   style: GoogleFonts.poppins(
                     fontSize: 28,
@@ -979,14 +980,30 @@ class CalefactorPageState extends State<CalefactorPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.thermostat_rounded,
-                      size: 200,
-                      color: Color.lerp(
-                        Colors.blueAccent,
-                        Colors.redAccent,
-                        (tempValue - 10) / 30,
-                      ),
+                    Column(
+                      children: [
+                        Icon(
+                          Icons.thermostat_rounded,
+                          size: 200,
+                          color: Color.lerp(
+                            Colors.blueAccent,
+                            Colors.redAccent,
+                            (tempValue - 10) / 30,
+                          ),
+                        ),
+                        if (specialUser) ...[
+                          Text(
+                            'Temperatura actual:\n$actualTemp °C',
+                            style: GoogleFonts.poppins(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: color3,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      ],
                     ),
                     const SizedBox(width: 20),
                     Column(
@@ -1010,7 +1027,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                         ),
                         const SizedBox(height: 10),
                         Container(
-                          key: KeyManager.calefactores.tempBarKey,
+                          key: keys['calefactores:corte']!,
                           height: 350,
                           width: 70,
                           decoration: BoxDecoration(
@@ -1113,7 +1130,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      key: KeyManager.calefactores.distanceKey,
+                      key: keys['calefactores:controlDistancia']!,
                       'Control por distancia',
                       style: GoogleFonts.poppins(
                         fontSize: 28,
@@ -1134,7 +1151,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                     ),
                     const SizedBox(height: 30),
                     GestureDetector(
-                      key: KeyManager.calefactores.distanceBottomKey,
+                      key: keys['calefactores:controlBoton']!,
                       onTap: () {
                         if (isOwner || owner == '' || tenant) {
                           verifyPermission().then((result) {
@@ -1270,7 +1287,6 @@ class CalefactorPageState extends State<CalefactorPage> {
                                                   printLog.i(
                                                       'Valor enviado: ${value.round()}');
                                                   putDistanceOff(
-                                                    service,
                                                     DeviceManager
                                                         .getProductCode(
                                                             deviceName),
@@ -1369,7 +1385,6 @@ class CalefactorPageState extends State<CalefactorPage> {
                                                   printLog.i(
                                                       'Valor enviado: ${value.round()}');
                                                   putDistanceOn(
-                                                    service,
                                                     DeviceManager
                                                         .getProductCode(
                                                             deviceName),
@@ -1422,7 +1437,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    key: KeyManager.calefactores.consumeKey,
+                    key: keys['calefactores:consumo']!,
                     'Calculadora de Consumo',
                     style: GoogleFonts.poppins(
                       fontSize: 32,
@@ -1433,7 +1448,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                   ),
                   const SizedBox(height: 50),
                   Container(
-                    key: KeyManager.calefactores.valorKey,
+                    key: keys['calefactores:valor']!,
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20.0, vertical: 10.0),
@@ -1470,7 +1485,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                   if (valueConsuption == null) ...[
                     const SizedBox(height: 30),
                     Container(
-                      key: KeyManager.calefactores.consuptionKey,
+                      key: keys['calefactores:consumoManual']!,
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20.0, vertical: 10.0),
@@ -1535,7 +1550,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                   ],
                   const SizedBox(height: 30),
                   ElevatedButton(
-                    key: KeyManager.calefactores.calculateKey,
+                    key: keys['calefactores:calcular']!,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: color3,
                       foregroundColor: color0,
@@ -1577,7 +1592,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton(
-                    key: KeyManager.calefactores.mesKey,
+                    key: keys['calefactores:mes']!,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: color3,
                       foregroundColor: color0,
@@ -1663,11 +1678,14 @@ class CalefactorPageState extends State<CalefactorPage> {
                 children: [
                   Image.asset('assets/branch/dragon.gif',
                       width: 100, height: 100),
-                  Container(
-                    margin: const EdgeInsets.only(left: 15),
-                    child: const Text(
-                      "Desconectando...",
-                      style: TextStyle(color: Color(0xFFFFFFFF)),
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 15),
+                      child: const Text(
+                        "Desconectando...",
+                        style: TextStyle(color: Color(0xFFFFFFFF)),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ],
@@ -1735,7 +1753,7 @@ class CalefactorPageState extends State<CalefactorPage> {
                         String newNickname = nicknameController.text;
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
-                        putNicknames(service, currentUserEmail, nicknamesMap);
+                        putNicknames(currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },
@@ -1746,7 +1764,7 @@ class CalefactorPageState extends State<CalefactorPage> {
             child: Row(
               children: [
                 Expanded(
-                  key: KeyManager.calefactores.titleKey,
+                  key: keys['calefactores:titulo']!,
                   child: Text(
                     nickname,
                     overflow: TextOverflow.ellipsis,
@@ -1773,11 +1791,14 @@ class CalefactorPageState extends State<CalefactorPage> {
                       children: [
                         Image.asset('assets/branch/dragon.gif',
                             width: 100, height: 100),
-                        Container(
-                          margin: const EdgeInsets.only(left: 15),
-                          child: const Text(
-                            "Desconectando...",
-                            style: TextStyle(color: Color(0xFFFFFFFF)),
+                        Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.only(left: 15),
+                            child: const Text(
+                              "Desconectando...",
+                              style: TextStyle(color: Color(0xFFFFFFFF)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
                       ],
@@ -1797,15 +1818,17 @@ class CalefactorPageState extends State<CalefactorPage> {
           ),
           actions: [
             Icon(
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                      'cstate']
+              key: keys['calefactores:servidor']!,
+              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                          ?['cstate'] ??
+                      false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,
             ),
             IconButton(
-              key: KeyManager.calefactores.wifiKey,
-              icon: Icon(wifiNotifier.wifiIcon, color: color0),
+              key: keys['calefactores:wifi']!,
+              icon: Icon(wifiState.wifiIcon, color: color0),
               onPressed: () {
                 if (_isTutorialActive) return;
                 wifiText(context);

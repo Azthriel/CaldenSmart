@@ -1,13 +1,12 @@
 import 'dart:convert';
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
-import 'package:caldensmart/aws/dynamo/dynamo_certificates.dart';
 import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../Global/manager_screen.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../Global/stored_data.dart';
@@ -15,14 +14,14 @@ import 'package:caldensmart/logger.dart';
 
 // CLASES \\
 
-class MilleniumPage extends StatefulWidget {
+class MilleniumPage extends ConsumerStatefulWidget {
   const MilleniumPage({super.key});
 
   @override
   MilleniumPageState createState() => MilleniumPageState();
 }
 
-class MilleniumPageState extends State<MilleniumPage> {
+class MilleniumPageState extends ConsumerState<MilleniumPage> {
   List<String> parts2 = utf8.decode(varsValues).split(':');
 
   bool showSecondaryAdminFields = false;
@@ -64,11 +63,11 @@ class MilleniumPageState extends State<MilleniumPage> {
   void initItems() {
     items.addAll({
       TutorialItem(
-        globalKey: KeyManager.millenium.estadoKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
-        radius: 0,
+        globalKey: keys['millenium:estado']!,
+        borderRadius: const Radius.circular(30),
+        shapeFocus: ShapeFocus.roundedSquare,
+        contentPosition: ContentPosition.below,
+        focusMargin: 15.0,
         pageIndex: 0,
         child: const TutorialItemContent(
           title: 'Estado del equipo',
@@ -77,8 +76,7 @@ class MilleniumPageState extends State<MilleniumPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.millenium.titleKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['millenium:titulo']!,
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(10.0),
         contentPosition: ContentPosition.below,
@@ -90,85 +88,115 @@ class MilleniumPageState extends State<MilleniumPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.millenium.wifiKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['millenium:wifi']!,
         shapeFocus: ShapeFocus.oval,
         borderRadius: const Radius.circular(15.0),
-        radius: 25,
         contentPosition: ContentPosition.below,
         pageIndex: 0,
         child: const TutorialItemContent(
           title: 'Menu Wifi',
-          content: 'Podrás observar el estado de la conexión wifi del equipo',
+          content:
+              'Podrás observar el estado de la conexión wifi del dispositivo',
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.millenium.bottomKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['millenium:servidor']!,
+        shapeFocus: ShapeFocus.oval,
+        borderRadius: const Radius.circular(15.0),
+        contentPosition: ContentPosition.below,
+        pageIndex: 0,
+        focusMargin: 15.0,
+        child: const TutorialItemContent(
+          title: 'Conexión al servidor',
+          content:
+              'Podrás observar el estado de la conexión del dispositivo con el servidor',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['millenium:boton']!,
         borderRadius: const Radius.circular(10),
-        radius: 90,
         shapeFocus: ShapeFocus.oval,
         pageIndex: 0,
+        focusMargin: 20.0,
         child: const TutorialItemContent(
           title: 'Botón de encendido',
           content: 'Puedes encender o apagar el equipo al presionar el botón',
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.millenium.tempKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
+        globalKey: keys['millenium:temperatura']!,
+        borderRadius: const Radius.circular(30),
+        shapeFocus: ShapeFocus.roundedSquare,
+        focusMargin: 15.0,
         contentPosition: ContentPosition.below,
         pageIndex: 1,
-        radius: 0,
-        child: const TutorialItemContent(
-          title: 'Temperatura',
-          content:
-              'En esta pantalla podras controlar la temperatura de corte del equipo',
-        ),
+        child: !tenant
+            ? const TutorialItemContent(
+                title: 'Temperatura',
+                content:
+                    'En esta pantalla podrás ajustar la temperatura de corte del equipo',
+              )
+            : const TutorialItemContent(
+                title: 'Inquilino',
+                content:
+                    'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
+              ),
       ),
-      TutorialItem(
-        globalKey: KeyManager.millenium.tempBarKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(35),
-        shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 1,
-        child: const TutorialItemContent(
-          title: 'Barra de temperatura',
-          content:
-              'Podras controlar la temperatura a la cual el equipo debe cortar',
-        ),
-      ),
-      TutorialItem(
-        globalKey: KeyManager.millenium.consumeKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        shapeFocus: ShapeFocus.oval,
-        borderRadius: const Radius.circular(0),
-        radius: 0,
-        contentPosition: ContentPosition.below,
-        pageIndex: 2,
-        child: const TutorialItemContent(
-          title: 'Calculadora de consumo',
-          content:
-              'En esta pantalla puedes estimar el uso de tu equipo según tu tarifa',
-        ),
-      ),
-      TutorialItem(
-        globalKey: KeyManager.millenium.valorKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        shapeFocus: ShapeFocus.roundedSquare,
-        borderRadius: const Radius.circular(15.0),
-        pageIndex: 2,
-        child: const TutorialItemContent(
-          title: 'Tarifa',
-          content: 'Podrás ingresar el valor de tu tarifa',
-        ),
-      ),
-      if (valueConsuption == null) ...{
+      if (!tenant) ...{
         TutorialItem(
-          globalKey: KeyManager.millenium.consuptionKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['millenium:corte']!,
+          borderRadius: const Radius.circular(35),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 1,
+          focusMargin: 15.0,
+          child: const TutorialItemContent(
+            title: 'Barra de temperatura',
+            content:
+                'Podrás manejar la temperatura a la que el equipo debe cortar',
+          ),
+        ),
+      },
+      if (!tenant) ...{
+        TutorialItem(
+          globalKey: keys['millenium:consumo']!,
+          shapeFocus: ShapeFocus.roundedSquare,
+          borderRadius: const Radius.circular(30),
+          contentPosition: ContentPosition.below,
+          focusMargin: 0.0,
+          pageIndex: 2,
+          child: const TutorialItemContent(
+            title: 'Calculadora de consumo',
+            content:
+                'En esta pantalla puedes estimar el uso de tu equipo según tu tarifa',
+          ),
+        ),
+        TutorialItem(
+          globalKey: keys['millenium:valor']!,
+          shapeFocus: ShapeFocus.roundedSquare,
+          borderRadius: const Radius.circular(15.0),
+          pageIndex: 2,
+          child: const TutorialItemContent(
+            title: 'Tarifa',
+            content: 'Podrás ingresar el valor de tu tarifa',
+          ),
+        ),
+      } else ...{
+        TutorialItem(
+          globalKey: keys['millenium:consumo']!,
+          borderRadius: const Radius.circular(0),
+          shapeFocus: ShapeFocus.oval,
+          contentPosition: ContentPosition.below,
+          pageIndex: 2,
+          child: const TutorialItemContent(
+            title: 'Inquilino',
+            content:
+                'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
+          ),
+        ),
+      },
+      if (valueConsuption == null && !tenant) ...{
+        TutorialItem(
+          globalKey: keys['millenium:consumoManual']!,
           shapeFocus: ShapeFocus.roundedSquare,
           borderRadius: const Radius.circular(15.0),
           pageIndex: 2,
@@ -178,58 +206,57 @@ class MilleniumPageState extends State<MilleniumPage> {
           ),
         ),
       },
-      TutorialItem(
-        globalKey: KeyManager.millenium.calculateKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        shapeFocus: ShapeFocus.roundedSquare,
-        borderRadius: const Radius.circular(15.0),
-        pageIndex: 2,
-        child: const TutorialItemContent(
-          title: 'Calculo',
-          content: 'Podrás ver el costo de consumo de tu equipo',
+      if (!tenant) ...{
+        TutorialItem(
+          globalKey: keys['millenium:calcular']!,
+          shapeFocus: ShapeFocus.roundedSquare,
+          borderRadius: const Radius.circular(15.0),
+          pageIndex: 2,
+          child: const TutorialItemContent(
+            title: 'Calculo',
+            content: 'Podrás ver el costo de consumo de tu equipo',
+          ),
         ),
-      ),
-      TutorialItem(
-        globalKey: KeyManager.millenium.mesKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        shapeFocus: ShapeFocus.roundedSquare,
-        borderRadius: const Radius.circular(15.0),
-        pageIndex: 2,
-        child: const TutorialItemContent(
-          title: 'Mes de consumo',
-          content: 'Podrás reiniciar el mes de consumo',
+        TutorialItem(
+          globalKey: keys['millenium:mes']!,
+          shapeFocus: ShapeFocus.roundedSquare,
+          borderRadius: const Radius.circular(15.0),
+          pageIndex: 2,
+          child: const TutorialItemContent(
+            title: 'Mes de consumo',
+            content: 'Podrás reiniciar el mes de consumo',
+          ),
         ),
-      ),
+      },
       TutorialItem(
-        globalKey: KeyManager.managerScreen.adminKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
+        globalKey: keys['managerScreen:titulo']!,
+        borderRadius: const Radius.circular(10),
+        shapeFocus: ShapeFocus.roundedSquare,
         pageIndex: 3,
-        radius: 0,
+        focusMargin: 15.0,
         contentPosition: ContentPosition.below,
         child: const TutorialItemContent(
           title: 'Gestión',
           content: 'Podrás reclamar el equipo y gestionar sus funciones',
         ),
       ),
-      TutorialItem(
-        globalKey: KeyManager.managerScreen.claimKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(20),
-        shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 3,
-        contentPosition: ContentPosition.below,
-        child: const TutorialItemContent(
-          title: 'Reclamar administrador',
-          content:
-              'Presiona este botón para reclamar la administración del equipo',
-        ),
-      ),
-      if (currentUserEmail == owner) ...{
+      if (!tenant) ...{
         TutorialItem(
-          globalKey: KeyManager.managerScreen.agreeAdminKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:reclamar']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 3,
+          contentPosition: ContentPosition.below,
+          child: const TutorialItemContent(
+            title: 'Reclamar administrador',
+            content:
+                'Presiona este botón para reclamar la administración del equipo',
+          ),
+        ),
+      },
+      if (owner == currentUserEmail) ...{
+        TutorialItem(
+          globalKey: keys['managerScreen:agregarAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 3,
@@ -240,8 +267,7 @@ class MilleniumPageState extends State<MilleniumPage> {
           ),
         ),
         TutorialItem(
-          globalKey: KeyManager.managerScreen.viewAdminKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:verAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 3,
@@ -252,8 +278,7 @@ class MilleniumPageState extends State<MilleniumPage> {
           ),
         ),
         TutorialItem(
-          globalKey: KeyManager.managerScreen.habitKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:alquiler']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 3,
@@ -264,31 +289,33 @@ class MilleniumPageState extends State<MilleniumPage> {
           ),
         ),
       },
-      TutorialItem(
-        globalKey: KeyManager.managerScreen.fastBotonKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(20),
-        shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 3,
-        child: const TutorialItemContent(
-          title: 'Accesso rápido',
-          content: 'Podrás encender y apagar el dispositivo desde el menú',
+      if (!tenant) ...{
+        TutorialItem(
+          globalKey: keys['managerScreen:accesoRapido']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 3,
+          child: const TutorialItemContent(
+            title: 'Accesso rápido',
+            content: 'Podrás encender y apagar el dispositivo desde el menú',
+          ),
         ),
-      ),
-      // TutorialItem(
-      //   globalKey: KeyManager.managerScreen.discNotificationKey,
-      //   color: Colors.black.withValues(alpha: 0.6),
-      //   borderRadius: const Radius.circular(20),
-      //   shapeFocus: ShapeFocus.roundedSquare,
-      //   pageIndex: 3,
-      //   child: const TutorialItemContent(
-      //     title: 'Notificación de desconexión',
-      //     content: 'Puedes establecer una alerta si el equipo se desconecta',
-      //   ),
-      // ),
+      },
+      if (!tenant) ...{
+        // TutorialItem(
+        //   globalKey: keys['managerScreen:desconexionNotificacion']!,
+        //
+        //   borderRadius: const Radius.circular(20),
+        //   shapeFocus: ShapeFocus.roundedSquare,
+        //   pageIndex: 3,
+        //   child: const TutorialItemContent(
+        //     title: 'Notificación de desconexión',
+        //     content: 'Puedes establecer una alerta si el equipo se desconecta',
+        //   ),
+        // ),
+      },
       TutorialItem(
-        globalKey: KeyManager.managerScreen.imageKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['managerScreen:imagen']!,
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
         pageIndex: 3,
@@ -299,6 +326,8 @@ class MilleniumPageState extends State<MilleniumPage> {
       ),
     });
   }
+
+  ///*- Elementos para tutoriales -*\\\
 
   @override
   void initState() {
@@ -338,7 +367,7 @@ class MilleniumPageState extends State<MilleniumPage> {
 
     if (!alexaDevices.contains(deviceName)) {
       alexaDevices.add(deviceName);
-      putDevicesForAlexa(service, currentUserEmail, alexaDevices);
+      putDevicesForAlexa( currentUserEmail, alexaDevices);
     }
   }
 
@@ -454,8 +483,7 @@ class MilleniumPageState extends State<MilleniumPage> {
     printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
-    WifiNotifier wifiNotifier =
-        Provider.of<WifiNotifier>(context, listen: false);
+    final wifiNotifier = ref.read(wifiProvider.notifier);
 
     if (parts[0] == 'WCS_CONNECTED') {
       atemp = false;
@@ -703,8 +731,7 @@ class MilleniumPageState extends State<MilleniumPage> {
   @override
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
-    WifiNotifier wifiNotifier =
-        Provider.of<WifiNotifier>(context, listen: false);
+    final wifiState = ref.watch(wifiProvider);
 
     bool isOwner = currentUserEmail == owner;
     bool isSecondaryAdmin = adminDevices.contains(currentUserEmail);
@@ -730,7 +757,7 @@ class MilleniumPageState extends State<MilleniumPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  key: KeyManager.millenium.estadoKey,
+                  key: keys['millenium:estado']!,
                   'Estado del Dispositivo',
                   style: GoogleFonts.poppins(
                     fontSize: 28,
@@ -741,7 +768,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                 ),
                 const SizedBox(height: 40),
                 GestureDetector(
-                  key: KeyManager.millenium.bottomKey,
+                  key: keys['millenium:boton']!,
                   onTap: () {
                     if (isOwner || isSecondaryAdmin || owner == '') {
                       turnDeviceOn(!turnOn);
@@ -817,7 +844,7 @@ class MilleniumPageState extends State<MilleniumPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  key: KeyManager.millenium.tempKey,
+                  key: keys['millenium:temperatura']!,
                   'Temperatura de corte',
                   style: GoogleFonts.poppins(
                     fontSize: 28,
@@ -861,7 +888,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                         ),
                         const SizedBox(height: 10),
                         Container(
-                          key: KeyManager.millenium.tempBarKey,
+                          key: keys['millenium:corte']!,
                           height: 350,
                           width: 70,
                           decoration: BoxDecoration(
@@ -959,7 +986,7 @@ class MilleniumPageState extends State<MilleniumPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  key: KeyManager.millenium.consumeKey,
+                  key: keys['millenium:consumo']!,
                   'Calculadora de Consumo',
                   style: GoogleFonts.poppins(
                     fontSize: 32,
@@ -970,7 +997,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                 ),
                 const SizedBox(height: 50),
                 Container(
-                  key: KeyManager.millenium.valorKey,
+                  key: keys['millenium:valor']!,
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
                       horizontal: 20.0, vertical: 10.0),
@@ -1007,7 +1034,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                 if (valueConsuption == null) ...[
                   const SizedBox(height: 30),
                   Container(
-                    key: KeyManager.millenium.consuptionKey,
+                    key: keys['millenium:consumoManual']!,
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20.0, vertical: 10.0),
@@ -1072,7 +1099,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                 ],
                 const SizedBox(height: 30),
                 ElevatedButton(
-                  key: KeyManager.millenium.calculateKey,
+                  key: keys['millenium:calcular']!,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: color3,
                     foregroundColor: color0,
@@ -1114,7 +1141,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  key: KeyManager.millenium.mesKey,
+                  key: keys['millenium:mes']!,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: color3,
                     foregroundColor: color0,
@@ -1194,11 +1221,14 @@ class MilleniumPageState extends State<MilleniumPage> {
                 children: [
                   Image.asset('assets/branch/dragon.gif',
                       width: 100, height: 100),
-                  Container(
-                    margin: const EdgeInsets.only(left: 15),
-                    child: const Text(
-                      "Desconectando...",
-                      style: TextStyle(color: Color(0xFFFFFFFF)),
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 15),
+                      child: const Text(
+                        "Desconectando...",
+                        style: TextStyle(color: Color(0xFFFFFFFF)),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ],
@@ -1267,7 +1297,7 @@ class MilleniumPageState extends State<MilleniumPage> {
                         String newNickname = nicknameController.text;
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
-                        putNicknames(service, currentUserEmail, nicknamesMap);
+                        putNicknames( currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },
@@ -1278,7 +1308,7 @@ class MilleniumPageState extends State<MilleniumPage> {
             child: Row(
               children: [
                 Expanded(
-                  key: KeyManager.millenium.titleKey,
+                  key: keys['millenium:titulo']!,
                   child: Text(
                     nickname,
                     overflow: TextOverflow.ellipsis,
@@ -1306,11 +1336,14 @@ class MilleniumPageState extends State<MilleniumPage> {
                       children: [
                         Image.asset('assets/branch/dragon.gif',
                             width: 100, height: 100),
-                        Container(
-                          margin: const EdgeInsets.only(left: 15),
-                          child: const Text(
-                            "Desconectando...",
-                            style: TextStyle(color: Color(0xFFFFFFFF)),
+                        Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.only(left: 15),
+                            child: const Text(
+                              "Desconectando...",
+                              style: TextStyle(color: Color(0xFFFFFFFF)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
                       ],
@@ -1330,15 +1363,17 @@ class MilleniumPageState extends State<MilleniumPage> {
           ),
           actions: [
             Icon(
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                      'cstate']
+              key: keys['millenium:servidor']!,
+              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                          ?['cstate'] ??
+                      false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,
             ),
             IconButton(
-              key: KeyManager.millenium.wifiKey,
-              icon: Icon(wifiNotifier.wifiIcon, color: color0),
+              key: keys['millenium:wifi']!,
+              icon: Icon(wifiState.wifiIcon, color: color0),
               onPressed: () {
                 if (_isTutorialActive) return;
                 wifiText(context);

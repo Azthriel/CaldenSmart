@@ -1,27 +1,25 @@
 import 'dart:convert';
-
 import 'package:caldensmart/Global/stored_data.dart';
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
-import 'package:caldensmart/aws/dynamo/dynamo_certificates.dart';
 import 'package:caldensmart/aws/mqtt/mqtt.dart';
 import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hugeicons/hugeicons.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:caldensmart/logger.dart';
 import '../Global/manager_screen.dart';
 
-class ModuloPage extends StatefulWidget {
+class ModuloPage extends ConsumerStatefulWidget {
   const ModuloPage({super.key});
 
   @override
   ModuloPageState createState() => ModuloPageState();
 }
 
-class ModuloPageState extends State<ModuloPage> {
+class ModuloPageState extends ConsumerState<ModuloPage> {
   var parts = utf8.decode(ioValues).split('/');
 
   bool isChangeModeVisible = false;
@@ -53,12 +51,9 @@ class ModuloPageState extends State<ModuloPage> {
   void initItems() {
     items.addAll({
       TutorialItem(
-        globalKey: KeyManager.modulo.estadoKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
-        radius: 0,
+        globalKey: keys['modulo:estado']!,
         pageIndex: 0,
+        fullBackground: true,
         contentPosition: ContentPosition.below,
         child: const TutorialItemContent(
           title: 'Entradas y Salidas',
@@ -67,8 +62,7 @@ class ModuloPageState extends State<ModuloPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.modulo.titleKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['modulo:titulo']!,
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(10.0),
         contentPosition: ContentPosition.below,
@@ -80,11 +74,9 @@ class ModuloPageState extends State<ModuloPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.modulo.wifiKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['modulo:wifi']!,
         shapeFocus: ShapeFocus.oval,
-        borderRadius: const Radius.circular(15.0),
-        radius: 25,
+        borderRadius: const Radius.circular(30.0),
         contentPosition: ContentPosition.below,
         pageIndex: 0,
         child: const TutorialItemContent(
@@ -94,13 +86,25 @@ class ModuloPageState extends State<ModuloPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.modulo.pinModeKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['modulo:servidor']!,
         shapeFocus: ShapeFocus.oval,
-        borderRadius: const Radius.circular(0),
-        radius: 0,
+        borderRadius: const Radius.circular(15.0),
         contentPosition: ContentPosition.below,
-        pageIndex: 2,
+        pageIndex: 0,
+        focusMargin: 15,
+        child: const TutorialItemContent(
+          title: 'Conexión al servidor',
+          content:
+              'Podrás observar el estado de la conexión del dispositivo con el servidor',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['modulo:modoPines']!,
+        shapeFocus: ShapeFocus.roundedSquare,
+        borderRadius: const Radius.circular(30),
+        contentPosition: ContentPosition.below,
+        focusMargin: 15,
+        pageIndex: 1,
         child: !tenant
             ? const TutorialItemContent(
                 title: 'Cambio de modo de pines',
@@ -114,12 +118,11 @@ class ModuloPageState extends State<ModuloPage> {
               ),
       ),
       TutorialItem(
-        globalKey: KeyManager.managerScreen.adminKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
-        radius: 0,
+        globalKey: keys['managerScreen:titulo']!,
+        borderRadius: const Radius.circular(10),
+        shapeFocus: ShapeFocus.roundedSquare,
         pageIndex: 2,
+        focusMargin: 15,
         contentPosition: ContentPosition.below,
         child: const TutorialItemContent(
           title: 'Gestión',
@@ -128,8 +131,7 @@ class ModuloPageState extends State<ModuloPage> {
       ),
       if (!tenant) ...{
         TutorialItem(
-          globalKey: KeyManager.managerScreen.claimKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:reclamar']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 2,
@@ -142,8 +144,7 @@ class ModuloPageState extends State<ModuloPage> {
       },
       if (owner == currentUserEmail) ...{
         TutorialItem(
-          globalKey: KeyManager.managerScreen.agreeAdminKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:agregarAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 2,
@@ -154,8 +155,7 @@ class ModuloPageState extends State<ModuloPage> {
           ),
         ),
         TutorialItem(
-          globalKey: KeyManager.managerScreen.viewAdminKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:verAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 2,
@@ -166,8 +166,7 @@ class ModuloPageState extends State<ModuloPage> {
           ),
         ),
         TutorialItem(
-          globalKey: KeyManager.managerScreen.habitKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:alquiler']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 2,
@@ -180,8 +179,7 @@ class ModuloPageState extends State<ModuloPage> {
       },
       if (!tenant) ...{
         TutorialItem(
-          globalKey: KeyManager.managerScreen.fastBotonKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:accesoRapido']!,
           borderRadius: const Radius.circular(40),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 2,
@@ -191,8 +189,8 @@ class ModuloPageState extends State<ModuloPage> {
           ),
         ),
         // TutorialItem(
-        //   globalKey: KeyManager.managerScreen.discNotificationKey,
-        //   color: Colors.black.withValues(alpha: 0.6),
+        //   globalKey: keys['managerScreen:desconexionNotificacion']!,
+        //
         //   borderRadius: const Radius.circular(20),
         //   shapeFocus: ShapeFocus.roundedSquare,
         //   pageIndex: 2,
@@ -203,8 +201,7 @@ class ModuloPageState extends State<ModuloPage> {
         // ),
       },
       TutorialItem(
-        globalKey: KeyManager.managerScreen.imageKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['managerScreen:imagen']!,
         borderRadius: const Radius.circular(40),
         shapeFocus: ShapeFocus.roundedSquare,
         pageIndex: 2,
@@ -215,6 +212,8 @@ class ModuloPageState extends State<ModuloPage> {
       ),
     });
   }
+
+  ///*- Elementos para tutoriales -*\\\
 
   @override
   void initState() {
@@ -351,8 +350,7 @@ class ModuloPageState extends State<ModuloPage> {
     printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
-    WifiNotifier wifiNotifier =
-        Provider.of<WifiNotifier>(context, listen: false);
+    final wifiNotifier = ref.read(wifiProvider.notifier);
 
     if (parts[0] == 'WCS_CONNECTED') {
       atemp = false;
@@ -469,7 +467,7 @@ class ModuloPageState extends State<ModuloPage> {
         String dv = '${deviceName}_$i';
         if (!alexaDevices.contains(dv)) {
           alexaDevices.add(dv);
-          putDevicesForAlexa(service, currentUserEmail, alexaDevices);
+          putDevicesForAlexa(currentUserEmail, alexaDevices);
         }
       }
     }
@@ -703,8 +701,7 @@ class ModuloPageState extends State<ModuloPage> {
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
     double bottomBarHeight = kBottomNavigationBarHeight;
-    WifiNotifier wifiNotifier =
-        Provider.of<WifiNotifier>(context, listen: false);
+    final wifiState = ref.watch(wifiProvider);
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
 
@@ -805,7 +802,7 @@ class ModuloPageState extends State<ModuloPage> {
                                             nicknamesMap[
                                                     '${deviceName}_$index'] =
                                                 newName;
-                                            putNicknames(service,
+                                            putNicknames(
                                                 currentUserEmail, nicknamesMap);
                                           });
                                           Navigator.of(context).pop();
@@ -900,9 +897,7 @@ class ModuloPageState extends State<ModuloPage> {
                                                   nicknamesMap[
                                                           '${deviceName}_$index'] =
                                                       newName;
-                                                  putNicknames(
-                                                      service,
-                                                      currentUserEmail,
+                                                  putNicknames(currentUserEmail,
                                                       nicknamesMap);
                                                 });
                                                 Navigator.of(context).pop();
@@ -1099,9 +1094,7 @@ class ModuloPageState extends State<ModuloPage> {
                                               nicknamesMap[
                                                       '${deviceName}_$index'] =
                                                   newName;
-                                              putNicknames(
-                                                  service,
-                                                  currentUserEmail,
+                                              putNicknames(currentUserEmail,
                                                   nicknamesMap);
                                             });
                                             Navigator.of(context).pop();
@@ -1411,7 +1404,7 @@ class ModuloPageState extends State<ModuloPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  key: KeyManager.modulo.pinModeKey,
+                  key: keys['modulo:modoPines']!,
                   'Cambio de Modo de Pines',
                   style: GoogleFonts.poppins(
                     fontSize: 28,
@@ -1707,12 +1700,15 @@ class ModuloPageState extends State<ModuloPage> {
                 children: [
                   Image.asset('assets/branch/dragon.gif',
                       width: 100, height: 100),
-                  Container(
-                    margin: const EdgeInsets.only(left: 15),
-                    child: const Text(
-                      "Desconectando...",
-                      style: TextStyle(
-                        color: Color(0xFFFFFFFF),
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 15),
+                      child: const Text(
+                        "Desconectando...",
+                        style: TextStyle(
+                          color: Color(0xFFFFFFFF),
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
@@ -1781,7 +1777,7 @@ class ModuloPageState extends State<ModuloPage> {
                         String newNickname = nicknameController.text;
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
-                        putNicknames(service, currentUserEmail, nicknamesMap);
+                        putNicknames(currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },
@@ -1792,7 +1788,7 @@ class ModuloPageState extends State<ModuloPage> {
             child: Row(
               children: [
                 Expanded(
-                  key: KeyManager.modulo.titleKey,
+                  key: keys['modulo:titulo']!,
                   child: Text(
                     nickname,
                     overflow: TextOverflow.ellipsis,
@@ -1805,7 +1801,7 @@ class ModuloPageState extends State<ModuloPage> {
             ),
           ),
           leading: IconButton(
-            key: KeyManager.modulo.estadoKey,
+            key: keys['modulo:estado']!,
             icon: const Icon(Icons.arrow_back_ios_new),
             color: color0,
             onPressed: () {
@@ -1821,11 +1817,14 @@ class ModuloPageState extends State<ModuloPage> {
                       children: [
                         Image.asset('assets/branch/dragon.gif',
                             width: 100, height: 100),
-                        Container(
-                          margin: const EdgeInsets.only(left: 15),
-                          child: const Text(
-                            "Desconectando...",
-                            style: TextStyle(color: Color(0xFFFFFFFF)),
+                        Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.only(left: 15),
+                            child: const Text(
+                              "Desconectando...",
+                              style: TextStyle(color: Color(0xFFFFFFFF)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
                       ],
@@ -1845,15 +1844,17 @@ class ModuloPageState extends State<ModuloPage> {
           ),
           actions: [
             Icon(
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                      'cstate']
+              key: keys['modulo:servidor']!,
+              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                          ?['cstate'] ??
+                      false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,
             ),
             IconButton(
-              key: KeyManager.modulo.wifiKey,
-              icon: Icon(wifiNotifier.wifiIcon, color: color0),
+              key: keys['modulo:wifi']!,
+              icon: Icon(wifiState.wifiIcon, color: color0),
               onPressed: () {
                 if (_isTutorialActive) return;
 

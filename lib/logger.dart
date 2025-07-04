@@ -7,14 +7,20 @@ import 'dart:io';
 import 'dart:math';
 
 var printLog = Logger(
-  printer: PrettyPrinter(
-    methodCount: 4,
-    errorMethodCount: 8,
-    lineLength: 120,
-    colors: true,
-    printEmojis: true,
-    dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
+  printer: PrefixPrinter(
+    PrettyPrinter(
+      methodCount: 4,
+      errorMethodCount: 8,
+      lineLength: 120,
+      colors: true,
+      printEmojis: true,
+      dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
+    ),
+    trace: 'PrintData:',
+    info: 'PrintData:',
+    error: 'PrintData:',
   ),
+  filter: DevelopmentFilter(),
 );
 
 class FileOutput extends LogOutput {

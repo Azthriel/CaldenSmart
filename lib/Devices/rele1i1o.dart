@@ -6,11 +6,10 @@ import 'package:geolocator/geolocator.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Global/manager_screen.dart';
 import '../aws/dynamo/dynamo.dart';
-import '../aws/dynamo/dynamo_certificates.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
 import '../Global/stored_data.dart';
@@ -18,13 +17,13 @@ import 'package:caldensmart/logger.dart';
 
 // CLASES \\
 
-class Rele1i1oPage extends StatefulWidget {
+class Rele1i1oPage extends ConsumerStatefulWidget {
   const Rele1i1oPage({super.key});
   @override
   Rele1i1oPageState createState() => Rele1i1oPageState();
 }
 
-class Rele1i1oPageState extends State<Rele1i1oPage> {
+class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
   var parts = utf8.decode(ioValues).split('/');
   bool isChangeModeVisible = false;
   bool showOptions = false;
@@ -47,6 +46,10 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
   final PageController _pageController = PageController(initialPage: 0);
   final TextEditingController tenantController = TextEditingController();
   int _selectedIndex = 0;
+  final bool hasEntry = globalDATA[
+              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+          ?['hasEntry'] ??
+      false;
 
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
@@ -54,24 +57,25 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
   void initItems() {
     items.addAll({
       TutorialItem(
-        globalKey: KeyManager.rele1i1o.estadoKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
-        radius: 0,
+        globalKey: keys['rele1i1o:estado']!,
+        borderRadius: const Radius.circular(30),
+        shapeFocus: ShapeFocus.roundedSquare,
+        contentPosition: ContentPosition.above,
+        focusMargin: 15.0,
         pageIndex: 0,
+        fullBackground: true,
         child: const TutorialItemContent(
           title: 'Estado del equipo',
           content:
-              'Podrás revisar el estado de las entradas y modificar el estado de las salidas',
+              'En esta pantalla podrás verificar si tu equipo está Apagado o encendido',
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.rele1i1o.titleKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['rele1i1o:titulo']!,
         shapeFocus: ShapeFocus.roundedSquare,
-        borderRadius: const Radius.circular(10.0),
+        borderRadius: const Radius.circular(30.0),
         contentPosition: ContentPosition.below,
+        focusMargin: 15.0,
         pageIndex: 0,
         child: const TutorialItemContent(
           title: 'Nombre del equipo',
@@ -80,13 +84,12 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.rele1i1o.wifiKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['rele1i1o:wifi']!,
         shapeFocus: ShapeFocus.oval,
         borderRadius: const Radius.circular(15.0),
-        radius: 25,
         contentPosition: ContentPosition.below,
         pageIndex: 0,
+        focusMargin: 5.0,
         child: const TutorialItemContent(
           title: 'Menu Wifi',
           content:
@@ -94,11 +97,23 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.rele1i1o.distanceKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['rele1i1o:servidor']!,
         shapeFocus: ShapeFocus.oval,
-        borderRadius: const Radius.circular(0),
-        radius: 0,
+        borderRadius: const Radius.circular(15.0),
+        contentPosition: ContentPosition.below,
+        pageIndex: 0,
+        focusMargin: 15.0,
+        child: const TutorialItemContent(
+          title: 'Conexión al servidor',
+          content:
+              'Podrás observar el estado de la conexión del dispositivo con el servidor',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['rele1i1o:controlDistancia']!,
+        shapeFocus: ShapeFocus.roundedSquare,
+        borderRadius: const Radius.circular(30),
+        focusMargin: 15.0,
         pageIndex: 1,
         child: const TutorialItemContent(
           title: 'Control por distancia',
@@ -107,10 +122,9 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.rele1i1o.distanceBottomKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(10),
-        radius: 90,
+        globalKey: keys['rele1i1o:controlBoton']!,
+        borderRadius: const Radius.circular(15),
+        focusMargin: 20.0,
         shapeFocus: ShapeFocus.oval,
         pageIndex: 1,
         child: const TutorialItemContent(
@@ -119,12 +133,11 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.rele1i1o.pinModeKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        shapeFocus: ShapeFocus.oval,
-        borderRadius: const Radius.circular(0),
-        radius: 0,
+        globalKey: keys['rele1i1o:modoPines']!,
+        shapeFocus: ShapeFocus.roundedSquare,
+        borderRadius: const Radius.circular(15),
         contentPosition: ContentPosition.below,
+        focusMargin: 15,
         pageIndex: 2,
         child: !tenant
             ? const TutorialItemContent(
@@ -139,12 +152,11 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
               ),
       ),
       TutorialItem(
-        globalKey: KeyManager.managerScreen.adminKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
+        globalKey: keys['managerScreen:titulo']!,
+        borderRadius: const Radius.circular(15),
+        shapeFocus: ShapeFocus.roundedSquare,
         pageIndex: 3,
-        radius: 0,
+        focusMargin: 15,
         contentPosition: ContentPosition.below,
         child: const TutorialItemContent(
           title: 'Gestión',
@@ -153,8 +165,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
       ),
       if (!tenant) ...{
         TutorialItem(
-          globalKey: KeyManager.managerScreen.claimKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:reclamar']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 3,
@@ -168,8 +179,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
       },
       if (owner == currentUserEmail) ...{
         TutorialItem(
-          globalKey: KeyManager.managerScreen.agreeAdminKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:agregarAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 3,
@@ -180,8 +190,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
           ),
         ),
         TutorialItem(
-          globalKey: KeyManager.managerScreen.viewAdminKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:verAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 3,
@@ -192,8 +201,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
           ),
         ),
         TutorialItem(
-          globalKey: KeyManager.managerScreen.habitKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:alquiler']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 3,
@@ -206,8 +214,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
       },
       if (!tenant) ...{
         TutorialItem(
-          globalKey: KeyManager.managerScreen.fastBotonKey,
-          color: Colors.black.withValues(alpha: 0.6),
+          globalKey: keys['managerScreen:accesoRapido']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 3,
@@ -217,8 +224,8 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
           ),
         ),
         // TutorialItem(
-        //   globalKey: KeyManager.managerScreen.discNotificationKey,
-        //   color: Colors.black.withValues(alpha: 0.6),
+        // keys['managerScreen:led']!
+        //
         //   borderRadius: const Radius.circular(20),
         //   shapeFocus: ShapeFocus.roundedSquare,
         //   pageIndex: 3,
@@ -229,8 +236,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
         // ),
       },
       TutorialItem(
-        globalKey: KeyManager.managerScreen.imageKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['managerScreen:imagen']!,
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
         pageIndex: 3,
@@ -241,6 +247,8 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
       ),
     });
   }
+
+  ///*- Elementos para tutoriales -*\\\
 
   @override
   void initState() {
@@ -378,8 +386,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
     printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
-    WifiNotifier wifiNotifier =
-        Provider.of<WifiNotifier>(context, listen: false);
+    final wifiNotifier = ref.read(wifiProvider.notifier);
 
     if (parts[0] == 'WCS_CONNECTED') {
       atemp = false;
@@ -482,7 +489,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
         String dv = '${deviceName}_$i';
         if (!alexaDevices.contains(dv)) {
           alexaDevices.add(dv);
-          putDevicesForAlexa(service, currentUserEmail, alexaDevices);
+          putDevicesForAlexa(currentUserEmail, alexaDevices);
         }
       }
     }
@@ -732,11 +739,8 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..add(email);
 
-      await putSecondaryAdmins(
-          service,
-          DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName),
-          updatedAdmins);
+      await putSecondaryAdmins(DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
 
       setState(() {
         adminDevices = updatedAdmins;
@@ -754,11 +758,8 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..remove(email);
 
-      await putSecondaryAdmins(
-          service,
-          DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName),
-          updatedAdmins);
+      await putSecondaryAdmins(DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
 
       setState(() {
         adminDevices.remove(email);
@@ -976,8 +977,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
   @override
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
-    WifiNotifier wifiNotifier =
-        Provider.of<WifiNotifier>(context, listen: false);
+    final wifiState = ref.watch(wifiProvider);
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
 
@@ -993,550 +993,531 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
 
     final List<Widget> pages = [
       //*- Página 1: Estado del Dispositivo -*\\
-      SingleChildScrollView(
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.8,
-          child: Center(
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  tipo.length + 1,
-                  (index) {
-                    if (index == tipo.length) {
-                      return Padding(
-                        padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
-                      );
-                    }
-                    bool entrada = tipo[index] == 'Entrada';
-                    bool isOn = estado[index] == '1';
-                    bool isPresenceControlled =
-                        _selectedPins[index] && tracking;
-                    return Column(
-                      children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          decoration: BoxDecoration(
-                            color: color3,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(18),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const SizedBox(width: 6),
-                                  GestureDetector(
-                                    onTap: () async {
-                                      TextEditingController nicknameController =
-                                          TextEditingController(
-                                        text: nicknamesMap[
-                                                '${deviceName}_$index'] ??
-                                            '${tipo[index]} $index',
-                                      );
-                                      showAlertDialog(
-                                        context,
-                                        false,
-                                        Text(
-                                          'Editar Nombre',
-                                          style: GoogleFonts.poppins(
-                                              color: color0),
-                                        ),
-                                        TextField(
-                                          controller: nicknameController,
-                                          style: const TextStyle(color: color0),
-                                          cursorColor: color0,
-                                          decoration: InputDecoration(
-                                            hintText:
-                                                "Nuevo nombre para ${tipo[index]} $index",
-                                            hintStyle: TextStyle(
-                                              color:
-                                                  color0.withValues(alpha: 0.6),
-                                            ),
-                                            enabledBorder: UnderlineInputBorder(
-                                              borderSide: BorderSide(
+      if (hasEntry) ...[
+        SingleChildScrollView(
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.8,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20.0, vertical: 30.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    tipo.length + 1,
+                    (index) {
+                      if (index == tipo.length) {
+                        return Padding(
+                          padding:
+                              EdgeInsets.only(bottom: bottomBarHeight + 30),
+                        );
+                      }
+                      bool entrada = tipo[index] == 'Entrada';
+                      bool isOn = estado[index] == '1';
+                      bool isPresenceControlled =
+                          _selectedPins[index] && tracking;
+                      return Column(
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            decoration: BoxDecoration(
+                              color: color3,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            padding: const EdgeInsets.all(18),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const SizedBox(width: 6),
+                                    GestureDetector(
+                                      onTap: () async {
+                                        TextEditingController
+                                            nicknameController =
+                                            TextEditingController(
+                                          text: nicknamesMap[
+                                                  '${deviceName}_$index'] ??
+                                              '${tipo[index]} $index',
+                                        );
+                                        showAlertDialog(
+                                          context,
+                                          false,
+                                          Text(
+                                            'Editar Nombre',
+                                            style: GoogleFonts.poppins(
+                                                color: color0),
+                                          ),
+                                          TextField(
+                                            controller: nicknameController,
+                                            style:
+                                                const TextStyle(color: color0),
+                                            cursorColor: color0,
+                                            decoration: InputDecoration(
+                                              hintText:
+                                                  "Nuevo nombre para ${tipo[index]} $index",
+                                              hintStyle: TextStyle(
                                                 color: color0.withValues(
-                                                    alpha: 0.5),
+                                                    alpha: 0.6),
+                                              ),
+                                              enabledBorder:
+                                                  UnderlineInputBorder(
+                                                borderSide: BorderSide(
+                                                  color: color0.withValues(
+                                                      alpha: 0.5),
+                                                ),
+                                              ),
+                                              focusedBorder:
+                                                  const UnderlineInputBorder(
+                                                borderSide:
+                                                    BorderSide(color: color0),
                                               ),
                                             ),
-                                            focusedBorder:
-                                                const UnderlineInputBorder(
-                                              borderSide:
-                                                  BorderSide(color: color0),
+                                          ),
+                                          <Widget>[
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                              child: const Text(
+                                                'Cancelar',
+                                                style: TextStyle(color: color0),
+                                              ),
+                                            ),
+                                            TextButton(
+                                              onPressed: () {
+                                                setState(() {
+                                                  String newName =
+                                                      nicknameController.text;
+                                                  nicknamesMap[
+                                                          '${deviceName}_$index'] =
+                                                      newName;
+                                                  putNicknames(currentUserEmail,
+                                                      nicknamesMap);
+                                                });
+                                                Navigator.of(context).pop();
+                                              },
+                                              child: const Text(
+                                                'Guardar',
+                                                style: TextStyle(color: color0),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        children: [
+                                          SizedBox(
+                                            width: 150,
+                                            child: Text(
+                                              nicknamesMap[
+                                                      '${deviceName}_$index'] ??
+                                                  '${tipo[index]} $index',
+                                              style: GoogleFonts.poppins(
+                                                color: color0,
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
-                                        ),
-                                        <Widget>[
-                                          TextButton(
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.edit,
+                                              size: 22,
+                                              color: color0,
+                                            ),
                                             onPressed: () {
-                                              Navigator.of(context).pop();
+                                              TextEditingController
+                                                  nicknameController =
+                                                  TextEditingController(
+                                                text: nicknamesMap[
+                                                        '${deviceName}_$index'] ??
+                                                    '${tipo[index]} $index',
+                                              );
+                                              showAlertDialog(
+                                                context,
+                                                false,
+                                                Text(
+                                                  'Editar Nombre',
+                                                  style: GoogleFonts.poppins(
+                                                      color: color0),
+                                                ),
+                                                TextField(
+                                                  controller:
+                                                      nicknameController,
+                                                  style: const TextStyle(
+                                                      color: color0),
+                                                  cursorColor: color0,
+                                                  decoration: InputDecoration(
+                                                    hintText:
+                                                        "Nuevo nombre para ${tipo[index]} $index",
+                                                    hintStyle: TextStyle(
+                                                      color: color0.withValues(
+                                                          alpha: 0.6),
+                                                    ),
+                                                    enabledBorder:
+                                                        UnderlineInputBorder(
+                                                      borderSide: BorderSide(
+                                                        color:
+                                                            color0.withValues(
+                                                                alpha: 0.5),
+                                                      ),
+                                                    ),
+                                                    focusedBorder:
+                                                        const UnderlineInputBorder(
+                                                      borderSide: BorderSide(
+                                                          color: color0),
+                                                    ),
+                                                  ),
+                                                ),
+                                                <Widget>[
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                    },
+                                                    child: const Text(
+                                                      'Cancelar',
+                                                      style: TextStyle(
+                                                          color: color0),
+                                                    ),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        String newName =
+                                                            nicknameController
+                                                                .text;
+                                                        nicknamesMap[
+                                                                '${deviceName}_$index'] =
+                                                            newName;
+                                                        putNicknames(
+                                                            currentUserEmail,
+                                                            nicknamesMap);
+                                                      });
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                    },
+                                                    child: const Text(
+                                                      'Guardar',
+                                                      style: TextStyle(
+                                                          color: color0),
+                                                    ),
+                                                  ),
+                                                ],
+                                              );
                                             },
-                                            child: const Text(
-                                              'Cancelar',
-                                              style: TextStyle(color: color0),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      'Tipo: ${tipo[index]}',
+                                      style: const TextStyle(
+                                        color: color0,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                entrada
+                                    ? Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Center(
+                                            child: Icon(
+                                              alertIO[index]
+                                                  ? Icons.new_releases
+                                                  : Icons.new_releases,
+                                              color: alertIO[index]
+                                                  ? Colors.red
+                                                  : Colors.grey,
+                                              size: 40,
                                             ),
                                           ),
-                                          TextButton(
-                                            onPressed: () {
-                                              setState(() {
-                                                String newName =
-                                                    nicknameController.text;
-                                                nicknamesMap[
-                                                        '${deviceName}_$index'] =
-                                                    newName;
-                                                putNicknames(
-                                                    service,
-                                                    currentUserEmail,
-                                                    nicknamesMap);
-                                              });
-                                              Navigator.of(context).pop();
+                                          const SizedBox(height: 12),
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                _notis[index]
+                                                    ? '¿Desactivar notificaciones?'
+                                                    : '¿Activar notificaciones?',
+                                                style: const TextStyle(
+                                                  color: color0,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              IconButton(
+                                                onPressed: () {
+                                                  bool activated =
+                                                      _notis[index];
+                                                  setState(() {
+                                                    activated = !activated;
+                                                    _notis[index] = activated;
+                                                  });
+                                                  notificationMap[
+                                                          '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}'] =
+                                                      _notis;
+                                                  saveNotificationMap(
+                                                      notificationMap);
+                                                },
+                                                icon: _notis[index]
+                                                    ? Icon(
+                                                        Icons.notifications_off,
+                                                        color:
+                                                            Colors.red.shade300,
+                                                      )
+                                                    : const Icon(
+                                                        Icons
+                                                            .notification_add_rounded,
+                                                        color: Colors.green,
+                                                      ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      )
+                                    : Row(
+                                        key: keys['rele1i1o:estado']!,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Icon(
+                                            isOn
+                                                ? Icons.check_circle
+                                                : Icons.cancel,
+                                            color: isOn
+                                                ? Colors.green
+                                                : Colors.red,
+                                            size: 40,
+                                          ),
+                                          GestureDetector(
+                                            onTap: () {
+                                              isPresenceControlled
+                                                  ? null
+                                                  : setState(() {
+                                                      controlOut(!isOn, index);
+                                                      estado[index] =
+                                                          !isOn ? '1' : '0';
+                                                    });
                                             },
-                                            child: const Text(
-                                              'Guardar',
-                                              style: TextStyle(color: color0),
+                                            child: AnimatedContainer(
+                                              duration: const Duration(
+                                                  milliseconds: 300),
+                                              width: 55,
+                                              height: 30,
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                                color: isPresenceControlled
+                                                    ? Colors.grey
+                                                    : isOn
+                                                        ? Colors.greenAccent
+                                                            .shade400
+                                                        : Colors.red.shade300,
+                                              ),
+                                              child: AnimatedAlign(
+                                                duration: const Duration(
+                                                    milliseconds: 300),
+                                                alignment: isOn
+                                                    ? Alignment.centerRight
+                                                    : Alignment.centerLeft,
+                                                curve: Curves.easeInOut,
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.all(3.0),
+                                                  child: Container(
+                                                    width: 24,
+                                                    height: 24,
+                                                    decoration:
+                                                        const BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
                                             ),
                                           ),
                                         ],
-                                      );
-                                    },
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      children: [
-                                        SizedBox(
-                                          width: 150,
-                                          child: Text(
-                                            nicknamesMap[
-                                                    '${deviceName}_$index'] ??
-                                                '${tipo[index]} $index',
-                                            style: GoogleFonts.poppins(
-                                              color: color0,
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.edit,
-                                            size: 22,
-                                            color: color0,
-                                          ),
-                                          onPressed: () {
-                                            TextEditingController
-                                                nicknameController =
-                                                TextEditingController(
-                                              text: nicknamesMap[
-                                                      '${deviceName}_$index'] ??
-                                                  '${tipo[index]} $index',
-                                            );
-                                            showAlertDialog(
-                                              context,
-                                              false,
-                                              Text(
-                                                'Editar Nombre',
-                                                style: GoogleFonts.poppins(
-                                                    color: color0),
-                                              ),
-                                              TextField(
-                                                controller: nicknameController,
-                                                style: const TextStyle(
-                                                    color: color0),
-                                                cursorColor: color0,
-                                                decoration: InputDecoration(
-                                                  hintText:
-                                                      "Nuevo nombre para ${tipo[index]} $index",
-                                                  hintStyle: TextStyle(
-                                                    color: color0.withValues(
-                                                        alpha: 0.6),
-                                                  ),
-                                                  enabledBorder:
-                                                      UnderlineInputBorder(
-                                                    borderSide: BorderSide(
-                                                      color: color0.withValues(
-                                                          alpha: 0.5),
-                                                    ),
-                                                  ),
-                                                  focusedBorder:
-                                                      const UnderlineInputBorder(
-                                                    borderSide: BorderSide(
-                                                        color: color0),
-                                                  ),
-                                                ),
-                                              ),
-                                              <Widget>[
-                                                TextButton(
-                                                  onPressed: () {
-                                                    Navigator.of(context).pop();
-                                                  },
-                                                  child: const Text(
-                                                    'Cancelar',
-                                                    style: TextStyle(
-                                                        color: color0),
-                                                  ),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      String newName =
-                                                          nicknameController
-                                                              .text;
-                                                      nicknamesMap[
-                                                              '${deviceName}_$index'] =
-                                                          newName;
-                                                      putNicknames(
-                                                          service,
-                                                          currentUserEmail,
-                                                          nicknamesMap);
-                                                    });
-                                                    Navigator.of(context).pop();
-                                                  },
-                                                  child: const Text(
-                                                    'Guardar',
-                                                    style: TextStyle(
-                                                        color: color0),
-                                                  ),
-                                                ),
-                                              ],
-                                            );
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    'Tipo: ${tipo[index]}',
-                                    style: const TextStyle(
-                                      color: color0,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              entrada
-                                  ? Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Center(
-                                          child: Icon(
-                                            alertIO[index]
-                                                ? Icons.new_releases
-                                                : Icons.new_releases,
-                                            color: alertIO[index]
-                                                ? Colors.red
-                                                : Colors.grey,
-                                            size: 40,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              _notis[index]
-                                                  ? '¿Desactivar notificaciones?'
-                                                  : '¿Activar notificaciones?',
-                                              style: const TextStyle(
-                                                color: color0,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                            IconButton(
-                                              onPressed: () {
-                                                bool activated = _notis[index];
-                                                setState(() {
-                                                  activated = !activated;
-                                                  _notis[index] = activated;
-                                                });
-                                                notificationMap[
-                                                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}'] =
-                                                    _notis;
-                                                saveNotificationMap(
-                                                    notificationMap);
-                                              },
-                                              icon: _notis[index]
-                                                  ? Icon(
-                                                      Icons.notifications_off,
-                                                      color:
-                                                          Colors.red.shade300,
-                                                    )
-                                                  : const Icon(
-                                                      Icons
-                                                          .notification_add_rounded,
-                                                      color: Colors.green,
-                                                    ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    )
-                                  : Row(
-                                      key: KeyManager.rele1i1o.estadoKey,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Icon(
-                                          isOn
-                                              ? Icons.check_circle
-                                              : Icons.cancel,
-                                          color:
-                                              isOn ? Colors.green : Colors.red,
-                                          size: 40,
-                                        ),
-                                        GestureDetector(
-                                          onTap: () {
-                                            isPresenceControlled
-                                                ? null
-                                                : setState(() {
-                                                    controlOut(!isOn, index);
-                                                    estado[index] =
-                                                        !isOn ? '1' : '0';
-                                                  });
-                                          },
-                                          child: AnimatedContainer(
-                                            duration: const Duration(
-                                                milliseconds: 300),
-                                            width: 55,
-                                            height: 30,
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
-                                              color: isPresenceControlled
-                                                  ? Colors.grey
-                                                  : isOn
-                                                      ? Colors
-                                                          .greenAccent.shade400
-                                                      : Colors.red.shade300,
-                                            ),
-                                            child: AnimatedAlign(
-                                              duration: const Duration(
-                                                  milliseconds: 300),
-                                              alignment: isOn
-                                                  ? Alignment.centerRight
-                                                  : Alignment.centerLeft,
-                                              curve: Curves.easeInOut,
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.all(3.0),
-                                                child: Container(
-                                                  width: 24,
-                                                  height: 24,
-                                                  decoration:
-                                                      const BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                              const SizedBox(height: 20),
-                              if (isPresenceControlled) ...{
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: color1,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      'Desactiva control por presencia para utilizar esta función',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: color3,
                                       ),
-                                      textAlign: TextAlign.center,
+                                const SizedBox(height: 20),
+                                if (isPresenceControlled) ...{
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: color1,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'Desactiva control por presencia para utilizar esta función',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: color3,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              },
-                            ],
+                                },
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 16.0),
-                      ],
-                    );
-                  },
+                          const SizedBox(height: 16.0),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ),
-
-      //*- Página 2: Trackeo Bluetooth -*\\
-
-      // Stack(
-      //   children: [
-      //     SingleChildScrollView(
-      //       child: Padding(
-      //         padding:
-      //             const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
-      //         child: Column(
-      //           crossAxisAlignment: CrossAxisAlignment.center,
-      //           children: [
-      //             Text(
-      //               'Control por presencia',
-      //               style: GoogleFonts.poppins(
-      //                 fontSize: 28,
-      //                 fontWeight: FontWeight.bold,
-      //                 color: color3,
-      //               ),
-      //               textAlign: TextAlign.center,
-      //             ),
-      //             const SizedBox(height: 40),
-      //             GestureDetector(
-      //               onTap: () {
-      //                 if (deviceOwner || owner == '') {
-      //                   if (isAgreeChecked) {
-      //                     verifyPermission().then((accepted) async {
-      //                       if (accepted) {
-      //                         setState(() {
-      //                           tracking = !tracking;
-      //                         });
-      //                         if (tracking) {
-      //                           devicesToTrack.add(deviceName);
-      //                           saveDeviceListToTrack(devicesToTrack);
-      //                           SharedPreferences prefs =
-      //                               await SharedPreferences.getInstance();
-      //                           bool hasInitService =
-      //                               prefs.getBool('hasInitService') ?? false;
-      //                           if (!hasInitService) {
-      //                             await initializeService();
-      //                             await prefs.setBool('hasInitService', true);
-      //                           }
-      //                           await Future.delayed(
-      //                               const Duration(seconds: 30));
-      //                           printLog.i("Achi");
-      //                           final backService = FlutterBackgroundService();
-      //                           backService.invoke('presenceControl');
-      //                         } else {
-      //                           devicesToTrack.remove(deviceName);
-      //                           saveDeviceListToTrack(devicesToTrack);
-      //                           if (devicesToTrack.isEmpty) {
-      //                             final backService =
-      //                                 FlutterBackgroundService();
-      //                             backService.invoke('CancelpresenceControl');
-      //                           }
-      //                         }
-      //                       } else {
-      //                         showToast(
-      //                             'Debes habilitar la ubicación constante\npara el uso del\ncontrol por presencia');
-      //                       }
-      //                     });
-      //                   } else {
-      //                     showToast(
-      //                         'Debes aceptar el uso de control por presencia');
-      //                   }
-      //                 } else {
-      //                   showToast(
-      //                       'No tienes permiso para realizar esta acción');
-      //                 }
-      //               },
-      //               child: AnimatedContainer(
-      //                 duration: const Duration(milliseconds: 500),
-      //                 padding: const EdgeInsets.all(20),
-      //                 decoration: BoxDecoration(
-      //                   color: tracking ? Colors.greenAccent : Colors.redAccent,
-      //                   shape: BoxShape.circle,
-      //                   boxShadow: const [
-      //                     BoxShadow(
-      //                       color: Colors.black26,
-      //                       blurRadius: 10,
-      //                       offset: Offset(0, 5),
-      //                     ),
-      //                   ],
-      //                 ),
-      //                 child: Icon(
-      //                   Icons.directions_walk,
-      //                   size: 80,
-      //                   color: tracking ? Colors.white : Colors.grey[300],
-      //                 ),
-      //               ),
-      //             ),
-      //             const SizedBox(height: 70),
-      //             Card(
-      //               shape: RoundedRectangleBorder(
-      //                 borderRadius: BorderRadius.circular(20),
-      //               ),
-      //               elevation: 5,
-      //               color: color3,
-      //               child: Padding(
-      //                 padding: const EdgeInsets.all(20.0),
-      //                 child: Column(
-      //                   crossAxisAlignment: CrossAxisAlignment.start,
-      //                   children: [
-      //                     Text(
-      //                       'Habilitar esta función hará que la aplicación use más recursos de lo común, si a pesar de esto decides utilizarlo es bajo tu responsabilidad.',
-      //                       style: GoogleFonts.poppins(
-      //                         fontSize: 16,
-      //                         color: color0,
-      //                       ),
-      //                     ),
-      //                     const SizedBox(height: 10),
-      //                     CheckboxListTile(
-      //                       title: Text(
-      //                         'Sí, estoy de acuerdo',
-      //                         style: GoogleFonts.poppins(
-      //                           fontSize: 16,
-      //                           color: color0,
-      //                         ),
-      //                       ),
-      //                       value: isAgreeChecked,
-      //                       activeColor: color0,
-      //                       onChanged: (bool? value) {
-      //                         setState(() {
-      //                           isAgreeChecked = value ?? false;
-      //                           if (!isAgreeChecked && tracking) {
-      //                             tracking = false;
-      //                             devicesToTrack.remove(deviceName);
-      //                             saveDeviceListToTrack(devicesToTrack);
-      //                           }
-      //                         });
-      //                       },
-      //                       controlAffinity: ListTileControlAffinity.leading,
-      //                     ),
-      //                   ],
-      //                 ),
-      //               ),
-      //             ),
-      //           ],
-      //         ),
-      //       ),
-      //     ),
-      //     if (!deviceOwner && owner != '')
-      //       Container(
-      //         color: Colors.black.withValues(alpha: 0.7),
-      //         child: const Center(
-      //           child: Text(
-      //             'No tienes acceso a esta función',
-      //             style: TextStyle(color: Colors.white, fontSize: 18),
-      //           ),
-      //         ),
-      //       ),
-      //   ],
-      // ),
+      ] else ...[
+        SingleChildScrollView(
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.8,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20.0, vertical: 30.0),
+                // Usamos Column para ordenar el contenido verticalmente
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SingleChildScrollView(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20.0, vertical: 30.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Estado del Dispositivo',
+                              style: GoogleFonts.poppins(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: color3,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 40),
+                            GestureDetector(
+                              onTap: () {
+                                if (deviceOwner ||
+                                    secondaryAdmin ||
+                                    owner == '' ||
+                                    tenant) {
+                                  bool isOn = estado[0] == '1';
+                                  setState(() {
+                                    controlOut(!isOn, 0);
+                                    estado[0] = !isOn ? '1' : '0';
+                                  });
+                                } else {
+                                  showToast(
+                                      'No tienes permiso para realizar esta acción');
+                                }
+                              },
+                              child: AnimatedContainer(
+                                key: keys['rele1i1o:estado']!,
+                                duration: const Duration(milliseconds: 500),
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: estado[0] == '1'
+                                      ? Colors.greenAccent
+                                      : Colors.redAccent,
+                                  shape: BoxShape.circle,
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 10,
+                                      offset: Offset(0, 5),
+                                    ),
+                                  ],
+                                ),
+                                child: AnimatedCrossFade(
+                                  firstChild: Icon(
+                                    isNC ? Icons.lock_open : Icons.lock,
+                                    size: 80,
+                                    color: Colors.white,
+                                  ),
+                                  secondChild: Icon(
+                                    isNC ? Icons.lock : Icons.lock_open,
+                                    size: 80,
+                                    color: Colors.white,
+                                  ),
+                                  crossFadeState: estado[0] == '1'
+                                      ? CrossFadeState.showFirst
+                                      : CrossFadeState.showSecond,
+                                  duration: const Duration(milliseconds: 500),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              key: keys['rele1i1o:estado']!,
+                              estado[0] == '1' ? 'ENCENDIDO' : 'APAGADO',
+                              style: GoogleFonts.poppins(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w600,
+                                color: color3,
+                              ),
+                            ),
+                            const SizedBox(height: 50),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (isRegularUser && owner != '' && !tenant) ...{
+                      Container(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        child: const Center(
+                          child: Text(
+                            'No tienes acceso a esta función',
+                            style: TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                        ),
+                      ),
+                    },
+                    if (tracking) ...{
+                      Container(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        child: const Center(
+                          child: Text(
+                            'Desactiva control por presencia para utilizar esta función',
+                            style: TextStyle(color: Colors.white, fontSize: 18),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    },
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
 
       //*- Página 3 - Control por distancia -*\\
       SingleChildScrollView(
@@ -1550,7 +1531,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      key: KeyManager.rele1i1o.distanceKey,
+                      key: keys['rele1i1o:controlDistancia']!,
                       'Control por distancia',
                       style: GoogleFonts.poppins(
                         fontSize: 28,
@@ -1571,7 +1552,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                     ),
                     const SizedBox(height: 30),
                     GestureDetector(
-                      key: KeyManager.rele1i1o.distanceBottomKey,
+                      key: keys['rele1i1o:controlBoton']!,
                       onTap: () {
                         if (deviceOwner || owner == '' || tenant) {
                           verifyPermission().then((result) {
@@ -1708,7 +1689,6 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                                   printLog.i(
                                                       'Valor enviado: ${value.round()}');
                                                   putDistanceOff(
-                                                    service,
                                                     DeviceManager
                                                         .getProductCode(
                                                             deviceName),
@@ -1807,7 +1787,6 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                                                   printLog.i(
                                                       'Valor enviado: ${value.round()}');
                                                   putDistanceOn(
-                                                    service,
                                                     DeviceManager
                                                         .getProductCode(
                                                             deviceName),
@@ -1863,7 +1842,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  key: KeyManager.rele1i1o.pinModeKey,
+                  key: keys['rele1i1o:modoPines']!,
                   'Cambio de Modo de Pines',
                   style: GoogleFonts.poppins(
                     fontSize: 28,
@@ -2160,11 +2139,14 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                 children: [
                   Image.asset('assets/branch/dragon.gif',
                       width: 100, height: 100),
-                  Container(
-                    margin: const EdgeInsets.only(left: 15),
-                    child: const Text(
-                      "Desconectando...",
-                      style: TextStyle(color: Color(0xFFFFFFFF)),
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 15),
+                      child: const Text(
+                        "Desconectando...",
+                        style: TextStyle(color: Color(0xFFFFFFFF)),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ],
@@ -2232,7 +2214,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                         String newNickname = nicknameController.text;
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
-                        putNicknames(service, currentUserEmail, nicknamesMap);
+                        putNicknames(currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },
@@ -2243,7 +2225,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
             child: Row(
               children: [
                 Expanded(
-                  key: KeyManager.rele1i1o.titleKey,
+                  key: keys['rele1i1o:titulo']!,
                   child: Text(
                     nickname,
                     overflow: TextOverflow.ellipsis,
@@ -2271,11 +2253,14 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                       children: [
                         Image.asset('assets/branch/dragon.gif',
                             width: 100, height: 100),
-                        Container(
-                          margin: const EdgeInsets.only(left: 15),
-                          child: const Text(
-                            "Desconectando...",
-                            style: TextStyle(color: Color(0xFFFFFFFF)),
+                        Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.only(left: 15),
+                            child: const Text(
+                              "Desconectando...",
+                              style: TextStyle(color: Color(0xFFFFFFFF)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
                       ],
@@ -2295,15 +2280,17 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
           ),
           actions: [
             Icon(
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                      'cstate']
+              key: keys['rele1i1o:servidor']!,
+              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                          ?['cstate'] ??
+                      false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,
             ),
             IconButton(
-              key: KeyManager.rele1i1o.wifiKey,
-              icon: Icon(wifiNotifier.wifiIcon, color: color0),
+              key: keys['rele1i1o:wifi']!,
+              icon: Icon(wifiState.wifiIcon, color: color0),
               onPressed: () {
                 if (_isTutorialActive) return;
 
@@ -2337,7 +2324,7 @@ class Rele1i1oPageState extends State<Rele1i1oPage> {
                     height: 75.0,
                     items: const <Widget>[
                       Icon(Icons.home, size: 30, color: color0),
-                      Icon(Icons.bluetooth, size: 30, color: color0),
+                      Icon(Icons.location_pin, size: 30, color: color0),
                       Icon(Icons.input, size: 30, color: color0),
                       Icon(Icons.settings, size: 30, color: color0),
                     ],

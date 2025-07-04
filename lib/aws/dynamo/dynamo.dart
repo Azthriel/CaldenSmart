@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:caldensmart/aws/dynamo/dynamo_certificates.dart';
 import 'package:caldensmart/logger.dart';
 import 'package:aws_dynamodb_api/dynamodb-2012-08-10.dart';
 import 'package:caldensmart/aws/mqtt/mqtt.dart';
@@ -6,7 +7,7 @@ import '/master.dart';
 import '../../Global/stored_data.dart';
 
 //*-Lee todos los datos de un equipo-*\\
-Future<void> queryItems(DynamoDB service, String pc, String sn) async {
+Future<void> queryItems(String pc, String sn) async {
   try {
     printLog.i('Buscare en el equipo: $pc/$sn');
     final response = await service.query(
@@ -118,6 +119,31 @@ Future<void> queryItems(DynamoDB service, String pc, String sn) async {
                     .putIfAbsent('$pc/$sn', () => {})
                     .addAll({key: jsonEncode(valores)});
                 break;
+              case 'hasSpark':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.boolValue ?? false});
+                break;
+              case 'LabProcessFinished':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.boolValue ?? false});
+                break;
+              case 'hasEntry':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.boolValue ?? false});
+                break;
+              case 'HardwareVersion':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.s ?? ''});
+                break;
+              case 'SoftwareVersion':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.s ?? ''});
+                break;
             }
           }
           printLog.i("$key: $displayValue");
@@ -135,8 +161,7 @@ Future<void> queryItems(DynamoDB service, String pc, String sn) async {
 //*-Lee todos los datos de un equipo-*\\
 
 //*-Guarda y lee Tokens en dynamo-*\\
-Future<void> putTokens(
-    DynamoDB service, String pc, String sn, List<String> data) async {
+Future<void> putTokens(String pc, String sn, List<String> data) async {
   if (data.isEmpty) {
     data.add('');
   }
@@ -154,7 +179,7 @@ Future<void> putTokens(
   }
 }
 
-Future<List<String>> getTokens(DynamoDB service, String pc, String sn) async {
+Future<List<String>> getTokens(String pc, String sn) async {
   try {
     final response = await service.getItem(
       tableName: 'sime-domotica',
@@ -187,8 +212,7 @@ Future<List<String>> getTokens(DynamoDB service, String pc, String sn) async {
 //*-Guarda y lee Tokens en dynamo-*\\
 
 //*-Guarda el mail del owner de un equipo en dynamo-*\\
-Future<void> putOwner(
-    DynamoDB service, String pc, String sn, String data) async {
+Future<void> putOwner(String pc, String sn, String data) async {
   try {
     final response = await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
@@ -205,8 +229,7 @@ Future<void> putOwner(
 //*-Guarda el mail del owner de un equipo en dynamo-*\\
 
 //*-Guarda y lee los mails de los admins de un equipo en dynamo-*\\
-Future<void> putSecondaryAdmins(
-    DynamoDB service, String pc, String sn, List<String> data) async {
+Future<void> putSecondaryAdmins(String pc, String sn, List<String> data) async {
   if (data.isEmpty) {
     data.add('');
   }
@@ -224,8 +247,7 @@ Future<void> putSecondaryAdmins(
   }
 }
 
-Future<List<String>> getSecondaryAdmins(
-    DynamoDB service, String pc, String sn) async {
+Future<List<String>> getSecondaryAdmins(String pc, String sn) async {
   try {
     final response = await service.getItem(
       tableName: 'sime-domotica',
@@ -258,7 +280,7 @@ Future<List<String>> getSecondaryAdmins(
 //*-Guarda y lee los mails de los admins de un equipo en dynamo-*\\
 
 //*-Lee las fechas de vencimiento de los beneficios que se hayan pagado en un equipo-*\\
-Future<List<DateTime>> getDates(DynamoDB service, String pc, String sn) async {
+Future<List<DateTime>> getDates(String pc, String sn) async {
   try {
     final response = await service.getItem(
       tableName: 'sime-domotica',
@@ -313,8 +335,7 @@ Future<List<DateTime>> getDates(DynamoDB service, String pc, String sn) async {
 //*-Lee las fechas de vencimiento de los beneficios que se hayan pagado en un equipo-*\\
 
 //*-Escribe la distancia de encendido y apagado de el control por distancia de un equipo-*\\
-Future<void> putDistanceOn(
-    DynamoDB service, String pc, String sn, String data) async {
+Future<void> putDistanceOn(String pc, String sn, String data) async {
   try {
     final response = await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
@@ -329,8 +350,7 @@ Future<void> putDistanceOn(
   }
 }
 
-Future<void> putDistanceOff(
-    DynamoDB service, String pc, String sn, String data) async {
+Future<void> putDistanceOff(String pc, String sn, String data) async {
   try {
     final response = await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
@@ -347,8 +367,8 @@ Future<void> putDistanceOff(
 //*-Escribe la distancia de encendido y apagado de el control por distancia de un equipo-*\\
 
 //*-Guarda la data del alquiler temporario (airbnb) de un equipo-*\\
-Future<void> saveATData(DynamoDB service, String pc, String sn, bool activate,
-    String mail, String dOn, String dOff) async {
+Future<void> saveATData(String pc, String sn, bool activate, String mail,
+    String dOn, String dOff) async {
   try {
     final response = await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
@@ -369,7 +389,7 @@ Future<void> saveATData(DynamoDB service, String pc, String sn, bool activate,
 //*-Guarda la data del alquiler temporario (airbnb) de un equipo-*\\
 
 //*-Guardar si un equipo es NA o NC-*\\
-Future<void> saveNC(DynamoDB service, String pc, String sn, bool data) async {
+Future<void> saveNC(String pc, String sn, bool data) async {
   try {
     final response = await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
@@ -386,8 +406,7 @@ Future<void> saveNC(DynamoDB service, String pc, String sn, bool data) async {
 //*-Guardar si un equipo es NA o NC-*\\
 
 ///*-Guardar equipos en dynamo-*\\\
-Future<void> putDevicesForAlexa(
-    DynamoDB service, String email, List<String> data) async {
+Future<void> putDevicesForAlexa(String email, List<String> data) async {
   if (data.isEmpty) {
     data.add('');
   }
@@ -408,8 +427,7 @@ Future<void> putDevicesForAlexa(
   }
 }
 
-void putPreviusConnections(
-    DynamoDB service, String email, List<String> data) async {
+Future<void> putPreviusConnections(String email, List<String> data) async {
   if (data.isEmpty) {
     data.add('');
   }
@@ -434,8 +452,7 @@ void putPreviusConnections(
 ///*-Guardar equipos en dynamo-*\\\
 
 ///*-Guardar Nicknames de los equipo-*\\\
-Future<void> putNicknames(
-    DynamoDB service, String email, Map<String, String> data) async {
+Future<void> putNicknames(String email, Map<String, String> data) async {
   try {
     final response = await service.updateItem(tableName: 'Alexa-Devices', key: {
       'email': AttributeValue(s: email),
@@ -459,8 +476,7 @@ Future<void> putNicknames(
 ///*-Guardar Nicknames de los equipo-*\\\
 
 ///*-Guardar el largo del Roller-*\\\
-Future<void> putRollerLength(
-    DynamoDB service, String pc, String sn, String data) async {
+Future<void> putRollerLength(String pc, String sn, String data) async {
   try {
     final response = await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
@@ -483,7 +499,7 @@ Future<void> putRollerLength(
 ///También lee los dispositivos de Asistentes por voz y los guarda en la variable alexaDevices.
 ///A su vez, guarda los topics a los que se va a suscribir el cliente MQTT en la variable topicsToSub.
 ///Por último, guarda los nicknames de los dispositivos en la variable nicknamesMap.
-Future<void> getDevices(DynamoDB service, String email) async {
+Future<void> getDevices(String email) async {
   try {
     final response = await service.getItem(
       tableName: 'Alexa-Devices',
@@ -524,7 +540,7 @@ Future<void> getDevices(DynamoDB service, String email) async {
       await DeviceManager.init();
 
       for (String device in previusConnections) {
-        await queryItems(service, DeviceManager.getProductCode(device),
+        await queryItems(DeviceManager.getProductCode(device),
             DeviceManager.extractSerialNumber(device));
       }
     } else {
@@ -535,7 +551,7 @@ Future<void> getDevices(DynamoDB service, String email) async {
   }
 }
 
-Future<void> getGroups(DynamoDB service, String email) async {
+Future<void> getGroups(String email) async {
   try {
     final response = await service.getItem(
       tableName: 'Alexa-Devices',
@@ -566,8 +582,7 @@ Future<void> getGroups(DynamoDB service, String email) async {
 //*-Leer las conexiones previas y los grupos-*\\\
 
 //*-Guardar los grupos de dispositivos-*\\
-void putGroupsOfDevices(
-    DynamoDB service, String email, Map<String, List<String>> data) async {
+void putGroupsOfDevices(String email, Map<String, List<String>> data) async {
   try {
     final response = await service.updateItem(tableName: 'Alexa-Devices', key: {
       'email': AttributeValue(s: email),
@@ -591,7 +606,6 @@ void putGroupsOfDevices(
 
 /// Guarda la lista [eventosCreados] (List<Map<String, dynamic>>) bajo la clave primaria [email]
 void putEventos(
-  DynamoDB service,
   String email,
   List<Map<String, dynamic>> eventosCreados,
 ) async {
@@ -651,7 +665,6 @@ void putEventos(
 
 /// Carga y convierte de vuelta a List<Map<String, dynamic>> desde DynamoDB
 Future<List<Map<String, dynamic>>> getEventos(
-  DynamoDB service,
   String email,
 ) async {
   try {
@@ -702,13 +715,31 @@ Future<List<Map<String, dynamic>>> getEventos(
 }
 
 ///Guarda la ubicación del equipo en la base de datos
-Future<void> saveLocation(DynamoDB service, String pc, String sn, String data) async {
+Future<void> saveLocation(String pc, String sn, String data) async {
   try {
     final response = await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
     }, attributeUpdates: {
       'deviceLocation': AttributeValueUpdate(value: AttributeValue(s: data)),
+    });
+
+    printLog.i('Item escrito perfectamente $response');
+  } catch (e) {
+    printLog.i('Error inserting item: $e');
+  }
+}
+
+///Guarda las versiones de Hardware y Software
+Future<void> putVersions(
+    String pc, String sn, String hard, String soft) async {
+  try {
+    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+      'product_code': AttributeValue(s: pc),
+      'device_id': AttributeValue(s: sn),
+    }, attributeUpdates: {
+      'HardwareVersion': AttributeValueUpdate(value: AttributeValue(s: hard)),
+      'SoftwareVersion': AttributeValueUpdate(value: AttributeValue(s: soft)),
     });
 
     printLog.i('Item escrito perfectamente $response');

@@ -1,23 +1,22 @@
 import 'dart:convert';
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
-import 'package:caldensmart/aws/dynamo/dynamo_certificates.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../master.dart';
 import '../Global/stored_data.dart';
 import 'package:caldensmart/logger.dart';
 
 // CLASES \\
 
-class DetectorPage extends StatefulWidget {
+class DetectorPage extends ConsumerStatefulWidget {
   const DetectorPage({super.key});
   @override
-  DetectorPageState createState() => DetectorPageState();
+  ConsumerState<DetectorPage> createState() => DetectorPageState();
 }
 
-class DetectorPageState extends State<DetectorPage> {
+class DetectorPageState extends ConsumerState<DetectorPage> {
   int _selectedIndex = 0;
   int _selectedNotificationOption = 0;
   double bottomBarHeight = kBottomNavigationBarHeight;
@@ -37,12 +36,12 @@ class DetectorPageState extends State<DetectorPage> {
   void initItems() {
     items.addAll({
       TutorialItem(
-        globalKey: KeyManager.detectores.estadoKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
-        radius: 0,
+        globalKey: keys['detectores:estado']!,
+        borderRadius: const Radius.circular(30),
+        shapeFocus: ShapeFocus.square,
         pageIndex: 0,
+        fullBackground: true,
+        focusMargin: 5,
         child: const TutorialItemContent(
           title: 'Estado del equipo',
           content:
@@ -50,12 +49,12 @@ class DetectorPageState extends State<DetectorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.detectores.titleKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['detectores:titulo']!,
         shapeFocus: ShapeFocus.roundedSquare,
-        borderRadius: const Radius.circular(10.0),
+        borderRadius: const Radius.circular(30.0),
         contentPosition: ContentPosition.below,
         pageIndex: 0,
+        focusMargin: 15,
         child: const TutorialItemContent(
           title: 'Nombre del equipo',
           content:
@@ -63,13 +62,12 @@ class DetectorPageState extends State<DetectorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.detectores.wifiKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['detectores:wifi']!,
         shapeFocus: ShapeFocus.oval,
         borderRadius: const Radius.circular(15.0),
-        radius: 25,
         contentPosition: ContentPosition.below,
         pageIndex: 0,
+        focusMargin: 5,
         child: const TutorialItemContent(
           title: 'Menu Wifi',
           content:
@@ -77,8 +75,20 @@ class DetectorPageState extends State<DetectorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.detectores.gasKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['detectores:servidor']!,
+        shapeFocus: ShapeFocus.oval,
+        borderRadius: const Radius.circular(15.0),
+        contentPosition: ContentPosition.below,
+        pageIndex: 0,
+        focusMargin: 15,
+        child: const TutorialItemContent(
+          title: 'Conexión al servidor',
+          content:
+              'Podrás observar el estado de la conexión del dispositivo con el servidor',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['detectores:gas1']!,
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(15.0),
         pageIndex: 1,
@@ -89,8 +99,7 @@ class DetectorPageState extends State<DetectorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.detectores.coKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['detectores:co1']!,
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(15.0),
         pageIndex: 1,
@@ -100,8 +109,7 @@ class DetectorPageState extends State<DetectorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.detectores.gas2Key,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['detectores:gas2']!,
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(15.0),
         pageIndex: 2,
@@ -112,8 +120,7 @@ class DetectorPageState extends State<DetectorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.detectores.co2Key,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['detectores:co2']!,
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(15.0),
         pageIndex: 2,
@@ -123,8 +130,7 @@ class DetectorPageState extends State<DetectorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.detectores.gas3Key,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['detectores:gas3']!,
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(15.0),
         pageIndex: 3,
@@ -135,8 +141,7 @@ class DetectorPageState extends State<DetectorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.detectores.co3Key,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['detectores:co3']!,
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(15.0),
         pageIndex: 3,
@@ -146,12 +151,11 @@ class DetectorPageState extends State<DetectorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.detectores.brightnessKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
-        radius: 0,
+        globalKey: keys['detectores:brillo']!,
+        borderRadius: const Radius.circular(10),
+        shapeFocus: ShapeFocus.roundedSquare,
         pageIndex: 4,
+        focusMargin: 15,
         contentPosition: ContentPosition.below,
         child: const TutorialItemContent(
           title: 'Brillo del display',
@@ -160,23 +164,21 @@ class DetectorPageState extends State<DetectorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.detectores.barBrightnessKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['detectores:barraBrillo']!,
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(30.0),
         pageIndex: 4,
-        contentPosition: ContentPosition.below,
+        contentPosition: ContentPosition.above,
         child: const TutorialItemContent(
           title: 'Barra de brillo',
           content: 'Puedes configurar el brillo de la pantalla del detector',
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.detectores.configKey,
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: const Radius.circular(0),
-        shapeFocus: ShapeFocus.oval,
-        radius: 0,
+        globalKey: keys['detectores:configuraciones']!,
+        borderRadius: const Radius.circular(10),
+        shapeFocus: ShapeFocus.roundedSquare,
+        focusMargin: 15,
         pageIndex: 5,
         contentPosition: ContentPosition.below,
         child: const TutorialItemContent(
@@ -185,8 +187,7 @@ class DetectorPageState extends State<DetectorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: KeyManager.detectores.imageKey,
-        color: Colors.black.withValues(alpha: 0.6),
+        globalKey: keys['detectores:imagen']!,
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(30.0),
         pageIndex: 5,
@@ -197,8 +198,8 @@ class DetectorPageState extends State<DetectorPage> {
         ),
       ),
       // TutorialItem(
-      //   globalKey: KeyManager.detectores.discNotificationKey,
-      //   color: Colors.black.withValues(alpha: 0.6),
+      //   globalKey: keys['detectores:desconexion']!,
+      //
       //   shapeFocus: ShapeFocus.roundedSquare,
       //   borderRadius: const Radius.circular(30.0),
       //   pageIndex: 5,
@@ -210,6 +211,8 @@ class DetectorPageState extends State<DetectorPage> {
       // ),
     });
   }
+
+  ///*- Elementos para tutoriales -*\\\
 
   @override
   void initState() {
@@ -249,8 +252,7 @@ class DetectorPageState extends State<DetectorPage> {
     printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
-    WifiNotifier wifiNotifier =
-        Provider.of<WifiNotifier>(context, listen: false);
+    final wifiNotifier = ref.read(wifiProvider.notifier);
 
     if (parts[0] == 'WCS_CONNECTED') {
       atemp = false;
@@ -396,8 +398,7 @@ class DetectorPageState extends State<DetectorPage> {
   @override
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
-    WifiNotifier wifiNotifier =
-        Provider.of<WifiNotifier>(context, listen: false);
+    final wifiState = ref.watch(wifiProvider);
 
     final List<Widget> pages = [
       //! Página 1: Estado del Aire, Estado de conexión, Caducidad del sensor
@@ -490,7 +491,7 @@ class DetectorPageState extends State<DetectorPage> {
                 const SizedBox(height: 20),
                 // Estado de conexión (Wifi)
                 AnimatedOpacity(
-                  key: KeyManager.detectores.estadoKey,
+                  key: keys['detectores:estado']!,
                   opacity: 1.0,
                   duration: const Duration(milliseconds: 800),
                   curve: Curves.easeInOut,
@@ -643,7 +644,7 @@ class DetectorPageState extends State<DetectorPage> {
                     const SizedBox(height: 20),
                     // Tarjeta de Gas
                     SizedBox(
-                      key: KeyManager.detectores.gasKey,
+                      key: keys['detectores:gas1']!,
                       height: cardHeight,
                       child: Card(
                         color: color3,
@@ -742,7 +743,7 @@ class DetectorPageState extends State<DetectorPage> {
                     const SizedBox(height: 20),
                     // Tarjeta de CO
                     SizedBox(
-                      key: KeyManager.detectores.coKey,
+                      key: keys['detectores:co1']!,
                       height: cardHeight,
                       child: Card(
                         color: color3,
@@ -864,7 +865,7 @@ class DetectorPageState extends State<DetectorPage> {
                     const SizedBox(height: 20),
                     // Tarjeta Pico Máximo PPM CH4
                     SizedBox(
-                      key: KeyManager.detectores.gas2Key,
+                      key: keys['detectores:gas2']!,
                       height: cardHeight,
                       child: Card(
                         color: color3,
@@ -963,7 +964,7 @@ class DetectorPageState extends State<DetectorPage> {
                     const SizedBox(height: 20),
                     // Tarjeta Pico Máximo PPM CO
                     SizedBox(
-                      key: KeyManager.detectores.co2Key,
+                      key: keys['detectores:co2']!,
                       height: cardHeight,
                       child: Card(
                         color: color3,
@@ -1086,7 +1087,7 @@ class DetectorPageState extends State<DetectorPage> {
                     // Tarjeta Promedio PPM CH4
                     const SizedBox(height: 20),
                     SizedBox(
-                      key: KeyManager.detectores.gas3Key,
+                      key: keys['detectores:gas3']!,
                       height: cardHeight,
                       child: Card(
                         color: color3,
@@ -1185,7 +1186,7 @@ class DetectorPageState extends State<DetectorPage> {
                     const SizedBox(height: 20),
                     // Tarjeta Promedio PPM CO
                     SizedBox(
-                      key: KeyManager.detectores.co3Key,
+                      key: keys['detectores:co3']!,
                       height: cardHeight,
                       child: Card(
                         color: color3,
@@ -1306,7 +1307,7 @@ class DetectorPageState extends State<DetectorPage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      key: KeyManager.detectores.brightnessKey,
+                      key: keys['detectores:brillo']!,
                       'Brillo del display',
                       style: GoogleFonts.poppins(
                         textStyle: const TextStyle(
@@ -1330,7 +1331,7 @@ class DetectorPageState extends State<DetectorPage> {
                         const SizedBox(width: 20),
                         // Slider vertical para ajustar el brillo
                         Container(
-                          key: KeyManager.detectores.barBrightnessKey,
+                          key: keys['detectores:barraBrillo']!,
                           height: sliderHeight,
                           width: 70,
                           decoration: BoxDecoration(
@@ -1428,7 +1429,7 @@ class DetectorPageState extends State<DetectorPage> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
-                        key: KeyManager.detectores.configKey,
+                        key: keys['detectores:configuraciones']!,
                         'Configuraciones',
                         style: GoogleFonts.poppins(
                           textStyle: const TextStyle(
@@ -1442,7 +1443,7 @@ class DetectorPageState extends State<DetectorPage> {
                       const SizedBox(height: 30),
                       // Botón 1: Cambiar imagen del dispositivo
                       SizedBox(
-                        key: KeyManager.detectores.imageKey,
+                        key: keys['detectores:imagen']!,
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () {
@@ -1823,7 +1824,7 @@ class DetectorPageState extends State<DetectorPage> {
                         String newNickname = nicknameController.text;
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
-                        putNicknames(service, currentUserEmail, nicknamesMap);
+                        putNicknames(currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },
@@ -1834,7 +1835,7 @@ class DetectorPageState extends State<DetectorPage> {
             child: Row(
               children: [
                 Expanded(
-                  key: KeyManager.detectores.titleKey,
+                  key: keys['detectores:titulo']!,
                   child: Text(
                     nickname,
                     overflow: TextOverflow.ellipsis,
@@ -1885,6 +1886,7 @@ class DetectorPageState extends State<DetectorPage> {
           ),
           actions: [
             Icon(
+              key: keys['detectores:servidor']!,
               globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                           ?['cstate'] ??
                       false
@@ -1893,8 +1895,8 @@ class DetectorPageState extends State<DetectorPage> {
               color: color0,
             ),
             IconButton(
-              key: KeyManager.detectores.wifiKey,
-              icon: Icon(wifiNotifier.wifiIcon, color: color0),
+              key: keys['detectores:wifi']!,
+              icon: Icon(wifiState.wifiIcon, color: color0),
               onPressed: () {
                 if (_isTutorialActive) return;
                 wifiText(context);

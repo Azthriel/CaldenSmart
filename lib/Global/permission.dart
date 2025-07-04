@@ -1,5 +1,4 @@
 import 'package:amplify_flutter/amplify_flutter.dart';
-import 'package:caldensmart/login/welcome.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../master.dart';
@@ -43,7 +42,8 @@ class PermissionHandlerState extends State<PermissionHandler> {
     permissionStatus4 = await Permission.notification.status;
 
     printLog.i('Ble: ${permissionStatus1.isGranted} /// $permissionStatus1');
-    printLog.i('Ble Scan: ${permissionStatus2.isGranted} /// $permissionStatus2');
+    printLog
+        .i('Ble Scan: ${permissionStatus2.isGranted} /// $permissionStatus2');
     printLog.i('Locate: ${permissionStatus3.isGranted} /// $permissionStatus3');
     printLog.i('Notif: ${permissionStatus4.isGranted} /// $permissionStatus4');
 
@@ -87,15 +87,6 @@ class PermissionHandlerState extends State<PermissionHandler> {
       }
     } catch (e) {
       printLog.i('Error verificando la autenticación: $e');
-      if (mounted) {
-        Navigator.of(context).pushReplacement(PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const WelcomePage(),
-          // sin animación de página: sólo Hero
-          transitionDuration: const Duration(milliseconds: 800),
-          reverseTransitionDuration: const Duration(milliseconds: 800),
-          transitionsBuilder: (_, __, ___, child) => child,
-        ));
-      }
     }
   }
 
