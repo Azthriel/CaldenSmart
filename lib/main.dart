@@ -8,9 +8,8 @@ import 'package:caldensmart/Devices/millenium.dart';
 import 'package:caldensmart/Devices/modulo.dart';
 import 'package:caldensmart/Devices/relay.dart';
 import 'package:caldensmart/Devices/rele1i1o.dart';
+import 'package:caldensmart/Devices/termometro.dart';
 import 'package:caldensmart/Global/profile.dart';
-import 'package:caldensmart/Global/special_user.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -43,10 +42,6 @@ Future<void> main() async {
     printLog.i("Iniciando Firebase");
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
-    );
-    FirebaseFirestore.instance.settings = const Settings(
-      persistenceEnabled: true,
-      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
     );
     printLog.i("Firebase inicializado");
   } catch (e) {
@@ -176,7 +171,7 @@ class MyAppState extends State<MyApp> {
         '/heladera': (context) => const HeladeraPage(),
         '/rele1i1o': (context) => const Rele1i1oPage(),
         '/qr': (context) => const QRScanPage(),
-        '/rejectScreen': (context) => const LabProcedureIncompletePage(),
+        '/termometro': (context) => const TermometroPage(),
       },
     );
   }

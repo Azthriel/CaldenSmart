@@ -854,7 +854,6 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
   @override
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
-    double bottomBarHeight = kBottomNavigationBarHeight;
     final wifiState = ref.watch(wifiProvider);
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
@@ -866,6 +865,10 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
     // si no eres dueño del equipo
     if (isRegularUser && owner != '' && !tenant) {
       return const AccessDeniedScreen();
+    }
+
+    if (specialUser && !labProcessFinished) {
+      return const LabProcessNotFinished();
     }
 
     final List<Widget> pages = [

@@ -700,7 +700,6 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
   @override
   Widget build(BuildContext context) {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
-    double bottomBarHeight = kBottomNavigationBarHeight;
     final wifiState = ref.watch(wifiProvider);
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
@@ -712,6 +711,10 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
     // si no eres dueño del equipo
     if (isRegularUser && owner != '' && !tenant) {
       return const AccessDeniedScreen();
+    }
+
+    if (specialUser && !labProcessFinished) {
+      return const LabProcessNotFinished();
     }
 
     final List<Widget> pages = [

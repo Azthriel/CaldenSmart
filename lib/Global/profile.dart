@@ -29,6 +29,7 @@ class ProfilePageState extends State<ProfilePage> {
   bool isDevicesOpen = false;
   bool isDomoticaOpen = false;
   bool isDetectorOpen = false;
+  bool isTermometroOpen = false;
   bool isContactOpen = false;
   bool isSocialOpen = false;
   bool isAssistantOpen = false;
@@ -164,12 +165,33 @@ class ProfilePageState extends State<ProfilePage> {
                                     ),
                                     child: const Text('Aceptar'),
                                     onPressed: () async {
-                                      await Amplify.Auth.deleteUser();
+                                      try {
+                                        Navigator.of(context).pop();
+                                        await Amplify.Auth.deleteUser();
+
+                                        currentUserEmail = '';
+
+                                        if (context.mounted) {
+                                          Navigator.pushAndRemoveUntil(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const WelcomePage(),
+                                            ),
+                                            (route) => false,
+                                          );
+                                        }
+                                      } catch (e) {
+                                        printLog
+                                            .e('Error deleting account: $e');
+                                        if (context.mounted) {
+                                          showToast(
+                                              'Error al eliminar la cuenta');
+                                        }
+                                      }
+
                                       // launchWebURL(
                                       //     linksOfApp(app, 'Borrar Cuenta'));
-                                      if (context.mounted) {
-                                        Navigator.of(context).pop();
-                                      }
                                     },
                                   ),
                                 ],
@@ -327,6 +349,10 @@ class ProfilePageState extends State<ProfilePage> {
                                   printLog.i('Elegí alarma${value! + 1}');
                                   soundOfNotification['020010_IOT'] =
                                       'alarm${value + 1}';
+                                  soundOfNotification['020020_IOT'] =
+                                      'alarm${value + 1}';
+                                  soundOfNotification['027313_IOT'] =
+                                      'alarm${value + 1}';
                                   saveSounds(soundOfNotification);
                                   NativeService().playNativeSound(
                                       'alarm${value + 1}',
@@ -418,6 +444,85 @@ class ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                     crossFadeState: isDetectorOpen
+                        ? CrossFadeState.showSecond
+                        : CrossFadeState.showFirst,
+                  ),
+                  const Divider(color: color3),
+                  ListTile(
+                    leading: const Icon(
+                      HugeIcons.strokeRoundedTemperature,
+                      color: color3,
+                    ),
+                    title: Text(
+                      "Termómetro",
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      "Alarma para termómetros",
+                      style: GoogleFonts.poppins(
+                        color: color3,
+                      ),
+                    ),
+                    onTap: () {
+                      setState(() {
+                        isTermometroOpen = !isTermometroOpen;
+                      });
+                    },
+                    trailing: Icon(
+                      isTermometroOpen
+                          ? HugeIcons.strokeRoundedArrowUp01
+                          : HugeIcons.strokeRoundedArrowDown01,
+                      color: color3,
+                    ),
+                  ),
+                  AnimatedCrossFade(
+                    duration: const Duration(milliseconds: 300),
+                    firstChild: const SizedBox.shrink(),
+                    secondChild: Padding(
+                      padding: const EdgeInsets.only(left: 16.0),
+                      child: Column(
+                        children: List.generate(alarmSounds.length, (index) {
+                          return RadioListTile<int>(
+                            title: Row(
+                              children: [
+                                const Icon(HugeIcons.strokeRoundedVolumeHigh,
+                                    color: color3),
+                                const SizedBox(width: 10),
+                                Text(
+                                  alarmSounds[index],
+                                  style: GoogleFonts.poppins(
+                                    color: color3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            activeColor: color3,
+                            value: index,
+                            groupValue: selectedSoundTermometro,
+                            onChanged: (int? value) {
+                              setState(() {
+                                if (selectedSoundTermometro == value) {
+                                  selectedSoundTermometro = null;
+                                } else {
+                                  selectedSoundTermometro = value;
+                                  printLog.i('Elegí alarma${value! + 1}');
+                                  soundOfNotification['023430_IOT'] =
+                                      'alarm${value + 1}';
+                                  saveSounds(soundOfNotification);
+                                  NativeService().playNativeSound(
+                                      'alarm${value + 1}',
+                                      getAlarmDelay('alarm${value + 1}'));
+                                }
+                              });
+                            },
+                          );
+                        }),
+                      ),
+                    ),
+                    crossFadeState: isTermometroOpen
                         ? CrossFadeState.showSecond
                         : CrossFadeState.showFirst,
                   ),

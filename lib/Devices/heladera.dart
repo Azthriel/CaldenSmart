@@ -769,6 +769,10 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
       return const AccessDeniedScreen();
     }
 
+    if (specialUser && !labProcessFinished) {
+      return const LabProcessNotFinished();
+    }
+
     final List<Widget> pages = [
       //*- Página 1 - Estado del dispositivo -*\\
       SingleChildScrollView(
@@ -1547,14 +1551,11 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                 children: [
                   Image.asset('assets/branch/dragon.gif',
                       width: 100, height: 100),
-                  Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.only(left: 15),
-                      child: const Text(
-                        "Desconectando...",
-                        style: TextStyle(color: Color(0xFFFFFFFF)),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                  Container(
+                    margin: const EdgeInsets.only(left: 15),
+                    child: const Text(
+                      "Desconectando...",
+                      style: TextStyle(color: Color(0xFFFFFFFF)),
                     ),
                   ),
                 ],
@@ -1660,14 +1661,11 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                       children: [
                         Image.asset('assets/branch/dragon.gif',
                             width: 100, height: 100),
-                        Expanded(
-                          child: Container(
-                            margin: const EdgeInsets.only(left: 15),
-                            child: const Text(
-                              "Desconectando...",
-                              style: TextStyle(color: Color(0xFFFFFFFF)),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                        Container(
+                          margin: const EdgeInsets.only(left: 15),
+                          child: const Text(
+                            "Desconectando...",
+                            style: TextStyle(color: Color(0xFFFFFFFF)),
                           ),
                         ),
                       ],

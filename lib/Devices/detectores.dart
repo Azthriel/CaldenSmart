@@ -1,11 +1,11 @@
 import 'dart:convert';
+import 'package:caldensmart/Global/manager_screen.dart';
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../master.dart';
-import '../Global/stored_data.dart';
 import 'package:caldensmart/logger.dart';
 
 // CLASES \\
@@ -18,11 +18,7 @@ class DetectorPage extends ConsumerStatefulWidget {
 
 class DetectorPageState extends ConsumerState<DetectorPage> {
   int _selectedIndex = 0;
-  int _selectedNotificationOption = 0;
-  double bottomBarHeight = kBottomNavigationBarHeight;
-
   bool _isAnimating = false;
-  bool _showNotificationOptions = false;
   bool alert = false;
   bool _isTutorialActive = false;
 
@@ -175,7 +171,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: keys['detectores:configuraciones']!,
+        globalKey: keys['managerScreen:titulo']!,
         borderRadius: const Radius.circular(10),
         shapeFocus: ShapeFocus.roundedSquare,
         focusMargin: 15,
@@ -187,7 +183,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
         ),
       ),
       TutorialItem(
-        globalKey: keys['detectores:imagen']!,
+        globalKey: keys['managerScreen:imagen']!,
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(30.0),
         pageIndex: 5,
@@ -400,6 +396,15 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
     final wifiState = ref.watch(wifiProvider);
 
+    // si hay un usuario conectado al equipo no lo deje ingresar
+    if (userConnected && lastUser > 1) {
+      return const DeviceInUseScreen();
+    }
+
+    if (specialUser && !labProcessFinished) {
+      return const LabProcessNotFinished();
+    }
+
     final List<Widget> pages = [
       //! Página 1: Estado del Aire, Estado de conexión, Caducidad del sensor
       Padding(
@@ -580,39 +585,48 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(12.0),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.timer,
-                              color: Color(0xFF18B2C7),
-                              size: 50,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Caducidad del sensor',
-                                    style: TextStyle(
-                                      color: color0,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    '$daysToExpire días restantes',
-                                    style: const TextStyle(
-                                      color: Color(0xFF18B2C7),
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.timer,
+                                color: Color(0xFF18B2C7),
+                                size: 50,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Caducidad del sensor',
+                                      style: TextStyle(
+                                        color: color0,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                    Flexible(
+                                      child: Text(
+                                        '$daysToExpire días restantes',
+                                        style: const TextStyle(
+                                          color: Color(0xFF18B2C7),
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -1413,330 +1427,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
       ),
 
       //! Página 6
-      SingleChildScrollView(
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.8,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SingleChildScrollView(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final screenWidth = constraints.maxWidth;
-                  final buttonHeight = screenWidth * 0.08;
-                  final cardPadding = screenWidth * 0.04;
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        key: keys['detectores:configuraciones']!,
-                        'Configuraciones',
-                        style: GoogleFonts.poppins(
-                          textStyle: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blueGrey,
-                          ),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 30),
-                      // Botón 1: Cambiar imagen del dispositivo
-                      SizedBox(
-                        key: keys['detectores:imagen']!,
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            ImageManager.openImageOptions(context, deviceName,
-                                () {
-                              setState(() {});
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: color0,
-                            backgroundColor: color3,
-                            padding: EdgeInsets.symmetric(
-                                vertical: buttonHeight * 0.6),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                              side: const BorderSide(
-                                color: Color(0xFF10BB96),
-                                width: 2,
-                              ),
-                            ),
-                          ),
-                          child: const Text(
-                            'Cambiar imagen del dispositivo',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      // Botón 2: Activar/Desactivar notificación de desconexión
-                      // SizedBox(
-                      //   key: discNotificationKey,
-                      //   width: double.infinity,
-                      //   child: ElevatedButton(
-                      //     onPressed: () async {
-                      //       if (discNotfActivated) {
-                      //         showAlertDialog(
-                      //           context,
-                      //           true,
-                      //           const Text('Confirmar Desactivación'),
-                      //           const Text(
-                      //               '¿Estás seguro de que deseas desactivar la notificación de desconexión?'),
-                      //           [
-                      //             TextButton(
-                      //               onPressed: () {
-                      //                 Navigator.of(context).pop();
-                      //               },
-                      //               child: const Text('Cancelar'),
-                      //             ),
-                      //             TextButton(
-                      //               onPressed: () async {
-                      //                 setState(() {
-                      //                   discNotfActivated = false;
-                      //                   _showNotificationOptions = false;
-                      //                 });
-
-                      //                 configNotiDsc.removeWhere(
-                      //                     (key, value) => key == deviceName);
-                      //                 await saveconfigNotiDsc(configNotiDsc);
-
-                      //                 if (context.mounted) {
-                      //                   Navigator.of(context).pop();
-                      //                 }
-                      //               },
-                      //               child: const Text('Aceptar'),
-                      //             ),
-                      //           ],
-                      //         );
-                      //       } else {
-                      //         setState(() {
-                      //           _showNotificationOptions =
-                      //               !_showNotificationOptions;
-                      //         });
-                      //       }
-                      //     },
-                      //     style: ElevatedButton.styleFrom(
-                      //       foregroundColor: color0,
-                      //       backgroundColor: color3,
-                      //       padding: EdgeInsets.symmetric(
-                      //           vertical: buttonHeight * 0.6),
-                      //       shape: RoundedRectangleBorder(
-                      //         borderRadius: BorderRadius.circular(30),
-                      //         side: const BorderSide(
-                      //           color: Color(0xFF10BB96),
-                      //           width: 2,
-                      //         ),
-                      //       ),
-                      //     ),
-                      //     child: Text(
-                      //       discNotfActivated
-                      //           ? 'Desactivar notificación\nde desconexión'
-                      //           : 'Activar notificación\nde desconexión',
-                      //       style: GoogleFonts.poppins(
-                      //         fontSize: 18,
-                      //         color: color0,
-                      //         fontWeight: FontWeight.bold,
-                      //       ),
-                      //       textAlign: TextAlign.center,
-                      //     ),
-                      //   ),
-                      // ),
-
-                      // Tarjeta con descripción y opciones de notificación
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                        child: _showNotificationOptions
-                            ? Card(
-                                color: color3,
-                                elevation: 6,
-                                margin: EdgeInsets.symmetric(
-                                  vertical: 10.0,
-                                  horizontal: cardPadding,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  side: const BorderSide(
-                                    color: Color(0xFF18B2C7),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: EdgeInsets.all(cardPadding),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Text(
-                                        'Selecciona cuándo deseas recibir una notificación en caso de que el equipo se desconecte:',
-                                        style: TextStyle(
-                                          color: color0,
-                                          fontSize: 16,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      const SizedBox(height: 20),
-                                      RadioListTile<int>(
-                                        value: 0,
-                                        groupValue: _selectedNotificationOption,
-                                        onChanged: (int? value) {
-                                          setState(() {
-                                            _selectedNotificationOption =
-                                                value!;
-                                          });
-                                        },
-                                        title: const Text(
-                                          'Instantáneo',
-                                          style: TextStyle(
-                                            color: color0,
-                                            fontSize: 18,
-                                          ),
-                                        ),
-                                        activeColor: const Color(0xFF10BB96),
-                                      ),
-                                      RadioListTile<int>(
-                                        value: 10,
-                                        groupValue: _selectedNotificationOption,
-                                        onChanged: (int? value) {
-                                          setState(() {
-                                            _selectedNotificationOption =
-                                                value!;
-                                          });
-                                        },
-                                        title: const Text(
-                                          'Si permanece 10 minutos desconectado',
-                                          style: TextStyle(
-                                            color: color0,
-                                            fontSize: 18,
-                                          ),
-                                        ),
-                                        activeColor: const Color(0xFF10BB96),
-                                      ),
-                                      RadioListTile<int>(
-                                        value: 60,
-                                        groupValue: _selectedNotificationOption,
-                                        onChanged: (int? value) {
-                                          setState(() {
-                                            _selectedNotificationOption =
-                                                value!;
-                                          });
-                                        },
-                                        title: const Text(
-                                          'Si permanece 1 hora desconectado',
-                                          style: TextStyle(
-                                            color: color0,
-                                            fontSize: 18,
-                                          ),
-                                        ),
-                                        activeColor: const Color(0xFF10BB96),
-                                      ),
-                                      const SizedBox(height: 20),
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: ElevatedButton(
-                                          onPressed: () async {
-                                            setState(() {
-                                              discNotfActivated = true;
-                                              _showNotificationOptions = false;
-                                            });
-
-                                            configNotiDsc.addAll({
-                                              deviceName:
-                                                  _selectedNotificationOption
-                                            });
-                                            await saveconfigNotiDsc(
-                                                configNotiDsc);
-
-                                            showNotification(
-                                              'Notificación Activada',
-                                              'Has activado la notificación de desconexión con la opción seleccionada.',
-                                              'noti',
-                                            );
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            foregroundColor: color0,
-                                            backgroundColor:
-                                                const Color(0xFF10BB96),
-                                            padding: const EdgeInsets.symmetric(
-                                                vertical: 12),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(30),
-                                            ),
-                                          ),
-                                          child: const Text(
-                                            'Aceptar',
-                                            style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                      const SizedBox(height: 20),
-                      // versiones de hardware y software
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 10, horizontal: 20),
-                        decoration: BoxDecoration(
-                          color: color3,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'Versión de Hardware $hardwareVersion',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            textStyle: const TextStyle(
-                              color: color0,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 10, horizontal: 20),
-                        decoration: BoxDecoration(
-                          color: color3,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'Versión de Software $softwareVersion',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            textStyle: const TextStyle(
-                              color: color0,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      Padding(
-                        padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
-      ),
+      const ManagerScreen(),
     ];
     return PopScope(
       canPop: false,

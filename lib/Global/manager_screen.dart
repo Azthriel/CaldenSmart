@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../master.dart';
 import 'stored_data.dart';
@@ -41,11 +40,8 @@ class ManagerScreenState extends State<ManagerScreen> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..add(email);
 
-      await putSecondaryAdmins(
-          
-          DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName),
-          updatedAdmins);
+      await putSecondaryAdmins(DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
 
       setState(() {
         adminDevices = updatedAdmins;
@@ -63,11 +59,8 @@ class ManagerScreenState extends State<ManagerScreen> {
     try {
       List<String> updatedAdmins = List.from(adminDevices)..remove(email);
 
-      await putSecondaryAdmins(
-          
-          DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName),
-          updatedAdmins);
+      await putSecondaryAdmins(DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
 
       setState(() {
         adminDevices.remove(email);
@@ -152,6 +145,8 @@ class ManagerScreenState extends State<ManagerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final String pc = DeviceManager.getProductCode(deviceName);
+    final String sn = DeviceManager.extractSerialNumber(deviceName);
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
@@ -168,9 +163,12 @@ class ManagerScreenState extends State<ManagerScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 40),
+            SizedBox(height: pc == '015773_IOT' ? 0 : 40),
             //! Opción - Reclamar propiedad del equipo o dejar de ser propietario
-            if (!tenant && (owner == currentUserEmail || owner == '')) ...{
+            if (!tenant &&
+                (owner == currentUserEmail || owner == '') &&
+                pc != '015773_IOT' &&
+                pc != '023430_IOT') ...{
               InkWell(
                 key: keys['managerScreen:reclamar']!,
                 onTap: () async {
@@ -196,17 +194,15 @@ class ManagerScreenState extends State<ManagerScreen> {
                           onPressed: () {
                             try {
                               putOwner(
-                                
-                                DeviceManager.getProductCode(deviceName),
-                                DeviceManager.extractSerialNumber(deviceName),
+                                pc,
+                                sn,
                                 '',
                               );
                               Navigator.of(context).pop();
 
                               saveATData(
-                                
-                                DeviceManager.getProductCode(deviceName),
-                                DeviceManager.extractSerialNumber(deviceName),
+                                pc,
+                                sn,
                                 false,
                                 '',
                                 '3000',
@@ -228,9 +224,8 @@ class ManagerScreenState extends State<ManagerScreen> {
                   } else if (owner == '') {
                     try {
                       putOwner(
-                        
-                        DeviceManager.getProductCode(deviceName),
-                        DeviceManager.extractSerialNumber(deviceName),
+                        pc,
+                        sn,
                         currentUserEmail,
                       );
                       setState(() {
@@ -417,27 +412,16 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                         onPressed: () async {
                                                           String cuerpo =
                                                               '¡Hola! Me comunico porque busco habilitar la opción de "Administradores secundarios extras" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
-                                                          final Uri
-                                                              emailLaunchUri =
-                                                              Uri(
-                                                            scheme: 'mailto',
-                                                            path:
+
+                                                          try {
+                                                            launchEmail(
                                                                 'cobranzas@ibsanitarios.com.ar',
-                                                            query:
-                                                                encodeQueryParameters(<String,
-                                                                    String>{
-                                                              'subject':
-                                                                  'Habilitación Administradores secundarios extras',
-                                                              'body': cuerpo,
-                                                              'CC':
-                                                                  'pablo@intelligentgas.com.ar'
-                                                            }),
-                                                          );
-                                                          if (await canLaunchUrl(
-                                                              emailLaunchUri)) {
-                                                            await launchUrl(
-                                                                emailLaunchUri);
-                                                          } else {
+                                                                'Habilitación Administradores secundarios extras',
+                                                                cuerpo,
+                                                                cc: 'pablo@intelligentgas.com.ar');
+                                                          } catch (e) {
+                                                            printLog.i(
+                                                                'Error al enviar email: $e');
                                                             showToast(
                                                                 'No se pudo enviar el correo electrónico');
                                                           }
@@ -623,24 +607,16 @@ class ManagerScreenState extends State<ManagerScreen> {
                                           onPressed: () async {
                                             String cuerpo =
                                                 '¡Hola! Me comunico porque busco habilitar la opción de "Alquiler temporario" en mi equipo $deviceName\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner';
-                                            final Uri emailLaunchUri = Uri(
-                                              scheme: 'mailto',
-                                              path:
+
+                                            try {
+                                              launchEmail(
                                                   'cobranzas@ibsanitarios.com.ar',
-                                              query:
-                                                  encodeQueryParameters(<String,
-                                                      String>{
-                                                'subject':
-                                                    'Habilitación Alquiler temporario',
-                                                'body': cuerpo,
-                                                'CC':
-                                                    'pablo@intelligentgas.com.ar'
-                                              }),
-                                            );
-                                            if (await canLaunchUrl(
-                                                emailLaunchUri)) {
-                                              await launchUrl(emailLaunchUri);
-                                            } else {
+                                                  'Habilitación Alquiler temporario',
+                                                  cuerpo,
+                                                  cc: 'pablo@intelligentgas.com.ar');
+                                            } catch (e) {
+                                              printLog.i(
+                                                  'Error al enviar email: $e');
                                               showToast(
                                                   'No se pudo enviar el correo electrónico');
                                             }
@@ -797,7 +773,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                           Expanded(
                                                             child: Text(
                                                               globalDATA[
-                                                                      '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                                                                      '$pc/$sn']
                                                                   ?['tenant'],
                                                               style: GoogleFonts
                                                                   .poppins(
@@ -815,13 +791,8 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                             onPressed:
                                                                 () async {
                                                               await saveATData(
-                                                                
-                                                                DeviceManager
-                                                                    .getProductCode(
-                                                                        deviceName),
-                                                                DeviceManager
-                                                                    .extractSerialNumber(
-                                                                        deviceName),
+                                                                pc,
+                                                                sn,
                                                                 false,
                                                                 '',
                                                                 '3000',
@@ -832,7 +803,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                                 tenantController
                                                                     .clear();
                                                                 globalDATA[
-                                                                        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                                                                        '$pc/$sn']
                                                                     ?[
                                                                     'tenant'] = '';
                                                                 activatedAT =
@@ -853,13 +824,9 @@ class ManagerScreenState extends State<ManagerScreen> {
                                               const SizedBox(height: 10),
 
                                               // Distancia de apagado y encendido sliders
-                                              if (DeviceManager.getProductCode(deviceName) != '020010_IOT' &&
-                                                  DeviceManager.getProductCode(
-                                                          deviceName) !=
-                                                      '050217_IOT' &&
-                                                  DeviceManager.getProductCode(
-                                                          deviceName) !=
-                                                      '020010_IOT') ...{
+                                              if (pc != '020010_IOT' &&
+                                                  pc != '050217_IOT' &&
+                                                  pc != '020010_IOT') ...{
                                                 Text(
                                                   'Distancia de apagado (${distOffValue.round()} metros)',
                                                   style: GoogleFonts.poppins(
@@ -915,13 +882,8 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                         if (tenantController
                                                             .text.isNotEmpty) {
                                                           saveATData(
-                                                            
-                                                            DeviceManager
-                                                                .getProductCode(
-                                                                    deviceName),
-                                                            DeviceManager
-                                                                .extractSerialNumber(
-                                                                    deviceName),
+                                                            pc,
+                                                            sn,
                                                             true,
                                                             tenantController
                                                                 .text
@@ -936,7 +898,7 @@ class ManagerScreenState extends State<ManagerScreen> {
 
                                                           setState(() {
                                                             activatedAT = true;
-                                                            globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                                                            globalDATA['$pc/$sn']
                                                                     ?[
                                                                     'tenant'] =
                                                                 tenantController
@@ -1023,20 +985,18 @@ class ManagerScreenState extends State<ManagerScreen> {
             ),
             const SizedBox(height: 30),
             if (!tenant &&
-                DeviceManager.getProductCode(deviceName) != '027131_IOT' &&
-                DeviceManager.getProductCode(deviceName) != '024011_IOT') ...[
+                pc != '027131_IOT' &&
+                pc != '024011_IOT' &&
+                pc != '015773_IOT' &&
+                pc != '023430_IOT') ...[
               SizedBox(
                 key: keys['managerScreen:accesoRapido']!,
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
-                    if (DeviceManager
-                                .getProductCode(deviceName) ==
-                            '020010_IOT' ||
-                        DeviceManager.getProductCode(deviceName) ==
-                            '020020_IOT' ||
-                        (DeviceManager.getProductCode(deviceName) ==
-                                '027313_IOT' &&
+                    if (pc == '020010_IOT' ||
+                        pc == '020020_IOT' ||
+                        (pc == '027313_IOT' &&
                             Versioner.isPosterior(
                                 hardwareVersion, '241220A'))) {
                       if (!quickAccesActivated) {
@@ -1290,11 +1250,10 @@ class ManagerScreenState extends State<ManagerScreen> {
             ),
 
             const SizedBox(height: 10),
-            if ((DeviceManager.getProductCode(deviceName) == '022000_IOT' ||
-                    DeviceManager.getProductCode(deviceName) == '027000_IOT' ||
-                    DeviceManager.getProductCode(deviceName) == '041220_IOT') &&
-                hasLED(DeviceManager.getProductCode(deviceName),
-                    hardwareVersion)) ...[
+            if ((pc == '022000_IOT' ||
+                    pc == '027000_IOT' ||
+                    pc == '041220_IOT') &&
+                hasLED(pc, hardwareVersion)) ...[
               Container(
                 key: keys['managerScreen:led']!,
                 width: MediaQuery.of(context).size.width * 1.5,
@@ -1342,8 +1301,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                             nightMode = value;
                             printLog.i('Estado: $nightMode');
                             int fun = nightMode ? 1 : 0;
-                            String data =
-                                '${DeviceManager.getProductCode(deviceName)}[9]($fun)';
+                            String data = '$pc[9]($fun)';
                             printLog.i(data);
                             myDevice.toolsUuid.write(data.codeUnits);
                           });
@@ -1390,7 +1348,7 @@ class ManagerScreenState extends State<ManagerScreen> {
             ),
             const SizedBox(height: 10),
 
-            if (DeviceManager.getProductCode(deviceName) == '050217_IOT') ...[
+            if (pc == '050217_IOT') ...[
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(

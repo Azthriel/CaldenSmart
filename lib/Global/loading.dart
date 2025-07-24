@@ -41,14 +41,6 @@ class LoadState extends State<LoadingPage> {
       if (precharge == true) {
         showToast('Dispositivo conectado exitosamente');
 
-        bool labProcessFinished =
-            globalDATA['$pc/$sn']?['LabProcessFinished'] ?? false;
-
-        if (specialUser && !labProcessFinished) {
-          navigatorKey.currentState?.pushReplacementNamed('/rejectScreen');
-          return;
-        }
-
         switch (pc) {
           case '022000_IOT' || '027000_IOT' || '041220_IOT':
             navigatorKey.currentState?.pushReplacementNamed('/calefactor');
@@ -71,13 +63,15 @@ class LoadState extends State<LoadingPage> {
             } else {
               navigatorKey.currentState?.pushReplacementNamed('/rele');
             }
-
             break;
           case '050217_IOT':
             navigatorKey.currentState?.pushReplacementNamed('/millenium');
             break;
           case '028000_IOT':
             navigatorKey.currentState?.pushReplacementNamed('/heladera');
+            break;
+          case '023430_IOT':
+            navigatorKey.currentState?.pushReplacementNamed('/termometro');
             break;
         }
       } else {
@@ -122,6 +116,9 @@ class LoadState extends State<LoadingPage> {
 
       specialUser = await isSpecialUser(currentUserEmail);
 
+      labProcessFinished =
+          globalDATA['$pc/$sn']?['LabProcessFinished'] ?? false;
+
       printLog.i('Usuario especial: $specialUser');
 
       discNotfActivated = configNotiDsc.keys.toList().contains(deviceName);
@@ -153,21 +150,29 @@ class LoadState extends State<LoadingPage> {
           var parts2 = utf8.decode(varsValues).split(':');
           printLog.i('Valores Vars: $parts2', color: 'Naranja');
           var list = await loadDevicesForDistanceControl();
-          canControlDistance =
-              list.contains(deviceName) ? true : parts2[0] == '0';
-          printLog.i(
-              'Puede utilizar el control por distancia: $canControlDistance');
-          turnOn = parts2[2] == '1';
-          trueStatus = parts2[4] == '1';
-          nightMode = parts2[5] == '1';
-          actualTemp = parts2[6];
-          printLog.i('Estado: $turnOn');
-          // if (parts2.length >= 9) {
-          //   manualControl = factoryMode ? parts2[9] == '1' : parts2[8] == '1';
-          // }
-          if (parts2.length > 10) {
-            wifiUnstable = parts2[10] == '1';
+          if (parts2[0] == '0' || parts2[0] == '1') {
+            canControlDistance =
+                list.contains(deviceName) ? true : parts2[0] == '0';
+            printLog.i(
+                'Puede utilizar el control por distancia: $canControlDistance');
+            tempValue = double.parse(parts2[1]);
+            turnOn = parts2[2] == '1';
+            trueStatus = parts2[4] == '1';
+            nightMode = parts2[5] == '1';
+            actualTemp = parts2[6];
+            printLog.i('Estado: $turnOn');
+          } else {
+            canControlDistance = list.contains(deviceName);
+            printLog.i(
+                'Puede utilizar el control por distancia: $canControlDistance');
+            tempValue = double.parse(parts2[0]);
+            turnOn = parts2[1] == '1';
+            trueStatus = parts2[3] == '1';
+            nightMode = parts2[4] == '1';
+            actualTemp = parts2[5];
+            printLog.i('Estado: $turnOn');
           }
+
           lastUser = users;
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
@@ -521,6 +526,19 @@ class LoadState extends State<LoadingPage> {
               .addAll({"f_status": trueStatus});
 
           saveGlobalData(globalDATA);
+          break;
+        case '023430_IOT':
+          varsValues = await myDevice.varsUuid.read();
+          var partes = utf8.decode(varsValues).split(':');
+          printLog.i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
+          actualTemp = partes[0];
+          // offsetTemp = partes[1];
+          awsInit = partes[2] == '1';
+          alertMaxFlag = partes[3] == '1';
+          alertMinFlag = partes[4] == '1';
+          alertMaxTemp = partes[5];
+          alertMinTemp = partes[6];
+          // tempMap = partes[7] == '1';
           break;
       }
 

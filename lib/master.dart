@@ -5,7 +5,6 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:caldensmart/firebase_options.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/gestures.dart';
@@ -142,6 +141,7 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 Map<String, String> soundOfNotification = {};
 int? selectedSoundDomotica;
 int? selectedSoundDetector;
+int? selectedSoundTermometro;
 //*-Notifications-*\\
 
 //*-Relacionado al Alquiler temporario (Airbnb)-*\\
@@ -241,8 +241,8 @@ bool alreadySubTools = false;
 bool trueStatus = false;
 late bool nightMode;
 late bool canControlDistance;
-bool manualControl = false;
 String actualTemp = '';
+double tempValue = 10.0;
 //*-Calefactores-*\\
 
 //*-Domótica-*\\
@@ -265,9 +265,9 @@ bool quickAction = false;
 Map<String, String> pinQuickAccess = {};
 //*-Acceso rápido BLE-*\\
 
-//*-Fetch data from firestore-*\\
+//*-Fetch data from DynamoDB GENERALDATA-*\\
 Map<String, dynamic> fbData = {};
-//*-Fetch data from firestore-*\\
+//*-Fetch data from DynamoDB GENERALDATA-*\\
 
 //*-Device update-*\\
 String? lastSV;
@@ -391,6 +391,14 @@ Map<String, GlobalKey> keys = {
   'rele1i1o:controlDistancia': GlobalKey(),
   'rele1i1o:controlBoton': GlobalKey(),
   'rele1i1o:modoPines': GlobalKey(),
+  //Termometro
+  'termometro:estado': GlobalKey(),
+  'termometro:temperaturaActual': GlobalKey(),
+  'termometro:alertaMaxima': GlobalKey(),
+  'termometro:alertaMinima': GlobalKey(),
+  'termometro:configAlertas': GlobalKey(),
+  'termometro:configMax': GlobalKey(),
+  'termometro:configMin': GlobalKey(),
 };
 //*-Guía de usuario -*\\
 
@@ -408,6 +416,7 @@ const String urlEscenas =
 
 //*- Special Users -*\\
 bool specialUser = false;
+bool labProcessFinished = false;
 //*- Special Users -*\\
 
 //*- Riverpod -*\\
@@ -420,6 +429,13 @@ final wifiProvider = StateNotifierProvider<WifiNotifier, WifiState>((ref) {
   return WifiNotifier();
 });
 //*- Riverpod -*\\
+
+//*- Termometro -*\\
+bool alertMaxFlag = false;
+bool alertMinFlag = false;
+String alertMaxTemp = '';
+String alertMinTemp = '';
+//*- Termometro -*\\
 
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
@@ -1042,12 +1058,25 @@ Future<void> sendWhatsAppMessage(String phoneNumber, String message) async {
   }
 }
 
-void launchEmail(String mail, String asunto, String cuerpo) async {
+void launchEmail(
+  String mail,
+  String asunto,
+  String cuerpo, {
+  String? cc,
+}) async {
+  Map<String, String> queryParams = {
+    'subject': asunto,
+    'body': cuerpo,
+  };
+
+  if (cc != null) {
+    queryParams['CC'] = cc;
+  }
+
   final Uri emailLaunchUri = Uri(
     scheme: 'mailto',
     path: mail,
-    query: encodeQueryParameters(
-        <String, String>{'subject': asunto, 'body': cuerpo}),
+    query: encodeQueryParameters(queryParams),
   );
 
   if (await canLaunchUrl(emailLaunchUri)) {
@@ -1256,12 +1285,7 @@ void wifiText(BuildContext context) {
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
                               Icon(Icons.signal_wifi_off),
-                              Flexible(
-                                child: Text(
-                                  'Desconectar Red Actual',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
+                              Text('Desconectar Red Actual')
                             ],
                           ),
                         ),
@@ -1525,48 +1549,53 @@ void wifiText(BuildContext context) {
                           }
                         },
                       ),
-                      if (android)
-                        Flexible(
-                          child: TextButton(
-                            style: const ButtonStyle(),
-                            child: const Text(
-                              'Agregar\nRed',
-                              style: TextStyle(
-                                color: Color(0xFFFFFFFF),
-                                fontSize: 12,
+                      android
+                          ? TextButton(
+                              style: const ButtonStyle(),
+                              child: const Text(
+                                'Agregar\nRed',
+                                style: TextStyle(
+                                  color: Color(0xFFFFFFFF),
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                              textAlign: TextAlign.center,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                isAddingNetwork = true;
-                              });
-                            },
+                              onPressed: () {
+                                setState(() {
+                                  isAddingNetwork = true;
+                                });
+                              },
+                            )
+                          : const SizedBox.shrink(),
+                      TextButton(
+                        style: const ButtonStyle(),
+                        child: const Text(
+                          'Conectar',
+                          style: TextStyle(
+                            color: Color(0xFFFFFFFF),
                           ),
                         ),
-                      Flexible(
-                        child: TextButton(
-                          style: const ButtonStyle(),
-                          child: const Text(
-                            'Conectar',
-                            style: TextStyle(
-                              color: Color(0xFFFFFFFF),
-                              fontSize: 12,
-                            ),
-                          ),
-                          onPressed: () {
-                            if (_currentlySelectedSSID != null &&
-                                _wifiPasswordsMap[_currentlySelectedSSID] !=
-                                    null) {
-                              printLog.i(
-                                  '$_currentlySelectedSSID#${_wifiPasswordsMap[_currentlySelectedSSID]}');
-                              sendWifitoBle(_currentlySelectedSSID!,
-                                  _wifiPasswordsMap[_currentlySelectedSSID]!);
-                              wifiNotifier.updateStatus('CONECTANDO...',
-                                  Colors.blue, Icons.wifi_find);
-                            }
-                          },
-                        ),
+                        onPressed: () {
+                          if (_currentlySelectedSSID != null &&
+                              _wifiPasswordsMap[_currentlySelectedSSID] !=
+                                  null &&
+                              android) {
+                            printLog.i(
+                                '$_currentlySelectedSSID#${_wifiPasswordsMap[_currentlySelectedSSID]}');
+                            sendWifitoBle(_currentlySelectedSSID!,
+                                _wifiPasswordsMap[_currentlySelectedSSID]!);
+                            wifiNotifier.updateStatus(
+                                'CONECTANDO...', Colors.blue, Icons.wifi_find);
+                          } else if (!android &&
+                              manualSSID != '' &&
+                              manualPassword != '') {
+                            printLog.i('$manualSSID#$manualPassword');
+                            sendWifitoBle(manualSSID, manualPassword);
+                            wifiNotifier.updateStatus(
+                                'CONECTANDO...', Colors.blue, Icons.wifi_find);
+                          } else {
+                            showToast('Por favor, ingrese una red válida.');
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -1940,7 +1969,7 @@ Future<void> handleNotifications(RemoteMessage message) async {
     await getDevices(currentUserEmail);
     soundOfNotification = await loadSounds();
     await DeviceManager.init();
-    printLog.i('Llegó esta notif: ${message.data}');
+    printLog.i('Llegó esta notif: ${message.data}', color: 'lima');
     String product = message.data['pc']!;
     String number = message.data['sn']!;
     String device = DeviceManager.recoverDeviceName(product, number);
@@ -1972,7 +2001,9 @@ Future<void> handleNotifications(RemoteMessage message) async {
             sendMessagemqtt(topic2, message);
           }
         }
-      } else if (product == '020010_IOT') {
+      } else if (product == '020010_IOT' ||
+          product == '020020_IOT' ||
+          product == '027313_IOT') {
         notificationMap = await loadNotificationMap();
         List<bool> notis =
             notificationMap['$product/$number'] ?? List<bool>.filled(8, false);
@@ -1987,6 +2018,27 @@ Future<void> handleNotifications(RemoteMessage message) async {
               'En la lista: ${notificationMap['$product/$number']!} en la posición ${message.data['entry']!} hay un true');
           showNotification(displayTitle.toUpperCase(), displayMessage, sound);
         }
+      } else if (product == '023430_IOT') {
+        final now = DateTime.now();
+        String alarmType = message.data['alarmType'] ?? '';
+        String deviceNickname = nicknamesMap[device] ?? device;
+        String displayTitle = '¡ALERTA DE TEMPERATURA EN $deviceNickname!';
+        String displayMessage = '';
+
+        printLog.i('El alarmType es $alarmType');
+
+        if (alarmType == 'max') {
+          displayMessage =
+              'Se detectó temperatura MÁXIMA alcanzada.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+        } else if (alarmType == 'min') {
+          displayMessage =
+              'Se detectó temperatura MÍNIMA alcanzada.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+        } else {
+          displayMessage =
+              'Se detectó una alerta de temperatura.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+        }
+
+        showNotification(displayTitle.toUpperCase(), displayMessage, sound);
       }
     } else if (caso == 'Disconnect') {
       // if (product == '015773_IOT') {
@@ -2044,6 +2096,11 @@ void showNotification(String title, String body, String sonido) async {
           sound: RawResourceAndroidNotificationSound(sonido.toLowerCase()),
           enableVibration: true,
           importance: Importance.max,
+          styleInformation: BigTextStyleInformation(
+            body,
+            contentTitle: title,
+            summaryText: 'Caldén Smart',
+          ),
         ),
         iOS: DarwinNotificationDetails(
           sound: '$sonido.wav',
@@ -2922,6 +2979,62 @@ void showAlertDialog(BuildContext context, bool dismissible, Widget? title,
 }
 //*-show dialog generico-*\\
 
+//*-Acceso rápido BLE-*\\
+Future<void> controlDeviceBLE(String name, bool newState) async {
+  printLog.i("Voy a ${newState ? 'Encender' : 'Apagar'} el equipo $name");
+
+  if (DeviceManager.getProductCode(name) == '020010_IOT' ||
+      DeviceManager.getProductCode(name) == '020020_IOT' ||
+      (DeviceManager.getProductCode(name) == '027313_IOT' &&
+          globalDATA[
+                  '${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}']!
+              .keys
+              .contains('io'))) {
+    String fun = '${pinQuickAccess[name]!}#${newState ? '1' : '0'}';
+    myDevice.ioUuid.write(fun.codeUnits);
+    String topic =
+        'devices_rx/${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}';
+    String topic2 =
+        'devices_tx/${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}';
+    String message = jsonEncode({
+      'index': int.parse(pinQuickAccess[name]!),
+      'w_status': newState,
+      'r_state': "0",
+      'pinType': 0
+    });
+    sendMessagemqtt(topic, message);
+    sendMessagemqtt(topic2, message);
+
+    globalDATA
+        .putIfAbsent(
+            '${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}',
+            () => {})
+        .addAll({'io${pinQuickAccess[name]!}': message});
+
+    saveGlobalData(globalDATA);
+  } else {
+    int fun = newState ? 1 : 0;
+    String data = '${DeviceManager.getProductCode(name)}[11]($fun)';
+    myDevice.toolsUuid.write(data.codeUnits);
+    globalDATA[
+            '${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}']![
+        'w_status'] = newState;
+    saveGlobalData(globalDATA);
+    try {
+      String topic =
+          'devices_rx/${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}';
+      String topic2 =
+          'devices_tx/${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}';
+      String message = jsonEncode({'w_status': newState});
+      sendMessagemqtt(topic, message);
+      sendMessagemqtt(topic2, message);
+    } catch (e, s) {
+      printLog.i('Error al enviar valor en cdBLE $e $s');
+    }
+  }
+}
+//*-Acceso rápido BLE-*\\
+
 //*-Revisión de actualización-*\\
 void checkForUpdate(BuildContext context) async {
   final upgrader = Upgrader(
@@ -3376,23 +3489,13 @@ class DeviceManager {
     return cn;
   }
 
-  ///Recupera la data de Firestore para que funcione la clase
+  ///Recupera la data de GENERALDATA de DynamoDB para que funcione la clase
   static FutureOr<void> init() async {
     try {
-      DocumentReference document =
-          FirebaseFirestore.instance.collection('Calden Smart').doc('Data');
-
-      DocumentSnapshot snapshot = await document.get();
-
-      if (snapshot.exists) {
-        Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
-
-        fbData = data;
-      } else {
-        throw Exception("El documento no existe");
-      }
+      Map<String, dynamic> data = await getGeneralData();
+      fbData = data;
     } catch (e) {
-      printLog.i("Error al leer Firestore: $e");
+      printLog.i("Error al leer GENERALDATA: $e");
       fbData = {};
     }
   }
@@ -3465,7 +3568,8 @@ class MyDevice {
               '027000_IOT' ||
               '041220_IOT' ||
               '050217_IOT' ||
-              '028000_IOT':
+              '028000_IOT' ||
+              '023430_IOT':
           BluetoothService espService = services.firstWhere(
               (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
 
@@ -4968,6 +5072,203 @@ class DeviceInUseScreen extends StatelessWidget {
 }
 //*-si el equipo ya tiene un usuario conectado -*\\
 
+//*-si no se termino el proceso de laboratorio-*\\
+class LabProcessNotFinished extends StatelessWidget {
+  const LabProcessNotFinished({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final TextStyle poppinsStyle = GoogleFonts.poppins();
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, A) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF252223),
+              content: Row(
+                children: [
+                  Image.asset('assets/branch/dragon.gif',
+                      width: 100, height: 100),
+                  Container(
+                    margin: const EdgeInsets.only(left: 15),
+                    child: const Text(
+                      "Desconectando...",
+                      style: TextStyle(color: Color(0xFFFFFFFF)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+        Future.delayed(const Duration(seconds: 2), () async {
+          await myDevice.device.disconnect();
+          if (context.mounted) {
+            Navigator.pop(context);
+            Navigator.pushReplacementNamed(context, '/menu');
+          }
+        });
+        return;
+      },
+      child: Scaffold(
+        backgroundColor: color1,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.topLeft,
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: color3),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) {
+                        return AlertDialog(
+                          backgroundColor: const Color(0xFF252223),
+                          content: Row(
+                            children: [
+                              Image.asset('assets/branch/dragon.gif',
+                                  width: 100, height: 100),
+                              Container(
+                                margin: const EdgeInsets.only(left: 15),
+                                child: const Text(
+                                  "Desconectando...",
+                                  style: TextStyle(color: Color(0xFFFFFFFF)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                    Future.delayed(const Duration(seconds: 2), () async {
+                      await myDevice.device.disconnect();
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        Navigator.pushReplacementNamed(context, '/menu');
+                      }
+                    });
+                    return;
+                  },
+                ),
+              ),
+              const Spacer(),
+              Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Card(
+                    margin: const EdgeInsets.all(16),
+                    elevation: 8,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: color0,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: const BoxDecoration(
+                              color: color4,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.error_outline,
+                              size: 64,
+                              color: color0,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'PROCEDIMIENTO NO FINALIZADO',
+                            textAlign: TextAlign.center,
+                            style: poppinsStyle.copyWith(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: color4,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: color1,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: color2, width: 2),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber,
+                                      color: color4,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        'El equipo no ha completado su procedimiento de laboratorio.',
+                                        style: poppinsStyle.copyWith(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: color3,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(
+                                      Icons.assignment_return,
+                                      color: color4,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        'El equipo debe ser rechazado y devuelto al laboratorio para completar los procedimientos especificados.',
+                                        style: poppinsStyle.copyWith(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: color3,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const Spacer(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+//*-si no se termino el proceso de laboratorio-*\\
+
 //*- imagenes de los equipos -*\\
 class ImageManager {
   /// Función para abrir el menú de opciones de imagen
@@ -5095,6 +5396,8 @@ class ImageManager {
         return 'assets/devices/024011.jpg';
       case '020020_IOT':
         return 'assets/devices/020020.jpeg';
+      case '023430_IOT':
+        return 'assets/devices/023430.jpg';
       default:
         return 'assets/branch/Logo.png';
     }
@@ -5348,6 +5651,7 @@ class TutorialItem {
   final double focusMargin;
   final Radius borderRadius;
   final bool fullBackground;
+  final double contentOffsetY;
 
   TutorialItem({
     required this.globalKey,
@@ -5358,6 +5662,7 @@ class TutorialItem {
     this.focusMargin = 8.0,
     this.borderRadius = const Radius.circular(12.0),
     this.fullBackground = false,
+    this.contentOffsetY = 0.0,
   });
 }
 
@@ -5653,8 +5958,12 @@ class Tutorial {
     final textHeight = sw * 0.27;
 
     final topY = item.contentPosition == ContentPosition.above
-        ? targetOffset.dy - textHeight - item.focusMargin
-        : targetOffset.dy + item.focusMargin + targetSize.height + 20;
+        ? targetOffset.dy - textHeight - item.focusMargin + item.contentOffsetY
+        : targetOffset.dy +
+            item.focusMargin +
+            targetSize.height +
+            20 +
+            item.contentOffsetY;
 
     final title = (item.child as TutorialItemContent).title;
     final content = (item.child as TutorialItemContent).content;

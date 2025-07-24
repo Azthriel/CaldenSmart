@@ -2688,12 +2688,183 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                 ),
                               );
 
+                            case '023430_IOT':
+                              String temp = deviceDATA['actualTemp'].toString();
+                              bool alertMaxFlag =
+                                  deviceDATA['alert_maxflag'] ?? false;
+                              bool alertMinFlag =
+                                  deviceDATA['alert_minflag'] ?? false;
+                              return Card(
+                                key: ValueKey(deviceName),
+                                color: color3,
+                                margin: const EdgeInsets.symmetric(
+                                    vertical: 5, horizontal: 10),
+                                elevation: 2,
+                                child: Theme(
+                                  data: Theme.of(context).copyWith(
+                                      dividerColor: Colors.transparent),
+                                  child: ExpansionTile(
+                                    tilePadding: const EdgeInsets.symmetric(
+                                        horizontal: 16.0),
+                                    iconColor: color6,
+                                    collapsedIconColor: color6,
+                                    title: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            SizedBox(
+                                              width: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  0.7,
+                                              child: Text(
+                                                nicknamesMap[deviceName] ??
+                                                    deviceName,
+                                                style: GoogleFonts.poppins(
+                                                  color: color0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                                maxLines: 1,
+                                              ),
+                                            ),
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.start,
+                                              spacing: 10,
+                                              children: [
+                                                Text(
+                                                  online
+                                                      ? '● CONECTADO'
+                                                      : '● DESCONECTADO',
+                                                  style: GoogleFonts.poppins(
+                                                    color: online
+                                                        ? Colors.green
+                                                        : color6,
+                                                    fontSize: 15,
+                                                  ),
+                                                ),
+                                                Icon(
+                                                  online
+                                                      ? Icons.cloud
+                                                      : Icons.cloud_off,
+                                                  color: online
+                                                      ? Colors.green
+                                                      : color6,
+                                                  size: 15,
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    children: <Widget>[
+                                      ListTile(
+                                        title: online
+                                            ? Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Temperatura: $temp °C',
+                                                    style: GoogleFonts.poppins(
+                                                      color: color0,
+                                                      fontSize: 15,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  Row(
+                                                    children: [
+                                                      Text(
+                                                        'Alerta máxima:',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          color: color0,
+                                                          fontSize: 15,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 5),
+                                                      alertMaxFlag
+                                                          ? const Icon(
+                                                              HugeIcons
+                                                                  .strokeRoundedAlert02,
+                                                              color: color6,
+                                                            )
+                                                          : const Icon(
+                                                              HugeIcons
+                                                                  .strokeRoundedTemperature,
+                                                              color:
+                                                                  Colors.green,
+                                                            ),
+                                                    ],
+                                                  ),
+                                                  Row(
+                                                    children: [
+                                                      Text(
+                                                        'Alerta mínima:',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          color: color0,
+                                                          fontSize: 15,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 5),
+                                                      alertMinFlag
+                                                          ? const Icon(
+                                                              HugeIcons
+                                                                  .strokeRoundedAlert02,
+                                                              color: color6,
+                                                            )
+                                                          : const Icon(
+                                                              HugeIcons
+                                                                  .strokeRoundedTemperature,
+                                                              color:
+                                                                  Colors.green,
+                                                            ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              )
+                                            : Text(
+                                                'El equipo debe estar\nconectado para su uso',
+                                                style: GoogleFonts.poppins(
+                                                  color: color6,
+                                                  fontSize: 15,
+                                                ),
+                                              ),
+                                        trailing: IconButton(
+                                          icon: const Icon(
+                                            HugeIcons.strokeRoundedDelete02,
+                                            color: color0,
+                                            size: 20,
+                                          ),
+                                          onPressed: () {
+                                            _confirmDelete(deviceName, equipo);
+                                          },
+                                        ),
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              );
                             default:
                               return Container(
                                 key: ValueKey(deviceName),
                               );
                           }
                         } catch (e) {
+                          printLog
+                              .e('Error al procesar el equipo $deviceName: $e');
                           return Card(
                             key: ValueKey('${deviceName}_error'),
                             color: color3,
@@ -2762,6 +2933,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                         bool owner = canControlGroup(devicesInGroup);
                         return Card(
                           color: color3,
+                          key: ValueKey(
+                              grupo[0].toUpperCase() + grupo.substring(1)),
                           margin: const EdgeInsets.symmetric(
                             vertical: 5,
                             horizontal: 10,

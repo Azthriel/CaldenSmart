@@ -192,20 +192,31 @@ class WelcomePageState extends State<WelcomePage>
       CurvedAnimation(parent: lettersController, curve: Curves.linear),
     );
 
-    logoController.forward().then((_) {
-      lettersController.forward().then((_) {
-        Future.delayed(const Duration(milliseconds: 400), () {
-          Future.wait([
-            logoExitController.forward(),
-            lettersExitController.forward(),
-          ]).then((_) {
-            setState(() {
-              onIngresarPressed();
-            });
-          });
-        });
-      });
-    });
+    logoController.forward().then(
+      (_) {
+        lettersController.forward().then(
+          (_) {
+            Future.delayed(
+              const Duration(milliseconds: 400),
+              () {
+                Future.wait([
+                  logoExitController.forward(),
+                  lettersExitController.forward(),
+                ]).then(
+                  (_) {
+                    setState(
+                      () {
+                        onIngresarPressed();
+                      },
+                    );
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
 
     logoExitController = AnimationController(
       vsync: this,
@@ -466,7 +477,7 @@ class WelcomePageState extends State<WelcomePage>
             : MediaQuery.of(context).size.height * 0.85,
       ),
       child: Card(
-        color: color2.withValues(alpha: 0.5),
+        color: const Color(0xFF5C5B57),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20.0),
         ),
@@ -521,42 +532,35 @@ class WelcomePageState extends State<WelcomePage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
-          // Positioned.fill(
-          //   child: Image.asset(
-          //     'assets/Caldensmartback.png',
-          //     fit: BoxFit.cover,
-          //   ),
-          // ),
+          // Transición suave entre fondo negro y fondo con imagen
+          // Transición suave entre fondo negro y fondo con imagen
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 800),
+            child: currentForm == FormType.welcome
+                ? Container(
+                    key: const ValueKey('blackBackground'),
+                    color: Colors.black,
+                  )
+                : Container(
+                    key: const ValueKey('imageBackground'),
+                    color: Colors.black,
+                    child: Image.asset(
+                      'assets/branch/csBackground.png',
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                    ),
+                  ),
+          ),
           SlideTransition(
             position: welcomeSlideAnimation,
             child: buildWelcome(),
           ),
           if (currentForm != FormType.welcome) ...{
             buildForm(),
-            SlideTransition(
-              position: foregroundSlideAnimation,
-              child: FadeTransition(
-                opacity: foregroundFadeAnimation,
-                child: IgnorePointer(
-                  child: Center(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                          top: MediaQuery.of(context).size.height * 0.75),
-                      child: Image.asset(
-                        'assets/branch/Banner.png',
-                        width: MediaQuery.of(context).size.width * 0.8,
-                        height: MediaQuery.of(context).size.height * 0.8,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
           },
         ],
       ),

@@ -747,3 +747,59 @@ Future<void> putVersions(
     printLog.i('Error inserting item: $e');
   }
 }
+
+//*-Obtener datos generales de la aplicación desde GENERALDATA-*\\
+Future<Map<String, dynamic>> getGeneralData() async {
+  try {
+    printLog.i('Obteniendo datos generales de GENERALDATA...');
+    final response = await service.getItem(
+      tableName: 'GENERALDATA',
+      key: {
+        'App': AttributeValue(s: 'Caldén Smart'),
+      },
+    );
+
+    if (response.item != null) {
+      Map<String, dynamic> generalData = {};
+      var item = response.item!;
+      
+      for (var key in item.keys) {
+        if (key == 'App') continue; // Saltear la clave principal
+        
+        var value = item[key];
+        if (value?.m != null) {
+          // Es un mapa (Map)
+          Map<String, dynamic> mapValue = {};
+          for (var mapKey in value!.m!.keys) {
+            var mapVal = value.m![mapKey];
+            mapValue[mapKey] = mapVal?.s ?? mapVal?.n ?? mapVal?.boolValue ?? mapVal?.ss ?? mapVal?.toString();
+          }
+          generalData[key] = mapValue;
+        } else if (value?.l != null) {
+          // Es una lista (List)
+          List<dynamic> listValue = [];
+          for (var listItem in value!.l!) {
+            listValue.add(listItem.s ?? listItem.n ?? listItem.boolValue ?? listItem.toString());
+          }
+          generalData[key] = listValue;
+        } else if (value?.ss != null) {
+          // Es un conjunto de strings (StringSet)
+          generalData[key] = value!.ss!;
+        } else {
+          // Es un valor simple
+          generalData[key] = value?.s ?? value?.n ?? value?.boolValue ?? value?.toString();
+        }
+      }
+      
+      printLog.i('Datos generales obtenidos correctamente');
+      return generalData;
+    } else {
+      printLog.i('No se encontraron datos generales en GENERALDATA');
+      return {};
+    }
+  } catch (e) {
+    printLog.i('Error al obtener datos generales de GENERALDATA: $e');
+    return {};
+  }
+}
+//*-Obtener datos generales de la aplicación desde GENERALDATA-*\\

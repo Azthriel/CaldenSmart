@@ -267,6 +267,10 @@ class RollerPageState extends ConsumerState<RollerPage> {
       return const AccessDeniedScreen();
     }
 
+    if (specialUser && !labProcessFinished) {
+      return const LabProcessNotFinished();
+    }
+
     final List<Widget> pages = [
       //*- Página 1 cortina -*\\
       SingleChildScrollView(
@@ -690,7 +694,6 @@ class RollerPageState extends ConsumerState<RollerPage> {
                               int largo = rollerEnd! - rollerStart!;
                               printLog.i("Largo: $largo");
                               putRollerLength(
-                                  
                                   DeviceManager.getProductCode(deviceName),
                                   DeviceManager.extractSerialNumber(deviceName),
                                   largo.toString());
@@ -849,7 +852,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                         String newNickname = nicknameController.text;
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
-                        putNicknames( currentUserEmail, nicknamesMap);
+                        putNicknames(currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },

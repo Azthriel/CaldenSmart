@@ -367,7 +367,7 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
 
     if (!alexaDevices.contains(deviceName)) {
       alexaDevices.add(deviceName);
-      putDevicesForAlexa( currentUserEmail, alexaDevices);
+      putDevicesForAlexa(currentUserEmail, alexaDevices);
     }
   }
 
@@ -744,6 +744,10 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
 
     if (isRegularUser && owner != '' && !tenant) {
       return const AccessDeniedScreen();
+    }
+
+    if (specialUser && !labProcessFinished) {
+      return const LabProcessNotFinished();
     }
 
     final List<Widget> pages = [
@@ -1297,7 +1301,7 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                         String newNickname = nicknameController.text;
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
-                        putNicknames( currentUserEmail, nicknamesMap);
+                        putNicknames(currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },

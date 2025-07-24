@@ -276,6 +276,10 @@ class RollerPageState extends ConsumerState<RollerPage> {
       return const AccessDeniedScreen();
     }
 
+    if (specialUser && !labProcessFinished) {
+      return const LabProcessNotFinished();
+    }
+
     final List<Widget> pages = [
       //*- Página 1 cortina -*\\
       SingleChildScrollView(

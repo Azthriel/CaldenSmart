@@ -277,7 +277,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
 
     if (!alexaDevices.contains(deviceName)) {
       alexaDevices.add(deviceName);
-      putDevicesForAlexa( currentUserEmail, alexaDevices);
+      putDevicesForAlexa(currentUserEmail, alexaDevices);
     }
   }
 
@@ -597,6 +597,10 @@ class RelayPageState extends ConsumerState<RelayPage> {
       return const AccessDeniedScreen();
     }
 
+    if (specialUser && !labProcessFinished) {
+      return const LabProcessNotFinished();
+    }
+
     final List<Widget> pages = [
       //*- Página 1: Estado del Dispositivo -*\\
       SingleChildScrollView(
@@ -729,7 +733,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                           //                         isNC = false;
                           //                       });
                           //                       saveNC(
-                          //                         
+                          //
                           //                         DeviceManager.getProductCode(
                           //                             deviceName),
                           //                         DeviceManager
@@ -776,7 +780,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                           //                         isNC = true;
                           //                       });
                           //                       saveNC(
-                          //                         
+                          //
                           //                         DeviceManager.getProductCode(
                           //                             deviceName),
                           //                         DeviceManager
@@ -1174,7 +1178,6 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                                 printLog.i(
                                                     'Valor enviado: ${value.round()}');
                                                 putDistanceOff(
-                                                  
                                                   DeviceManager.getProductCode(
                                                       deviceName),
                                                   DeviceManager
@@ -1272,7 +1275,6 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                                 printLog.i(
                                                     'Valor enviado: ${value.round()}');
                                                 putDistanceOn(
-                                                  
                                                   DeviceManager.getProductCode(
                                                       deviceName),
                                                   DeviceManager
@@ -1468,7 +1470,6 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                             isNC = false;
                                           });
                                           saveNC(
-                                            
                                             DeviceManager.getProductCode(
                                                 deviceName),
                                             DeviceManager.extractSerialNumber(
@@ -1511,7 +1512,6 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                             isNC = true;
                                           });
                                           saveNC(
-                                            
                                             DeviceManager.getProductCode(
                                                 deviceName),
                                             DeviceManager.extractSerialNumber(
@@ -1666,7 +1666,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                         String newNickname = nicknameController.text;
                         nickname = newNickname;
                         nicknamesMap[deviceName] = newNickname;
-                        putNicknames( currentUserEmail, nicknamesMap);
+                        putNicknames(currentUserEmail, nicknamesMap);
                       });
                       Navigator.of(context).pop();
                     },

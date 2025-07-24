@@ -25,8 +25,6 @@ class CalefactorPage extends ConsumerStatefulWidget {
 class CalefactorPageState extends ConsumerState<CalefactorPage> {
   var parts2 = utf8.decode(varsValues).split(':');
 
-  late double tempValue;
-
   int _selectedIndex = 0;
   double result = 0.0;
   double? valueConsuption;
@@ -401,7 +399,6 @@ class CalefactorPageState extends ConsumerState<CalefactorPage> {
     showOptions = currentUserEmail == owner;
 
     nickname = nicknamesMap[deviceName] ?? deviceName;
-    tempValue = double.parse(parts2[1]);
 
     valueConsuption =
         equipmentConsumption(DeviceManager.getProductCode(deviceName));
@@ -604,19 +601,19 @@ class CalefactorPageState extends ConsumerState<CalefactorPage> {
     await myDevice.varsUuid.setNotifyValue(true);
 
     final trueStatusSub =
-      myDevice.varsUuid.onValueReceived.listen((List<int> status) {
+        myDevice.varsUuid.onValueReceived.listen((List<int> status) {
       var parts = utf8.decode(status).split(':');
       printLog.i('Llegaron cositas vars: $parts', color: 'Naranja');
-      
+
       if (parts.length <= 3) {
-      setState(() {
-        if (parts[0] == '1') {
-        trueStatus = true;
-        } else {
-        trueStatus = false;
-        }
-        actualTemp = parts[1];
-      });
+        setState(() {
+          if (parts[0] == '1') {
+            trueStatus = true;
+          } else {
+            trueStatus = false;
+          }
+          actualTemp = parts[1];
+        });
       }
     });
 
@@ -805,6 +802,10 @@ class CalefactorPageState extends ConsumerState<CalefactorPage> {
 
     if (isRegularUser && owner != '' && !tenant) {
       return const AccessDeniedScreen();
+    }
+
+    if (specialUser && !labProcessFinished) {
+      return const LabProcessNotFinished();
     }
 
     final List<Widget> pages = [

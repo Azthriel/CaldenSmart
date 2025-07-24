@@ -991,6 +991,10 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
       return const AccessDeniedScreen();
     }
 
+    if (specialUser && !labProcessFinished) {
+      return const LabProcessNotFinished();
+    }
+
     final List<Widget> pages = [
       //*- Página 1: Estado del Dispositivo -*\\
       if (hasEntry) ...[
