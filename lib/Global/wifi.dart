@@ -9,6 +9,7 @@ import 'package:hugeicons/hugeicons.dart';
 import '../aws/dynamo/dynamo.dart';
 import 'package:caldensmart/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:caldensmart/secret.dart';
 
 class WifiPage extends ConsumerStatefulWidget {
   const WifiPage({super.key});
@@ -20,6 +21,8 @@ class WifiPage extends ConsumerStatefulWidget {
 class WifiPageState extends ConsumerState<WifiPage> {
   bool charging = false;
   static bool _hasInitialized = false;
+  final Map<String, bool> _expandedStates = {};
+  final Set<String> _processingGroups = {};
 
   @override
   void initState() {
@@ -45,6 +48,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
 
     todosLosDispositivos.clear();
     await getDevices(currentUserEmail);
+    await getNicknames(currentUserEmail);
     await getGroups(currentUserEmail);
     eventosCreados = await getEventos(currentUserEmail);
 
@@ -244,29 +248,107 @@ class WifiPageState extends ConsumerState<WifiPage> {
 
   //*-Controlar el grupo-*\\
   void controlGroup(String email, bool state, String grupo) async {
-    String url = urlEscenas;
+    // Verificar si el grupo ya está siendo procesado
+    if (_processingGroups.contains(grupo)) {
+      showToast(
+          '⏳ El grupo "$grupo" ya se está procesando, aguarde un momento...');
+      return;
+    }
+
+    // Agregar el grupo al Set de procesamiento
+    _processingGroups.add(grupo);
+
+    String url = controlGruposAPI;
     Uri uri = Uri.parse(url);
 
     String bd = jsonEncode(
       {
-        'caso': 'Grupos',
         'email': email,
         'on': state,
         'grupo': grupo,
+        'app': app,
       },
     );
 
     printLog.i('Body: $bd');
 
-    var response = await http.post(uri, body: bd);
+    try {
+      var response = await http.post(uri, body: bd);
 
-    if (response.statusCode == 200) {
-      printLog.i('Grupo controlado');
-      showToast('Grupo ${state ? 'encendido' : 'apagado'} correctamente');
-    } else {
-      printLog.e('Error al controlar el grupo');
-      printLog.e(response.body);
-      showToast('Error al controlar el grupo');
+      printLog.i('Response status: ${response.statusCode}');
+      printLog.i('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        // Respuesta exitosa - todos los dispositivos se controlaron
+        final responseData = jsonDecode(response.body);
+
+        printLog.i('Grupo controlado exitosamente');
+        showToast(
+            '¡Perfecto! Todos los equipos del grupo se ${state ? 'encendieron' : 'apagaron'} correctamente 🎉');
+
+        // Log adicional con detalles
+        if (responseData['exitosos'] != null &&
+            responseData['total_dispositivos'] != null) {
+          printLog.i(
+              'Dispositivos procesados: ${responseData['exitosos']}/${responseData['total_dispositivos']}');
+        }
+      } else if (response.statusCode == 207) {
+        // Multi-Status - algunos dispositivos fallaron
+        final responseData = jsonDecode(response.body);
+
+        printLog.i('Algunos dispositivos no pudieron ser controlados');
+
+        final exitosos = responseData['exitosos'] ?? 0;
+        final fallidos = responseData['fallidos'] ?? 0;
+        final dispositivosOffline = responseData['dispositivos_offline'] ?? [];
+
+        // Mostrar mensaje detallado al usuario
+        String message = '⚠️ Acción parcialmente completada:\n\n';
+        message +=
+            '✅ $exitosos equipos se ${state ? 'encendieron' : 'apagaron'} correctamente\n';
+
+        if (fallidos > 0) {
+          message += '❌ $fallidos equipos no disponibles en este momento';
+          if (dispositivosOffline.isNotEmpty) {
+            // Mostrar nombres de dispositivos offline (máximo 3 para no saturar)
+            final deviceNames = dispositivosOffline.take(3).map((device) {
+              return nicknamesMap[device] ?? device;
+            }).join(', ');
+            message += '\n\n📱 Equipos sin conexión: $deviceNames';
+            if (dispositivosOffline.length > 3) {
+              message += ' y ${dispositivosOffline.length - 3} más...';
+            }
+          }
+        }
+
+        showToast(message);
+      } else if (response.statusCode == 400) {
+        // Error de validación
+        final responseData = jsonDecode(response.body);
+        final errorMessage = responseData['error'] ?? 'Error de validación';
+
+        printLog.e('Error de validación: $errorMessage');
+        showToast(
+            '🚫 Ups, algo no está bien configurado. Por favor intenta nuevamente');
+      } else if (response.statusCode == 404) {
+        // Grupo no encontrado
+        printLog.e('Grupo no encontrado');
+        showToast(
+            '🔍 No encontramos el grupo "$grupo". Verifica que tengas permisos para controlarlo');
+      } else {
+        // Otros errores del servidor
+        printLog.e('Error del servidor: ${response.statusCode}');
+        showToast(
+            '⚡ Hubo un problema en nuestros servidores. Por favor intenta en unos momentos');
+      }
+    } catch (e) {
+      // Error de conexión o parsing
+      printLog.e('Error de conexión al controlar el grupo: $e');
+      showToast(
+          '📶 Sin conexión a internet. Verifica tu red y vuelve a intentar');
+    } finally {
+      // Remover el grupo del Set de procesamiento
+      _processingGroups.remove(grupo);
     }
   }
   //*-Controlar el grupo-*\\
@@ -280,16 +362,16 @@ class WifiPageState extends ConsumerState<WifiPage> {
           style: GoogleFonts.poppins(color: color0),
         ),
         backgroundColor: color3,
-        // actions: [
-        //   charging
-        //       ? const SizedBox.shrink()
-        //       : IconButton(
-        //           icon: const Icon(HugeIcons.strokeRoundedSettings02,
-        //               color: color0),
-        //           onPressed: () =>
-        //               Navigator.pushReplacementNamed(context, '/escenas'),
-        //         ),
-        // ],
+        actions: [
+          charging
+              ? const SizedBox.shrink()
+              : IconButton(
+                  icon: const Icon(HugeIcons.strokeRoundedSettings02,
+                      color: color0),
+                  onPressed: () =>
+                      Navigator.pushReplacementNamed(context, '/escenas'),
+                ),
+        ],
       ),
       body: Container(
         padding: const EdgeInsets.only(bottom: 100.0),
@@ -989,262 +1071,264 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                     children: <Widget>[
                                       online
                                           ? Column(
-                                              children: List.generate(
-                                                deviceDATA.keys
-                                                    .where((key) =>
-                                                        key.contains('io'))
-                                                    .length,
-                                                (i) {
-                                                  if (deviceDATA['io$i'] ==
-                                                      null) {
-                                                    return ListTile(
-                                                      title: Text(
-                                                        'Error en el equipo',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          color: color0,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                      subtitle: Text(
-                                                        'Se solucionara automaticamente en poco tiempo...',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          color: color0,
-                                                          fontWeight:
-                                                              FontWeight.normal,
-                                                        ),
-                                                      ),
-                                                    );
-                                                  } else {
-                                                    Map<String, dynamic>
-                                                        equipo = jsonDecode(
-                                                            deviceDATA['io$i']);
-                                                    printLog.i(
-                                                      'Voy a realizar el cambio: $equipo',
-                                                    );
-                                                    String tipoWifi = equipo[
-                                                                    'pinType']
-                                                                .toString() ==
-                                                            '0'
-                                                        ? 'Salida'
-                                                        : 'Entrada';
-                                                    bool estadoWifi =
-                                                        equipo['w_status'];
-                                                    String comunWifi =
-                                                        (equipo['r_state'] ??
-                                                                '0')
-                                                            .toString();
-                                                    bool entradaWifi =
-                                                        tipoWifi == 'Entrada';
-                                                    return ListTile(
-                                                      title: Row(
-                                                        children: [
-                                                          Text(
-                                                            nicknamesMap[
-                                                                    '${deviceName}_$i'] ??
-                                                                '$tipoWifi $i',
-                                                            style: GoogleFonts
-                                                                .poppins(
-                                                              color: color0,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                            ),
+                                              children: [
+                                                ...(deviceDATA.keys
+                                                        .where((key) =>
+                                                            key.startsWith(
+                                                                'io') &&
+                                                            RegExp(r'^io\d+$')
+                                                                .hasMatch(key))
+                                                        .where((ioKey) =>
+                                                            deviceDATA[ioKey] !=
+                                                            null)
+                                                        .toList()
+                                                      ..sort((a, b) {
+                                                        int indexA = int.parse(
+                                                            a.substring(2));
+                                                        int indexB = int.parse(
+                                                            b.substring(2));
+                                                        return indexA
+                                                            .compareTo(indexB);
+                                                      }))
+                                                    .map((ioKey) {
+                                                  // Extraer el índice del ioKey (ejemplo: "io0" -> 0)
+                                                  int i = int.parse(
+                                                      ioKey.substring(2));
+                                                  Map<String, dynamic> equipo =
+                                                      jsonDecode(
+                                                          deviceDATA[ioKey]);
+                                                  printLog.i(
+                                                    'Voy a realizar el cambio: $equipo',
+                                                  );
+                                                  String tipoWifi =
+                                                      equipo['pinType']
+                                                                  .toString() ==
+                                                              '0'
+                                                          ? 'Salida'
+                                                          : 'Entrada';
+                                                  bool estadoWifi =
+                                                      equipo['w_status'];
+                                                  String comunWifi =
+                                                      (equipo['r_state'] ?? '0')
+                                                          .toString();
+                                                  bool entradaWifi =
+                                                      tipoWifi == 'Entrada';
+                                                  return ListTile(
+                                                    title: Row(
+                                                      children: [
+                                                        Text(
+                                                          nicknamesMap[
+                                                                  '${deviceName}_$i'] ??
+                                                              '$tipoWifi $i',
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                            color: color0,
+                                                            fontWeight:
+                                                                FontWeight.bold,
                                                           ),
-                                                          const SizedBox(
-                                                              width: 5),
-                                                        ],
-                                                      ),
-                                                      subtitle: Align(
-                                                        alignment:
-                                                            AlignmentDirectional
-                                                                .centerStart,
-                                                        child: Column(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            entradaWifi
-                                                                ? estadoWifi
-                                                                    ? comunWifi ==
-                                                                            '1'
-                                                                        ? Text(
-                                                                            'Cerrado',
-                                                                            style:
-                                                                                GoogleFonts.poppins(
-                                                                              color: Colors.green,
-                                                                              fontSize: 15,
-                                                                              fontWeight: FontWeight.bold,
-                                                                            ),
-                                                                          )
-                                                                        : Text(
-                                                                            'Abierto',
-                                                                            style:
-                                                                                GoogleFonts.poppins(
-                                                                              color: color6,
-                                                                              fontSize: 15,
-                                                                              fontWeight: FontWeight.bold,
-                                                                            ),
-                                                                          )
-                                                                    : comunWifi ==
-                                                                            '1'
-                                                                        ? Text(
-                                                                            'Abierto',
-                                                                            style:
-                                                                                GoogleFonts.poppins(
-                                                                              color: color6,
-                                                                              fontSize: 15,
-                                                                              fontWeight: FontWeight.bold,
-                                                                            ),
-                                                                          )
-                                                                        : Text(
-                                                                            'Cerrado',
-                                                                            style:
-                                                                                GoogleFonts.poppins(
-                                                                              color: Colors.green,
-                                                                              fontSize: 15,
-                                                                              fontWeight: FontWeight.bold,
-                                                                            ),
-                                                                          )
-                                                                : estadoWifi
-                                                                    ? Text(
-                                                                        'Encendido',
-                                                                        style: GoogleFonts
-                                                                            .poppins(
-                                                                          color:
-                                                                              Colors.green,
-                                                                          fontSize:
-                                                                              15,
-                                                                          fontWeight:
-                                                                              FontWeight.bold,
-                                                                        ),
-                                                                      )
-                                                                    : Text(
-                                                                        'Apagado',
-                                                                        style: GoogleFonts
-                                                                            .poppins(
-                                                                          color:
-                                                                              color6,
-                                                                          fontSize:
-                                                                              15,
-                                                                          fontWeight:
-                                                                              FontWeight.bold,
-                                                                        ),
-                                                                      ),
-                                                          ],
                                                         ),
-                                                      ),
-                                                      trailing: owner
-                                                          ? entradaWifi
+                                                        const SizedBox(
+                                                            width: 5),
+                                                      ],
+                                                    ),
+                                                    subtitle: Align(
+                                                      alignment:
+                                                          AlignmentDirectional
+                                                              .centerStart,
+                                                      child: Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          entradaWifi
                                                               ? estadoWifi
                                                                   ? comunWifi ==
                                                                           '1'
-                                                                      ? const Icon(
-                                                                          Icons
-                                                                              .new_releases,
-                                                                          color:
-                                                                              Color(
-                                                                            0xff9b9b9b,
+                                                                      ? Text(
+                                                                          'Cerrado',
+                                                                          style:
+                                                                              GoogleFonts.poppins(
+                                                                            color:
+                                                                                Colors.green,
+                                                                            fontSize:
+                                                                                15,
+                                                                            fontWeight:
+                                                                                FontWeight.bold,
                                                                           ),
                                                                         )
-                                                                      : const Icon(
-                                                                          Icons
-                                                                              .new_releases,
-                                                                          color:
-                                                                              color6,
+                                                                      : Text(
+                                                                          'Abierto',
+                                                                          style:
+                                                                              GoogleFonts.poppins(
+                                                                            color:
+                                                                                color6,
+                                                                            fontSize:
+                                                                                15,
+                                                                            fontWeight:
+                                                                                FontWeight.bold,
+                                                                          ),
                                                                         )
                                                                   : comunWifi ==
                                                                           '1'
-                                                                      ? const Icon(
-                                                                          Icons
-                                                                              .new_releases,
-                                                                          color:
-                                                                              color6,
-                                                                        )
-                                                                      : const Icon(
-                                                                          Icons
-                                                                              .new_releases,
-                                                                          color:
-                                                                              Color(
-                                                                            0xff9b9b9b,
+                                                                      ? Text(
+                                                                          'Abierto',
+                                                                          style:
+                                                                              GoogleFonts.poppins(
+                                                                            color:
+                                                                                color6,
+                                                                            fontSize:
+                                                                                15,
+                                                                            fontWeight:
+                                                                                FontWeight.bold,
                                                                           ),
                                                                         )
-                                                              : Switch(
-                                                                  activeColor:
-                                                                      const Color(
-                                                                    0xFF9C9D98,
-                                                                  ),
-                                                                  activeTrackColor:
-                                                                      const Color(
-                                                                    0xFFB2B5AE,
-                                                                  ),
-                                                                  inactiveThumbColor:
-                                                                      const Color(
-                                                                    0xFFB2B5AE,
-                                                                  ),
-                                                                  inactiveTrackColor:
-                                                                      const Color(
-                                                                    0xFF9C9D98,
-                                                                  ),
-                                                                  value:
-                                                                      estadoWifi,
-                                                                  onChanged:
-                                                                      (value) {
-                                                                    String
-                                                                        deviceSerialNumber =
-                                                                        DeviceManager.extractSerialNumber(
-                                                                            deviceName);
-                                                                    String
-                                                                        topic =
-                                                                        'devices_rx/${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber';
-                                                                    String
-                                                                        topic2 =
-                                                                        'devices_tx/${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber';
-                                                                    String
-                                                                        message =
-                                                                        jsonEncode({
-                                                                      'pinType':
-                                                                          tipoWifi == 'Salida'
-                                                                              ? 0
-                                                                              : 1,
-                                                                      'index':
-                                                                          i,
-                                                                      'w_status':
-                                                                          value,
-                                                                      'r_state':
-                                                                          comunWifi,
-                                                                    });
-                                                                    sendMessagemqtt(
-                                                                        topic,
-                                                                        message);
-                                                                    sendMessagemqtt(
-                                                                        topic2,
-                                                                        message);
-                                                                    setState(
-                                                                        () {
-                                                                      estadoWifi =
-                                                                          value;
-                                                                    });
-                                                                    globalDATA
-                                                                        .putIfAbsent(
-                                                                            '${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber',
-                                                                            () =>
-                                                                                {})
-                                                                        .addAll({
-                                                                      'io$i':
-                                                                          message
-                                                                    });
-                                                                    saveGlobalData(
-                                                                        globalDATA);
-                                                                  },
-                                                                )
-                                                          : null,
-                                                    );
-                                                  }
-                                                },
-                                              ),
+                                                                      : Text(
+                                                                          'Cerrado',
+                                                                          style:
+                                                                              GoogleFonts.poppins(
+                                                                            color:
+                                                                                Colors.green,
+                                                                            fontSize:
+                                                                                15,
+                                                                            fontWeight:
+                                                                                FontWeight.bold,
+                                                                          ),
+                                                                        )
+                                                              : estadoWifi
+                                                                  ? Text(
+                                                                      'Encendido',
+                                                                      style: GoogleFonts
+                                                                          .poppins(
+                                                                        color: Colors
+                                                                            .green,
+                                                                        fontSize:
+                                                                            15,
+                                                                        fontWeight:
+                                                                            FontWeight.bold,
+                                                                      ),
+                                                                    )
+                                                                  : Text(
+                                                                      'Apagado',
+                                                                      style: GoogleFonts
+                                                                          .poppins(
+                                                                        color:
+                                                                            color6,
+                                                                        fontSize:
+                                                                            15,
+                                                                        fontWeight:
+                                                                            FontWeight.bold,
+                                                                      ),
+                                                                    ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    trailing: owner
+                                                        ? entradaWifi
+                                                            ? estadoWifi
+                                                                ? comunWifi ==
+                                                                        '1'
+                                                                    ? const Icon(
+                                                                        Icons
+                                                                            .new_releases,
+                                                                        color:
+                                                                            Color(
+                                                                          0xff9b9b9b,
+                                                                        ),
+                                                                      )
+                                                                    : const Icon(
+                                                                        Icons
+                                                                            .new_releases,
+                                                                        color:
+                                                                            color6,
+                                                                      )
+                                                                : comunWifi ==
+                                                                        '1'
+                                                                    ? const Icon(
+                                                                        Icons
+                                                                            .new_releases,
+                                                                        color:
+                                                                            color6,
+                                                                      )
+                                                                    : const Icon(
+                                                                        Icons
+                                                                            .new_releases,
+                                                                        color:
+                                                                            Color(
+                                                                          0xff9b9b9b,
+                                                                        ),
+                                                                      )
+                                                            : Switch(
+                                                                activeColor:
+                                                                    const Color(
+                                                                  0xFF9C9D98,
+                                                                ),
+                                                                activeTrackColor:
+                                                                    const Color(
+                                                                  0xFFB2B5AE,
+                                                                ),
+                                                                inactiveThumbColor:
+                                                                    const Color(
+                                                                  0xFFB2B5AE,
+                                                                ),
+                                                                inactiveTrackColor:
+                                                                    const Color(
+                                                                  0xFF9C9D98,
+                                                                ),
+                                                                value:
+                                                                    estadoWifi,
+                                                                onChanged:
+                                                                    (value) {
+                                                                  String
+                                                                      deviceSerialNumber =
+                                                                      DeviceManager
+                                                                          .extractSerialNumber(
+                                                                              deviceName);
+                                                                  String topic =
+                                                                      'devices_rx/${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber';
+                                                                  String
+                                                                      topic2 =
+                                                                      'devices_tx/${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber';
+                                                                  String
+                                                                      message =
+                                                                      jsonEncode({
+                                                                    'pinType':
+                                                                        tipoWifi ==
+                                                                                'Salida'
+                                                                            ? 0
+                                                                            : 1,
+                                                                    'index': i,
+                                                                    'w_status':
+                                                                        value,
+                                                                    'r_state':
+                                                                        comunWifi,
+                                                                  });
+                                                                  sendMessagemqtt(
+                                                                      topic,
+                                                                      message);
+                                                                  sendMessagemqtt(
+                                                                      topic2,
+                                                                      message);
+                                                                  setState(() {
+                                                                    estadoWifi =
+                                                                        value;
+                                                                  });
+                                                                  globalDATA
+                                                                      .putIfAbsent(
+                                                                          '${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber',
+                                                                          () =>
+                                                                              {})
+                                                                      .addAll({
+                                                                    'io$i':
+                                                                        message
+                                                                  });
+                                                                  saveGlobalData(
+                                                                      globalDATA);
+                                                                },
+                                                              )
+                                                        : null,
+                                                  );
+                                                }),
+                                              ],
                                             )
                                           : const SizedBox(height: 0),
                                       Padding(
@@ -1458,45 +1542,13 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                   // POSICIÓN 0: Salida con switch
                                                   if (deviceDATA['io0'] ==
                                                       null) ...[
-                                                    ListTile(
-                                                      title: Text(
-                                                        'Error en el equipo',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          color: color0,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                      subtitle: Text(
-                                                        'Se solucionará automáticamente en poco tiempo...',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          color: color0,
-                                                        ),
-                                                      ),
-                                                    )
+                                                    const SizedBox
+                                                        .shrink() // No mostrar nada si no hay datos
                                                   ] else ...[
                                                     if (deviceDATA['io0'] ==
                                                         null) ...[
-                                                      ListTile(
-                                                        title: Text(
-                                                          'Error en el equipo',
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                            color: color0,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                        subtitle: Text(
-                                                          'Se solucionará automáticamente en poco tiempo...',
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                            color: color0,
-                                                          ),
-                                                        ),
-                                                      )
+                                                      const SizedBox
+                                                          .shrink() // No mostrar nada si no hay datos
                                                     ] else ...[
                                                       if (hasEntry) ...[
                                                         ListTile(
@@ -1675,24 +1727,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                   if (hasEntry) ...[
                                                     if (deviceDATA['io1'] ==
                                                         null) ...[
-                                                      ListTile(
-                                                        title: Text(
-                                                          'Error en el equipo',
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                            color: color0,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                        subtitle: Text(
-                                                          'Se solucionará automáticamente en poco tiempo...',
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                            color: color0,
-                                                          ),
-                                                        ),
-                                                      )
+                                                      const SizedBox
+                                                          .shrink() // No mostrar nada si no hay datos
                                                     ] else ...[
                                                       ListTile(
                                                         title: Text(
@@ -2027,14 +2063,54 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                     children: <Widget>[
                                       online
                                           ? Column(
-                                              children: List.generate(
-                                                4,
-                                                (i) {
-                                                  if (deviceDATA['io$i'] ==
-                                                      null) {
-                                                    return ListTile(
-                                                      title: Text(
-                                                        'Error en el equipo',
+                                              children: (deviceDATA.keys
+                                                      .where((key) =>
+                                                          key.startsWith(
+                                                              'io') &&
+                                                          RegExp(r'^io\d+$')
+                                                              .hasMatch(key))
+                                                      .where((ioKey) =>
+                                                          deviceDATA[ioKey] !=
+                                                          null)
+                                                      .toList()
+                                                    ..sort((a, b) {
+                                                      int indexA = int.parse(
+                                                          a.substring(2));
+                                                      int indexB = int.parse(
+                                                          b.substring(2));
+                                                      return indexA
+                                                          .compareTo(indexB);
+                                                    }))
+                                                  .map((ioKey) {
+                                                // Extraer el índice del ioKey (ejemplo: "io0" -> 0)
+                                                int i = int.parse(
+                                                    ioKey.substring(2));
+                                                Map<String, dynamic> equipo =
+                                                    jsonDecode(
+                                                        deviceDATA[ioKey]);
+                                                printLog.i(
+                                                  'Voy a realizar el cambio: $equipo',
+                                                );
+                                                String tipoWifi =
+                                                    equipo['pinType']
+                                                                .toString() ==
+                                                            '0'
+                                                        ? 'Salida'
+                                                        : 'Entrada';
+                                                bool estadoWifi =
+                                                    equipo['w_status'];
+                                                String comunWifi =
+                                                    (equipo['r_state'] ?? '0')
+                                                        .toString();
+                                                bool entradaWifi =
+                                                    tipoWifi == 'Entrada';
+                                                return ListTile(
+                                                  title: Row(
+                                                    children: [
+                                                      Text(
+                                                        nicknamesMap[
+                                                                '${deviceName}_$i'] ??
+                                                            '$tipoWifi $i',
                                                         style:
                                                             GoogleFonts.poppins(
                                                           color: color0,
@@ -2042,110 +2118,24 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                               FontWeight.bold,
                                                         ),
                                                       ),
-                                                      subtitle: Text(
-                                                        'Se solucionara automaticamente en poco tiempo...',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          color: color0,
-                                                          fontWeight:
-                                                              FontWeight.normal,
-                                                        ),
-                                                      ),
-                                                    );
-                                                  } else {
-                                                    Map<String, dynamic>
-                                                        equipo = jsonDecode(
-                                                            deviceDATA['io$i']);
-                                                    printLog.i(
-                                                      'Voy a realizar el cambio: $equipo',
-                                                    );
-                                                    String tipoWifi = equipo[
-                                                                    'pinType']
-                                                                .toString() ==
-                                                            '0'
-                                                        ? 'Salida'
-                                                        : 'Entrada';
-                                                    bool estadoWifi =
-                                                        equipo['w_status'];
-                                                    String comunWifi =
-                                                        (equipo['r_state'] ??
-                                                                '0')
-                                                            .toString();
-                                                    bool entradaWifi =
-                                                        tipoWifi == 'Entrada';
-                                                    return ListTile(
-                                                      title: Row(
-                                                        children: [
-                                                          Text(
-                                                            nicknamesMap[
-                                                                    '${deviceName}_$i'] ??
-                                                                '$tipoWifi $i',
-                                                            style: GoogleFonts
-                                                                .poppins(
-                                                              color: color0,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                            ),
-                                                          ),
-                                                          const SizedBox(
-                                                              width: 5),
-                                                        ],
-                                                      ),
-                                                      subtitle: Align(
-                                                        alignment:
-                                                            AlignmentDirectional
-                                                                .centerStart,
-                                                        child: Column(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            entradaWifi
-                                                                ? estadoWifi
-                                                                    ? comunWifi ==
-                                                                            '1'
-                                                                        ? Text(
-                                                                            'Cerrado',
-                                                                            style:
-                                                                                GoogleFonts.poppins(
-                                                                              color: Colors.green,
-                                                                              fontSize: 15,
-                                                                              fontWeight: FontWeight.bold,
-                                                                            ),
-                                                                          )
-                                                                        : Text(
-                                                                            'Abierto',
-                                                                            style:
-                                                                                GoogleFonts.poppins(
-                                                                              color: color6,
-                                                                              fontSize: 15,
-                                                                              fontWeight: FontWeight.bold,
-                                                                            ),
-                                                                          )
-                                                                    : comunWifi ==
-                                                                            '1'
-                                                                        ? Text(
-                                                                            'Abierto',
-                                                                            style:
-                                                                                GoogleFonts.poppins(
-                                                                              color: color6,
-                                                                              fontSize: 15,
-                                                                              fontWeight: FontWeight.bold,
-                                                                            ),
-                                                                          )
-                                                                        : Text(
-                                                                            'Cerrado',
-                                                                            style:
-                                                                                GoogleFonts.poppins(
-                                                                              color: Colors.green,
-                                                                              fontSize: 15,
-                                                                              fontWeight: FontWeight.bold,
-                                                                            ),
-                                                                          )
-                                                                : estadoWifi
+                                                      const SizedBox(width: 5),
+                                                    ],
+                                                  ),
+                                                  subtitle: Align(
+                                                    alignment:
+                                                        AlignmentDirectional
+                                                            .centerStart,
+                                                    child: Column(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        entradaWifi
+                                                            ? estadoWifi
+                                                                ? comunWifi ==
+                                                                        '1'
                                                                     ? Text(
-                                                                        'Encendido',
+                                                                        'Cerrado',
                                                                         style: GoogleFonts
                                                                             .poppins(
                                                                           color:
@@ -2157,7 +2147,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                                         ),
                                                                       )
                                                                     : Text(
-                                                                        'Apagado',
+                                                                        'Abierto',
                                                                         style: GoogleFonts
                                                                             .poppins(
                                                                           color:
@@ -2167,111 +2157,156 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                                           fontWeight:
                                                                               FontWeight.bold,
                                                                         ),
-                                                                      ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      trailing: owner
-                                                          ? entradaWifi
-                                                              ? estadoWifi
-                                                                  ? comunWifi ==
-                                                                          '1'
-                                                                      ? const Icon(
-                                                                          Icons
-                                                                              .new_releases,
-                                                                          color:
-                                                                              Color(0xff9b9b9b),
-                                                                        )
-                                                                      : const Icon(
-                                                                          Icons
-                                                                              .new_releases,
+                                                                      )
+                                                                : comunWifi ==
+                                                                        '1'
+                                                                    ? Text(
+                                                                        'Abierto',
+                                                                        style: GoogleFonts
+                                                                            .poppins(
                                                                           color:
                                                                               color6,
-                                                                        )
-                                                                  : comunWifi ==
-                                                                          '1'
-                                                                      ? const Icon(
-                                                                          Icons
-                                                                              .new_releases,
+                                                                          fontSize:
+                                                                              15,
+                                                                          fontWeight:
+                                                                              FontWeight.bold,
+                                                                        ),
+                                                                      )
+                                                                    : Text(
+                                                                        'Cerrado',
+                                                                        style: GoogleFonts
+                                                                            .poppins(
                                                                           color:
-                                                                              color6,
-                                                                        )
-                                                                      : const Icon(
-                                                                          Icons
-                                                                              .new_releases,
-                                                                          color:
-                                                                              Color(0xff9b9b9b),
-                                                                        )
-                                                              : Switch(
-                                                                  activeColor:
-                                                                      const Color(
-                                                                          0xFF9C9D98),
-                                                                  activeTrackColor:
-                                                                      const Color(
-                                                                          0xFFB2B5AE),
-                                                                  inactiveThumbColor:
-                                                                      const Color(
-                                                                          0xFFB2B5AE),
-                                                                  inactiveTrackColor:
-                                                                      const Color(
-                                                                          0xFF9C9D98),
-                                                                  value:
-                                                                      estadoWifi,
-                                                                  onChanged:
-                                                                      (value) {
-                                                                    String
-                                                                        deviceSerialNumber =
-                                                                        DeviceManager.extractSerialNumber(
+                                                                              Colors.green,
+                                                                          fontSize:
+                                                                              15,
+                                                                          fontWeight:
+                                                                              FontWeight.bold,
+                                                                        ),
+                                                                      )
+                                                            : estadoWifi
+                                                                ? Text(
+                                                                    'Encendido',
+                                                                    style: GoogleFonts
+                                                                        .poppins(
+                                                                      color: Colors
+                                                                          .green,
+                                                                      fontSize:
+                                                                          15,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                    ),
+                                                                  )
+                                                                : Text(
+                                                                    'Apagado',
+                                                                    style: GoogleFonts
+                                                                        .poppins(
+                                                                      color:
+                                                                          color6,
+                                                                      fontSize:
+                                                                          15,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                    ),
+                                                                  ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  trailing: owner
+                                                      ? entradaWifi
+                                                          ? estadoWifi
+                                                              ? comunWifi == '1'
+                                                                  ? const Icon(
+                                                                      Icons
+                                                                          .new_releases,
+                                                                      color: Color(
+                                                                          0xff9b9b9b),
+                                                                    )
+                                                                  : const Icon(
+                                                                      Icons
+                                                                          .new_releases,
+                                                                      color:
+                                                                          color6,
+                                                                    )
+                                                              : comunWifi == '1'
+                                                                  ? const Icon(
+                                                                      Icons
+                                                                          .new_releases,
+                                                                      color:
+                                                                          color6,
+                                                                    )
+                                                                  : const Icon(
+                                                                      Icons
+                                                                          .new_releases,
+                                                                      color: Color(
+                                                                          0xff9b9b9b),
+                                                                    )
+                                                          : Switch(
+                                                              activeColor:
+                                                                  const Color(
+                                                                      0xFF9C9D98),
+                                                              activeTrackColor:
+                                                                  const Color(
+                                                                      0xFFB2B5AE),
+                                                              inactiveThumbColor:
+                                                                  const Color(
+                                                                      0xFFB2B5AE),
+                                                              inactiveTrackColor:
+                                                                  const Color(
+                                                                      0xFF9C9D98),
+                                                              value: estadoWifi,
+                                                              onChanged:
+                                                                  (value) {
+                                                                String
+                                                                    deviceSerialNumber =
+                                                                    DeviceManager
+                                                                        .extractSerialNumber(
                                                                             deviceName);
-                                                                    String
-                                                                        topic =
-                                                                        'devices_rx/${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber';
-                                                                    String
-                                                                        topic2 =
-                                                                        'devices_tx/${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber';
-                                                                    String
-                                                                        message =
-                                                                        jsonEncode({
-                                                                      'pinType':
-                                                                          tipoWifi == 'Salida'
-                                                                              ? 0
-                                                                              : 1,
-                                                                      'index':
-                                                                          i,
-                                                                      'w_status':
-                                                                          value,
-                                                                      'r_state':
-                                                                          comunWifi,
-                                                                    });
-                                                                    sendMessagemqtt(
-                                                                        topic,
-                                                                        message);
-                                                                    sendMessagemqtt(
-                                                                        topic2,
-                                                                        message);
-                                                                    setState(
-                                                                        () {
-                                                                      estadoWifi =
-                                                                          value;
-                                                                    });
-                                                                    globalDATA
-                                                                        .putIfAbsent(
-                                                                            '${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber',
-                                                                            () =>
-                                                                                {})
-                                                                        .addAll({
-                                                                      'io$i':
-                                                                          message
-                                                                    });
-                                                                    saveGlobalData(
-                                                                        globalDATA);
-                                                                  },
-                                                                )
-                                                          : null,
-                                                    );
-                                                  }
-                                                },
-                                              ),
+                                                                String topic =
+                                                                    'devices_rx/${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber';
+                                                                String topic2 =
+                                                                    'devices_tx/${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber';
+                                                                String message =
+                                                                    jsonEncode({
+                                                                  'pinType':
+                                                                      tipoWifi ==
+                                                                              'Salida'
+                                                                          ? 0
+                                                                          : 1,
+                                                                  'index': i,
+                                                                  'w_status':
+                                                                      value,
+                                                                  'r_state':
+                                                                      comunWifi,
+                                                                });
+                                                                sendMessagemqtt(
+                                                                    topic,
+                                                                    message);
+                                                                sendMessagemqtt(
+                                                                    topic2,
+                                                                    message);
+                                                                setState(() {
+                                                                  estadoWifi =
+                                                                      value;
+                                                                });
+                                                                globalDATA
+                                                                    .putIfAbsent(
+                                                                        '${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber',
+                                                                        () =>
+                                                                            {})
+                                                                    .addAll({
+                                                                  'io$i':
+                                                                      message
+                                                                });
+                                                                saveGlobalData(
+                                                                    globalDATA);
+                                                              },
+                                                            )
+                                                      : null,
+                                                );
+                                              }).toList(),
                                             )
                                           : const SizedBox(height: 0),
                                       Padding(
@@ -2920,55 +2955,66 @@ class WifiPageState extends ConsumerState<WifiPage> {
 
                         for (String device in deviceList) {
                           String equipo = DeviceManager.getProductCode(device);
-                          String serial =
-                              DeviceManager.extractSerialNumber(device);
+                          String serial = DeviceManager.extractSerialNumber(
+                            device,
+                          );
+
+                          final deviceSpecificData = ref.watch(
+                            globalDataProvider.select(
+                              (map) => map['$equipo/$serial'] ?? {},
+                            ),
+                          );
 
                           globalDATA
                               .putIfAbsent('$equipo/$serial', () => {})
-                              .addAll(topicData);
+                              .addAll(deviceSpecificData);
                         }
 
                         bool online = isGroupOnline(devicesInGroup);
                         bool estado = isGroupOn(devicesInGroup);
                         bool owner = canControlGroup(devicesInGroup);
+
                         return Card(
+                          key: ValueKey(deviceName),
                           color: color3,
-                          key: ValueKey(
-                              grupo[0].toUpperCase() + grupo.substring(1)),
                           margin: const EdgeInsets.symmetric(
                             vertical: 5,
                             horizontal: 10,
                           ),
                           elevation: 2,
                           child: Theme(
-                            data: Theme.of(context)
-                                .copyWith(dividerColor: Colors.transparent),
+                            data: Theme.of(
+                              context,
+                            ).copyWith(dividerColor: Colors.transparent),
                             child: ExpansionTile(
-                              tilePadding:
-                                  const EdgeInsets.symmetric(horizontal: 16.0),
+                              tilePadding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                              ),
                               iconColor: color6,
                               collapsedIconColor: color6,
+                              onExpansionChanged: (bool expanded) {
+                                setState(() {
+                                  _expandedStates[deviceName] = expanded;
+                                });
+                              },
                               title: Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        grupo[0].toUpperCase() +
-                                            grupo.substring(1),
-                                        style: GoogleFonts.poppins(
-                                          color: color0,
-                                          fontWeight: FontWeight.bold,
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          grupo[0].toUpperCase() +
+                                              grupo.substring(1),
+                                          style: GoogleFonts.poppins(
+                                            color: color0,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
-                                      ),
-                                      SizedBox(
-                                        width:
-                                            MediaQuery.of(context).size.width *
-                                                0.75,
-                                        child: Text(
+                                        Text(
                                           nicksList
                                               .toString()
                                               .replaceAll('[', '')
@@ -2977,11 +3023,19 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                             color: color1,
                                             fontSize: 15,
                                           ),
-                                          overflow: TextOverflow.ellipsis,
-                                          maxLines: 1,
+                                          overflow:
+                                              _expandedStates[deviceName] ==
+                                                      true
+                                                  ? TextOverflow.visible
+                                                  : TextOverflow.ellipsis,
+                                          maxLines:
+                                              _expandedStates[deviceName] ==
+                                                      true
+                                                  ? null
+                                                  : 1,
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
@@ -3022,12 +3076,15 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                           ? Switch(
                                               activeColor:
                                                   const Color(0xFF9C9D98),
-                                              activeTrackColor:
-                                                  const Color(0xFFB2B5AE),
-                                              inactiveThumbColor:
-                                                  const Color(0xFFB2B5AE),
-                                              inactiveTrackColor:
-                                                  const Color(0xFF9C9D98),
+                                              activeTrackColor: const Color(
+                                                0xFFB2B5AE,
+                                              ),
+                                              inactiveThumbColor: const Color(
+                                                0xFFB2B5AE,
+                                              ),
+                                              inactiveTrackColor: const Color(
+                                                0xFF9C9D98,
+                                              ),
                                               value: estado,
                                               onChanged: (newValue) {
                                                 controlGroup(
@@ -3037,10 +3094,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                 );
                                               },
                                             )
-                                          : const SizedBox(
-                                              height: 0,
-                                              width: 0,
-                                            )
+                                          : const SizedBox(height: 0, width: 0),
                                     ],
                                   ),
                                 ),

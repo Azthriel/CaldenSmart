@@ -188,7 +188,38 @@ String textFieldValue = '';
 //*-Escenas-*\\
 List<String> registeredScenes = [];
 List<Map<String, dynamic>> timeScenes = [];
-Map<String, List<String>> detectorOff = {};
+
+Widget Function()? currentBuilder;
+TimeOfDay? selectedTime;
+
+int? selectedAction;
+Duration? delay;
+String? selectedWeatherCondition;
+
+bool showCard = false;
+bool showHorarioStep = false;
+bool showHorarioStep2 = false;
+bool showGrupoStep = false;
+bool showCascadaStep = false;
+bool showCascadaStep2 = false;
+bool showClimaStep = false;
+bool showClimaStep2 = false;
+
+bool showDelay = false;
+
+Map<String, bool> deviceActions = {};
+Map<String, String> deviceUnits = {};
+
+List<String> selectedDays = [];
+List<String> deviceGroup = [];
+List<String> filterDevices = [];
+Map<String, Duration> deviceDelays = {};
+TextEditingController title = TextEditingController();
+TextEditingController delayController = TextEditingController();
+
+final List<String> weatherConditions = ['Viento', 'Lluvia', 'Nublado'];
+
+final selectWeekDaysKey = GlobalKey<SelectWeekDaysState>();
 //*-Escenas-*\\
 
 //*-Omnipresencia-*\\
@@ -266,7 +297,7 @@ Map<String, String> pinQuickAccess = {};
 //*-Acceso rápido BLE-*\\
 
 //*-Fetch data from DynamoDB GENERALDATA-*\\
-Map<String, dynamic> fbData = {};
+Map<String, dynamic> dbData = {};
 //*-Fetch data from DynamoDB GENERALDATA-*\\
 
 //*-Device update-*\\
@@ -409,9 +440,6 @@ late FToast fToast;
 //*- Escenas -*\\
 Map<String, List<String>> groupsOfDevices = {};
 List<Map<String, dynamic>> eventosCreados = [];
-const String urlEscenas =
-    'https://3zo0pu883b.execute-api.sa-east-1.amazonaws.com/PROD/Escenas'; //PROD
-// const String urlEscenas = 'https://3zo0pu883b.execute-api.sa-east-1.amazonaws.com/DEV/EscenasDEV'; //DEV
 //*- Escenas -*\\
 
 //*- Special Users -*\\
@@ -1966,7 +1994,7 @@ Future<void> handleNotifications(RemoteMessage message) async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     currentUserEmail = await loadEmail();
-    await getDevices(currentUserEmail);
+    await getNicknames(currentUserEmail);
     soundOfNotification = await loadSounds();
     await DeviceManager.init();
     printLog.i('Llegó esta notif: ${message.data}', color: 'lima');
@@ -1985,22 +2013,6 @@ Future<void> handleNotifications(RemoteMessage message) async {
         String displayMessage =
             'El detector disparó una alarma.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
         showNotification(displayTitle.toUpperCase(), displayMessage, sound);
-        printLog.i('Esta el cortito ${detectorOff.keys.contains(device)}');
-        if (detectorOff.keys.contains(device)) {
-          List<String> equipos = detectorOff[device] ?? [];
-
-          for (String equipo in equipos) {
-            printLog.i('Apago $equipo');
-            String deviceSerialNumber =
-                DeviceManager.extractSerialNumber(equipo);
-            String productCode = DeviceManager.getProductCode(equipo);
-            String topic = 'devices_rx/$productCode/$deviceSerialNumber';
-            String topic2 = 'devices_tx/$productCode/$deviceSerialNumber';
-            String message = jsonEncode({"w_status": false});
-            sendMessagemqtt(topic, message);
-            sendMessagemqtt(topic2, message);
-          }
-        }
       } else if (product == '020010_IOT' ||
           product == '020020_IOT' ||
           product == '027313_IOT') {
@@ -2542,11 +2554,11 @@ Future<bool> backFunctionDS() async {
   try {
     List<String> devicesStored = await loadDevicesForDistanceControl();
     globalDATA = await loadGlobalData();
-    DeviceManager.init();
+    await DeviceManager.init();
     Map<String, double> latitudes = await loadLatitude();
     Map<String, double> longitudes = await loadLongitud();
     currentUserEmail = await loadEmail();
-    await getDevices(currentUserEmail);
+    await getNicknames(currentUserEmail);
     Map<String, String> nicks = nicknamesMap;
 
     for (int index = 0; index < devicesStored.length; index++) {
@@ -3372,11 +3384,11 @@ bool hasLED(String productCode, String hwVersion) {
 
 Future<bool> isSpecialUser(String email) async {
   printLog.i('Verificando si $email es un usuario especial');
-  if (fbData.isEmpty) {
+  if (dbData.isEmpty) {
     await DeviceManager.init();
     return isSpecialUser(email);
   }
-  final specialUsers = (fbData['SpecialUser'] as List<dynamic>?)
+  final specialUsers = (dbData['SpecialUser'] as List<dynamic>?)
       ?.map((e) => e.toString().toLowerCase())
       .toList();
   if (specialUsers == null) return false;
@@ -3414,7 +3426,7 @@ class DeviceManager {
 
   ///Conseguir el código de producto en base al deviceName
   static String getProductCode(String device) {
-    Map<String, String> data = (fbData['PC'] as Map<String, dynamic>).map(
+    Map<String, String> data = (dbData['PC'] as Map<String, dynamic>).map(
       (key, value) => MapEntry(
         key,
         value.toString(),
@@ -3431,41 +3443,19 @@ class DeviceManager {
 
   ///Recupera el deviceName en base al productCode y al SerialNumber
   static String recoverDeviceName(String pc, String sn) {
+    Map<String, String> data = (dbData['PC'] as Map<String, dynamic>).map(
+      (key, value) => MapEntry(
+        key,
+        value.toString(),
+      ),
+    );
+
     String code = '';
-    switch (pc) {
-      case '015773_IOT':
-        code = 'Detector';
+    for (String key in data.keys) {
+      if (data[key] == pc) {
+        code = key;
         break;
-      case '022000_IOT':
-        code = 'Electrico';
-        break;
-      case '027000_IOT':
-        code = 'Gas';
-        break;
-      case '020010_IOT':
-        code = 'Domotica';
-        break;
-      case '027313_IOT':
-        code = 'Rele';
-        break;
-      case '024011_IOT':
-        code = 'Roll';
-        break;
-      case '050217_IOT':
-        code = 'Millenium';
-        break;
-      case '020020_IOT':
-        code = 'Modulo';
-        break;
-      case '024131_IOT':
-        code = 'Riel';
-        break;
-      case '041220_IOT':
-        code = 'Radiador';
-        break;
-      case '028000_IOT':
-        code = 'Heladera';
-        break;
+      }
     }
 
     return '$code$sn';
@@ -3474,7 +3464,7 @@ class DeviceManager {
   ///Devuelve un nombre común para los usuarios
   static String getComercialName(String name) {
     String pc = DeviceManager.getProductCode(name);
-    Map<String, String> data = (fbData['CN'] as Map<String, dynamic>).map(
+    Map<String, String> data = (dbData['CN'] as Map<String, dynamic>).map(
       (key, value) => MapEntry(
         key,
         value.toString(),
@@ -3493,10 +3483,10 @@ class DeviceManager {
   static FutureOr<void> init() async {
     try {
       Map<String, dynamic> data = await getGeneralData();
-      fbData = data;
+      dbData = data;
     } catch (e) {
       printLog.i("Error al leer GENERALDATA: $e");
-      fbData = {};
+      dbData = {};
     }
   }
 }

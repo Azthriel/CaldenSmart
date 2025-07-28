@@ -451,7 +451,7 @@ Future<void> putPreviusConnections(String email, List<String> data) async {
 
 ///*-Guardar equipos en dynamo-*\\\
 
-///*-Guardar Nicknames de los equipo-*\\\
+///*-Guardar y obtener Nicknames de los equipo-*\\\
 Future<void> putNicknames(String email, Map<String, String> data) async {
   try {
     final response = await service.updateItem(tableName: 'Alexa-Devices', key: {
@@ -473,7 +473,30 @@ Future<void> putNicknames(String email, Map<String, String> data) async {
   }
 }
 
-///*-Guardar Nicknames de los equipo-*\\\
+Future<void> getNicknames(String email) async {
+  try {
+    final response = await service.getItem(
+      tableName: 'Alexa-Devices',
+      key: {'email': AttributeValue(s: email)},
+    );
+    if (response.item != null) {
+      // Convertir AttributeValue a String
+      var item = response.item!;
+
+      Map<String, AttributeValue> mapa = item['nicknames']?.m ?? {};
+      mapa.forEach((key, value) {
+        nicknamesMap.addAll({key: value.s ?? ''});
+      });
+      printLog.i('Nicknames encontrados: $nicknamesMap');
+    } else {
+      printLog.i('Item no encontrado. No está el mail en la database');
+    }
+  } catch (e) {
+    printLog.i('Error al obtener el item: $e');
+  }
+}
+
+///*-Guardar y obtener Nicknames de los equipo-*\\\
 
 ///*-Guardar el largo del Roller-*\\\
 Future<void> putRollerLength(String pc, String sn, String data) async {
@@ -530,12 +553,6 @@ Future<void> getDevices(String email) async {
         alexaDevices = [];
       }
       printLog.i('Equipos de asistentes por voz: $alexaDevices');
-
-      Map<String, AttributeValue> mapa = item['nicknames']?.m ?? {};
-      mapa.forEach((key, value) {
-        nicknamesMap.addAll({key: value.s ?? ''});
-      });
-      printLog.i('Nicknames encontrados: $nicknamesMap');
 
       await DeviceManager.init();
 
@@ -731,8 +748,7 @@ Future<void> saveLocation(String pc, String sn, String data) async {
 }
 
 ///Guarda las versiones de Hardware y Software
-Future<void> putVersions(
-    String pc, String sn, String hard, String soft) async {
+Future<void> putVersions(String pc, String sn, String hard, String soft) async {
   try {
     final response = await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
@@ -762,24 +778,31 @@ Future<Map<String, dynamic>> getGeneralData() async {
     if (response.item != null) {
       Map<String, dynamic> generalData = {};
       var item = response.item!;
-      
+
       for (var key in item.keys) {
         if (key == 'App') continue; // Saltear la clave principal
-        
+
         var value = item[key];
         if (value?.m != null) {
           // Es un mapa (Map)
           Map<String, dynamic> mapValue = {};
           for (var mapKey in value!.m!.keys) {
             var mapVal = value.m![mapKey];
-            mapValue[mapKey] = mapVal?.s ?? mapVal?.n ?? mapVal?.boolValue ?? mapVal?.ss ?? mapVal?.toString();
+            mapValue[mapKey] = mapVal?.s ??
+                mapVal?.n ??
+                mapVal?.boolValue ??
+                mapVal?.ss ??
+                mapVal?.toString();
           }
           generalData[key] = mapValue;
         } else if (value?.l != null) {
           // Es una lista (List)
           List<dynamic> listValue = [];
           for (var listItem in value!.l!) {
-            listValue.add(listItem.s ?? listItem.n ?? listItem.boolValue ?? listItem.toString());
+            listValue.add(listItem.s ??
+                listItem.n ??
+                listItem.boolValue ??
+                listItem.toString());
           }
           generalData[key] = listValue;
         } else if (value?.ss != null) {
@@ -787,10 +810,11 @@ Future<Map<String, dynamic>> getGeneralData() async {
           generalData[key] = value!.ss!;
         } else {
           // Es un valor simple
-          generalData[key] = value?.s ?? value?.n ?? value?.boolValue ?? value?.toString();
+          generalData[key] =
+              value?.s ?? value?.n ?? value?.boolValue ?? value?.toString();
         }
       }
-      
+
       printLog.i('Datos generales obtenidos correctamente');
       return generalData;
     } else {
@@ -803,3 +827,129 @@ Future<Map<String, dynamic>> getGeneralData() async {
   }
 }
 //*-Obtener datos generales de la aplicación desde GENERALDATA-*\\
+
+//*- Guarda evento: Control por disparadores -*\\
+/// Obtiene los ejecutores existentes de un evento disparador
+Future<Map<String, bool>> getEventoDisparador(String activador) async {
+  try {
+    final response = await service.getItem(
+      tableName: 'Eventos_ControlDisparadores',
+      key: {
+        'deviceName': AttributeValue(s: activador),
+      },
+    );
+
+    if (response.item != null) {
+      var item = response.item!;
+      Map<String, AttributeValue> ejecutoresMap = item['ejecutores']?.m ?? {};
+      Map<String, bool> ejecutores = {};
+
+      for (String key in ejecutoresMap.keys) {
+        AttributeValue value = ejecutoresMap[key]!;
+        ejecutores[key] = value.boolValue ?? false;
+      }
+
+      printLog.i('Ejecutores existentes encontrados: $ejecutores');
+      return ejecutores;
+    } else {
+      printLog.i('No se encontraron ejecutores existentes para $activador');
+      return {};
+    }
+  } catch (e) {
+    printLog.i('Error al obtener ejecutores existentes: $e');
+    return {};
+  }
+}
+
+/// Guarda el estado de los ejecutores de un evento disparador en la tabla ControlDisparadores
+/// [activador] es el nombre del dispositivo que activa el disparador.
+/// [nuevosEjecutores] son los nuevos ejecutores a agregar o actualizar.
+/// [sobreescribirTodos] si es true, reemplaza todos los ejecutores. Si es false, solo agrega/actualiza los nuevos.
+void putEventoDisparador(String activador, Map<String, bool> nuevosEjecutores,
+    {bool sobreescribirTodos = false}) async {
+  try {
+    Map<String, bool> ejecutoresFinales;
+
+    if (sobreescribirTodos) {
+      // Comportamiento original: sobreescribir todos
+      ejecutoresFinales = nuevosEjecutores;
+    } else {
+      // Nuevo comportamiento: combinar con existentes
+      Map<String, bool> ejecutoresExistentes =
+          await getEventoDisparador(activador);
+      ejecutoresFinales = {...ejecutoresExistentes, ...nuevosEjecutores};
+      printLog
+          .i('Combinando ejecutores existentes con nuevos: $ejecutoresFinales');
+    }
+
+    final response = await service
+        .updateItem(tableName: 'Eventos_ControlDisparadores', key: {
+      'deviceName': AttributeValue(s: activador),
+    }, attributeUpdates: {
+      'ejecutores': AttributeValueUpdate(
+        value: AttributeValue(
+          m: {
+            for (final entry in ejecutoresFinales.entries)
+              entry.key: AttributeValue(boolValue: entry.value),
+          },
+        ),
+      ),
+    });
+
+    printLog.i('Item escrito perfectamente $response');
+  } catch (e) {
+    printLog.i('Error guardando item de disparadores: $e');
+  }
+}
+
+/// Elimina ejecutores específicos de un evento disparador
+void removeEjecutoresFromDisparador(
+    String activador, List<String> ejecutoresAEliminar) async {
+  try {
+    // Primero obtener los ejecutores existentes
+    Map<String, bool> ejecutoresExistentes =
+        await getEventoDisparador(activador);
+
+    if (ejecutoresExistentes.isEmpty) {
+      printLog.i('No hay ejecutores existentes para $activador');
+      return;
+    }
+
+    // Remover los ejecutores especificados
+    for (String ejecutor in ejecutoresAEliminar) {
+      ejecutoresExistentes.remove(ejecutor);
+    }
+
+    printLog.i('Ejecutores después de eliminar: $ejecutoresExistentes');
+
+    // Si no quedan ejecutores, eliminar todo el registro
+    if (ejecutoresExistentes.isEmpty) {
+      await service.deleteItem(
+        tableName: 'Eventos_ControlDisparadores',
+        key: {
+          'deviceName': AttributeValue(s: activador),
+        },
+      );
+      printLog.i(
+          'No quedan ejecutores, eliminando registro completo para $activador');
+    } else {
+      // Actualizar con los ejecutores restantes
+      await service.updateItem(tableName: 'Eventos_ControlDisparadores', key: {
+        'deviceName': AttributeValue(s: activador),
+      }, attributeUpdates: {
+        'ejecutores': AttributeValueUpdate(
+          value: AttributeValue(
+            m: {
+              for (final entry in ejecutoresExistentes.entries)
+                entry.key: AttributeValue(boolValue: entry.value),
+            },
+          ),
+        ),
+      });
+      printLog.i('Ejecutores actualizados correctamente para $activador');
+    }
+  } catch (e) {
+    printLog.i('Error eliminando ejecutores específicos: $e');
+  }
+}
+//*- Guarda evento: Control por disparadores -*\\

@@ -38,7 +38,7 @@ class ScanPageState extends State<ScanPage>
   @override
   void initState() {
     super.initState();
-    List<dynamic> lista = fbData['Keywords'] ??
+    List<dynamic> lista = dbData['Keywords'] ??
         [
           'Detector',
           'Domotica',

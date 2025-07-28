@@ -13,6 +13,7 @@ lib/aws/mqtt/mqtt_certificates.dart
 lib/aws/dynamo/dynamo_certificates.dart
 lib/firebase_options.dart
 lib/amplifyconfiguration.dart
+lib/secret.dart
 lib/easterEgg
 key.properties
 amplify/

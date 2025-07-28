@@ -65,7 +65,7 @@ android {
     defaultConfig {
         applicationId = "com.caldensmart.sime"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = flutterVersionCode.toInt()
         versionName = flutterVersionName
     }

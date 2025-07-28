@@ -14,7 +14,6 @@ Future<void> loadValues() async {
   notificationMap = await loadNotificationMap();
   deviceImages = await loadDeviceImages();
   soundOfNotification = await loadSounds();
-  detectorOff = await loadDetectorOff();
   devicesToTrack = await loadDeviceListToTrack();
   msgFlag = await loadmsgFlag();
   configNotiDsc = await loadconfigNotiDsc();
@@ -249,25 +248,6 @@ Future<void> removeDeviceImage(String deviceId) async {
   await prefs.setString('CSdeviceImages', jsonString);
 }
 //*-Imagenes Scan-*\\
-
-//*-Equipos que detectores apagan-*\\
-Future<void> saveDetectorOff(Map<String, List<String>> lista) async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  String jsonString = jsonEncode(lista);
-  await prefs.setString('CSdetectorOff', jsonString);
-}
-
-Future<Map<String, List<String>>> loadDetectorOff() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? jsonString = prefs.getString('CSdetectorOff');
-  if (jsonString != null) {
-    Map<String, dynamic> jsonMap = jsonDecode(jsonString);
-    return jsonMap.map((key, value) => MapEntry(key, List<String>.from(value)));
-  } else {
-    return {};
-  }
-}
-//*-Equipos que detectores apagan-*\\
 
 //*-Omnipresencia-*\\
 Future<void> saveDeviceListToTrack(List<String> listaDispositivos) async {

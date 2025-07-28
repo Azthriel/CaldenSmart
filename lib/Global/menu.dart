@@ -46,6 +46,7 @@ class MenuPageState extends State<MenuPage> {
     currentUserEmail = await getUserMail();
     if (currentUserEmail != '') {
       await getDevices( currentUserEmail);
+      await getNicknames( currentUserEmail);
       await getGroups( currentUserEmail);
       eventosCreados = await getEventos( currentUserEmail);
     }
