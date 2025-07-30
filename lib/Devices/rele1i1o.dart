@@ -1284,10 +1284,9 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                       notificationMap);
                                                 },
                                                 icon: _notis[index]
-                                                    ? Icon(
+                                                    ? const Icon(
                                                         Icons.notifications_off,
-                                                        color:
-                                                            Colors.red.shade300,
+                                                        color: color6,
                                                       )
                                                     : const Icon(
                                                         Icons
@@ -1336,7 +1335,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                     : isOn
                                                         ? Colors.greenAccent
                                                             .shade400
-                                                        : Colors.red.shade300,
+                                                        : color6,
                                               ),
                                               child: AnimatedAlign(
                                                 duration: const Duration(
@@ -2133,31 +2132,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
       canPop: false,
       onPopInvokedWithResult: (didPop, A) {
         if (_isTutorialActive) return;
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) {
-            return AlertDialog(
-              backgroundColor: const Color(0xFF252223),
-              content: Row(
-                children: [
-                  Image.asset('assets/branch/dragon.gif',
-                      width: 100, height: 100),
-                  Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.only(left: 15),
-                      child: const Text(
-                        "Desconectando...",
-                        style: TextStyle(color: Color(0xFFFFFFFF)),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
+        showDisconnectDialog(context);
         Future.delayed(const Duration(seconds: 2), () async {
           await myDevice.device.disconnect();
           if (context.mounted) {
@@ -2247,31 +2222,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
             onPressed: () {
               if (_isTutorialActive) return;
 
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) {
-                  return AlertDialog(
-                    backgroundColor: const Color(0xFF252223),
-                    content: Row(
-                      children: [
-                        Image.asset('assets/branch/dragon.gif',
-                            width: 100, height: 100),
-                        Expanded(
-                          child: Container(
-                            margin: const EdgeInsets.only(left: 15),
-                            child: const Text(
-                              "Desconectando...",
-                              style: TextStyle(color: Color(0xFFFFFFFF)),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
+              showDisconnectDialog(context);
               Future.delayed(const Duration(seconds: 2), () async {
                 await myDevice.device.disconnect();
                 if (context.mounted) {

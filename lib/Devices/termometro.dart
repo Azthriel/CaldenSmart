@@ -864,28 +864,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
       canPop: false,
       onPopInvokedWithResult: (didPop, A) {
         if (_isTutorialActive) return;
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) {
-            return AlertDialog(
-              backgroundColor: const Color(0xFF252223),
-              content: Row(
-                children: [
-                  Image.asset('assets/branch/dragon.gif',
-                      width: 100, height: 100),
-                  Container(
-                    margin: const EdgeInsets.only(left: 15),
-                    child: const Text(
-                      "Desconectando...",
-                      style: TextStyle(color: Color(0xFFFFFFFF)),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
+        showDisconnectDialog(context);
         Future.delayed(const Duration(seconds: 2), () async {
           await myDevice.device.disconnect();
           if (context.mounted) {
@@ -974,28 +953,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
             color: color0,
             onPressed: () {
               if (_isTutorialActive) return;
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) {
-                  return AlertDialog(
-                    backgroundColor: const Color(0xFF252223),
-                    content: Row(
-                      children: [
-                        Image.asset('assets/branch/dragon.gif',
-                            width: 100, height: 100),
-                        Container(
-                          margin: const EdgeInsets.only(left: 15),
-                          child: const Text(
-                            "Desconectando...",
-                            style: TextStyle(color: Color(0xFFFFFFFF)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
+              showDisconnectDialog(context);
               Future.delayed(const Duration(seconds: 2), () async {
                 await myDevice.device.disconnect();
                 if (context.mounted) {

@@ -45,13 +45,13 @@ Map<String, Map<String, dynamic>> globalDATA = {};
 //*-Base de datos interna app-*\\
 
 //*-Colores-*\\
-const Color color0 = Color(0xFFE5DACE);
-const Color color1 = Color(0xFFCFC8BD);
-const Color color2 = Color(0xFFBAB6AE);
-const Color color3 = Color(0xFF302b36);
-const Color color4 = Color(0xFF91262B);
-const Color color5 = Color(0xFFE53030);
-const Color color6 = Color(0xFFE77272);
+const Color color0 = Color(0xFFFFFFFF);
+const Color color1 = Color(0xFFFFFFFF);
+const Color color2 = Color(0xFFFFFFFF);
+const Color color3 = Color(0xFF000000);
+const Color color4 = Color(0xFFFF3D47);
+const Color color5 = Color(0xFFED3724);
+const Color color6 = Color(0xFF97292c);
 //*-Colores-*\\
 
 //*-Datos de la app-*\\
@@ -1216,7 +1216,11 @@ void wifiText(BuildContext context) {
               }
 
               return AlertDialog(
-                backgroundColor: const Color(0xff1f1d20),
+                backgroundColor: color3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20.0),
+                  side: const BorderSide(color: color6, width: 2.0),
+                ),
                 title: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -1225,7 +1229,7 @@ void wifiText(BuildContext context) {
                         text: 'Estado de conexión: ',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Color(0xFFFFFFFF),
+                          color: color1,
                         ),
                       ),
                     ),
@@ -1249,7 +1253,7 @@ void wifiText(BuildContext context) {
                             text: 'Error: $errorMessage',
                             style: const TextStyle(
                               fontSize: 10,
-                              color: Color(0xFFFFFFFF),
+                              color: color1,
                             ),
                           ),
                         ),
@@ -1259,7 +1263,7 @@ void wifiText(BuildContext context) {
                             text: 'Sintax:',
                             style: TextStyle(
                               fontSize: 10,
-                              color: Color(0xFFFFFFFF),
+                              color: color1,
                             ),
                           ),
                         ),
@@ -1268,7 +1272,7 @@ void wifiText(BuildContext context) {
                             text: errorSintax,
                             style: const TextStyle(
                               fontSize: 10,
-                              color: Color(0xFFFFFFFF),
+                              color: color1,
                             ),
                           ),
                         ),
@@ -1282,7 +1286,7 @@ void wifiText(BuildContext context) {
                               text: 'Red actual:',
                               style: TextStyle(
                                 fontSize: 20,
-                                color: Color(0xFFFFFFFF),
+                                color: color1,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -1291,7 +1295,7 @@ void wifiText(BuildContext context) {
                             nameOfWifi,
                             style: const TextStyle(
                               fontSize: 20,
-                              color: Color(0xFFFFFFFF),
+                              color: color1,
                             ),
                           ),
                         ],
@@ -1306,7 +1310,7 @@ void wifiText(BuildContext context) {
                           },
                           style: const ButtonStyle(
                             foregroundColor: WidgetStatePropertyAll(
-                              Color(0xFFFFFFFF),
+                              color1,
                             ),
                           ),
                           child: const Row(
@@ -1322,8 +1326,8 @@ void wifiText(BuildContext context) {
                       if (android) ...[
                         _wifiNetworksList.isEmpty && _scanInProgress
                             ? const Center(
-                                child: CircularProgressIndicator(
-                                    color: Colors.white))
+                                child: CircularProgressIndicator(color: color1),
+                              )
                             : SizedBox(
                                 width: double.maxFinite,
                                 height: 200.0,
@@ -1357,14 +1361,12 @@ void wifiText(BuildContext context) {
                                               title: Text(
                                                 network.ssid,
                                                 style: const TextStyle(
-                                                    color: Colors.white),
+                                                    color: color1),
                                               ),
-                                              backgroundColor:
-                                                  const Color(0xff1f1d20),
-                                              collapsedBackgroundColor:
-                                                  const Color(0xff1f1d20),
-                                              textColor: Colors.white,
-                                              iconColor: Colors.white,
+                                              backgroundColor: color3,
+                                              collapsedBackgroundColor: color3,
+                                              textColor: color1,
+                                              iconColor: color1,
                                               children: [
                                                 Padding(
                                                   padding: const EdgeInsets
@@ -1375,7 +1377,7 @@ void wifiText(BuildContext context) {
                                                     children: [
                                                       const Icon(
                                                         Icons.lock,
-                                                        color: Colors.white,
+                                                        color: color1,
                                                         size: 20,
                                                       ),
                                                       const SizedBox(
@@ -1386,8 +1388,7 @@ void wifiText(BuildContext context) {
                                                               wifiPassNode,
                                                           style:
                                                               const TextStyle(
-                                                            color: Color(
-                                                                0xFFFFFFFF),
+                                                            color: color1,
                                                           ),
                                                           decoration:
                                                               InputDecoration(
@@ -1400,9 +1401,10 @@ void wifiText(BuildContext context) {
                                                             ),
                                                             enabledBorder:
                                                                 const UnderlineInputBorder(
-                                                              borderSide: BorderSide(
-                                                                  color: Colors
-                                                                      .white),
+                                                              borderSide:
+                                                                  BorderSide(
+                                                                      color:
+                                                                          color1),
                                                             ),
                                                             focusedBorder:
                                                                 const UnderlineInputBorder(
@@ -1425,8 +1427,7 @@ void wifiText(BuildContext context) {
                                                                         .visibility
                                                                     : Icons
                                                                         .visibility_off,
-                                                                color: Colors
-                                                                    .white,
+                                                                color: color1,
                                                               ),
                                                               onPressed: () {
                                                                 setState(() {
@@ -1470,25 +1471,22 @@ void wifiText(BuildContext context) {
                                 children: [
                                   const Icon(
                                     Icons.wifi,
-                                    color: Colors.white,
+                                    color: color1,
                                   ),
                                   const SizedBox(width: 8.0),
                                   Expanded(
                                     child: TextField(
-                                      cursorColor: Colors.white,
-                                      style:
-                                          const TextStyle(color: Colors.white),
+                                      cursorColor: color1,
+                                      style: const TextStyle(color: color1),
                                       decoration: const InputDecoration(
                                         hintText: 'Agregar WiFi',
                                         hintStyle:
                                             TextStyle(color: Colors.grey),
                                         enabledBorder: UnderlineInputBorder(
-                                          borderSide:
-                                              BorderSide(color: Colors.white),
+                                          borderSide: BorderSide(color: color2),
                                         ),
                                         focusedBorder: UnderlineInputBorder(
-                                          borderSide:
-                                              BorderSide(color: Colors.white),
+                                          borderSide: BorderSide(color: color2),
                                         ),
                                       ),
                                       onChanged: (value) {
@@ -1503,34 +1501,31 @@ void wifiText(BuildContext context) {
                                 children: [
                                   const Icon(
                                     Icons.lock,
-                                    color: Colors.white,
+                                    color: color1,
                                   ),
                                   const SizedBox(width: 8.0),
                                   Expanded(
                                     child: TextField(
-                                      cursorColor: Colors.white,
-                                      style:
-                                          const TextStyle(color: Colors.white),
+                                      cursorColor: color1,
+                                      style: const TextStyle(color: color1),
                                       decoration: InputDecoration(
                                         hintText: 'Contraseña',
                                         hintStyle:
                                             const TextStyle(color: Colors.grey),
                                         enabledBorder:
                                             const UnderlineInputBorder(
-                                          borderSide:
-                                              BorderSide(color: Colors.white),
+                                          borderSide: BorderSide(color: color1),
                                         ),
                                         focusedBorder:
                                             const UnderlineInputBorder(
-                                          borderSide:
-                                              BorderSide(color: Colors.white),
+                                          borderSide: BorderSide(color: color1),
                                         ),
                                         suffixIcon: IconButton(
                                           icon: Icon(
                                             obscureText
                                                 ? Icons.visibility
                                                 : Icons.visibility_off,
-                                            color: Colors.white,
+                                            color: color1,
                                           ),
                                           onPressed: () {
                                             setState(() {
@@ -1561,7 +1556,7 @@ void wifiText(BuildContext context) {
                       IconButton(
                         icon: const Icon(
                           Icons.qr_code,
-                          color: Color(0xFFFFFFFF),
+                          color: color1,
                         ),
                         iconSize: 30,
                         onPressed: () async {
@@ -1583,7 +1578,7 @@ void wifiText(BuildContext context) {
                               child: const Text(
                                 'Agregar\nRed',
                                 style: TextStyle(
-                                  color: Color(0xFFFFFFFF),
+                                  color: color1,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
@@ -1599,7 +1594,7 @@ void wifiText(BuildContext context) {
                         child: const Text(
                           'Conectar',
                           style: TextStyle(
-                            color: Color(0xFFFFFFFF),
+                            color: color1,
                           ),
                         ),
                         onPressed: () {
@@ -1633,13 +1628,17 @@ void wifiText(BuildContext context) {
 
             Widget buildAddNetworkView() {
               return AlertDialog(
-                backgroundColor: const Color(0xff1f1d20),
+                backgroundColor: color3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20.0),
+                  side: const BorderSide(color: color6, width: 2.0),
+                ),
                 title: Row(
                   children: [
                     IconButton(
                       icon: const Icon(
                         Icons.arrow_back,
-                        color: Color(0xFFFFFFFF),
+                        color: color1,
                       ),
                       onPressed: () {
                         setState(() {
@@ -1650,7 +1649,7 @@ void wifiText(BuildContext context) {
                     const Text(
                       'Agregar red\nmanualmente',
                       style: TextStyle(
-                        color: Color(0xFFFFFFFF),
+                        color: color1,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1666,21 +1665,21 @@ void wifiText(BuildContext context) {
                         children: [
                           const Icon(
                             Icons.wifi,
-                            color: Colors.white,
+                            color: color1,
                           ),
                           const SizedBox(width: 8.0),
                           Expanded(
                             child: TextField(
-                              cursorColor: Colors.white,
-                              style: const TextStyle(color: Colors.white),
+                              cursorColor: color1,
+                              style: const TextStyle(color: color1),
                               decoration: const InputDecoration(
                                 hintText: 'Agregar WiFi',
                                 hintStyle: TextStyle(color: Colors.grey),
                                 enabledBorder: UnderlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.white),
+                                  borderSide: BorderSide(color: color2),
                                 ),
                                 focusedBorder: UnderlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.white),
+                                  borderSide: BorderSide(color: color1),
                                 ),
                               ),
                               onChanged: (value) {
@@ -1695,28 +1694,28 @@ void wifiText(BuildContext context) {
                         children: [
                           const Icon(
                             Icons.lock,
-                            color: Colors.white,
+                            color: color1,
                           ),
                           const SizedBox(width: 8.0),
                           Expanded(
                             child: TextField(
-                              cursorColor: Colors.white,
-                              style: const TextStyle(color: Colors.white),
+                              cursorColor: color1,
+                              style: const TextStyle(color: color1),
                               decoration: InputDecoration(
                                 hintText: 'Contraseña',
                                 hintStyle: const TextStyle(color: Colors.grey),
                                 enabledBorder: const UnderlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.white),
+                                  borderSide: BorderSide(color: color1),
                                 ),
                                 focusedBorder: const UnderlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.white),
+                                  borderSide: BorderSide(color: color1),
                                 ),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     obscureText
                                         ? Icons.visibility
                                         : Icons.visibility_off,
-                                    color: Colors.white,
+                                    color: color1,
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -1750,21 +1749,19 @@ void wifiText(BuildContext context) {
                     },
                     style: ButtonStyle(
                       backgroundColor: WidgetStateProperty.all<Color>(
-                        const Color(0xff1f1d20),
+                        color3,
                       ),
                     ),
                     child: const Text(
                       'Agregar',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: color1),
                     ),
                   ),
                 ],
               );
             }
 
-            return isAddingNetwork
-                ? buildAddNetworkView()
-                : buildMainView(); // Mostrar la vista correspondiente
+            return isAddingNetwork ? buildAddNetworkView() : buildMainView();
           },
         );
       });
@@ -2991,6 +2988,39 @@ void showAlertDialog(BuildContext context, bool dismissible, Widget? title,
 }
 //*-show dialog generico-*\\
 
+//*-Cartel de desconexión-*\\
+void showDisconnectDialog(BuildContext ctx) {
+  showDialog(
+    context: ctx,
+    barrierDismissible: false,
+    builder: (context) {
+      return AlertDialog(
+        backgroundColor: color3,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.0),
+          side: const BorderSide(color: color6, width: 2.0),
+        ),
+        content: Row(
+          children: [
+            Image.asset('assets/branch/dragon.gif', width: 100, height: 100),
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.only(left: 15),
+                child: const Text(
+                  "Desconectando...",
+                  style: TextStyle(color: color1),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+//*-Cartel de desconexión-*\\
+
 //*-Acceso rápido BLE-*\\
 Future<void> controlDeviceBLE(String name, bool newState) async {
   printLog.i("Voy a ${newState ? 'Encender' : 'Apagar'} el equipo $name");
@@ -3136,6 +3166,10 @@ Future<void> showUpdateDialog(BuildContext ctx) {
         builder: (BuildContext context, StateSetter setState) {
           return AlertDialog(
             backgroundColor: color3,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20.0),
+              side: const BorderSide(color: color6, width: 2.0),
+            ),
             title: Text(
               'Actualmente tu equipo ${nicknamesMap[deviceName] ?? deviceName} esta desactualizado',
               style: GoogleFonts.poppins(
@@ -3219,7 +3253,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                 TextButton(
                   child: Text(
                     'Cerrar',
-                    style: GoogleFonts.poppins(color: color6),
+                    style: GoogleFonts.poppins(color: color5),
                   ),
                   onPressed: () {
                     Navigator.pop(ctx);
@@ -3230,7 +3264,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                 TextButton(
                   child: Text(
                     'Mas tarde',
-                    style: GoogleFonts.poppins(color: color6),
+                    style: GoogleFonts.poppins(color: color5),
                   ),
                   onPressed: () {
                     Navigator.pop(ctx);
@@ -3239,7 +3273,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                 TextButton(
                   child: Text(
                     'Actualizar ahora',
-                    style: GoogleFonts.poppins(color: color6),
+                    style: GoogleFonts.poppins(color: color5),
                   ),
                   onPressed: () async {
                     setState(() => updating = true);

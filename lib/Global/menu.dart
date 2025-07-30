@@ -127,7 +127,7 @@ class MenuPageState extends State<MenuPage> {
                       iconSize: _selectedIndex == 0 ? 35.0 : 30.0,
                       icon: Icon(
                         HugeIcons.strokeRoundedBluetoothSearch,
-                        color: _selectedIndex == 0 ? color6 : Colors.grey,
+                        color: _selectedIndex == 0 ? color5 : Colors.grey,
                       ),
                       onPressed: () => _onItemTapped(0),
                     ),
@@ -139,7 +139,7 @@ class MenuPageState extends State<MenuPage> {
                       iconSize: _selectedIndex == 1 ? 35.0 : 30.0,
                       icon: Icon(
                         HugeIcons.strokeRoundedWifi02,
-                        color: _selectedIndex == 1 ? color6 : Colors.grey,
+                        color: _selectedIndex == 1 ? color5 : Colors.grey,
                       ),
                       onPressed: () => _onItemTapped(1),
                     ),

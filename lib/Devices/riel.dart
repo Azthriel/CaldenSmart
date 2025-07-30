@@ -829,31 +829,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, A) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) {
-            return AlertDialog(
-              backgroundColor: const Color(0xFF252223),
-              content: Row(
-                children: [
-                  Image.asset('assets/branch/dragon.gif',
-                      width: 100, height: 100),
-                  Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.only(left: 15),
-                      child: const Text(
-                        "Desconectando...",
-                        style: TextStyle(color: Color(0xFFFFFFFF)),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
+        showDisconnectDialog(context);
         Future.delayed(const Duration(seconds: 2), () async {
           await myDevice.device.disconnect();
           if (context.mounted) {
@@ -944,31 +920,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
             icon: const Icon(Icons.arrow_back_ios_new),
             color: color0,
             onPressed: () {
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) {
-                  return AlertDialog(
-                    backgroundColor: const Color(0xFF252223),
-                    content: Row(
-                      children: [
-                        Image.asset('assets/branch/dragon.gif',
-                            width: 100, height: 100),
-                        Expanded(
-                          child: Container(
-                            margin: const EdgeInsets.only(left: 15),
-                            child: const Text(
-                              "Desconectando...",
-                              style: TextStyle(color: Color(0xFFFFFFFF)),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
+              showDisconnectDialog(context);
               Future.delayed(const Duration(seconds: 2), () async {
                 await myDevice.device.disconnect();
                 if (context.mounted) {

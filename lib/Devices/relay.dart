@@ -1581,31 +1581,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
       canPop: false,
       onPopInvokedWithResult: (didPop, A) {
         if (_isTutorialActive) return;
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) {
-            return AlertDialog(
-              backgroundColor: const Color(0xFF252223),
-              content: Row(
-                children: [
-                  Image.asset('assets/branch/dragon.gif',
-                      width: 100, height: 100),
-                  Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.only(left: 15),
-                      child: const Text(
-                        "Desconectando...",
-                        style: TextStyle(color: Color(0xFFFFFFFF)),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
+        showDisconnectDialog(context);
         Future.delayed(const Duration(seconds: 2), () async {
           await myDevice.device.disconnect();
           if (context.mounted) {
@@ -1695,31 +1671,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
             onPressed: () {
               if (_isTutorialActive) return;
 
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) {
-                  return AlertDialog(
-                    backgroundColor: const Color(0xFF252223),
-                    content: Row(
-                      children: [
-                        Image.asset('assets/branch/dragon.gif',
-                            width: 100, height: 100),
-                        Expanded(
-                          child: Container(
-                            margin: const EdgeInsets.only(left: 15),
-                            child: const Text(
-                              "Desconectando...",
-                              style: TextStyle(color: Color(0xFFFFFFFF)),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
+              showDisconnectDialog(context);
               Future.delayed(const Duration(seconds: 2), () async {
                 await myDevice.device.disconnect();
                 if (context.mounted) {
@@ -1776,7 +1728,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                     height: 75.0,
                     items: const <Widget>[
                       Icon(Icons.home, size: 30, color: color0),
-                      Icon(Icons.bluetooth, size: 30, color: color0),
+                      Icon(Icons.location_on, size: 30, color: color0),
                       Icon(Icons.input, size: 30, color: color0),
                       Icon(Icons.settings, size: 30, color: color0),
                     ],

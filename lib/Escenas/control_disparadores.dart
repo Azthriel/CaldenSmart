@@ -20,6 +20,8 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
   List<String> ejecutores = [];
   Map<String, bool> deviceActions = {};
   TextEditingController title = TextEditingController();
+  String estadoAlerta = "1";
+  String estadoTermometro = "1";
 
   @override
   void initState() {
@@ -507,17 +509,22 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                       width: 30,
                       height: 2,
                       color: currentStep >= 1 ? color6 : color0),
-                  _buildStepIndicator(1, 'Ejecutores', currentStep >= 1),
+                  _buildStepIndicator(1, 'Alerta', currentStep >= 1),
                   Container(
                       width: 30,
                       height: 2,
                       color: currentStep >= 2 ? color6 : color0),
-                  _buildStepIndicator(2, 'Acciones', currentStep >= 2),
+                  _buildStepIndicator(2, 'Ejecutores', currentStep >= 2),
                   Container(
                       width: 30,
                       height: 2,
                       color: currentStep >= 3 ? color6 : color0),
-                  _buildStepIndicator(3, 'Nombre', currentStep >= 3),
+                  _buildStepIndicator(3, 'Acciones', currentStep >= 3),
+                  Container(
+                      width: 30,
+                      height: 2,
+                      color: currentStep >= 4 ? color6 : color0),
+                  _buildStepIndicator(4, 'Nombre', currentStep >= 4),
                 ],
               ),
             ),
@@ -554,11 +561,11 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                     child: Padding(
                       padding: EdgeInsets.only(left: currentStep > 0 ? 8.0 : 0),
                       child: ElevatedButton.icon(
-                        icon: Icon(currentStep == 3
+                        icon: Icon(currentStep == 4
                             ? Icons.check
                             : Icons.arrow_forward),
                         label:
-                            Text(currentStep == 3 ? 'Confirmar' : 'Continuar'),
+                            Text(currentStep == 4 ? 'Confirmar' : 'Continuar'),
                         onPressed:
                             _canContinue() ? () => _handleContinue() : null,
                         style: ElevatedButton.styleFrom(
@@ -636,6 +643,107 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
           ],
         );
       case 1:
+        final bool isTermometro = activadores.isNotEmpty &&
+            (activadores.first.contains('Termometro'));
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 16),
+            Center(
+              child: Text(
+                'Elige en que estado debe estar el activador para accionar los ejecutores',
+                style: GoogleFonts.poppins(color: color1, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: ToggleButtons(
+                isSelected: [estadoAlerta == "1", estadoAlerta == "0"],
+                onPressed: (index) {
+                  setState(() {
+                    //TODO Estado de alerta
+                    estadoAlerta = index == 0 ? "1" : "0";
+                  });
+                },
+                borderRadius: BorderRadius.circular(12),
+                selectedColor: color3,
+                fillColor: color6.withValues(alpha: 0.8),
+                color: color1,
+                borderColor: color6,
+                selectedBorderColor: color6,
+                constraints: const BoxConstraints(
+                  minHeight: 40,
+                  minWidth: 120,
+                ),
+                children: [
+                  Text(
+                    'Estado de\n alerta',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                    textAlign: TextAlign.center,
+                  ),
+                  Text(
+                    'Estado de\n reposo',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (isTermometro) ...{
+              const Divider(
+                color: color2,
+                thickness: 1.0,
+                height: 24,
+              ),
+              Center(
+                child: Text(
+                  'Elige con que alerta ejecutarse',
+                  style: GoogleFonts.poppins(color: color1, fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: ToggleButtons(
+                  isSelected: [
+                    estadoTermometro == "1",
+                    estadoTermometro == "0"
+                  ],
+                  onPressed: (index) {
+                    setState(() {
+                      //TODO Estado de termometro
+                      estadoTermometro = index == 0 ? "1" : "0";
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  selectedColor: color3,
+                  fillColor: color6.withValues(alpha: 0.8),
+                  color: color1,
+                  borderColor: color6,
+                  selectedBorderColor: color6,
+                  constraints: const BoxConstraints(
+                    minHeight: 40,
+                    minWidth: 120,
+                  ),
+                  children: [
+                    Text(
+                      'Alerta Máxima',
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                    ),
+                    Text(
+                      'Alerta Mínima',
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 15),
+            },
+          ],
+        );
+      case 2:
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -655,9 +763,9 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
             ),
           ],
         );
-      case 2:
-        return _buildAccionesSelection();
       case 3:
+        return _buildAccionesSelection();
+      case 4:
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -696,11 +804,21 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
       case 0:
         return activadores.length == 1;
       case 1:
-        return ejecutores.isNotEmpty;
+        final bool isTermometro = activadores.isNotEmpty &&
+            (activadores.first.contains('Termometro'));
+        final bool estadoSeleccionado =
+            estadoAlerta == "1" || estadoAlerta == "0";
+        if (isTermometro) {
+          return estadoSeleccionado &&
+              (estadoTermometro == "1" || estadoTermometro == "0");
+        }
+        return estadoSeleccionado;
       case 2:
+        return ejecutores.isNotEmpty;
+      case 3:
         return deviceActions.isNotEmpty &&
             deviceActions.length == ejecutores.length;
-      case 3:
+      case 4:
         return title.text.isNotEmpty;
       default:
         return false;
@@ -708,10 +826,10 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
   }
 
   void _handleContinue() {
-    if (currentStep < 3) {
+    if (currentStep < 4) {
       setState(() {
         currentStep++;
-        if (currentStep == 2) {
+        if (currentStep == 3) {
           for (String device in ejecutores) {
             deviceActions[device] ??= false;
           }
@@ -740,6 +858,8 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
       'ejecutores': List<String>.from(ejecutores),
       'deviceGroup': List<String>.from(deviceGroup),
       'deviceActions': Map<String, bool>.from(deviceActions),
+      'estadoAlerta': estadoAlerta,
+      'estadoTermometro': estadoTermometro,
     });
 
     putEventos(currentUserEmail, eventosCreados);
@@ -750,7 +870,29 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
       ejecutoresMap[device] = deviceActions[device] ?? false;
     }
 
-    putEventoDisparador(activadores.first, ejecutoresMap);
+    // Determinar el tipo de alerta basado en el activador y los estados
+    String tipoAlerta;
+    String activador = activadores.first;
+    bool isTermometro = activador.contains('Termometro');
+
+    if (isTermometro) {
+      // Para termómetros, usar estado de temperatura (MAX/MIN) y estado de alerta
+      if (estadoTermometro == "1") {
+        tipoAlerta =
+            estadoAlerta == "1" ? 'ejecutoresMAX_true' : 'ejecutoresMAX_false';
+      } else {
+        tipoAlerta =
+            estadoAlerta == "1" ? 'ejecutoresMIN_true' : 'ejecutoresMIN_false';
+      }
+    } else {
+      // Para otros dispositivos, usar solo estado de alerta
+      tipoAlerta = estadoAlerta == "1"
+          ? 'ejecutoresAlert_true'
+          : 'ejecutoresAlert_false';
+    }
+
+    putEventoDisparador(activadores.first, ejecutoresMap,
+        tipoAlerta: tipoAlerta);
 
     showToast("Evento creado exitosamente");
     printLog.i("$eventosCreados", color: 'verde');

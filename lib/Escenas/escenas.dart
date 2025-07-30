@@ -91,7 +91,9 @@ class EscenasPageState extends State<EscenasPage> {
     Map<String, bool>? devicesActions,
     String? condition,
     List<String> activadores,
-    List<String> ejecutores, {
+    List<String> ejecutores,
+    String? estadoAlerta,
+    String? estadoTermometro, {
     required VoidCallback onDelete,
   }) {
     printLog.i('aca estamos revisando $devicesActions', color: 'verde');
@@ -116,6 +118,8 @@ class EscenasPageState extends State<EscenasPage> {
       }
 
       if (evento == 'disparador') {
+        final bool isTermometro =
+            deviceGroup.isNotEmpty && deviceGroup.first.contains('Termometro');
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -165,42 +169,208 @@ class EscenasPageState extends State<EscenasPage> {
                           width: 1,
                         ),
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: color6.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              HugeIcons.strokeRoundedLink01,
-                              size: 16,
-                              color: color6,
-                            ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: color6.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  HugeIcons.strokeRoundedLink01,
+                                  size: 16,
+                                  color: color6,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  () {
+                                    final activador = deviceGroup.first;
+                                    if (activador.contains('_')) {
+                                      final apodoActivador =
+                                          nicknamesMap[activador];
+                                      final parts = activador.split('_');
+                                      return '${nicknamesMap[parts[0]] ?? parts[0]} entrada ${apodoActivador ?? parts[1]}';
+                                    } else {
+                                      return nicknamesMap[activador] ??
+                                          activador;
+                                    }
+                                  }(),
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: color0,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(height: 6),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Alertas section
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color0.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: color0.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        HugeIcons.strokeRoundedInformationCircle,
+                        size: 20,
+                        color: color6,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'CONDICIONES',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: color0.withValues(alpha: 0.9),
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Card(
+                    color: Colors.transparent,
+                    elevation: 0,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      side: BorderSide(
+                        color: (estadoAlerta == "1"
+                                ? Colors.orange
+                                : Colors.blueGrey)
+                            .withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            estadoAlerta == "1"
+                                ? HugeIcons.strokeRoundedAlert02
+                                : HugeIcons.strokeRoundedCheckmarkCircle02,
+                            color: estadoAlerta == "1"
+                                ? Colors.orange
+                                : Colors.blueGrey,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
                           Expanded(
-                            child: Text(
-                              () {
-                                final activador = deviceGroup.first;
-                                if (activador.contains('_')) {
-                                  final apodoActivador =
-                                      nicknamesMap[activador];
-                                  final parts = activador.split('_');
-                                  return '${nicknamesMap[parts[0]] ?? parts[0]} entrada ${apodoActivador ?? parts[1]}';
-                                } else {
-                                  return nicknamesMap[activador] ?? activador;
-                                }
-                              }(),
+                            child: Text.rich(
+                              TextSpan(
+                                children: [
+                                  const TextSpan(
+                                      text:
+                                          "El evento se accionara cuando el activador esté en "),
+                                  TextSpan(
+                                    text: estadoAlerta == "1"
+                                        ? "ALERTA"
+                                        : "REPOSO",
+                                    style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.bold,
+                                      color: estadoAlerta == "1"
+                                          ? Colors.orange
+                                          : Colors.blueGrey,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  const TextSpan(text: "."),
+                                ],
+                              ),
                               style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: color0,
+                                fontSize: 13,
+                                color: color0.withValues(alpha: 0.85),
                               ),
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+                  if (isTermometro && estadoTermometro != null)
+                    Card(
+                      color: Colors.transparent,
+                      elevation: 0,
+                      margin: const EdgeInsets.only(bottom: 0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(
+                          color: (estadoTermometro == "1"
+                                  ? Colors.red
+                                  : Colors.lightBlue)
+                              .withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.thermostat,
+                              color: estadoTermometro == "1"
+                                  ? Colors.red
+                                  : Colors.lightBlue,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text.rich(
+                                TextSpan(
+                                  children: [
+                                    const TextSpan(
+                                        text: "Condición usada: Temperatura "),
+                                    TextSpan(
+                                      text: estadoTermometro == "1"
+                                          ? "MÁXIMA"
+                                          : "MÍNIMA",
+                                      style: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.bold,
+                                        color: estadoTermometro == "1"
+                                            ? Colors.red
+                                            : Colors.lightBlue,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    const TextSpan(text: " del termómetro."),
+                                  ],
+                                ),
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  color: color0.withValues(alpha: 0.85),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                 ],
@@ -748,7 +918,7 @@ class EscenasPageState extends State<EscenasPage> {
 
       case 'disparador':
         const description =
-            'Este evento se activa automáticamente cuando el activador se acciona y ejecuta las acciones configuradas';
+            'Este evento se activa automáticamente cuando el activador cumple las condiciones y ejecuta los equipos configurados';
         return Card(
           elevation: 0,
           color: Colors.transparent,
@@ -1206,6 +1376,11 @@ class EscenasPageState extends State<EscenasPage> {
                                                 .toList() ??
                                             <String>[];
 
+                                    final estadoAlerta =
+                                        evento['estadoAlerta']?.toString();
+                                    final estadoTermometro =
+                                        evento['estadoTermometro']?.toString();
+
                                     return buildEvent(
                                       deviceGroup,
                                       eventoType,
@@ -1218,6 +1393,8 @@ class EscenasPageState extends State<EscenasPage> {
                                       condition,
                                       activadores,
                                       ejecutores,
+                                      estadoAlerta,
+                                      estadoTermometro,
                                       onDelete: () {
                                         setState(() {
                                           eventosCreados.removeAt(index);
@@ -1233,9 +1410,27 @@ class EscenasPageState extends State<EscenasPage> {
                                               'disparador') {
                                             String activador =
                                                 activadores.first;
-                                            List<String> fun = ejecutores;
+                                            List<String> ejecutoresAEliminar = ejecutores;
+                                            
+                                            // Determinar el tipo de alerta específico que se debe eliminar
+                                            String tipoAlerta;
+                                            bool isTermometro = activador.contains('Termometro');
+                                            
+                                            if (isTermometro) {
+                                              // Para termómetros, usar estado de temperatura (MAX/MIN) y estado de alerta
+                                              if (estadoTermometro == "1") {
+                                                tipoAlerta = estadoAlerta == "1" ? 'ejecutoresMAX_true' : 'ejecutoresMAX_false';
+                                              } else {
+                                                tipoAlerta = estadoAlerta == "1" ? 'ejecutoresMIN_true' : 'ejecutoresMIN_false';
+                                              }
+                                            } else {
+                                              // Para otros dispositivos, usar solo estado de alerta
+                                              tipoAlerta = estadoAlerta == "1" ? 'ejecutoresAlert_true' : 'ejecutoresAlert_false';
+                                            }
+                                            
+                                            // Eliminar solo de este tipo específico de alerta
                                             removeEjecutoresFromDisparador(
-                                                activador, fun);
+                                                activador, ejecutoresAEliminar, tipoAlerta: tipoAlerta);
                                           }
                                         });
                                       },

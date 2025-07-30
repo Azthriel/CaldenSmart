@@ -94,6 +94,10 @@ class WifiPageState extends ConsumerState<WifiPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: color3,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.0),
+            side: const BorderSide(color: color6, width: 2.0),
+          ),
           title: Text(
             'Confirmación',
             style: GoogleFonts.poppins(color: color0),
@@ -444,17 +448,17 @@ class WifiPageState extends ConsumerState<WifiPage> {
                       );
 
                       if (!esGrupo) {
-                        String equipo =
+                        String productCode =
                             DeviceManager.getProductCode(deviceName);
-                        String serial =
+                        String serialNumber =
                             DeviceManager.extractSerialNumber(deviceName);
 
                         globalDATA
-                            .putIfAbsent('$equipo/$serial', () => {})
+                            .putIfAbsent('$productCode/$serialNumber', () => {})
                             .addAll(topicData);
                         saveGlobalData(globalDATA);
                         Map<String, dynamic> deviceDATA =
-                            globalDATA['$equipo/$serial'] ?? {};
+                            globalDATA['$productCode/$serialNumber'] ?? {};
                         // printLog.i(deviceDATA, 'cyan');
 
                         // printLog.i(
@@ -471,7 +475,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                             deviceDATA['owner'] == null;
 
                         try {
-                          switch (equipo) {
+                          switch (productCode) {
                             case '015773_IOT':
                               int ppmCO = deviceDATA['ppmco'] ?? 0;
                               int ppmCH4 = deviceDATA['ppmch4'] ?? 0;
@@ -526,7 +530,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                   style: GoogleFonts.poppins(
                                                     color: online
                                                         ? Colors.green
-                                                        : color6,
+                                                        : color5,
                                                     fontSize: 15,
                                                   ),
                                                 ),
@@ -536,7 +540,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                       : Icons.cloud_off,
                                                   color: online
                                                       ? Colors.green
-                                                      : color6,
+                                                      : color5,
                                                   size: 15,
                                                 ),
                                               ],
@@ -604,21 +608,28 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                             : Text(
                                                 'El equipo debe estar\nconectado para su uso',
                                                 style: GoogleFonts.poppins(
-                                                  color: color6,
+                                                  color: color5,
                                                   fontSize: 15,
                                                 ),
                                               ),
-                                        trailing: IconButton(
-                                          icon: const Icon(
-                                            HugeIcons.strokeRoundedDelete02,
-                                            color: color0,
-                                            size: 20,
+                                      ),
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                                          child: IconButton(
+                                            icon: const Icon(
+                                              HugeIcons.strokeRoundedDelete02,
+                                              color: color0,
+                                              size: 20,
+                                            ),
+                                            onPressed: () {
+                                              _confirmDelete(
+                                                  deviceName, productCode);
+                                            },
                                           ),
-                                          onPressed: () {
-                                            _confirmDelete(deviceName, equipo);
-                                          },
                                         ),
-                                      )
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -677,7 +688,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                   style: GoogleFonts.poppins(
                                                     color: online
                                                         ? Colors.green
-                                                        : color6,
+                                                        : color5,
                                                     fontSize: 15,
                                                   ),
                                                 ),
@@ -687,7 +698,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                       : Icons.cloud_off,
                                                   color: online
                                                       ? Colors.green
-                                                      : color6,
+                                                      : color5,
                                                   size: 15,
                                                 ),
                                               ],
@@ -788,22 +799,28 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                 : Text(
                                                     'El equipo debe estar\nconectado para su uso',
                                                     style: GoogleFonts.poppins(
-                                                      color: color6,
+                                                      color: color5,
                                                       fontSize: 15,
                                                     ),
                                                   ),
-                                            IconButton(
-                                              icon: const Icon(
-                                                HugeIcons.strokeRoundedDelete02,
-                                                color: color0,
-                                                size: 20,
-                                              ),
-                                              onPressed: () {
-                                                _confirmDelete(
-                                                    deviceName, equipo);
-                                              },
-                                            ),
                                           ],
+                                        ),
+                                      ),
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                                          child: IconButton(
+                                            icon: const Icon(
+                                              HugeIcons.strokeRoundedDelete02,
+                                              color: color0,
+                                              size: 20,
+                                            ),
+                                            onPressed: () {
+                                              _confirmDelete(
+                                                  deviceName, productCode);
+                                            },
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -863,7 +880,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                   style: GoogleFonts.poppins(
                                                     color: online
                                                         ? Colors.green
-                                                        : color6,
+                                                        : color5,
                                                     fontSize: 15,
                                                   ),
                                                 ),
@@ -873,7 +890,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                       : Icons.cloud_off,
                                                   color: online
                                                       ? Colors.green
-                                                      : color6,
+                                                      : color5,
                                                   size: 15,
                                                 ),
                                               ],
@@ -973,22 +990,28 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                 : Text(
                                                     'El equipo debe estar\nconectado para su uso',
                                                     style: GoogleFonts.poppins(
-                                                      color: color6,
+                                                      color: color5,
                                                       fontSize: 15,
                                                     ),
                                                   ),
-                                            IconButton(
-                                              icon: const Icon(
-                                                HugeIcons.strokeRoundedDelete02,
-                                                color: color0,
-                                                size: 20,
-                                              ),
-                                              onPressed: () {
-                                                _confirmDelete(
-                                                    deviceName, equipo);
-                                              },
-                                            ),
                                           ],
+                                        ),
+                                      ),
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                                          child: IconButton(
+                                            icon: const Icon(
+                                              HugeIcons.strokeRoundedDelete02,
+                                              color: color0,
+                                              size: 20,
+                                            ),
+                                            onPressed: () {
+                                              _confirmDelete(
+                                                  deviceName, productCode);
+                                            },
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -1049,7 +1072,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                   style: GoogleFonts.poppins(
                                                     color: online
                                                         ? Colors.green
-                                                        : color6,
+                                                        : color5,
                                                     fontSize: 15,
                                                   ),
                                                 ),
@@ -1059,7 +1082,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                       : Icons.cloud_off,
                                                   color: online
                                                       ? Colors.green
-                                                      : color6,
+                                                      : color5,
                                                   size: 15,
                                                 ),
                                               ],
@@ -1278,16 +1301,11 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                                     estadoWifi,
                                                                 onChanged:
                                                                     (value) {
-                                                                  String
-                                                                      deviceSerialNumber =
-                                                                      DeviceManager
-                                                                          .extractSerialNumber(
-                                                                              deviceName);
                                                                   String topic =
-                                                                      'devices_rx/${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber';
+                                                                      'devices_rx/$productCode/$serialNumber';
                                                                   String
                                                                       topic2 =
-                                                                      'devices_tx/${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber';
+                                                                      'devices_tx/$productCode/$serialNumber';
                                                                   String
                                                                       message =
                                                                       jsonEncode({
@@ -1314,7 +1332,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                                   });
                                                                   globalDATA
                                                                       .putIfAbsent(
-                                                                          '${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber',
+                                                                          '$productCode/$serialNumber',
                                                                           () =>
                                                                               {})
                                                                       .addAll({
@@ -1331,35 +1349,39 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                               ],
                                             )
                                           : const SizedBox(height: 0),
-                                      Padding(
-                                        padding:
-                                            const EdgeInsets.only(left: 20.0),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: <Widget>[
-                                            !online
+                                      Stack(
+                                        children: [
+                                          Padding(
+                                            padding:
+                                                const EdgeInsets.only(left: 20.0),
+                                            child: !online
                                                 ? Text(
                                                     'El equipo debe estar\nconectado para su uso',
                                                     style: GoogleFonts.poppins(
-                                                      color: color6,
+                                                      color: color5,
                                                       fontSize: 15,
                                                     ),
                                                   )
                                                 : const SizedBox(height: 0),
-                                            IconButton(
-                                              icon: const Icon(
-                                                HugeIcons.strokeRoundedDelete02,
-                                                color: color0,
-                                                size: 20,
+                                          ),
+                                          Align(
+                                            alignment: Alignment.centerRight,
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                                              child: IconButton(
+                                                icon: const Icon(
+                                                  HugeIcons.strokeRoundedDelete02,
+                                                  color: color0,
+                                                  size: 20,
+                                                ),
+                                                onPressed: () {
+                                                  _confirmDelete(
+                                                      deviceName, productCode);
+                                                },
                                               ),
-                                              onPressed: () {
-                                                _confirmDelete(
-                                                    deviceName, equipo);
-                                              },
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -1425,7 +1447,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                   style: GoogleFonts.poppins(
                                                     color: online
                                                         ? Colors.green
-                                                        : color6,
+                                                        : color5,
                                                     fontSize: 15,
                                                   ),
                                                 ),
@@ -1435,7 +1457,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                       : Icons.cloud_off,
                                                   color: online
                                                       ? Colors.green
-                                                      : color6,
+                                                      : color5,
                                                   size: 15,
                                                 ),
                                               ],
@@ -1447,14 +1469,12 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                     children: <Widget>[
                                       if (Versioner.isPrevious(
                                           hardv, '241220A')) ...{
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 16.0, vertical: 5.0),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              online
+                                        Stack(
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 16.0, vertical: 5.0),
+                                              child: online
                                                   ? Row(
                                                       children: [
                                                         estado
@@ -1514,24 +1534,30 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                       'El equipo debe estar\nconectado para su uso',
                                                       style:
                                                           GoogleFonts.poppins(
-                                                        color: color6,
+                                                        color: color5,
                                                         fontSize: 15,
                                                       ),
                                                     ),
-                                              IconButton(
-                                                icon: const Icon(
-                                                  HugeIcons
-                                                      .strokeRoundedDelete02,
-                                                  color: color0,
-                                                  size: 20,
+                                            ),
+                                            Align(
+                                              alignment: Alignment.centerRight,
+                                              child: Padding(
+                                                padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                                                child: IconButton(
+                                                  icon: const Icon(
+                                                    HugeIcons
+                                                        .strokeRoundedDelete02,
+                                                    color: color0,
+                                                    size: 20,
+                                                  ),
+                                                  onPressed: () {
+                                                    _confirmDelete(
+                                                        deviceName, productCode);
+                                                  },
                                                 ),
-                                                onPressed: () {
-                                                  _confirmDelete(
-                                                      deviceName, equipo);
-                                                },
                                               ),
-                                            ],
-                                          ),
+                                            ),
+                                          ],
                                         )
                                       } else ...{
                                         online
@@ -1681,10 +1707,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                                                 inactiveTrackColor: const Color(0xFF9C9D98),
                                                                                 value: (jsonDecode(deviceDATA['io0'])['w_status'] ?? false),
                                                                                 onChanged: (value) {
-                                                                                  final deviceSerialNumber = DeviceManager.extractSerialNumber(deviceName);
-                                                                                  final productCode = DeviceManager.getProductCode(deviceName);
-                                                                                  final topicRx = 'devices_rx/$productCode/$deviceSerialNumber';
-                                                                                  final topicTx = 'devices_tx/$productCode/$deviceSerialNumber';
+                                                                                  final topicRx = 'devices_rx/$productCode/$serialNumber';
+                                                                                  final topicTx = 'devices_tx/$productCode/$serialNumber';
                                                                                   final Map<String, dynamic> io0Map = jsonDecode(deviceDATA['io0']);
                                                                                   final rState = (io0Map['r_state'] ?? '0').toString();
                                                                                   final message = jsonEncode({
@@ -1696,7 +1720,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                                                   sendMessagemqtt(topicRx, message);
                                                                                   sendMessagemqtt(topicTx, message);
                                                                                   setState(() {});
-                                                                                  globalDATA.putIfAbsent('$productCode/$deviceSerialNumber', () => {}).addAll({
+                                                                                  globalDATA.putIfAbsent('$productCode/$serialNumber', () => {}).addAll({
                                                                                     'io0': message
                                                                                   });
                                                                                   saveGlobalData(globalDATA);
@@ -1712,7 +1736,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                                       style: GoogleFonts
                                                                           .poppins(
                                                                         color:
-                                                                            color6,
+                                                                            color5,
                                                                         fontSize:
                                                                             15,
                                                                       ),
@@ -1778,7 +1802,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                             : Text(
                                                 'El equipo debe estar\nconectado para su uso',
                                                 style: GoogleFonts.poppins(
-                                                  color: color6,
+                                                  color: color5,
                                                   fontSize: 15,
                                                 ),
                                               ),
@@ -1792,7 +1816,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                             ),
                                             onPressed: () {
                                               _confirmDelete(
-                                                  deviceName, equipo);
+                                                  deviceName, productCode);
                                             },
                                           ),
                                         ),
@@ -1856,7 +1880,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                   style: GoogleFonts.poppins(
                                                     color: online
                                                         ? Colors.green
-                                                        : color6,
+                                                        : color5,
                                                     fontSize: 15,
                                                   ),
                                                 ),
@@ -1866,7 +1890,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                       : Icons.cloud_off,
                                                   color: online
                                                       ? Colors.green
-                                                      : color6,
+                                                      : color5,
                                                   size: 15,
                                                 ),
                                               ],
@@ -1876,14 +1900,12 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                       ],
                                     ),
                                     children: <Widget>[
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 16.0, vertical: 5.0),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            online
+                                      Stack(
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 16.0, vertical: 5.0),
+                                            child: online
                                                 ? Row(
                                                     children: [
                                                       estado
@@ -1967,23 +1989,29 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                 : Text(
                                                     'El equipo debe estar\nconectado para su uso',
                                                     style: GoogleFonts.poppins(
-                                                      color: color6,
+                                                      color: color5,
                                                       fontSize: 15,
                                                     ),
                                                   ),
-                                            IconButton(
-                                              icon: const Icon(
-                                                HugeIcons.strokeRoundedDelete02,
-                                                color: color0,
-                                                size: 20,
+                                          ),
+                                          Align(
+                                            alignment: Alignment.centerRight,
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                                              child: IconButton(
+                                                icon: const Icon(
+                                                  HugeIcons.strokeRoundedDelete02,
+                                                  color: color0,
+                                                  size: 20,
+                                                ),
+                                                onPressed: () {
+                                                  _confirmDelete(
+                                                      deviceName, productCode);
+                                                },
                                               ),
-                                              onPressed: () {
-                                                _confirmDelete(
-                                                    deviceName, equipo);
-                                              },
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -2041,7 +2069,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                   style: GoogleFonts.poppins(
                                                     color: online
                                                         ? Colors.green
-                                                        : color6,
+                                                        : color5,
                                                     fontSize: 15,
                                                   ),
                                                 ),
@@ -2051,7 +2079,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                       : Icons.cloud_off,
                                                   color: online
                                                       ? Colors.green
-                                                      : color6,
+                                                      : color5,
                                                   size: 15,
                                                 ),
                                               ],
@@ -2259,15 +2287,10 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                               value: estadoWifi,
                                                               onChanged:
                                                                   (value) {
-                                                                String
-                                                                    deviceSerialNumber =
-                                                                    DeviceManager
-                                                                        .extractSerialNumber(
-                                                                            deviceName);
                                                                 String topic =
-                                                                    'devices_rx/${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber';
+                                                                    'devices_rx/$productCode/$serialNumber';
                                                                 String topic2 =
-                                                                    'devices_tx/${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber';
+                                                                    'devices_tx/$productCode/$serialNumber';
                                                                 String message =
                                                                     jsonEncode({
                                                                   'pinType':
@@ -2293,7 +2316,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                                 });
                                                                 globalDATA
                                                                     .putIfAbsent(
-                                                                        '${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber',
+                                                                        '$productCode/$serialNumber',
                                                                         () =>
                                                                             {})
                                                                     .addAll({
@@ -2309,35 +2332,39 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                               }).toList(),
                                             )
                                           : const SizedBox(height: 0),
-                                      Padding(
-                                        padding:
-                                            const EdgeInsets.only(left: 20.0),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: <Widget>[
-                                            !online
+                                      Stack(
+                                        children: [
+                                          Padding(
+                                            padding:
+                                                const EdgeInsets.only(left: 20.0),
+                                            child: !online
                                                 ? Text(
                                                     'El equipo debe estar\nconectado para su uso',
                                                     style: GoogleFonts.poppins(
-                                                      color: color6,
+                                                      color: color5,
                                                       fontSize: 15,
                                                     ),
                                                   )
                                                 : const SizedBox(height: 0),
-                                            IconButton(
-                                              icon: const Icon(
-                                                HugeIcons.strokeRoundedDelete02,
-                                                color: color0,
-                                                size: 20,
+                                          ),
+                                          Align(
+                                            alignment: Alignment.centerRight,
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                                              child: IconButton(
+                                                icon: const Icon(
+                                                  HugeIcons.strokeRoundedDelete02,
+                                                  color: color0,
+                                                  size: 20,
+                                                ),
+                                                onPressed: () {
+                                                  _confirmDelete(
+                                                      deviceName, productCode);
+                                                },
                                               ),
-                                              onPressed: () {
-                                                _confirmDelete(
-                                                    deviceName, equipo);
-                                              },
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -2398,7 +2425,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                   style: GoogleFonts.poppins(
                                                     color: online
                                                         ? Colors.green
-                                                        : color6,
+                                                        : color5,
                                                     fontSize: 15,
                                                   ),
                                                 ),
@@ -2408,7 +2435,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                       : Icons.cloud_off,
                                                   color: online
                                                       ? Colors.green
-                                                      : color6,
+                                                      : color5,
                                                   size: 15,
                                                 ),
                                               ],
@@ -2418,14 +2445,12 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                       ],
                                     ),
                                     children: <Widget>[
-                                      Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 16.0, vertical: 5.0),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              online
+                                      Stack(
+                                        children: [
+                                          Padding(
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 16.0, vertical: 5.0),
+                                              child: online
                                                   ? Row(
                                                       children: [
                                                         estado
@@ -2510,11 +2535,15 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                       'El equipo debe estar\nconectado para su uso',
                                                       style:
                                                           GoogleFonts.poppins(
-                                                        color: color6,
+                                                        color: color5,
                                                         fontSize: 15,
                                                       ),
-                                                    ),
-                                              IconButton(
+                                                    )),
+                                          Align(
+                                            alignment: Alignment.centerRight,
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                                              child: IconButton(
                                                 icon: const Icon(
                                                   HugeIcons
                                                       .strokeRoundedDelete02,
@@ -2523,11 +2552,13 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                 ),
                                                 onPressed: () {
                                                   _confirmDelete(
-                                                      deviceName, equipo);
+                                                      deviceName, productCode);
                                                 },
                                               ),
-                                            ],
-                                          )),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -2587,7 +2618,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                   style: GoogleFonts.poppins(
                                                     color: online
                                                         ? Colors.green
-                                                        : color6,
+                                                        : color5,
                                                     fontSize: 15,
                                                   ),
                                                 ),
@@ -2597,7 +2628,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                       : Icons.cloud_off,
                                                   color: online
                                                       ? Colors.green
-                                                      : color6,
+                                                      : color5,
                                                   size: 15,
                                                 ),
                                               ],
@@ -2607,14 +2638,12 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                       ],
                                     ),
                                     children: <Widget>[
-                                      Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 16.0, vertical: 5.0),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              online
+                                      Stack(
+                                        children: [
+                                          Padding(
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 16.0, vertical: 5.0),
+                                              child: online
                                                   ? Row(
                                                       children: [
                                                         estado
@@ -2700,11 +2729,15 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                       'El equipo debe estar\nconectado para su uso',
                                                       style:
                                                           GoogleFonts.poppins(
-                                                        color: color6,
+                                                        color: color5,
                                                         fontSize: 15,
                                                       ),
-                                                    ),
-                                              IconButton(
+                                                    )),
+                                          Align(
+                                            alignment: Alignment.centerRight,
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                                              child: IconButton(
                                                 icon: const Icon(
                                                   HugeIcons
                                                       .strokeRoundedDelete02,
@@ -2713,11 +2746,13 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                 ),
                                                 onPressed: () {
                                                   _confirmDelete(
-                                                      deviceName, equipo);
+                                                      deviceName, productCode);
                                                 },
                                               ),
-                                            ],
-                                          )),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -2779,7 +2814,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                   style: GoogleFonts.poppins(
                                                     color: online
                                                         ? Colors.green
-                                                        : color6,
+                                                        : color5,
                                                     fontSize: 15,
                                                   ),
                                                 ),
@@ -2789,7 +2824,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                       : Icons.cloud_off,
                                                   color: online
                                                       ? Colors.green
-                                                      : color6,
+                                                      : color5,
                                                   size: 15,
                                                 ),
                                               ],
@@ -2873,21 +2908,29 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                             : Text(
                                                 'El equipo debe estar\nconectado para su uso',
                                                 style: GoogleFonts.poppins(
-                                                  color: color6,
+                                                  color: color5,
                                                   fontSize: 15,
                                                 ),
                                               ),
-                                        trailing: IconButton(
-                                          icon: const Icon(
-                                            HugeIcons.strokeRoundedDelete02,
-                                            color: color0,
-                                            size: 20,
+                                      ),
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                              right: 16.0, bottom: 8.0),
+                                          child: IconButton(
+                                            icon: const Icon(
+                                              HugeIcons.strokeRoundedDelete02,
+                                              color: color0,
+                                              size: 20,
+                                            ),
+                                            onPressed: () {
+                                              _confirmDelete(
+                                                  deviceName, productCode);
+                                            },
                                           ),
-                                          onPressed: () {
-                                            _confirmDelete(deviceName, equipo);
-                                          },
                                         ),
-                                      )
+                                      ),
                                     ],
                                   ),
                                 ),

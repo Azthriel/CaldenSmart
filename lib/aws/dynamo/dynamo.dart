@@ -829,8 +829,9 @@ Future<Map<String, dynamic>> getGeneralData() async {
 //*-Obtener datos generales de la aplicación desde GENERALDATA-*\\
 
 //*- Guarda evento: Control por disparadores -*\\
-/// Obtiene los ejecutores existentes de un evento disparador
-Future<Map<String, bool>> getEventoDisparador(String activador) async {
+/// Obtiene los ejecutores existentes de un evento disparador para un tipo específico de alerta
+Future<Map<String, bool>> getEventoDisparador(String activador,
+    {String? tipoAlerta}) async {
   try {
     final response = await service.getItem(
       tableName: 'Eventos_ControlDisparadores',
@@ -841,7 +842,11 @@ Future<Map<String, bool>> getEventoDisparador(String activador) async {
 
     if (response.item != null) {
       var item = response.item!;
-      Map<String, AttributeValue> ejecutoresMap = item['ejecutores']?.m ?? {};
+
+      // Si se especifica un tipo de alerta, buscar esa clave específica
+      String claveEjecutores = tipoAlerta ?? 'ejecutores';
+      Map<String, AttributeValue> ejecutoresMap =
+          item[claveEjecutores]?.m ?? {};
       Map<String, bool> ejecutores = {};
 
       for (String key in ejecutoresMap.keys) {
@@ -849,7 +854,8 @@ Future<Map<String, bool>> getEventoDisparador(String activador) async {
         ejecutores[key] = value.boolValue ?? false;
       }
 
-      printLog.i('Ejecutores existentes encontrados: $ejecutores');
+      printLog.i(
+          'Ejecutores existentes encontrados para $claveEjecutores: $ejecutores');
       return ejecutores;
     } else {
       printLog.i('No se encontraron ejecutores existentes para $activador');
@@ -861,95 +867,93 @@ Future<Map<String, bool>> getEventoDisparador(String activador) async {
   }
 }
 
-/// Guarda el estado de los ejecutores de un evento disparador en la tabla ControlDisparadores
-/// [activador] es el nombre del dispositivo que activa el disparador.
-/// [nuevosEjecutores] son los nuevos ejecutores a agregar o actualizar.
-/// [sobreescribirTodos] si es true, reemplaza todos los ejecutores. Si es false, solo agrega/actualiza los nuevos.
+/// Guarda el estado de los ejecutores de un evento disparador
+/// [activador] es el nombre del dispositivo que activa el disparador
+/// [nuevosEjecutores] son los ejecutores a guardar con sus estados (true/false)
+/// [tipoAlerta] especifica el tipo de alerta para construir la clave:
+///   - Para alertas simples: 'ejecutoresAlert_true' o 'ejecutoresAlert_false'
+///   - Para termómetros: 'ejecutoresMAX_true', 'ejecutoresMAX_false', 'ejecutoresMIN_true', 'ejecutoresMIN_false'
 void putEventoDisparador(String activador, Map<String, bool> nuevosEjecutores,
-    {bool sobreescribirTodos = false}) async {
+    {String tipoAlerta = 'ejecutores'}) async {
   try {
-    Map<String, bool> ejecutoresFinales;
-
-    if (sobreescribirTodos) {
-      // Comportamiento original: sobreescribir todos
-      ejecutoresFinales = nuevosEjecutores;
-    } else {
-      // Nuevo comportamiento: combinar con existentes
-      Map<String, bool> ejecutoresExistentes =
-          await getEventoDisparador(activador);
-      ejecutoresFinales = {...ejecutoresExistentes, ...nuevosEjecutores};
-      printLog
-          .i('Combinando ejecutores existentes con nuevos: $ejecutoresFinales');
-    }
-
     final response = await service
         .updateItem(tableName: 'Eventos_ControlDisparadores', key: {
       'deviceName': AttributeValue(s: activador),
     }, attributeUpdates: {
-      'ejecutores': AttributeValueUpdate(
+      tipoAlerta: AttributeValueUpdate(
         value: AttributeValue(
           m: {
-            for (final entry in ejecutoresFinales.entries)
+            for (final entry in nuevosEjecutores.entries)
               entry.key: AttributeValue(boolValue: entry.value),
           },
         ),
       ),
     });
 
-    printLog.i('Item escrito perfectamente $response');
+    printLog.i('Ejecutores guardados para $tipoAlerta: $response');
   } catch (e) {
-    printLog.i('Error guardando item de disparadores: $e');
+    printLog.i('Error guardando ejecutores: $e');
   }
 }
 
 /// Elimina ejecutores específicos de un evento disparador
+/// [activador] es el nombre del dispositivo activador
+/// [ejecutoresAEliminar] lista de ejecutores a eliminar
+/// [tipoAlerta] especifica qué tipo de alerta eliminar (opcional, si no se especifica elimina de todos los tipos)
 void removeEjecutoresFromDisparador(
-    String activador, List<String> ejecutoresAEliminar) async {
+    String activador, List<String> ejecutoresAEliminar,
+    {String? tipoAlerta}) async {
   try {
-    // Primero obtener los ejecutores existentes
-    Map<String, bool> ejecutoresExistentes =
-        await getEventoDisparador(activador);
+    if (tipoAlerta != null) {
+      // Eliminar de un tipo específico de alerta
+      Map<String, bool> ejecutoresExistentes =
+          await getEventoDisparador(activador, tipoAlerta: tipoAlerta);
 
-    if (ejecutoresExistentes.isEmpty) {
-      printLog.i('No hay ejecutores existentes para $activador');
-      return;
-    }
+      if (ejecutoresExistentes.isEmpty) {
+        printLog
+            .i('No hay ejecutores existentes para $activador en $tipoAlerta');
+        return;
+      }
 
-    // Remover los ejecutores especificados
-    for (String ejecutor in ejecutoresAEliminar) {
-      ejecutoresExistentes.remove(ejecutor);
-    }
+      // Remover los ejecutores especificados
+      for (String ejecutor in ejecutoresAEliminar) {
+        ejecutoresExistentes.remove(ejecutor);
+      }
 
-    printLog.i('Ejecutores después de eliminar: $ejecutoresExistentes');
-
-    // Si no quedan ejecutores, eliminar todo el registro
-    if (ejecutoresExistentes.isEmpty) {
-      await service.deleteItem(
-        tableName: 'Eventos_ControlDisparadores',
-        key: {
-          'deviceName': AttributeValue(s: activador),
-        },
-      );
-      printLog.i(
-          'No quedan ejecutores, eliminando registro completo para $activador');
+      if (ejecutoresExistentes.isEmpty) {
+        // Eliminar la clave completa si no quedan ejecutores
+        await service.updateItem(
+          tableName: 'Eventos_ControlDisparadores',
+          key: {'deviceName': AttributeValue(s: activador)},
+          attributeUpdates: {
+            tipoAlerta: AttributeValueUpdate(action: AttributeAction.delete),
+          },
+        );
+        printLog.i('Eliminada clave $tipoAlerta para $activador');
+      } else {
+        // Actualizar con los ejecutores restantes
+        putEventoDisparador(activador, ejecutoresExistentes,
+            tipoAlerta: tipoAlerta);
+      }
     } else {
-      // Actualizar con los ejecutores restantes
-      await service.updateItem(tableName: 'Eventos_ControlDisparadores', key: {
-        'deviceName': AttributeValue(s: activador),
-      }, attributeUpdates: {
-        'ejecutores': AttributeValueUpdate(
-          value: AttributeValue(
-            m: {
-              for (final entry in ejecutoresExistentes.entries)
-                entry.key: AttributeValue(boolValue: entry.value),
-            },
-          ),
-        ),
-      });
-      printLog.i('Ejecutores actualizados correctamente para $activador');
+      // Eliminar de todos los tipos de alerta posibles
+      List<String> tiposAlerta = [
+        'ejecutores', // Retrocompatibilidad
+        'ejecutoresAlert_true',
+        'ejecutoresAlert_false',
+        'ejecutoresMAX_true',
+        'ejecutoresMAX_false',
+        'ejecutoresMIN_true',
+        'ejecutoresMIN_false',
+      ];
+
+      for (String tipo in tiposAlerta) {
+        removeEjecutoresFromDisparador(activador, ejecutoresAEliminar,
+            tipoAlerta: tipo);
+      }
     }
   } catch (e) {
-    printLog.i('Error eliminando ejecutores específicos: $e');
+    printLog.i('Error eliminando ejecutores: $e');
   }
 }
 //*- Guarda evento: Control por disparadores -*\\
