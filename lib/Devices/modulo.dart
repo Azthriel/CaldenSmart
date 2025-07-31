@@ -917,15 +917,6 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                   ],
                                 ),
                               ),
-                              const Spacer(),
-                              Text(
-                                'Tipo: ${tipo[index]}',
-                                style: const TextStyle(
-                                  color: color0,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
                             ],
                           ),
                           const SizedBox(height: 12),
@@ -1129,15 +1120,6 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                   Icons.edit,
                                   size: 22,
                                   color: color0,
-                                ),
-                                const Spacer(),
-                                Text(
-                                  'Tipo: ${tipo[index]}',
-                                  style: const TextStyle(
-                                    color: color0,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
                                 ),
                               ],
                             ),

@@ -202,7 +202,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: color0,
                           foregroundColor: color3,
-                          disabledForegroundColor: color2,
+                          disabledForegroundColor: color3.withValues(alpha: 0.5),
                           disabledBackgroundColor: color0,
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
                         ),
@@ -336,7 +336,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
             ),
           ),
         ),
-        const SizedBox(height: 40), // Más espacio antes del botón continuar
+        const SizedBox(height: 40),
       ],
     );
   }
@@ -365,8 +365,14 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
 
   List<Widget> _buildDeviceList() {
     // Filtrar equipos válidos
-    final validDevices =
-        filterDevices.where((equipo) => _isValidForClima(equipo)).toList();
+    final validDevices = filterDevices.where((equipo) {
+      if (!_isValidForClima(equipo)) return false;
+      final deviceKey =
+          '${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}';
+      final deviceDATA = globalDATA[deviceKey] ?? {};
+      final owner = deviceDATA['owner'] ?? '';
+      return owner == '' || owner == currentUserEmail;
+    }).toList();
 
     if (validDevices.isEmpty) {
       return [

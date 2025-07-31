@@ -616,7 +616,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                       Align(
                                         alignment: Alignment.centerRight,
                                         child: Padding(
-                                          padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                                          padding: const EdgeInsets.only(
+                                              right: 16.0, bottom: 8.0),
                                           child: IconButton(
                                             icon: const Icon(
                                               HugeIcons.strokeRoundedDelete02,
@@ -809,7 +810,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                       Align(
                                         alignment: Alignment.centerRight,
                                         child: Padding(
-                                          padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                                          padding: const EdgeInsets.only(
+                                              right: 16.0, bottom: 8.0),
                                           child: IconButton(
                                             icon: const Icon(
                                               HugeIcons.strokeRoundedDelete02,
@@ -907,111 +909,107 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                           mainAxisAlignment:
                                               MainAxisAlignment.spaceBetween,
                                           children: [
-                                            online
-                                                ? Row(
-                                                    children: [
-                                                      estado
-                                                          ? Row(
-                                                              children: [
-                                                                if (heaterOn) ...[
-                                                                  Text(
-                                                                    'Calentando',
-                                                                    style: GoogleFonts
-                                                                        .poppins(
+                                            Expanded(
+                                              child: online
+                                                  ? Row(
+                                                      children: [
+                                                        estado
+                                                            ? Row(
+                                                                children: [
+                                                                  if (heaterOn) ...[
+                                                                    Text(
+                                                                      'Calentando',
+                                                                      style: GoogleFonts
+                                                                          .poppins(
+                                                                        color: Colors
+                                                                                .amber[
+                                                                            800],
+                                                                        fontSize:
+                                                                            15,
+                                                                      ),
+                                                                    ),
+                                                                    Icon(
+                                                                      HugeIcons
+                                                                          .strokeRoundedFire,
+                                                                      size: 15,
                                                                       color: Colors
                                                                               .amber[
                                                                           800],
-                                                                      fontSize:
-                                                                          15,
                                                                     ),
-                                                                  ),
-                                                                  Icon(
-                                                                    HugeIcons
-                                                                        .strokeRoundedFire,
-                                                                    size: 15,
-                                                                    color: Colors
-                                                                            .amber[
-                                                                        800],
-                                                                  ),
-                                                                ] else ...[
-                                                                  Text(
-                                                                    'Encendido',
-                                                                    style: GoogleFonts
-                                                                        .poppins(
-                                                                      color: Colors
-                                                                          .green,
-                                                                      fontSize:
-                                                                          15,
+                                                                  ] else ...[
+                                                                    Text(
+                                                                      'Encendido',
+                                                                      style: GoogleFonts
+                                                                          .poppins(
+                                                                        color: Colors
+                                                                            .green,
+                                                                        fontSize:
+                                                                            15,
+                                                                      ),
                                                                     ),
-                                                                  ),
+                                                                  ],
                                                                 ],
-                                                              ],
-                                                            )
-                                                          : Text(
-                                                              'Apagado',
-                                                              style: GoogleFonts
-                                                                  .poppins(
-                                                                color: color6,
-                                                                fontSize: 15,
+                                                              )
+                                                            : Text(
+                                                                'Apagado',
+                                                                style: GoogleFonts
+                                                                    .poppins(
+                                                                  color: color6,
+                                                                  fontSize: 15,
+                                                                ),
                                                               ),
-                                                            ),
-                                                      const SizedBox(width: 5),
-                                                      Switch(
-                                                          activeColor:
-                                                              const Color(
-                                                                  0xFF9C9D98),
-                                                          activeTrackColor:
-                                                              const Color(
-                                                                  0xFFB2B5AE),
-                                                          inactiveThumbColor:
-                                                              const Color(
-                                                                  0xFFB2B5AE),
-                                                          inactiveTrackColor:
-                                                              const Color(
-                                                                  0xFF9C9D98),
-                                                          value: estado,
-                                                          onChanged: online
-                                                              ? (newValue) {
-                                                                  toggleState(
-                                                                      deviceName,
-                                                                      newValue);
-                                                                  setState(() {
-                                                                    estado =
-                                                                        newValue;
-                                                                    if (!newValue) {
-                                                                      heaterOn =
-                                                                          false;
-                                                                    }
-                                                                  });
-                                                                }
-                                                              : null),
-                                                    ],
-                                                  )
-                                                : Text(
-                                                    'El equipo debe estar\nconectado para su uso',
-                                                    style: GoogleFonts.poppins(
-                                                      color: color5,
-                                                      fontSize: 15,
+                                                        const SizedBox(width: 5),
+                                                        Switch(
+                                                            activeColor:
+                                                                const Color(
+                                                                    0xFF9C9D98),
+                                                            activeTrackColor:
+                                                                const Color(
+                                                                    0xFFB2B5AE),
+                                                            inactiveThumbColor:
+                                                                const Color(
+                                                                    0xFFB2B5AE),
+                                                            inactiveTrackColor:
+                                                                const Color(
+                                                                    0xFF9C9D98),
+                                                            value: estado,
+                                                            onChanged: online
+                                                                ? (newValue) {
+                                                                    toggleState(
+                                                                        deviceName,
+                                                                        newValue);
+                                                                    setState(() {
+                                                                      estado =
+                                                                          newValue;
+                                                                      if (!newValue) {
+                                                                        heaterOn =
+                                                                            false;
+                                                                      }
+                                                                    });
+                                                                  }
+                                                                : null),
+                                                      ],
+                                                    )
+                                                  : Text(
+                                                      'El equipo debe estar\nconectado para su uso',
+                                                      style: GoogleFonts.poppins(
+                                                        color: color5,
+                                                        fontSize: 15,
+                                                      ),
                                                     ),
-                                                  ),
-                                          ],
-                                        ),
-                                      ),
-                                      Align(
-                                        alignment: Alignment.centerRight,
-                                        child: Padding(
-                                          padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
-                                          child: IconButton(
-                                            icon: const Icon(
-                                              HugeIcons.strokeRoundedDelete02,
-                                              color: color0,
-                                              size: 20,
                                             ),
-                                            onPressed: () {
-                                              _confirmDelete(
-                                                  deviceName, productCode);
-                                            },
-                                          ),
+                                            IconButton(
+                                              icon: const Icon(
+                                                HugeIcons.strokeRoundedDelete02,
+                                                color: color0,
+                                                size: 20,
+                                              ),
+                                              onPressed: () {
+                                                _confirmDelete(
+                                                    deviceName, productCode);
+                                              },
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
@@ -1352,8 +1350,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                       Stack(
                                         children: [
                                           Padding(
-                                            padding:
-                                                const EdgeInsets.only(left: 20.0),
+                                            padding: const EdgeInsets.only(
+                                                left: 20.0),
                                             child: !online
                                                 ? Text(
                                                     'El equipo debe estar\nconectado para su uso',
@@ -1367,10 +1365,12 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                           Align(
                                             alignment: Alignment.centerRight,
                                             child: Padding(
-                                              padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                                              padding: const EdgeInsets.only(
+                                                  right: 16.0, bottom: 8.0),
                                               child: IconButton(
                                                 icon: const Icon(
-                                                  HugeIcons.strokeRoundedDelete02,
+                                                  HugeIcons
+                                                      .strokeRoundedDelete02,
                                                   color: color0,
                                                   size: 20,
                                                 ),
@@ -1472,8 +1472,10 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                         Stack(
                                           children: [
                                             Padding(
-                                              padding: const EdgeInsets.symmetric(
-                                                  horizontal: 16.0, vertical: 5.0),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 16.0,
+                                                      vertical: 5.0),
                                               child: online
                                                   ? Row(
                                                       children: [
@@ -1542,7 +1544,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                             Align(
                                               alignment: Alignment.centerRight,
                                               child: Padding(
-                                                padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                                                padding: const EdgeInsets.only(
+                                                    right: 16.0, bottom: 8.0),
                                                 child: IconButton(
                                                   icon: const Icon(
                                                     HugeIcons
@@ -1551,8 +1554,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                     size: 20,
                                                   ),
                                                   onPressed: () {
-                                                    _confirmDelete(
-                                                        deviceName, productCode);
+                                                    _confirmDelete(deviceName,
+                                                        productCode);
                                                   },
                                                 ),
                                               ),
@@ -1904,7 +1907,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                         children: [
                                           Padding(
                                             padding: const EdgeInsets.symmetric(
-                                                horizontal: 16.0, vertical: 5.0),
+                                                horizontal: 16.0,
+                                                vertical: 5.0),
                                             child: online
                                                 ? Row(
                                                     children: [
@@ -1997,10 +2001,12 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                           Align(
                                             alignment: Alignment.centerRight,
                                             child: Padding(
-                                              padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                                              padding: const EdgeInsets.only(
+                                                  right: 16.0, bottom: 8.0),
                                               child: IconButton(
                                                 icon: const Icon(
-                                                  HugeIcons.strokeRoundedDelete02,
+                                                  HugeIcons
+                                                      .strokeRoundedDelete02,
                                                   color: color0,
                                                   size: 20,
                                                 ),
@@ -2335,8 +2341,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                       Stack(
                                         children: [
                                           Padding(
-                                            padding:
-                                                const EdgeInsets.only(left: 20.0),
+                                            padding: const EdgeInsets.only(
+                                                left: 20.0),
                                             child: !online
                                                 ? Text(
                                                     'El equipo debe estar\nconectado para su uso',
@@ -2350,10 +2356,12 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                           Align(
                                             alignment: Alignment.centerRight,
                                             child: Padding(
-                                              padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                                              padding: const EdgeInsets.only(
+                                                  right: 16.0, bottom: 8.0),
                                               child: IconButton(
                                                 icon: const Icon(
-                                                  HugeIcons.strokeRoundedDelete02,
+                                                  HugeIcons
+                                                      .strokeRoundedDelete02,
                                                   color: color0,
                                                   size: 20,
                                                 ),
@@ -2448,8 +2456,10 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                       Stack(
                                         children: [
                                           Padding(
-                                              padding: const EdgeInsets.symmetric(
-                                                  horizontal: 16.0, vertical: 5.0),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 16.0,
+                                                      vertical: 5.0),
                                               child: online
                                                   ? Row(
                                                       children: [
@@ -2542,7 +2552,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                           Align(
                                             alignment: Alignment.centerRight,
                                             child: Padding(
-                                              padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                                              padding: const EdgeInsets.only(
+                                                  right: 16.0, bottom: 8.0),
                                               child: IconButton(
                                                 icon: const Icon(
                                                   HugeIcons
@@ -2641,8 +2652,10 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                       Stack(
                                         children: [
                                           Padding(
-                                              padding: const EdgeInsets.symmetric(
-                                                  horizontal: 16.0, vertical: 5.0),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 16.0,
+                                                      vertical: 5.0),
                                               child: online
                                                   ? Row(
                                                       children: [
@@ -2736,7 +2749,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                           Align(
                                             alignment: Alignment.centerRight,
                                             child: Padding(
-                                              padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                                              padding: const EdgeInsets.only(
+                                                  right: 16.0, bottom: 8.0),
                                               child: IconButton(
                                                 icon: const Icon(
                                                   HugeIcons

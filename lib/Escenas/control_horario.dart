@@ -79,8 +79,14 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
 
   List<Widget> _buildDeviceSelection() {
     // Filtrar equipos válidos
-    final validDevices =
-        filterDevices.where((equipo) => _isValidForHorario(equipo)).toList();
+    final validDevices = filterDevices.where((equipo) {
+      if (!_isValidForHorario(equipo)) return false;
+      final deviceKey =
+          '${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}';
+      final deviceDATA = globalDATA[deviceKey] ?? {};
+      final owner = deviceDATA['owner'] ?? '';
+      return owner == '' || owner == currentUserEmail;
+    }).toList();
 
     if (validDevices.isEmpty) {
       return [
@@ -616,7 +622,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: color0,
                           foregroundColor: color3,
-                          disabledBackgroundColor: color2,
+                          disabledBackgroundColor: color3.withValues(alpha: 0.5),
                           disabledForegroundColor: color1,
                         ),
                       ),

@@ -21,6 +21,8 @@ class EscenasPage extends StatefulWidget {
 
 class EscenasPageState extends State<EscenasPage> {
   late VoidCallback _titleListener;
+  final GlobalKey _configCardKey = GlobalKey();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -41,6 +43,7 @@ class EscenasPageState extends State<EscenasPage> {
   @override
   void dispose() {
     super.dispose();
+    _scrollController.dispose();
 
     title.removeListener(_titleListener);
 
@@ -1017,6 +1020,17 @@ class EscenasPageState extends State<EscenasPage> {
                 //       );
                 //   deviceGroup.clear();
                 // });
+                // Future.delayed(const Duration(milliseconds: 350), () {
+                //   final context = _configCardKey.currentContext;
+                //   if (context != null && context.mounted) {
+                //     Scrollable.ensureVisible(
+                //       context,
+                //       duration: const Duration(milliseconds: 400),
+                //       curve: Curves.easeInOut,
+                //       alignment: 0.1,
+                //     );
+                //   }
+                // });
               },
             ),
             const SizedBox(height: 16),
@@ -1033,6 +1047,17 @@ class EscenasPageState extends State<EscenasPage> {
                 //             setState(() => currentBuilder = buildMainOptions),
                 //       );
                 //   deviceGroup.clear();
+                // });
+                // Future.delayed(const Duration(milliseconds: 350), () {
+                //   final context = _configCardKey.currentContext;
+                //   if (context != null && context.mounted) {
+                //     Scrollable.ensureVisible(
+                //       context,
+                //       duration: const Duration(milliseconds: 400),
+                //       curve: Curves.easeInOut,
+                //       alignment: 0.1,
+                //     );
+                //   }
                 // });
               },
             ),
@@ -1051,6 +1076,17 @@ class EscenasPageState extends State<EscenasPage> {
                   deviceGroup.clear();
                   selectedTime = null;
                 });
+                Future.delayed(const Duration(milliseconds: 350), () {
+                  final context = _configCardKey.currentContext;
+                  if (context != null && context.mounted) {
+                    Scrollable.ensureVisible(
+                      context,
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeInOut,
+                      alignment: 0.1,
+                    );
+                  }
+                });
               },
             ),
             const SizedBox(height: 16),
@@ -1068,6 +1104,17 @@ class EscenasPageState extends State<EscenasPage> {
                 //       );
                 //   deviceGroup.clear();
                 // });
+                // Future.delayed(const Duration(milliseconds: 350), () {
+                //   final context = _configCardKey.currentContext;
+                //   if (context != null && context.mounted) {
+                //     Scrollable.ensureVisible(
+                //       context,
+                //       duration: const Duration(milliseconds: 400),
+                //       curve: Curves.easeInOut,
+                //       alignment: 0.1,
+                //     );
+                //   }
+                // });
               },
             ),
             const SizedBox(height: 16),
@@ -1083,6 +1130,17 @@ class EscenasPageState extends State<EscenasPage> {
                             setState(() => currentBuilder = buildMainOptions),
                       );
                   deviceGroup.clear();
+                });
+                Future.delayed(const Duration(milliseconds: 350), () {
+                  final context = _configCardKey.currentContext;
+                  if (context != null && context.mounted) {
+                    Scrollable.ensureVisible(
+                      context,
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeInOut,
+                      alignment: 0.1,
+                    );
+                  }
                 });
               },
             ),
@@ -1212,6 +1270,7 @@ class EscenasPageState extends State<EscenasPage> {
             height: double.infinity,
             padding: const EdgeInsets.all(16),
             child: SingleChildScrollView(
+              controller: _scrollController,
               child: Column(
                 children: [
                   // Botón de configurar evento mejorado
@@ -1289,7 +1348,7 @@ class EscenasPageState extends State<EscenasPage> {
                     switchOutCurve: Curves.easeOut,
                     child: showCard
                         ? Container(
-                            key: const ValueKey('configCard'),
+                            key: _configCardKey,
                             child: currentBuilder!(),
                           )
                         : const SizedBox.shrink(
@@ -1410,27 +1469,36 @@ class EscenasPageState extends State<EscenasPage> {
                                               'disparador') {
                                             String activador =
                                                 activadores.first;
-                                            List<String> ejecutoresAEliminar = ejecutores;
-                                            
+                                            List<String> ejecutoresAEliminar =
+                                                ejecutores;
+
                                             // Determinar el tipo de alerta específico que se debe eliminar
                                             String tipoAlerta;
-                                            bool isTermometro = activador.contains('Termometro');
-                                            
+                                            bool isTermometro = activador
+                                                .contains('Termometro');
+
                                             if (isTermometro) {
                                               // Para termómetros, usar estado de temperatura (MAX/MIN) y estado de alerta
                                               if (estadoTermometro == "1") {
-                                                tipoAlerta = estadoAlerta == "1" ? 'ejecutoresMAX_true' : 'ejecutoresMAX_false';
+                                                tipoAlerta = estadoAlerta == "1"
+                                                    ? 'ejecutoresMAX_true'
+                                                    : 'ejecutoresMAX_false';
                                               } else {
-                                                tipoAlerta = estadoAlerta == "1" ? 'ejecutoresMIN_true' : 'ejecutoresMIN_false';
+                                                tipoAlerta = estadoAlerta == "1"
+                                                    ? 'ejecutoresMIN_true'
+                                                    : 'ejecutoresMIN_false';
                                               }
                                             } else {
                                               // Para otros dispositivos, usar solo estado de alerta
-                                              tipoAlerta = estadoAlerta == "1" ? 'ejecutoresAlert_true' : 'ejecutoresAlert_false';
+                                              tipoAlerta = estadoAlerta == "1"
+                                                  ? 'ejecutoresAlert_true'
+                                                  : 'ejecutoresAlert_false';
                                             }
-                                            
+
                                             // Eliminar solo de este tipo específico de alerta
                                             removeEjecutoresFromDisparador(
-                                                activador, ejecutoresAEliminar, tipoAlerta: tipoAlerta);
+                                                activador, ejecutoresAEliminar,
+                                                tipoAlerta: tipoAlerta);
                                           }
                                         });
                                       },

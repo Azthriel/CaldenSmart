@@ -65,7 +65,7 @@ class BluetoothWatcher {
 class LocationWatcher {
   /* ---------- singleton ---------- */
   static final LocationWatcher _inst = LocationWatcher._();
-  
+
   factory LocationWatcher() => _inst;
   LocationWatcher._();
 
@@ -74,7 +74,7 @@ class LocationWatcher {
   static const _method = MethodChannel('com.caldensmart.sime/native');
 
   StreamSubscription? _sub;
-  bool   _dialogOpen = false;
+  bool _dialogOpen = false;
   /* ---------- start / stop ---------- */
   void start() {
     _sub ??= _event.receiveBroadcastStream().listen((enabled) async {

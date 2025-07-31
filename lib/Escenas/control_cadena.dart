@@ -185,7 +185,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: color0,
                           foregroundColor: color3,
-                          disabledForegroundColor: color2,
+                          disabledForegroundColor: color3.withValues(alpha: 0.5),
                           disabledBackgroundColor: color0,
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
                         ),
@@ -481,8 +481,14 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
 
   List<Widget> _buildDeviceList() {
     // Filtrar equipos válidos
-    final validDevices =
-        filterDevices.where((equipo) => _isValidForCascada(equipo)).toList();
+    final validDevices = filterDevices.where((equipo) {
+      if (!_isValidForCascada(equipo)) return false;
+      final deviceKey =
+          '${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}';
+      final deviceDATA = globalDATA[deviceKey] ?? {};
+      final owner = deviceDATA['owner'] ?? '';
+      return owner == '' || owner == currentUserEmail;
+    }).toList();
 
     if (validDevices.length < 2) {
       return [

@@ -1226,15 +1226,6 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                         ],
                                       ),
                                     ),
-                                    const Spacer(),
-                                    Text(
-                                      'Tipo: ${tipo[index]}',
-                                      style: const TextStyle(
-                                        color: color0,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 12),

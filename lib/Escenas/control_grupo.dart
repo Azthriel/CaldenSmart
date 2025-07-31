@@ -69,8 +69,14 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
 
   List<Widget> _buildDeviceSelection() {
     // Filtrar equipos válidos
-    final validDevices =
-        filterDevices.where((equipo) => _isValidForGroup(equipo)).toList();
+    final validDevices = filterDevices.where((equipo) {
+      if (!_isValidForGroup(equipo)) return false;
+      final deviceKey =
+          '${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}';
+      final deviceDATA = globalDATA[deviceKey] ?? {};
+      final owner = deviceDATA['owner'] ?? '';
+      return owner == '' || owner == currentUserEmail;
+    }).toList();
 
     if (validDevices.length < 2) {
       return [
@@ -334,7 +340,7 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: color0,
                           foregroundColor: color3,
-                          disabledForegroundColor: color2,
+                          disabledForegroundColor: color3.withValues(alpha: 0.5),
                           disabledBackgroundColor: color0,
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
                         ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:caldensmart/Global/watchers.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -38,22 +39,8 @@ class ScanPageState extends State<ScanPage>
   @override
   void initState() {
     super.initState();
-    List<dynamic> lista = dbData['Keywords'] ??
-        [
-          'Detector',
-          'Domotica',
-          'Domótica',
-          'Electrico',
-          'Eléctrico',
-          'Radiador',
-          'Gas',
-          'Rele',
-          'Relé',
-          'Roll',
-          'Millenium',
-          'Modulo',
-          'Riel'
-        ];
+    BluetoothWatcher().start();
+    List<dynamic> lista = dbData['Keywords'] ?? [];
     keywords = lista.map((item) => item.toString()).toList();
     scan();
 
@@ -77,6 +64,7 @@ class ScanPageState extends State<ScanPage>
     searchController.dispose();
     _controller.dispose();
     listener?.cancel();
+    BluetoothWatcher().dispose();
     super.dispose();
   }
 

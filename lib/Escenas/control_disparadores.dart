@@ -111,7 +111,9 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
       final deviceKey =
           '${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}';
       final deviceDATA = globalDATA[deviceKey] ?? {};
+      final owner = deviceDATA['owner'] ?? '';
 
+      if (owner != '' && owner != currentUserEmail) continue;
       // Verificar si este equipo tiene entradas seleccionadas
       final hasSelectedEntrada =
           deviceDATA.keys.where((k) => k.startsWith('io')).any((key) {
@@ -212,6 +214,25 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
       );
     }
 
+    if (widgets.isEmpty) {
+      return [
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'No hay dispositivos válidos para control horario.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                color: Colors.red,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ];
+    }
+
     return widgets;
   }
 
@@ -225,6 +246,9 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
       final deviceKey =
           '${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}';
       final deviceDATA = globalDATA[deviceKey] ?? {};
+      final owner = deviceDATA['owner'] ?? '';
+
+      if (owner != '' && owner != currentUserEmail) continue;
 
       // Verificar si este equipo tiene salidas seleccionadas
       final hasSelectedSalida =
@@ -341,6 +365,25 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
           ),
         ),
       );
+    }
+
+    if (widgets.isEmpty) {
+      return [
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'No hay dispositivos válidos para control horario.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                color: Colors.red,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ];
     }
 
     return widgets;
@@ -571,7 +614,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: color0,
                           foregroundColor: color3,
-                          disabledForegroundColor: color2,
+                          disabledForegroundColor: color3.withValues(alpha: 0.5),
                           disabledBackgroundColor: color0,
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
                         ),
@@ -662,7 +705,6 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                 isSelected: [estadoAlerta == "1", estadoAlerta == "0"],
                 onPressed: (index) {
                   setState(() {
-                    //TODO Estado de alerta
                     estadoAlerta = index == 0 ? "1" : "0";
                   });
                 },
@@ -713,7 +755,6 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                   ],
                   onPressed: (index) {
                     setState(() {
-                      //TODO Estado de termometro
                       estadoTermometro = index == 0 ? "1" : "0";
                     });
                   },
