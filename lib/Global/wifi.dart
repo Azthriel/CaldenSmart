@@ -121,25 +121,12 @@ class WifiPageState extends ConsumerState<WifiPage> {
                 'Aceptar',
                 style: GoogleFonts.poppins(color: color0),
               ),
-              onPressed: () async {
-                previusConnections.remove(deviceName);
-                alexaDevices.removeWhere((d) => d.contains(deviceName));
-                todosLosDispositivos.removeWhere((e) => e.value == deviceName);
-                setState(() {});
-
-                await putPreviusConnections(
-                    currentUserEmail, previusConnections);
-                await putDevicesForAlexa(currentUserEmail, previusConnections);
-
-                final topic =
-                    'devices_tx/$equipo/${DeviceManager.extractSerialNumber(deviceName)}';
-                unSubToTopicMQTT(topic);
-
-                topicsToSub.remove(topic);
-
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                }
+              onPressed: () {
+                // Cerrar el diálogo inmediatamente
+                Navigator.of(context).pop();
+                
+                // Ejecutar las operaciones de eliminación de forma asíncrona
+                _performDelete(deviceName, equipo);
               },
             ),
           ],
@@ -148,6 +135,36 @@ class WifiPageState extends ConsumerState<WifiPage> {
     );
   }
   //*-Borrar equipo de la lista-*\\
+
+  //*-Ejecutar operaciones de eliminación-*\\
+  Future<void> _performDelete(String deviceName, String equipo) async {
+    // Remover de listas locales
+    previusConnections.remove(deviceName);
+    alexaDevices.removeWhere((d) => d.contains(deviceName));
+    todosLosDispositivos.removeWhere((e) => e.value == deviceName);
+    setState(() {});
+
+    // Actualizar datos remotos
+    await putPreviusConnections(
+        currentUserEmail, previusConnections);
+    await putDevicesForAlexa(currentUserEmail, previusConnections);
+
+    // Remover solo el token del usuario actual del equipo
+    try {
+      await TokenManager.removeCurrentUserToken(deviceName);
+      printLog.i(
+          'Token del usuario actual removido del equipo $deviceName');
+    } catch (e) {
+      printLog.e(
+          'Error removiendo token del usuario actual del equipo $deviceName: $e');
+    }
+
+    final topic =
+        'devices_tx/$equipo/${DeviceManager.extractSerialNumber(deviceName)}';
+    unSubToTopicMQTT(topic);
+    topicsToSub.remove(topic);
+  }
+  //*-Ejecutar operaciones de eliminación-*\\
 
   //*-Determina si el grupo está online-*\\
   bool isGroupOnline(String devicesInGroup) {
@@ -360,6 +377,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(
           'Mis equipos registrados',
@@ -422,6 +441,9 @@ class WifiPageState extends ConsumerState<WifiPage> {
                   )
                 : ReorderableListView.builder(
                     itemCount: todosLosDispositivos.length,
+                    footer: const SizedBox(
+                      height: 120,
+                    ),
                     onReorder: (int oldIndex, int newIndex) {
                       setState(() {
                         if (newIndex > oldIndex) {
@@ -922,8 +944,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                                       style: GoogleFonts
                                                                           .poppins(
                                                                         color: Colors
-                                                                                .amber[
-                                                                            800],
+                                                                            .amber[800],
                                                                         fontSize:
                                                                             15,
                                                                       ),
@@ -952,13 +973,15 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                               )
                                                             : Text(
                                                                 'Apagado',
-                                                                style: GoogleFonts
-                                                                    .poppins(
+                                                                style:
+                                                                    GoogleFonts
+                                                                        .poppins(
                                                                   color: color6,
                                                                   fontSize: 15,
                                                                 ),
                                                               ),
-                                                        const SizedBox(width: 5),
+                                                        const SizedBox(
+                                                            width: 5),
                                                         Switch(
                                                             activeColor:
                                                                 const Color(
@@ -978,21 +1001,24 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                                     toggleState(
                                                                         deviceName,
                                                                         newValue);
-                                                                    setState(() {
-                                                                      estado =
-                                                                          newValue;
-                                                                      if (!newValue) {
-                                                                        heaterOn =
-                                                                            false;
-                                                                      }
-                                                                    });
+                                                                    setState(
+                                                                      () {
+                                                                        estado =
+                                                                            newValue;
+                                                                        if (!newValue) {
+                                                                          heaterOn =
+                                                                              false;
+                                                                        }
+                                                                      },
+                                                                    );
                                                                   }
                                                                 : null),
                                                       ],
                                                     )
                                                   : Text(
                                                       'El equipo debe estar\nconectado para su uso',
-                                                      style: GoogleFonts.poppins(
+                                                      style:
+                                                          GoogleFonts.poppins(
                                                         color: color5,
                                                         fontSize: 15,
                                                       ),

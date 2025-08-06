@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:caldensmart/aws/dynamo/dynamo.dart';
 import 'package:caldensmart/logger.dart';
 import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
@@ -19,8 +20,6 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
   List<String> selectedDays = [];
   TimeOfDay? selectedTime;
   Map<String, bool> deviceActions = {};
-  Map<String, Duration> deviceDelays = {};
-  Map<String, String> deviceUnits = {};
   TextEditingController title = TextEditingController();
 
   @override
@@ -34,8 +33,6 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
     selectedDays.clear();
     selectedTime = null;
     deviceActions.clear();
-    deviceDelays.clear();
-    deviceUnits.clear();
     currentStep = 0;
   }
 
@@ -302,10 +299,18 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
             textAlign: TextAlign.center,
           ),
         ),
+        const Divider(
+          color: color6,
+          thickness: 1,
+          height: 24,
+        ),
         const SizedBox(height: 8),
-        Flexible(
-          child: SizedBox(
-            height: 150,
+        Expanded(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minHeight: 120,
+              maxHeight: 180,
+            ),
             child: TimeSelector(
               onTimeChanged: (TimeOfDay time) {
                 setState(() {
@@ -338,8 +343,6 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
             itemBuilder: (context, index) {
               final device = selectedDevices[index];
               final isOn = deviceActions[device] ?? false;
-              final unit = deviceUnits[device] ?? 'seg';
-              final delay = deviceDelays[device] ?? const Duration(seconds: 0);
               final displayName = nicknamesMap[device] ?? device;
 
               return Card(
@@ -368,94 +371,6 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                                 fontWeight: FontWeight.w600,
                               ),
                               overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: TextField(
-                              keyboardType: TextInputType.number,
-                              textAlign: TextAlign.center,
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: color2,
-                                hintText: '0',
-                                hintStyle: GoogleFonts.poppins(
-                                  color: color3.withValues(alpha: 0.6),
-                                  fontSize: 12,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: color6),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 10,
-                                  horizontal: 12,
-                                ),
-                              ),
-                              controller: TextEditingController(
-                                text: unit == 'seg'
-                                    ? delay.inSeconds.toString()
-                                    : delay.inMinutes.toString(),
-                              )..selection = TextSelection.collapsed(
-                                  offset: (unit == 'seg'
-                                          ? delay.inSeconds
-                                          : delay.inMinutes)
-                                      .toString()
-                                      .length,
-                                ),
-                              onChanged: (value) {
-                                int val = int.tryParse(value) ?? 0;
-                                if (val > 60) val = 60;
-                                setState(() {
-                                  if (deviceUnits[device] == 'min') {
-                                    deviceDelays[device] =
-                                        Duration(minutes: val);
-                                  } else {
-                                    deviceDelays[device] =
-                                        Duration(seconds: val);
-                                  }
-                                });
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            flex: 3,
-                            child: ToggleButtons(
-                              isSelected: [unit == 'seg', unit == 'min'],
-                              onPressed: (i) => setState(() {
-                                final currentValue = unit == 'seg'
-                                    ? delay.inSeconds
-                                    : delay.inMinutes;
-                                final newUnit = i == 0 ? 'seg' : 'min';
-                                deviceUnits[device] = newUnit;
-                                deviceDelays[device] = newUnit == 'seg'
-                                    ? Duration(seconds: currentValue)
-                                    : Duration(minutes: currentValue);
-                              }),
-                              borderRadius: BorderRadius.circular(12),
-                              selectedColor: color1,
-                              fillColor: color4.withValues(alpha: 0.8),
-                              color: color3,
-                              borderColor: color4,
-                              selectedBorderColor: color4,
-                              constraints: const BoxConstraints(
-                                minHeight: 36,
-                                minWidth: 60,
-                              ),
-                              children: [
-                                Text('seg',
-                                    style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.w500)),
-                                Text('min',
-                                    style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.w500)),
-                              ],
                             ),
                           ),
                         ],
@@ -622,7 +537,8 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: color0,
                           foregroundColor: color3,
-                          disabledBackgroundColor: color3.withValues(alpha: 0.5),
+                          disabledBackgroundColor:
+                              color3.withValues(alpha: 0.5),
                           disabledForegroundColor: color1,
                         ),
                       ),
@@ -753,8 +669,6 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
         if (currentStep == 2) {
           for (String device in selectedDevices) {
             deviceActions[device] ??= false;
-            deviceDelays[device] ??= const Duration(seconds: 0);
-            deviceUnits[device] ??= 'seg';
           }
         }
       });
@@ -764,27 +678,28 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
   }
 
   void _confirmarHorario() {
+    String horario =
+        '${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}';
     printLog.i("=== CONTROL HORARIO CREADO ===");
     printLog.i("Nombre: ${title.text}");
     printLog.i("Dispositivos: $selectedDevices");
     printLog.i("Días: $selectedDays");
-    printLog.i("Hora: ${selectedTime!.hour}:${selectedTime!.minute}");
+    printLog.i("Hora: $horario");
     printLog.i("Acciones: $deviceActions");
-    printLog.i("Delays: $deviceDelays");
 
     eventosCreados.add({
       'evento': 'horario',
       'title': title.text,
       'selectedDays': List<String>.from(selectedDays),
-      'selectedTime':
-          '${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}',
+      'selectedTime': horario,
       'deviceActions': Map<String, bool>.from(deviceActions),
-      'deviceDelays': Map<String, Duration>.from(deviceDelays),
       'deviceGroup': List<String>.from(selectedDevices),
     });
 
     showToast("Control horario creado exitosamente");
     printLog.i("$eventosCreados", color: 'verde');
+
+    putEventos(currentUserEmail, eventosCreados);
 
     setState(() {
       _initializeData();

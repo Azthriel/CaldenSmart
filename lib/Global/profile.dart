@@ -825,7 +825,8 @@ class ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             ),
-            SizedBox(
+            SafeArea(
+              child: SizedBox(
               width: double.infinity,
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
@@ -876,6 +877,7 @@ class ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
               ),
+            ),
             ),
           ],
         ),

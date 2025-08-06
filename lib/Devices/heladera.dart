@@ -887,7 +887,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                   children: [
                     Icon(
                       HugeIcons.strokeRoundedThermometerCold,
-                      size: 200,
+                      size: MediaQuery.of(context).size.width * 0.5,
                       color: Color.lerp(
                         Colors.blueAccent,
                         Colors.lightBlueAccent,
@@ -985,6 +985,8 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                     ),
                   ],
                 ),
+                                const SizedBox(height: 120),
+
               ],
             ),
           ),
@@ -1682,7 +1684,8 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                 bottom: 0,
                 child: IgnorePointer(
                   ignoring: _isTutorialActive,
-                  child: CurvedNavigationBar(
+                  child: SafeArea(
+                    child: CurvedNavigationBar(
                     index: _selectedIndex,
                     height: 75.0,
                     items: const <Widget>[
@@ -1700,6 +1703,16 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                     onTap: onItemTapped,
                     letIndexChange: (index) => true,
                   ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: MediaQuery.of(context).padding.bottom,
+                  color: Colors.black,
                 ),
               ),
             ],

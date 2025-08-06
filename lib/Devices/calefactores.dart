@@ -985,7 +985,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage> {
                       children: [
                         Icon(
                           Icons.thermostat_rounded,
-                          size: 200,
+                          size: MediaQuery.of(context).size.width * 0.5,
                           color: Color.lerp(
                             Colors.blueAccent,
                             Colors.redAccent,
@@ -1097,6 +1097,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 120),
               ],
             ),
           ),
@@ -1809,24 +1810,35 @@ class CalefactorPageState extends ConsumerState<CalefactorPage> {
                 bottom: 0,
                 child: IgnorePointer(
                   ignoring: _isTutorialActive,
-                  child: CurvedNavigationBar(
-                    index: _selectedIndex,
-                    height: 75.0,
-                    items: const <Widget>[
-                      Icon(Icons.home, size: 30, color: color0),
-                      Icon(Icons.thermostat, size: 30, color: color0),
-                      Icon(Icons.location_on, size: 30, color: color0),
-                      Icon(Icons.calculate, size: 30, color: color0),
-                      Icon(Icons.settings, size: 30, color: color0),
-                    ],
-                    color: color3,
-                    buttonBackgroundColor: color3,
-                    backgroundColor: Colors.transparent,
-                    animationCurve: Curves.easeInOut,
-                    animationDuration: const Duration(milliseconds: 600),
-                    onTap: onItemTapped,
-                    letIndexChange: (index) => true,
+                  child: SafeArea(
+                    child: CurvedNavigationBar(
+                      index: _selectedIndex,
+                      height: 75.0,
+                      items: const <Widget>[
+                        Icon(Icons.home, size: 30, color: color0),
+                        Icon(Icons.thermostat, size: 30, color: color0),
+                        Icon(Icons.location_on, size: 30, color: color0),
+                        Icon(Icons.calculate, size: 30, color: color0),
+                        Icon(Icons.settings, size: 30, color: color0),
+                      ],
+                      color: color3,
+                      buttonBackgroundColor: color3,
+                      backgroundColor: Colors.transparent,
+                      animationCurve: Curves.easeInOut,
+                      animationDuration: const Duration(milliseconds: 600),
+                      onTap: onItemTapped,
+                      letIndexChange: (index) => true,
+                    ),
                   ),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: MediaQuery.of(context).padding.bottom,
+                  color: Colors.black,
                 ),
               ),
             ],

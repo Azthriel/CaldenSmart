@@ -2080,6 +2080,13 @@ Future<void> handleNotifications(RemoteMessage message) async {
           showNotification(displayTitle, displayMessage, 'noti');
         }
       }
+    } else if (caso == 'evento') {
+      String eventName = message.data['name'] ?? 'Evento';
+      final now = DateTime.now();
+      String displayTitle = '¡Se activo el evento $eventName!';
+      String displayMessage =
+          'A las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+      showNotification(displayTitle, displayMessage, 'noti');
     }
   } catch (e, s) {
     printLog.e("Error: $e");
@@ -2092,7 +2099,16 @@ void showNotification(String title, String body, String sonido) async {
   printLog.i('Body: $body');
   printLog.i('Sonido: $sonido');
   try {
-    int notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    // Generar ID único combinando timestamp con hash del contenido
+    String uniqueContent =
+        '$title|$body|$sonido|${DateTime.now().microsecondsSinceEpoch}';
+    int notificationId = uniqueContent.hashCode.abs();
+
+    // Asegurar que el ID esté en un rango válido para notificaciones
+    notificationId = notificationId % 2147483647; // Max int32 value
+
+    printLog.i('NotificationId generado: $notificationId');
+
     await flutterLocalNotificationsPlugin.show(
       notificationId,
       title,
@@ -2124,64 +2140,6 @@ void showNotification(String title, String body, String sonido) async {
   }
 }
 
-void setupToken(String pc, String sn, String device) async {
-  try {
-    // Si es IOS recibo el APNS primero
-    if (!android) {
-      final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-      printLog.i("Token APNS: $apnsToken");
-      if (apnsToken == null) {
-        printLog.i("Error al obtener el APNS");
-        showToast("Error al obtener token");
-        return;
-      }
-    }
-
-    // Obtener token actual
-    String? token = await FirebaseMessaging.instance.getToken();
-    printLog.i("Token actual de Firebase: $token");
-    // Obtén los tokens existentes
-    List<String> tokens = await getTokens(pc, sn);
-    printLog.i('Tokens: $tokens');
-    if (token != null) {
-      // Remueve el token previo del dispositivo si existe
-      if (tokensOfDevices[device] != null &&
-          tokens.contains(tokensOfDevices[device])) {
-        tokens.remove(tokensOfDevices[device]);
-      }
-      // Agrega el token actual a la lista
-      tokens.add(token);
-      // Actualiza los tokens en tu backend
-      await putTokens(pc, sn, tokens);
-      // Actualiza el diccionario local con el nuevo token
-      tokensOfDevices[device] = token;
-      saveToken(tokensOfDevices);
-      printLog.i('Token agregado exitosamente');
-    }
-    // Escucha cuando el token cambie
-    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-      printLog.i('Token actualizado: $newToken');
-      // Obtén los tokens actualizados
-      List<String> tokens = await getTokens(pc, sn);
-      // Elimina el token anterior, si existe
-      if (tokensOfDevices[device] != null &&
-          tokens.contains(tokensOfDevices[device])) {
-        tokens.remove(tokensOfDevices[device]);
-      }
-      // Agrega el nuevo token
-      tokens.add(newToken);
-      // Actualiza el backend con los nuevos tokens
-      await putTokens(pc, sn, tokens);
-      // Guarda el nuevo token localmente
-      tokensOfDevices[device] = newToken;
-      saveToken(tokensOfDevices);
-      printLog.i('Token actualizado exitosamente');
-    });
-  } catch (e, s) {
-    printLog.i('Error setupear token $e');
-    printLog.i('Tracke anashardopolis $s');
-  }
-}
 //*-Notificaciones-*\\
 
 //*-Admin secundarios y alquiler temporario-*\\
@@ -3652,6 +3610,183 @@ class _VersionData {
 }
 
 //*-Versionador, comparador de versiones-*\\
+
+//*-Gestión centralizada de tokens-*\\
+class TokenManager {
+  /// Configura el token para un dispositivo específico usando SOLO la nueva lógica
+  static Future<void> setupToken(String pc, String sn, String device) async {
+    try {
+      // Si es IOS recibo el APNS primero
+      if (!android) {
+        final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+        printLog.i("Token APNS: $apnsToken");
+        if (apnsToken == null) {
+          printLog.i("Error al obtener el APNS");
+          return;
+        }
+      }
+
+      // Obtener token actual
+      String? token = await FirebaseMessaging.instance.getToken();
+      printLog.i("Token actual de Firebase: $token");
+
+      if (token != null) {
+        await _addTokenSafelyNewLogic(pc, sn, device, token);
+        printLog
+            .i('Token configurado exitosamente para $device con nueva lógica');
+      }
+
+      // Escucha cuando el token cambie
+      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+        printLog.i('Token actualizado: $newToken');
+        try {
+          await _addTokenSafelyNewLogic(pc, sn, device, newToken);
+          printLog.i(
+              'Token actualizado exitosamente para $device con nueva lógica');
+        } catch (e, s) {
+          printLog.e('Error actualizando token: $e');
+          printLog.t('Stack trace: $s');
+        }
+      });
+    } catch (e, s) {
+      printLog.e('Error configurando token: $e');
+      printLog.t('Stack trace: $s');
+    }
+  }
+
+  /// Nueva lógica ÚNICA: Tokens en Alexa-Devices, activeUsers en sime-domotica
+  static Future<void> _addTokenSafelyNewLogic(
+      String pc, String sn, String device, String newToken) async {
+    if (newToken.isEmpty) return;
+
+    try {
+      String userEmail = currentUserEmail;
+
+      // 1. Obtener tokens actuales del usuario desde Alexa-Devices
+      List<String> userTokens = await getTokensFromAlexaDevices(userEmail);
+      Map<String, String> localTokens = await loadToken();
+
+      // 2. Remover token anterior de este dispositivo si existe
+      String? previousToken = localTokens[device];
+      if (previousToken != null && userTokens.contains(previousToken)) {
+        userTokens.remove(previousToken);
+        printLog.i('Token anterior removido para $device');
+      }
+
+      // 3. Añadir nuevo token solo si no existe
+      if (!userTokens.contains(newToken)) {
+        userTokens.add(newToken);
+        printLog.i('Nuevo token añadido para $device');
+      } else {
+        printLog.i('Token ya existe, no se añade duplicado');
+      }
+
+      // 4. Guardar tokens actualizados en Alexa-Devices
+      await putTokensInAlexaDevices(userEmail, userTokens);
+
+      // 5. Añadir usuario a activeUsers del dispositivo
+      await addToActiveUsers(pc, sn, userEmail);
+
+      // 6. Actualizar almacenamiento local
+      localTokens[device] = newToken;
+      await saveToken(localTokens);
+
+      printLog.i('Nueva lógica completada exitosamente para $device');
+    } catch (e, s) {
+      printLog.e('Error en nueva lógica: $e');
+      printLog.t('Stack trace: $s');
+      rethrow;
+    }
+  }
+
+  /// Remueve el token del usuario actual usando SOLO la nueva lógica
+  static Future<void> removeCurrentUserToken(String deviceName) async {
+    try {
+      String pc = DeviceManager.getProductCode(deviceName);
+      String sn = DeviceManager.extractSerialNumber(deviceName);
+      String userEmail = currentUserEmail;
+
+      // 1. Obtener tokens del usuario desde Alexa-Devices
+      List<String> userTokens = await getTokensFromAlexaDevices(userEmail);
+      Map<String, String> localTokens = await loadToken();
+
+      // 2. Obtener el token específico del usuario para este dispositivo
+      String? currentUserToken = localTokens[deviceName];
+
+      if (currentUserToken != null && userTokens.contains(currentUserToken)) {
+        // 3. Remover token del usuario en Alexa-Devices
+        userTokens.remove(currentUserToken);
+        await putTokensInAlexaDevices(userEmail, userTokens);
+        printLog.i('Token removido de Alexa-Devices para $deviceName');
+
+        // 4. Verificar y remover de activeUsers si ya no tiene conexiones válidas
+        await checkAndRemoveFromActiveUsers(pc, sn, userEmail, deviceName);
+
+        // 5. Actualizar almacenamiento local
+        localTokens.remove(deviceName);
+        await saveToken(localTokens);
+        tokensOfDevices.remove(deviceName);
+
+        printLog.i('Token del usuario removido exitosamente para $deviceName');
+      } else {
+        printLog.i(
+            'No se encontró token del usuario para $deviceName o ya fue removido');
+      }
+    } catch (e, s) {
+      printLog.e('Error removiendo token del usuario para $deviceName: $e');
+      printLog.t('Stack trace: $s');
+      rethrow;
+    }
+  }
+
+  /// Actualiza el token para todos los dispositivos del usuario al iniciar la aplicación
+  static Future<void> refreshAllDeviceTokens() async {
+    try {
+      printLog.i(
+          'Iniciando actualización de tokens para todos los dispositivos...');
+
+      // Obtener token actual de Firebase
+      String? currentToken = await FirebaseMessaging.instance.getToken();
+      if (currentToken == null) {
+        printLog.e('No se pudo obtener el token de Firebase');
+        return;
+      }
+
+      printLog.i('Token actual de Firebase: $currentToken');
+
+      // Obtener dispositivos del usuario
+      Map<String, String> localTokens = await loadToken();
+
+      if (localTokens.isEmpty) {
+        printLog.i('No hay dispositivos registrados para actualizar tokens');
+        return;
+      }
+
+      printLog
+          .i('Actualizando tokens para ${localTokens.length} dispositivos...');
+
+      // Actualizar token para cada dispositivo
+      for (String deviceName in localTokens.keys) {
+        try {
+          String pc = DeviceManager.getProductCode(deviceName);
+          String sn = DeviceManager.extractSerialNumber(deviceName);
+
+          await _addTokenSafelyNewLogic(pc, sn, deviceName, currentToken);
+          printLog.i('Token actualizado para $deviceName');
+        } catch (e) {
+          printLog.e('Error actualizando token para $deviceName: $e');
+          // Continúa con el siguiente dispositivo en caso de error
+        }
+      }
+
+      printLog.i('Actualización de tokens completada');
+    } catch (e, s) {
+      printLog.e('Error en refreshAllDeviceTokens: $e');
+      printLog.t('Stack trace: $s');
+    }
+  }
+}
+//*-Gestión centralizada de tokens-*\\
 
 //*-Provider, actualización de data en un widget-*\\
 
@@ -6167,20 +6302,35 @@ class TimeSelector extends StatefulWidget {
 }
 
 class TimeSelectorState extends State<TimeSelector> {
-  int selectedHour = 12;
-  int selectedMinute = 30;
-
+  static const int repeatCount = 100;
   static List<int> hours = List.generate(24, (index) => index);
   static List<int> minutes = List.generate(60, (index) => index);
+
+  late List<int> repeatedHours;
+  late List<int> repeatedMinutes;
 
   late FixedExtentScrollController hourController;
   late FixedExtentScrollController minuteController;
 
+  int selectedHour = 12;
+  int selectedMinute = 30;
+
   @override
   void initState() {
     super.initState();
-    hourController = FixedExtentScrollController(initialItem: selectedHour);
-    minuteController = FixedExtentScrollController(initialItem: selectedMinute);
+    repeatedHours = List.generate(
+        hours.length * repeatCount, (i) => hours[i % hours.length]);
+    repeatedMinutes = List.generate(
+        minutes.length * repeatCount, (i) => minutes[i % minutes.length]);
+
+    // Empieza en el centro para permitir scroll infinito hacia ambos lados
+    int initialHourIndex = (repeatCount ~/ 2) * hours.length + selectedHour;
+    int initialMinuteIndex =
+        (repeatCount ~/ 2) * minutes.length + selectedMinute;
+
+    hourController = FixedExtentScrollController(initialItem: initialHourIndex);
+    minuteController =
+        FixedExtentScrollController(initialItem: initialMinuteIndex);
   }
 
   @override
@@ -6194,6 +6344,31 @@ class TimeSelectorState extends State<TimeSelector> {
     widget.onTimeChanged(TimeOfDay(hour: selectedHour, minute: selectedMinute));
   }
 
+  void _onHourChanged(int index) {
+    setState(() {
+      selectedHour = repeatedHours[index % repeatedHours.length];
+    });
+    _notifyChange();
+
+    if (index < hours.length || index > repeatedHours.length - hours.length) {
+      int middleIndex = (repeatCount ~/ 2) * hours.length + selectedHour;
+      hourController.jumpToItem(middleIndex);
+    }
+  }
+
+  void _onMinuteChanged(int index) {
+    setState(() {
+      selectedMinute = repeatedMinutes[index % repeatedMinutes.length];
+    });
+    _notifyChange();
+
+    if (index < minutes.length ||
+        index > repeatedMinutes.length - minutes.length) {
+      int middleIndex = (repeatCount ~/ 2) * minutes.length + selectedMinute;
+      minuteController.jumpToItem(middleIndex);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -6204,11 +6379,8 @@ class TimeSelectorState extends State<TimeSelector> {
             Expanded(
               child: NumberWheel(
                 controller: hourController,
-                values: hours,
-                onChanged: (index) {
-                  selectedHour = hours[index];
-                  _notifyChange();
-                },
+                values: repeatedHours,
+                onChanged: _onHourChanged,
               ),
             ),
             const Text(
@@ -6218,11 +6390,8 @@ class TimeSelectorState extends State<TimeSelector> {
             Expanded(
               child: NumberWheel(
                 controller: minuteController,
-                values: minutes,
-                onChanged: (index) {
-                  selectedMinute = minutes[index];
-                  _notifyChange();
-                },
+                values: repeatedMinutes,
+                onChanged: _onMinuteChanged,
               ),
             ),
           ],
@@ -6253,7 +6422,7 @@ class NumberWheel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 200,
+      height: MediaQuery.of(context).size.height * 0.20,
       child: ListWheelScrollView.useDelegate(
         controller: controller,
         itemExtent: 50,

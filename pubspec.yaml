@@ -60,7 +60,7 @@ icons_launcher:
       adaptive_foreground_image: "assets/DragonForeground.png"
 
 flutter_native_splash:
-  color: "#302b36"
+  color: "#000000"
   image: assets/DragonForeground.png
   android: true
   ios: true

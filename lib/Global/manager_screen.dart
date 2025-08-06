@@ -1438,7 +1438,7 @@ class ManagerScreenState extends State<ManagerScreen> {
               ),
             ),
             Padding(
-              padding: EdgeInsets.only(bottom: bottomBarHeight + 30),
+              padding: EdgeInsets.only(bottom: bottomBarHeight + 120),
             ),
           ],
         ),

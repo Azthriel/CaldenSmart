@@ -77,6 +77,15 @@ class PermissionHandlerState extends State<PermissionHandler> {
     try {
       var session = await Amplify.Auth.fetchAuthSession();
       if (session.isSignedIn) {
+        // Actualizar tokens de todos los dispositivos del usuario
+        try {
+          await TokenManager.refreshAllDeviceTokens();
+          printLog.i('Tokens actualizados exitosamente al iniciar la aplicación');
+        } catch (e) {
+          printLog.e('Error actualizando tokens al iniciar: $e');
+          // No bloquear el flujo de la aplicación por errores en tokens
+        }
+        
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/menu');
         }

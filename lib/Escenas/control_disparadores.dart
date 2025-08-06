@@ -932,8 +932,14 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
           : 'ejecutoresAlert_false';
     }
 
-    putEventoDisparador(activadores.first, ejecutoresMap,
-        tipoAlerta: tipoAlerta);
+    // Usar la nueva función para guardar en Eventos_ControlPorDisparadores
+    putEventoControlPorDisparadores(
+      activadores.first,
+      currentUserEmail,
+      title.text,
+      ejecutoresMap,
+      tipoAlerta: tipoAlerta,
+    );
 
     showToast("Evento creado exitosamente");
     printLog.i("$eventosCreados", color: 'verde');

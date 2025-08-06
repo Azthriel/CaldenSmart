@@ -27,6 +27,8 @@ class ScanPageState extends State<ScanPage>
   bool isConnecting = false;
   String searchQuery = '';
   bool toastFlag = false;
+  Map<String, int> deviceRssi = {};
+
   int connectionTry = 0;
   final TextEditingController searchController = TextEditingController();
   late AnimationController _animationController;
@@ -68,6 +70,22 @@ class ScanPageState extends State<ScanPage>
     super.dispose();
   }
 
+  Icon _signalIcon(int rssi) {
+    if (rssi >= -60) {
+      // Mejor señal: FullSignalIconPlus
+      return const Icon(HugeIcons.strokeRoundedSignalFull02,
+          color: Colors.white, size: 24);
+    } else if (rssi >= -75) {
+      // Señal media: MediumSignalIcon
+      return const Icon(HugeIcons.strokeRoundedSignalMedium02,
+          color: Colors.white, size: 24);
+    } else {
+      // Señal baja: LowSignalIcon
+      return const Icon(HugeIcons.strokeRoundedSignalLow02,
+          color: Colors.white, size: 24);
+    }
+  }
+
   void scan() async {
     printLog.i('Jiji');
     if (bluetoothOn) {
@@ -89,7 +107,6 @@ class ScanPageState extends State<ScanPage>
         // );
         await FlutterBluePlus.startScan(
           withKeywords: keywords,
-          timeout: const Duration(seconds: 30),
           androidUsesFineLocation: true,
           continuousUpdates: true,
           removeIfGone: const Duration(seconds: 30),
@@ -99,15 +116,14 @@ class ScanPageState extends State<ScanPage>
           (results) {
             if (!mounted) return;
             for (ScanResult result in results) {
+              deviceRssi[result.device.remoteId.toString()] = result.rssi;
+
               if (!devices
                   .any((device) => device.remoteId == result.device.remoteId)) {
                 if (navigatorKey.currentContext?.mounted ?? context.mounted) {
                   setState(() {
                     devices.add(result.device);
 
-                    // devices.sort(
-                    //   (a, b) => a.platformName.compareTo(b.platformName),
-                    // );
                     sortedDevices = devices;
                   });
                 }
@@ -143,6 +159,7 @@ class ScanPageState extends State<ScanPage>
           }
           return false;
         });
+
         sortedDevices = devices;
       });
     }
@@ -529,6 +546,7 @@ class ScanPageState extends State<ScanPage>
                           DeviceManager.getProductCode(device.platformName);
                       final serialNumber = DeviceManager.extractSerialNumber(
                           device.platformName);
+                      final rssi = deviceRssi[device.remoteId.toString()] ?? 0;
 
                       List<dynamic> admins =
                           globalDATA['$productCode/$serialNumber']
@@ -624,6 +642,10 @@ class ScanPageState extends State<ScanPage>
                                   child: Card(
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(15.0),
+                                      side: const BorderSide(
+                                        color: color6,
+                                        width: 2.0,
+                                      ),
                                     ),
                                     elevation: 8,
                                     child: ClipRRect(
@@ -719,6 +741,35 @@ class ScanPageState extends State<ScanPage>
                                               style: GoogleFonts.poppins(
                                                 fontSize: 12,
                                                 color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                          Positioned(
+                                            bottom: 16,
+                                            right: condicion ? 70 : 16,
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black
+                                                    .withValues(alpha: 0.6),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const Icon(
+                                                    HugeIcons
+                                                        .strokeRoundedBluetooth,
+                                                    size: 20,
+                                                    color: Colors.white,
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                  _signalIcon(rssi),
+                                                ],
                                               ),
                                             ),
                                           ),

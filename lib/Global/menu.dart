@@ -51,6 +51,7 @@ class MenuPageState extends State<MenuPage> {
   @override
   void dispose() {
     _pageController?.dispose();
+    counter = 0;
     super.dispose();
   }
 
@@ -101,66 +102,74 @@ class MenuPageState extends State<MenuPage> {
         }
         return Scaffold(
           backgroundColor: Colors.transparent,
-          extendBodyBehindAppBar: true,
           extendBody: true,
           resizeToAvoidBottomInset: false,
-          body: ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(30.0),
-              topRight: Radius.circular(30.0),
-            ),
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: _onPageChanged,
-              children: const [
-                ScanPage(),
-                WifiPage(),
-              ],
-            ),
-          ),
-          bottomNavigationBar: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {},
-            child: SizedBox(
-              height: 60.0,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(30.0),
-                  topRight: Radius.circular(30.0),
+          body: Stack(
+            children: [
+              PageView(
+                controller: _pageController,
+                onPageChanged: _onPageChanged,
+                children: const [
+                  ScanPage(),
+                  WifiPage(),
+                ],
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: MediaQuery.of(context).padding.bottom,
+                  color: Colors.black,
                 ),
-                child: BottomAppBar(
-                  color: color3,
-                  shape: const CircularNotchedRectangle(),
-                  notchMargin: 6.0,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      const Spacer(flex: 1),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 1.0),
-                        child: IconButton(
-                          iconSize: _selectedIndex == 0 ? 35.0 : 30.0,
-                          icon: Icon(
-                            HugeIcons.strokeRoundedBluetoothSearch,
-                            color: _selectedIndex == 0 ? color5 : Colors.grey,
+              ),
+            ],
+          ),
+          bottomNavigationBar: SafeArea(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {},
+              child: SizedBox(
+                height: 60.0,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(30.0),
+                    topRight: Radius.circular(30.0),
+                  ),
+                  child: BottomAppBar(
+                    color: color3,
+                    shape: const CircularNotchedRectangle(),
+                    notchMargin: 6.0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        const Spacer(flex: 1),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 1.0),
+                          child: IconButton(
+                            iconSize: _selectedIndex == 0 ? 35.0 : 30.0,
+                            icon: Icon(
+                              HugeIcons.strokeRoundedBluetoothSearch,
+                              color: _selectedIndex == 0 ? color5 : Colors.grey,
+                            ),
+                            onPressed: () => _onItemTapped(0),
                           ),
-                          onPressed: () => _onItemTapped(0),
                         ),
-                      ),
-                      const Spacer(flex: 6),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 1.0),
-                        child: IconButton(
-                          iconSize: _selectedIndex == 1 ? 35.0 : 30.0,
-                          icon: Icon(
-                            HugeIcons.strokeRoundedWifi02,
-                            color: _selectedIndex == 1 ? color5 : Colors.grey,
+                        const Spacer(flex: 6),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 1.0),
+                          child: IconButton(
+                            iconSize: _selectedIndex == 1 ? 35.0 : 30.0,
+                            icon: Icon(
+                              HugeIcons.strokeRoundedWifi02,
+                              color: _selectedIndex == 1 ? color5 : Colors.grey,
+                            ),
+                            onPressed: () => _onItemTapped(1),
                           ),
-                          onPressed: () => _onItemTapped(1),
                         ),
-                      ),
-                      const Spacer(flex: 1),
-                    ],
+                        const Spacer(flex: 1),
+                      ],
+                    ),
                   ),
                 ),
               ),

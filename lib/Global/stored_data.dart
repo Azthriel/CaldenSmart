@@ -342,3 +342,15 @@ Future<String> loadEmail() async {
   return prefs.getString('CSEmail') ?? '';
 }
 //*- Guardar email -*\\
+
+//*- Guardar top score del Easter Egg -*\\
+Future<void> saveEasterEggTopScore(int topScore) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setInt('CSEasterEggTopScore', topScore);
+}
+
+Future<int> loadEasterEggTopScore() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getInt('CSEasterEggTopScore') ?? 0;
+}
+//*- Guardar top score del Easter Egg -*\\

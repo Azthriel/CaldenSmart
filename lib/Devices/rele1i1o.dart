@@ -2265,7 +2265,8 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                 bottom: 0,
                 child: IgnorePointer(
                   ignoring: _isTutorialActive,
-                  child: CurvedNavigationBar(
+                  child: SafeArea(
+                    child: CurvedNavigationBar(
                     index: _selectedIndex,
                     height: 75.0,
                     items: const <Widget>[
@@ -2282,6 +2283,16 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                     onTap: onItemTapped,
                     letIndexChange: (index) => true,
                   ),
+                ),
+                ),
+              ),
+               Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: MediaQuery.of(context).padding.bottom,
+                  color: Colors.black,
                 ),
               ),
             ],

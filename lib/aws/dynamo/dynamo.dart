@@ -139,6 +139,21 @@ Future<void> queryItems(String pc, String sn) async {
                     .putIfAbsent('$pc/$sn', () => {})
                     .addAll({key: value.s ?? ''});
                 break;
+              case 'actualTemp':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.s ?? '0'});
+                break;
+              case 'alert_minflag':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.boolValue ?? false});
+                break;
+              case 'alert_maxflag':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.boolValue ?? false});
+                break;
               case 'SoftwareVersion':
                 globalDATA
                     .putIfAbsent('$pc/$sn', () => {})
@@ -162,15 +177,28 @@ Future<void> queryItems(String pc, String sn) async {
 
 //*-Guarda y lee Tokens en dynamo-*\\
 Future<void> putTokens(String pc, String sn, List<String> data) async {
-  if (data.isEmpty) {
-    data.add('');
-  }
   try {
+    // Filtrar tokens vacíos y duplicados
+    Set<String> uniqueTokens = {};
+    List<String> cleanTokens = [];
+
+    for (String token in data) {
+      if (token.isNotEmpty && !uniqueTokens.contains(token)) {
+        uniqueTokens.add(token);
+        cleanTokens.add(token);
+      }
+    }
+
+    // Si no hay tokens válidos, usar string vacío como placeholder
+    if (cleanTokens.isEmpty) {
+      cleanTokens.add('');
+    }
+
     final response = await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
     }, attributeUpdates: {
-      'tokens': AttributeValueUpdate(value: AttributeValue(ss: data)),
+      'tokens': AttributeValueUpdate(value: AttributeValue(ss: cleanTokens)),
     });
 
     printLog.i('Item escrito perfectamente $response');
@@ -210,6 +238,212 @@ Future<List<String>> getTokens(String pc, String sn) async {
   }
 }
 //*-Guarda y lee Tokens en dynamo-*\\
+
+//*-Nueva lógica: Tokens en Alexa-Devices y ActiveUsers en sime-domotica-*\\
+/// Guarda tokens del usuario en Alexa-Devices (nueva lógica)
+Future<void> putTokensInAlexaDevices(String email, List<String> tokens) async {
+  try {
+    // Filtrar tokens vacíos y duplicados
+    Set<String> uniqueTokens = {};
+    List<String> cleanTokens = [];
+
+    for (String token in tokens) {
+      if (token.isNotEmpty && !uniqueTokens.contains(token)) {
+        uniqueTokens.add(token);
+        cleanTokens.add(token);
+      }
+    }
+
+    // Si no hay tokens válidos, usar string vacío como placeholder
+    if (cleanTokens.isEmpty) {
+      cleanTokens.add('');
+    }
+
+    final response = await service.updateItem(
+      tableName: 'Alexa-Devices',
+      key: {
+        'email': AttributeValue(s: email),
+      },
+      attributeUpdates: {
+        'tokens': AttributeValueUpdate(value: AttributeValue(ss: cleanTokens)),
+      },
+    );
+
+    printLog.i('Tokens guardados en Alexa-Devices para $email: $response');
+  } catch (e) {
+    printLog.i('Error guardando tokens en Alexa-Devices: $e');
+  }
+}
+
+/// Obtiene tokens del usuario desde Alexa-Devices (nueva lógica)
+Future<List<String>> getTokensFromAlexaDevices(String email) async {
+  try {
+    final response = await service.getItem(
+      tableName: 'Alexa-Devices',
+      key: {
+        'email': AttributeValue(s: email),
+      },
+    );
+
+    if (response.item != null) {
+      var item = response.item!;
+      List<String> tokens = item['tokens']?.ss ?? [];
+
+      printLog.i('Tokens encontrados en Alexa-Devices para $email: $tokens');
+
+      if (tokens.contains('') && tokens.length == 1) {
+        return [];
+      } else {
+        return tokens;
+      }
+    } else {
+      printLog.i('Usuario no encontrado en Alexa-Devices: $email');
+      return [];
+    }
+  } catch (e) {
+    printLog.i('Error obteniendo tokens de Alexa-Devices: $e');
+    return [];
+  }
+}
+
+/// Guarda usuarios activos en sime-domotica (nueva lógica)
+Future<void> putActiveUsers(
+    String pc, String sn, List<String> activeUsers) async {
+  try {
+    // Filtrar emails vacíos y duplicados
+    Set<String> uniqueEmails = {};
+    List<String> cleanEmails = [];
+
+    for (String email in activeUsers) {
+      if (email.isNotEmpty && !uniqueEmails.contains(email)) {
+        uniqueEmails.add(email);
+        cleanEmails.add(email);
+      }
+    }
+
+    // Si no hay emails válidos, usar string vacío como placeholder
+    if (cleanEmails.isEmpty) {
+      cleanEmails.add('');
+    }
+
+    final response = await service.updateItem(
+      tableName: 'sime-domotica',
+      key: {
+        'product_code': AttributeValue(s: pc),
+        'device_id': AttributeValue(s: sn),
+      },
+      attributeUpdates: {
+        'activeUsers':
+            AttributeValueUpdate(value: AttributeValue(ss: cleanEmails)),
+      },
+    );
+
+    printLog.i('ActiveUsers guardados para $pc/$sn: $response');
+  } catch (e) {
+    printLog.i('Error guardando activeUsers: $e');
+  }
+}
+
+/// Obtiene usuarios activos desde sime-domotica (nueva lógica)
+Future<List<String>> getActiveUsers(String pc, String sn) async {
+  try {
+    final response = await service.getItem(
+      tableName: 'sime-domotica',
+      key: {
+        'product_code': AttributeValue(s: pc),
+        'device_id': AttributeValue(s: sn),
+      },
+    );
+
+    if (response.item != null) {
+      var item = response.item!;
+      List<String> activeUsers = item['activeUsers']?.ss ?? [];
+
+      printLog.i('ActiveUsers encontrados para $pc/$sn: $activeUsers');
+
+      if (activeUsers.contains('') && activeUsers.length == 1) {
+        return [];
+      } else {
+        return activeUsers;
+      }
+    } else {
+      printLog.i('Equipo no encontrado en sime-domotica: $pc/$sn');
+      return [];
+    }
+  } catch (e) {
+    printLog.i('Error obteniendo activeUsers: $e');
+    return [];
+  }
+}
+
+/// Añade un email a la lista de usuarios activos
+Future<void> addToActiveUsers(String pc, String sn, String email) async {
+  try {
+    List<String> currentUsers = await getActiveUsers(pc, sn);
+    if (!currentUsers.contains(email)) {
+      currentUsers.add(email);
+      await putActiveUsers(pc, sn, currentUsers);
+      printLog.i('Email $email añadido a activeUsers de $pc/$sn');
+    } else {
+      printLog.i('Email $email ya está en activeUsers de $pc/$sn');
+    }
+  } catch (e) {
+    printLog.i('Error añadiendo email a activeUsers: $e');
+  }
+}
+
+/// Remueve un email de la lista de usuarios activos
+Future<void> removeFromActiveUsers(String pc, String sn, String email) async {
+  try {
+    List<String> currentUsers = await getActiveUsers(pc, sn);
+    if (currentUsers.contains(email)) {
+      currentUsers.remove(email);
+      await putActiveUsers(pc, sn, currentUsers);
+      printLog.i('Email $email removido de activeUsers de $pc/$sn');
+    } else {
+      printLog.i('Email $email no estaba en activeUsers de $pc/$sn');
+    }
+  } catch (e) {
+    printLog.i('Error removiendo email de activeUsers: $e');
+  }
+}
+
+/// Verifica si el usuario debe ser removido de activeUsers basado en previous connections
+Future<void> checkAndRemoveFromActiveUsers(
+    String pc, String sn, String userEmail, String deviceName) async {
+  try {
+    // Verificar si el usuario aún tiene conexiones previas con este dispositivo
+    final response = await service.getItem(
+      tableName: 'Alexa-Devices',
+      key: {
+        'email': AttributeValue(s: userEmail),
+      },
+    );
+
+    if (response.item != null) {
+      var item = response.item!;
+      List<String> previousConnections = item['previusConnections']?.ss ?? [];
+
+      if (previousConnections.contains('') && previousConnections.length == 1) {
+        previousConnections = [];
+      }
+
+      // Si el dispositivo no está en previous connections, remover de activeUsers
+      if (!previousConnections.contains(deviceName)) {
+        await removeFromActiveUsers(pc, sn, userEmail);
+        printLog.i('Usuario $userEmail removido de activeUsers para $pc/$sn');
+      } else {
+        printLog
+            .i('Usuario $userEmail mantiene conexión previa con $deviceName');
+      }
+    }
+  } catch (e, s) {
+    printLog.e('Error verificando previous connections: $e');
+    printLog.t('Stack trace: $s');
+    // No relanzar el error para no afectar el flujo principal
+  }
+}
+//*-Nueva lógica: Tokens en Alexa-Devices y ActiveUsers en sime-domotica-*\\
 
 //*-Guarda el mail del owner de un equipo en dynamo-*\\
 Future<void> putOwner(String pc, String sn, String data) async {
@@ -828,132 +1062,173 @@ Future<Map<String, dynamic>> getGeneralData() async {
 }
 //*-Obtener datos generales de la aplicación desde GENERALDATA-*\\
 
-//*- Guarda evento: Control por disparadores -*\\
-/// Obtiene los ejecutores existentes de un evento disparador para un tipo específico de alerta
-Future<Map<String, bool>> getEventoDisparador(String activador,
-    {String? tipoAlerta}) async {
+//*- Guarda evento: Control por disparadores (NUEVA LÓGICA) -*\\
+/// Guarda un evento de control por disparadores en la nueva tabla
+/// [activador] es el nombre del dispositivo que activa el disparador
+/// [email] es el email del usuario
+/// [nombreEvento] es el nombre del evento
+/// [nuevosEjecutores] son los ejecutores a guardar con sus estados (true/false)
+/// [tipoAlerta] especifica el tipo de alerta:
+///   - Para alertas simples: 'ejecutoresAlert_true' o 'ejecutoresAlert_false'
+///   - Para termómetros: 'ejecutoresMAX_true', 'ejecutoresMAX_false', 'ejecutoresMIN_true', 'ejecutoresMIN_false'
+Future<void> putEventoControlPorDisparadores(
+  String activador,
+  String email,
+  String nombreEvento,
+  Map<String, bool> nuevosEjecutores, {
+  String tipoAlerta = 'ejecutoresAlert_true',
+}) async {
   try {
-    final response = await service.getItem(
+    String sortKey = '$email:$nombreEvento';
+
+    final response = await service.putItem(
+      tableName: 'Eventos_ControlPorDisparadores',
+      item: {
+        'deviceName': AttributeValue(s: activador),
+        'email:nombreEvento': AttributeValue(s: sortKey),
+        tipoAlerta: AttributeValue(
+          m: {
+            for (final entry in nuevosEjecutores.entries)
+              entry.key: AttributeValue(boolValue: entry.value),
+          },
+        ),
+      },
+    );
+
+    printLog.i(
+        'Evento de control por disparadores guardado (nueva lógica): $response');
+  } catch (e) {
+    printLog.i('Error guardando evento de control por disparadores: $e');
+  }
+}
+
+/// Elimina ejecutores específicos de un evento disparador
+/// [activador] es el nombre del dispositivo activador
+/// [sortKey] es la clave de ordenamiento (email:nombreEvento)
+/// NUEVA LÓGICA: Primero intenta eliminar de Eventos_ControlPorDisparadores
+/// Si no funciona, usa fallback a Eventos_ControlDisparadores (tabla vieja)
+void removeEjecutoresFromDisparador(String activador, String sortKey) async {
+  try {
+    printLog.i('Iniciando eliminación para activador: $activador');
+    printLog.i('SortKey: $sortKey');
+
+    // PASO 1: Intentar nueva lógica - eliminar de Eventos_ControlPorDisparadores
+    bool nuevaLogicaExitosa = await _tryRemoveFromNewTable(activador, sortKey);
+
+    if (nuevaLogicaExitosa) {
+      printLog.i(
+          'Nueva lógica exitosa: eventos eliminados de Eventos_ControlPorDisparadores');
+      return;
+    }
+
+    // PASO 2: Fallback - eliminar de tabla vieja Eventos_ControlDisparadores
+    printLog.i('Nueva lógica falló, usando fallback con tabla vieja');
+    await _removeFromOldTable(activador);
+  } catch (e) {
+    printLog
+        .i('Error general eliminando evento de control por disparadores: $e');
+  }
+}
+
+/// Intenta eliminar todos los eventos del activador de la nueva tabla
+/// Retorna true si fue exitoso, false si no encontró datos o falló
+Future<bool> _tryRemoveFromNewTable(String activador, String sortKey) async {
+  try {
+    printLog.i('Intentando eliminar de Eventos_ControlPorDisparadores...');
+    final response = await service.deleteItem(
+      tableName: 'Eventos_ControlPorDisparadores',
+      key: {
+        'deviceName': AttributeValue(s: activador),
+        'email:nombreEvento': AttributeValue(s: sortKey),
+      },
+    );
+
+    if (response.attributes == null || response.attributes!.isEmpty) {
+      printLog.i(
+          'No se encontraron eventos para eliminar de Eventos_ControlPorDisparadores');
+      return false; // No había eventos para eliminar
+    }
+    printLog.i(
+        'Todos los eventos eliminados exitosamente de Eventos_ControlPorDisparadores');
+    return true;
+  } catch (e) {
+    printLog.i('Error en nueva lógica (Eventos_ControlPorDisparadores): $e');
+    return false;
+  }
+}
+
+/// Elimina el item del activador de la tabla vieja (fallback)
+Future<void> _removeFromOldTable(String activador) async {
+  try {
+    printLog.i('Eliminando de Eventos_ControlDisparadores (tabla vieja)...');
+
+    final response = await service.deleteItem(
       tableName: 'Eventos_ControlDisparadores',
       key: {
         'deviceName': AttributeValue(s: activador),
       },
     );
 
-    if (response.item != null) {
-      var item = response.item!;
-
-      // Si se especifica un tipo de alerta, buscar esa clave específica
-      String claveEjecutores = tipoAlerta ?? 'ejecutores';
-      Map<String, AttributeValue> ejecutoresMap =
-          item[claveEjecutores]?.m ?? {};
-      Map<String, bool> ejecutores = {};
-
-      for (String key in ejecutoresMap.keys) {
-        AttributeValue value = ejecutoresMap[key]!;
-        ejecutores[key] = value.boolValue ?? false;
-      }
-
-      printLog.i(
-          'Ejecutores existentes encontrados para $claveEjecutores: $ejecutores');
-      return ejecutores;
-    } else {
-      printLog.i('No se encontraron ejecutores existentes para $activador');
-      return {};
-    }
+    printLog.i(
+        'Evento eliminado de tabla vieja (Eventos_ControlDisparadores): $response');
   } catch (e) {
-    printLog.i('Error al obtener ejecutores existentes: $e');
-    return {};
-  }
-}
-
-/// Guarda el estado de los ejecutores de un evento disparador
-/// [activador] es el nombre del dispositivo que activa el disparador
-/// [nuevosEjecutores] son los ejecutores a guardar con sus estados (true/false)
-/// [tipoAlerta] especifica el tipo de alerta para construir la clave:
-///   - Para alertas simples: 'ejecutoresAlert_true' o 'ejecutoresAlert_false'
-///   - Para termómetros: 'ejecutoresMAX_true', 'ejecutoresMAX_false', 'ejecutoresMIN_true', 'ejecutoresMIN_false'
-void putEventoDisparador(String activador, Map<String, bool> nuevosEjecutores,
-    {String tipoAlerta = 'ejecutores'}) async {
-  try {
-    final response = await service
-        .updateItem(tableName: 'Eventos_ControlDisparadores', key: {
-      'deviceName': AttributeValue(s: activador),
-    }, attributeUpdates: {
-      tipoAlerta: AttributeValueUpdate(
-        value: AttributeValue(
-          m: {
-            for (final entry in nuevosEjecutores.entries)
-              entry.key: AttributeValue(boolValue: entry.value),
-          },
-        ),
-      ),
-    });
-
-    printLog.i('Ejecutores guardados para $tipoAlerta: $response');
-  } catch (e) {
-    printLog.i('Error guardando ejecutores: $e');
-  }
-}
-
-/// Elimina ejecutores específicos de un evento disparador
-/// [activador] es el nombre del dispositivo activador
-/// [ejecutoresAEliminar] lista de ejecutores a eliminar
-/// [tipoAlerta] especifica qué tipo de alerta eliminar (opcional, si no se especifica elimina de todos los tipos)
-void removeEjecutoresFromDisparador(
-    String activador, List<String> ejecutoresAEliminar,
-    {String? tipoAlerta}) async {
-  try {
-    if (tipoAlerta != null) {
-      // Eliminar de un tipo específico de alerta
-      Map<String, bool> ejecutoresExistentes =
-          await getEventoDisparador(activador, tipoAlerta: tipoAlerta);
-
-      if (ejecutoresExistentes.isEmpty) {
-        printLog
-            .i('No hay ejecutores existentes para $activador en $tipoAlerta');
-        return;
-      }
-
-      // Remover los ejecutores especificados
-      for (String ejecutor in ejecutoresAEliminar) {
-        ejecutoresExistentes.remove(ejecutor);
-      }
-
-      if (ejecutoresExistentes.isEmpty) {
-        // Eliminar la clave completa si no quedan ejecutores
-        await service.updateItem(
-          tableName: 'Eventos_ControlDisparadores',
-          key: {'deviceName': AttributeValue(s: activador)},
-          attributeUpdates: {
-            tipoAlerta: AttributeValueUpdate(action: AttributeAction.delete),
-          },
-        );
-        printLog.i('Eliminada clave $tipoAlerta para $activador');
-      } else {
-        // Actualizar con los ejecutores restantes
-        putEventoDisparador(activador, ejecutoresExistentes,
-            tipoAlerta: tipoAlerta);
-      }
-    } else {
-      // Eliminar de todos los tipos de alerta posibles
-      List<String> tiposAlerta = [
-        'ejecutores', // Retrocompatibilidad
-        'ejecutoresAlert_true',
-        'ejecutoresAlert_false',
-        'ejecutoresMAX_true',
-        'ejecutoresMAX_false',
-        'ejecutoresMIN_true',
-        'ejecutoresMIN_false',
-      ];
-
-      for (String tipo in tiposAlerta) {
-        removeEjecutoresFromDisparador(activador, ejecutoresAEliminar,
-            tipoAlerta: tipo);
-      }
-    }
-  } catch (e) {
-    printLog.i('Error eliminando ejecutores: $e');
+    printLog.i('Error eliminando de tabla vieja: $e');
   }
 }
 //*- Guarda evento: Control por disparadores -*\\
+
+//*- Guarda evento: Control por horarios -*\\
+/// Guarda un evento de control por horarios
+/// [horario] es la hora en formato string (PK)
+/// [email] es el email del usuario
+/// [nombreEvento] es el nombre del evento
+/// [ejecutores] mapa de ejecutores con sus estados (true/false)
+Future<void> putEventoControlPorHorarios(String horario, String email,
+    String nombreEvento, Map<String, bool> ejecutores) async {
+  try {
+    String sortKey = '$email:$nombreEvento';
+
+    final response = await service.putItem(
+      tableName: 'Eventos_ControlPorHorarios',
+      item: {
+        'horario': AttributeValue(s: horario),
+        'email:nombreEvento': AttributeValue(s: sortKey),
+        'ejecutores': AttributeValue(
+          m: {
+            for (final entry in ejecutores.entries)
+              entry.key: AttributeValue(boolValue: entry.value),
+          },
+        ),
+      },
+    );
+
+    printLog.i('Evento de control por horarios guardado: $response');
+  } catch (e) {
+    printLog.i('Error guardando evento de control por horarios: $e');
+  }
+}
+
+/// Elimina un evento de control por horarios
+/// [horario] es la hora en formato string (PK)
+/// [email] es el email del usuario
+/// [nombreEvento] es el nombre del evento
+Future<void> deleteEventoControlPorHorarios(
+    String horario, String email, String nombreEvento) async {
+  try {
+    String sortKey = '$email:$nombreEvento';
+
+    final response = await service.deleteItem(
+      tableName: 'Eventos_ControlPorHorarios',
+      key: {
+        'horario': AttributeValue(s: horario),
+        'email:nombreEvento': AttributeValue(s: sortKey),
+      },
+    );
+
+    printLog.i('Evento de control por horarios eliminado: $response');
+  } catch (e) {
+    printLog.i('Error eliminando evento de control por horarios: $e');
+  }
+}
+
+//*- Guarda evento: Control por horarios -*\\

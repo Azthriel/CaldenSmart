@@ -4,6 +4,7 @@ import 'package:caldensmart/Escenas/control_disparadores.dart';
 // import 'package:caldensmart/Escenas/control_cadena.dart';
 // import 'package:caldensmart/Escenas/control_clima.dart';
 import 'package:caldensmart/Escenas/control_grupo.dart';
+import 'package:caldensmart/Escenas/control_horario.dart';
 // import 'package:caldensmart/Escenas/control_horario.dart';
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
 import 'package:caldensmart/logger.dart';
@@ -1012,25 +1013,25 @@ class EscenasPageState extends State<EscenasPage> {
               subtitle: 'Programa eventos en días y horarios específicos',
               color: color0,
               onTap: () {
-                showToast("Próximamente");
-                // setState(() {
-                //   currentBuilder = () => ControlHorarioWidget(
-                //         onBackToMain: () =>
-                //             setState(() => currentBuilder = buildMainOptions),
-                //       );
-                //   deviceGroup.clear();
-                // });
-                // Future.delayed(const Duration(milliseconds: 350), () {
-                //   final context = _configCardKey.currentContext;
-                //   if (context != null && context.mounted) {
-                //     Scrollable.ensureVisible(
-                //       context,
-                //       duration: const Duration(milliseconds: 400),
-                //       curve: Curves.easeInOut,
-                //       alignment: 0.1,
-                //     );
-                //   }
-                // });
+                // showToast("Próximamente");
+                setState(() {
+                  currentBuilder = () => ControlHorarioWidget(
+                        onBackToMain: () =>
+                            setState(() => currentBuilder = buildMainOptions),
+                      );
+                  deviceGroup.clear();
+                });
+                Future.delayed(const Duration(milliseconds: 350), () {
+                  final context = _configCardKey.currentContext;
+                  if (context != null && context.mounted) {
+                    Scrollable.ensureVisible(
+                      context,
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeInOut,
+                      alignment: 0.1,
+                    );
+                  }
+                });
               },
             ),
             const SizedBox(height: 16),
@@ -1469,36 +1470,18 @@ class EscenasPageState extends State<EscenasPage> {
                                               'disparador') {
                                             String activador =
                                                 activadores.first;
-                                            List<String> ejecutoresAEliminar =
-                                                ejecutores;
 
-                                            // Determinar el tipo de alerta específico que se debe eliminar
-                                            String tipoAlerta;
-                                            bool isTermometro = activador
-                                                .contains('Termometro');
-
-                                            if (isTermometro) {
-                                              // Para termómetros, usar estado de temperatura (MAX/MIN) y estado de alerta
-                                              if (estadoTermometro == "1") {
-                                                tipoAlerta = estadoAlerta == "1"
-                                                    ? 'ejecutoresMAX_true'
-                                                    : 'ejecutoresMAX_false';
-                                              } else {
-                                                tipoAlerta = estadoAlerta == "1"
-                                                    ? 'ejecutoresMIN_true'
-                                                    : 'ejecutoresMIN_false';
-                                              }
-                                            } else {
-                                              // Para otros dispositivos, usar solo estado de alerta
-                                              tipoAlerta = estadoAlerta == "1"
-                                                  ? 'ejecutoresAlert_true'
-                                                  : 'ejecutoresAlert_false';
-                                            }
+                                            String sortKey =
+                                                '$currentUserEmail:$title';
 
                                             // Eliminar solo de este tipo específico de alerta
                                             removeEjecutoresFromDisparador(
-                                                activador, ejecutoresAEliminar,
-                                                tipoAlerta: tipoAlerta);
+                                                activador, sortKey);
+                                          } else if (eventoType == 'horario') {
+                                            deleteEventoControlPorHorarios(
+                                                selectedTime,
+                                                currentUserEmail,
+                                                title);
                                           }
                                         });
                                       },

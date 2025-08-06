@@ -367,6 +367,39 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
               return;
             }
 
+            // Validar límites lógicos entre alertas
+            if (type == 'max') {
+              // Si existe alerta mínima, la máxima debe ser mayor
+              if (alertMinTemp.isNotEmpty) {
+                double? minTemp = double.tryParse(alertMinTemp);
+                if (minTemp != null && tempValue <= minTemp) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                          'La alerta máxima debe ser mayor a la mínima ($alertMinTemp°C)'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+              }
+            } else {
+              // Si existe alerta máxima, la mínima debe ser menor
+              if (alertMaxTemp.isNotEmpty) {
+                double? maxTemp = double.tryParse(alertMaxTemp);
+                if (maxTemp != null && tempValue >= maxTemp) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                          'La alerta mínima debe ser menor a la máxima ($alertMaxTemp°C)'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+              }
+            }
+
             setState(() {
               if (type == 'max') {
                 alertMaxTemp = newValue;
@@ -486,79 +519,6 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                   height: screenHeight * 0.25,
                   child: Row(
                     children: [
-                      // Alerta Máxima
-                      Expanded(
-                        child: AnimatedOpacity(
-                          opacity: 1.0,
-                          duration: const Duration(milliseconds: 800),
-                          curve: Curves.easeInOut,
-                          child: Card(
-                            color: color3,
-                            elevation: 6,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              side: BorderSide(
-                                color: alertMaxFlag ? color5 : color2,
-                                width: 2,
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 500),
-                                    transitionBuilder: (Widget child,
-                                        Animation<double> animation) {
-                                      return ScaleTransition(
-                                          scale: animation, child: child);
-                                    },
-                                    child: Icon(
-                                      alertMaxFlag
-                                          ? Icons.warning_amber_rounded
-                                          : Icons.keyboard_arrow_up_rounded,
-                                      key: ValueKey<bool>(alertMaxFlag),
-                                      color: alertMaxFlag ? color5 : color2,
-                                      size: 32,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  const Flexible(
-                                    child: Text(
-                                      'Alerta Máxima',
-                                      style: TextStyle(
-                                        color: color0,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Flexible(
-                                    child: Text(
-                                      alertMaxTemp.isEmpty
-                                          ? "No configurado"
-                                          : "$alertMaxTemp°C",
-                                      style: TextStyle(
-                                        color: color0.withValues(alpha: 0.8),
-                                        fontSize: 11,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
                       // Alerta Mínima
                       Expanded(
                         child: AnimatedOpacity(
@@ -616,6 +576,79 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                       alertMinTemp.isEmpty
                                           ? "No configurado"
                                           : "$alertMinTemp°C",
+                                      style: TextStyle(
+                                        color: color0.withValues(alpha: 0.8),
+                                        fontSize: 11,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Alerta Máxima
+                      Expanded(
+                        child: AnimatedOpacity(
+                          opacity: 1.0,
+                          duration: const Duration(milliseconds: 800),
+                          curve: Curves.easeInOut,
+                          child: Card(
+                            color: color3,
+                            elevation: 6,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              side: BorderSide(
+                                color: alertMaxFlag ? color5 : color2,
+                                width: 2,
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 500),
+                                    transitionBuilder: (Widget child,
+                                        Animation<double> animation) {
+                                      return ScaleTransition(
+                                          scale: animation, child: child);
+                                    },
+                                    child: Icon(
+                                      alertMaxFlag
+                                          ? Icons.warning_amber_rounded
+                                          : Icons.keyboard_arrow_up_rounded,
+                                      key: ValueKey<bool>(alertMaxFlag),
+                                      color: alertMaxFlag ? color5 : color2,
+                                      size: 32,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  const Flexible(
+                                    child: Text(
+                                      'Alerta Máxima',
+                                      style: TextStyle(
+                                        color: color0,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Flexible(
+                                    child: Text(
+                                      alertMaxTemp.isEmpty
+                                          ? "No configurado"
+                                          : "$alertMaxTemp°C",
                                       style: TextStyle(
                                         color: color0.withValues(alpha: 0.8),
                                         fontSize: 11,
@@ -707,11 +740,9 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                             'Configurar Alerta Máxima',
                                             style: TextStyle(
                                               color: color0,
-                                              fontSize: 15,
+                                              fontSize: 16,
                                               fontWeight: FontWeight.bold,
                                             ),
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
                                           ),
                                         ),
                                         const SizedBox(width: 8),
@@ -737,8 +768,6 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                         color: color0.withValues(alpha: 0.8),
                                         fontSize: 12,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
                                     ),
                                   ],
                                 ),
@@ -806,11 +835,9 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                             'Configurar Alerta Mínima',
                                             style: TextStyle(
                                               color: color0,
-                                              fontSize: 18,
+                                              fontSize: 16,
                                               fontWeight: FontWeight.bold,
                                             ),
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
                                           ),
                                         ),
                                         const SizedBox(width: 8),
@@ -836,8 +863,6 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                         color: color0.withValues(alpha: 0.8),
                                         fontSize: 12,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
                                     ),
                                   ],
                                 ),
@@ -1004,7 +1029,8 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                 bottom: 0,
                 child: IgnorePointer(
                   ignoring: _isTutorialActive,
-                  child: CurvedNavigationBar(
+                  child: SafeArea(
+                    child: CurvedNavigationBar(
                     index: _selectedIndex,
                     height: 75.0,
                     items: const <Widget>[
@@ -1020,6 +1046,16 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                     onTap: onItemTapped,
                     letIndexChange: (index) => true,
                   ),
+                ),
+              ),
+               ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: MediaQuery.of(context).padding.bottom,
+                  color: Colors.black,
                 ),
               ),
             ],

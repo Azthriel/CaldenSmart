@@ -864,7 +864,7 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                   children: [
                     Icon(
                       Icons.thermostat_rounded,
-                      size: 200,
+                      size: MediaQuery.of(context).size.width * 0.5,
                       color: Color.lerp(
                         Colors.blueAccent,
                         Colors.redAccent,
@@ -962,6 +962,8 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                     ),
                   ],
                 ),
+                                const SizedBox(height: 120)
+
               ],
             ),
           ),
@@ -1191,6 +1193,8 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                   )
                 else
                   const SizedBox(),
+                                const SizedBox(height: 120),
+
               ],
             ),
           ),
@@ -1357,7 +1361,8 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                 bottom: 0,
                 child: IgnorePointer(
                   ignoring: _isTutorialActive,
-                  child: CurvedNavigationBar(
+                  child: SafeArea(
+                    child: CurvedNavigationBar(
                     index: _selectedIndex,
                     height: 75.0,
                     items: const <Widget>[
@@ -1374,6 +1379,16 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                     onTap: onItemTapped,
                     letIndexChange: (index) => true,
                   ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: MediaQuery.of(context).padding.bottom,
+                  color: Colors.black,
                 ),
               ),
             ],
