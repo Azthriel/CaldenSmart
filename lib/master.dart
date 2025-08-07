@@ -134,7 +134,6 @@ Map<String, String> nicknamesMap = {};
 //*-Nicknames-*\\
 
 //*-Notifications-*\\
-Map<String, String> tokensOfDevices = {};
 Map<String, List<bool>> notificationMap = {};
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -1995,11 +1994,11 @@ Future<void> handleNotifications(RemoteMessage message) async {
     soundOfNotification = await loadSounds();
     await DeviceManager.init();
     printLog.i('Llegó esta notif: ${message.data}', color: 'lima');
-    String product = message.data['pc']!;
-    String number = message.data['sn']!;
+    String product = message.data['pc'] ?? '000000_IOT';
+    String number = message.data['sn'] ?? '00000000';
     String device = DeviceManager.recoverDeviceName(product, number);
     String sound = soundOfNotification[product] ?? 'alarm2';
-    String caso = message.data['case']!;
+    String caso = message.data['case'] ?? 'unknown';
 
     printLog.i('El caso que llego es $caso');
 
@@ -3613,137 +3612,20 @@ class _VersionData {
 
 //*-Gestión centralizada de tokens-*\\
 class TokenManager {
-  /// Configura el token para un dispositivo específico usando SOLO la nueva lógica
-  static Future<void> setupToken(String pc, String sn, String device) async {
+  /// Configura el token del usuario para todos sus dispositivos (llamar desde menu)
+  static Future<void> setupUserTokens() async {
     try {
-      // Si es IOS recibo el APNS primero
+      printLog.i('Configurando tokens para el usuario...');
+
+      // Si es iOS, verificar APNS primero
       if (!android) {
         final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
         printLog.i("Token APNS: $apnsToken");
         if (apnsToken == null) {
-          printLog.i("Error al obtener el APNS");
+          printLog.e("Error al obtener el APNS");
           return;
         }
       }
-
-      // Obtener token actual
-      String? token = await FirebaseMessaging.instance.getToken();
-      printLog.i("Token actual de Firebase: $token");
-
-      if (token != null) {
-        await _addTokenSafelyNewLogic(pc, sn, device, token);
-        printLog
-            .i('Token configurado exitosamente para $device con nueva lógica');
-      }
-
-      // Escucha cuando el token cambie
-      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-        printLog.i('Token actualizado: $newToken');
-        try {
-          await _addTokenSafelyNewLogic(pc, sn, device, newToken);
-          printLog.i(
-              'Token actualizado exitosamente para $device con nueva lógica');
-        } catch (e, s) {
-          printLog.e('Error actualizando token: $e');
-          printLog.t('Stack trace: $s');
-        }
-      });
-    } catch (e, s) {
-      printLog.e('Error configurando token: $e');
-      printLog.t('Stack trace: $s');
-    }
-  }
-
-  /// Nueva lógica ÚNICA: Tokens en Alexa-Devices, activeUsers en sime-domotica
-  static Future<void> _addTokenSafelyNewLogic(
-      String pc, String sn, String device, String newToken) async {
-    if (newToken.isEmpty) return;
-
-    try {
-      String userEmail = currentUserEmail;
-
-      // 1. Obtener tokens actuales del usuario desde Alexa-Devices
-      List<String> userTokens = await getTokensFromAlexaDevices(userEmail);
-      Map<String, String> localTokens = await loadToken();
-
-      // 2. Remover token anterior de este dispositivo si existe
-      String? previousToken = localTokens[device];
-      if (previousToken != null && userTokens.contains(previousToken)) {
-        userTokens.remove(previousToken);
-        printLog.i('Token anterior removido para $device');
-      }
-
-      // 3. Añadir nuevo token solo si no existe
-      if (!userTokens.contains(newToken)) {
-        userTokens.add(newToken);
-        printLog.i('Nuevo token añadido para $device');
-      } else {
-        printLog.i('Token ya existe, no se añade duplicado');
-      }
-
-      // 4. Guardar tokens actualizados en Alexa-Devices
-      await putTokensInAlexaDevices(userEmail, userTokens);
-
-      // 5. Añadir usuario a activeUsers del dispositivo
-      await addToActiveUsers(pc, sn, userEmail);
-
-      // 6. Actualizar almacenamiento local
-      localTokens[device] = newToken;
-      await saveToken(localTokens);
-
-      printLog.i('Nueva lógica completada exitosamente para $device');
-    } catch (e, s) {
-      printLog.e('Error en nueva lógica: $e');
-      printLog.t('Stack trace: $s');
-      rethrow;
-    }
-  }
-
-  /// Remueve el token del usuario actual usando SOLO la nueva lógica
-  static Future<void> removeCurrentUserToken(String deviceName) async {
-    try {
-      String pc = DeviceManager.getProductCode(deviceName);
-      String sn = DeviceManager.extractSerialNumber(deviceName);
-      String userEmail = currentUserEmail;
-
-      // 1. Obtener tokens del usuario desde Alexa-Devices
-      List<String> userTokens = await getTokensFromAlexaDevices(userEmail);
-      Map<String, String> localTokens = await loadToken();
-
-      // 2. Obtener el token específico del usuario para este dispositivo
-      String? currentUserToken = localTokens[deviceName];
-
-      if (currentUserToken != null && userTokens.contains(currentUserToken)) {
-        // 3. Remover token del usuario en Alexa-Devices
-        userTokens.remove(currentUserToken);
-        await putTokensInAlexaDevices(userEmail, userTokens);
-        printLog.i('Token removido de Alexa-Devices para $deviceName');
-
-        // 4. Verificar y remover de activeUsers si ya no tiene conexiones válidas
-        await checkAndRemoveFromActiveUsers(pc, sn, userEmail, deviceName);
-
-        // 5. Actualizar almacenamiento local
-        localTokens.remove(deviceName);
-        await saveToken(localTokens);
-        tokensOfDevices.remove(deviceName);
-
-        printLog.i('Token del usuario removido exitosamente para $deviceName');
-      } else {
-        printLog.i(
-            'No se encontró token del usuario para $deviceName o ya fue removido');
-      }
-    } catch (e, s) {
-      printLog.e('Error removiendo token del usuario para $deviceName: $e');
-      printLog.t('Stack trace: $s');
-      rethrow;
-    }
-  }
-
-  /// Actualiza el token para todos los dispositivos del usuario al iniciar la aplicación
-  static Future<void> refreshAllDeviceTokens() async {
-    try {
-      printLog.i(
-          'Iniciando actualización de tokens para todos los dispositivos...');
 
       // Obtener token actual de Firebase
       String? currentToken = await FirebaseMessaging.instance.getToken();
@@ -3752,36 +3634,43 @@ class TokenManager {
         return;
       }
 
-      printLog.i('Token actual de Firebase: $currentToken');
+      printLog.i('Token actual del usuario: $currentToken');
 
-      // Obtener dispositivos del usuario
-      Map<String, String> localTokens = await loadToken();
-
-      if (localTokens.isEmpty) {
-        printLog.i('No hay dispositivos registrados para actualizar tokens');
+      String userEmail = currentUserEmail;
+      if (userEmail.isEmpty) {
+        printLog.e('No hay usuario logueado');
         return;
       }
 
-      printLog
-          .i('Actualizando tokens para ${localTokens.length} dispositivos...');
+      // Obtener tokens actuales del usuario desde Alexa-Devices
+      List<String> userTokens = await getTokensFromAlexaDevices(userEmail);
+      String oldToken = await loadToken();
 
-      // Actualizar token para cada dispositivo
-      for (String deviceName in localTokens.keys) {
-        try {
-          String pc = DeviceManager.getProductCode(deviceName);
-          String sn = DeviceManager.extractSerialNumber(deviceName);
+      // Actualizar token local si es diferente
+      if (oldToken != currentToken) {
+        await saveToken(currentToken);
+        printLog.i('Token local actualizado');
 
-          await _addTokenSafelyNewLogic(pc, sn, deviceName, currentToken);
-          printLog.i('Token actualizado para $deviceName');
-        } catch (e) {
-          printLog.e('Error actualizando token para $deviceName: $e');
-          // Continúa con el siguiente dispositivo en caso de error
+        // Eliminar token antiguo de la lista si existe
+        if (userTokens.contains(oldToken)) {
+          userTokens.remove(oldToken);
+          printLog
+              .i('Token antiguo eliminado de alexa-devices para $userEmail');
         }
       }
 
-      printLog.i('Actualización de tokens completada');
+      // Añadir nuevo token solo si no existe
+      if (!userTokens.contains(currentToken)) {
+        userTokens.add(currentToken);
+        await putTokensInAlexaDevices(userEmail, userTokens);
+        printLog.i('Token añadido a alexa-devices para $userEmail');
+      } else {
+        printLog.i('Token ya existe en alexa-devices');
+      }
+
+      printLog.i('Setup de tokens del usuario completado');
     } catch (e, s) {
-      printLog.e('Error en refreshAllDeviceTokens: $e');
+      printLog.e('Error en setup de tokens del usuario: $e');
       printLog.t('Stack trace: $s');
     }
   }

@@ -126,25 +126,6 @@ class MyAppState extends State<MyApp> {
     printLog.i('Valores cargados');
     await setupMqtt();
     listenToTopics();
-
-    // Configurar listener global para cambios de token
-    _setupTokenRefreshListener();
-  }
-
-  void _setupTokenRefreshListener() {
-    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-      printLog.i('Token de Firebase actualizado globalmente: $newToken');
-      try {
-        // Solo actualizar si hay un usuario logueado
-        if (currentUserEmail.isNotEmpty) {
-          await TokenManager.refreshAllDeviceTokens();
-          printLog
-              .i('Tokens de dispositivos actualizados tras cambio de token');
-        }
-      } catch (e) {
-        printLog.e('Error actualizando tokens tras cambio global de token: $e');
-      }
-    });
   }
 
   @override

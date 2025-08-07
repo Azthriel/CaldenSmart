@@ -635,8 +635,16 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                 ),
                 filled: true,
                 fillColor: color1,
+                errorText: title.text.contains(':')
+                    ? 'No se permiten dos puntos (:)'
+                    : null,
               ),
               style: GoogleFonts.poppins(color: color3),
+              onChanged: (value) {
+                setState(() {
+                  // Actualizar el estado para mostrar/ocultar el error
+                });
+              },
             ),
             const SizedBox(height: 16),
           ],
@@ -656,7 +664,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
         return deviceActions.isNotEmpty &&
             deviceActions.length == selectedDevices.length;
       case 3:
-        return title.text.isNotEmpty;
+        return title.text.isNotEmpty && !title.text.contains(':');
       default:
         return false;
     }
@@ -680,12 +688,46 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
   void _confirmarHorario() {
     String horario =
         '${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}';
+
+    // Convertir días de strings a números (0=Domingo, 1=Lunes, etc.)
+    List<int> daysAsNumbers = selectedDays
+        .map((day) {
+          switch (day.toLowerCase()) {
+            case 'domingo':
+              return 0;
+            case 'lunes':
+              return 1;
+            case 'martes':
+              return 2;
+            case 'miercoles' || 'miércoles':
+              return 3;
+            case 'jueves':
+              return 4;
+            case 'viernes':
+              return 5;
+            case 'sabado' || 'sábado':
+              return 6;
+            default:
+              return -1; // Error
+          }
+        })
+        .where((day) => day != -1)
+        .toList();
+
+    // Obtener información de timezone del dispositivo
+    DateTime now = DateTime.now();
+    int timezoneOffset = now.timeZoneOffset.inHours;
+    String timezoneName = now.timeZoneName;
+
     printLog.i("=== CONTROL HORARIO CREADO ===");
     printLog.i("Nombre: ${title.text}");
     printLog.i("Dispositivos: $selectedDevices");
-    printLog.i("Días: $selectedDays");
+    printLog.i("Días originales: $selectedDays");
+    printLog.i("Días como números: $daysAsNumbers");
     printLog.i("Hora: $horario");
     printLog.i("Acciones: $deviceActions");
+    printLog.i("Timezone offset: $timezoneOffset");
+    printLog.i("Timezone name: $timezoneName");
 
     eventosCreados.add({
       'evento': 'horario',
@@ -700,6 +742,10 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
     printLog.i("$eventosCreados", color: 'verde');
 
     putEventos(currentUserEmail, eventosCreados);
+
+    // Llamar con los días como números y timezone info
+    putEventoControlPorHorarios(horario, currentUserEmail, title.text,
+        deviceActions, daysAsNumbers, timezoneOffset, timezoneName);
 
     setState(() {
       _initializeData();

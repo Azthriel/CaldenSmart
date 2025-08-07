@@ -96,7 +96,7 @@ class LoadState extends State<LoadingPage> {
         subToTopicMQTT('devices_tx/$pc/$sn');
       }
 
-      TokenManager.setupToken(pc, sn, deviceName);
+      await addToActiveUsers(pc, sn, currentUserEmail);
 
       String ubi = (await Geolocator.getCurrentPosition()).toString();
 

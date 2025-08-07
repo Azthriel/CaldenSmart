@@ -6,11 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 //*-Cargo toda la data-*\\
 Future<void> loadValues() async {
   globalDATA = await loadGlobalData();
-  // previusConnections = await loadDeviceList();
-  // alexaDevices = await loadAlexaDevices();
-  // topicsToSub = await loadTopicList();
-  // nicknamesMap = await loadNicknamesMap();
-  tokensOfDevices = await loadToken();
   notificationMap = await loadNotificationMap();
   deviceImages = await loadDeviceImages();
   soundOfNotification = await loadSounds();
@@ -166,19 +161,14 @@ Future<Map<String, String>> loadpinQuickAccess() async {
 //*-Dispositivos que tienen el acceso rápido habilitado-*\\
 
 //*-Tokens de los celulares-*\\
-Future<void> saveToken(Map<String, String> token) async {
+Future<void> saveToken(String token) async {
   final prefs = await SharedPreferences.getInstance();
-  String tokenString = json.encode(token);
-  await prefs.setString('CStokens', tokenString);
+  await prefs.setString('CStoken', token);
 }
 
-Future<Map<String, String>> loadToken() async {
+Future<String> loadToken() async {
   final prefs = await SharedPreferences.getInstance();
-  String? tokenString = prefs.getString('CStokens');
-  if (tokenString != null) {
-    return Map<String, String>.from(json.decode(tokenString));
-  }
-  return {}; // Devuelve un mapa vacío si no hay nada almacenado
+  return prefs.getString('CStoken') ?? '';
 }
 //*-Tokens de los celulares-*\\
 

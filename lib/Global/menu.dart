@@ -2,6 +2,7 @@ import 'package:caldensmart/Global/stored_data.dart';
 import 'package:caldensmart/Global/watchers.dart';
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
 import 'package:caldensmart/logger.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '/Global/scan.dart';
@@ -26,6 +27,45 @@ class MenuPageState extends State<MenuPage> {
   void initState() {
     super.initState();
     _initialPageFuture = getInitialPageIndex();
+    _setupTokenManagement();
+  }
+
+  void _setupTokenManagement() {
+    // Setup inicial de tokens del usuario
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Esperar a que _initAsync termine de cargar currentUserEmail
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (currentUserEmail.isNotEmpty) {
+        await TokenManager.setupUserTokens();
+      }
+    });
+
+    // Listener para cambios de token
+    _setupTokenRefreshListener();
+  }
+
+  void _setupTokenRefreshListener() {
+    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+      printLog.i('Token de Firebase actualizado: $newToken');
+      try {
+        // El usuario ya está logueado cuando llega al MenuPage
+        if (currentUserEmail.isNotEmpty) {
+          String userEmail = currentUserEmail;
+          
+          // Obtener tokens actuales del usuario
+          List<String> userTokens = await getTokensFromAlexaDevices(userEmail);
+          
+          // Añadir nuevo token si no existe
+          if (!userTokens.contains(newToken)) {
+            userTokens.add(newToken);
+            await putTokensInAlexaDevices(userEmail, userTokens);
+            printLog.i('Nuevo token actualizado en alexa-devices');
+          }
+        }
+      } catch (e) {
+        printLog.e('Error actualizando token: $e');
+      }
+    });
   }
 
   Future<int> getInitialPageIndex() async {

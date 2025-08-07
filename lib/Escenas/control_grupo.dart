@@ -434,8 +434,14 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
                 ),
                 filled: true,
                 fillColor: color1,
+                errorText: title.text.contains(':') ? 'No se permiten dos puntos (:)' : null,
               ),
               style: GoogleFonts.poppins(color: color3),
+              onChanged: (value) {
+                setState(() {
+                  // Actualizar el estado para mostrar/ocultar el error
+                });
+              },
             ),
             const SizedBox(height: 16),
           ],
@@ -450,7 +456,7 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
       case 0:
         return deviceGroup.length >= 2;
       case 1:
-        return title.text.isNotEmpty;
+        return title.text.isNotEmpty && !title.text.contains(':');
       default:
         return false;
     }

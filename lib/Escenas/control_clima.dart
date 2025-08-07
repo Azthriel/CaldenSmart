@@ -650,8 +650,14 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
             ),
             filled: true,
             fillColor: color1,
+            errorText: title.text.contains(':') ? 'No se permiten dos puntos (:)' : null,
           ),
           style: GoogleFonts.poppins(color: color3),
+          onChanged: (value) {
+            setState(() {
+              // Actualizar el estado para mostrar/ocultar el error
+            });
+          },
         ),
         const SizedBox(height: 16),
       ],
@@ -667,7 +673,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
       case 2:
         return deviceGroup.every((device) => deviceActions.containsKey(device));
       case 3:
-        return title.text.isNotEmpty;
+        return title.text.isNotEmpty && !title.text.contains(':');
       default:
         return false;
     }

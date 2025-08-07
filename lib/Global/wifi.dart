@@ -124,7 +124,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
               onPressed: () {
                 // Cerrar el diálogo inmediatamente
                 Navigator.of(context).pop();
-                
+
                 // Ejecutar las operaciones de eliminación de forma asíncrona
                 _performDelete(deviceName, equipo);
               },
@@ -143,24 +143,14 @@ class WifiPageState extends ConsumerState<WifiPage> {
     alexaDevices.removeWhere((d) => d.contains(deviceName));
     todosLosDispositivos.removeWhere((e) => e.value == deviceName);
     setState(() {});
+    final String sn = DeviceManager.extractSerialNumber(deviceName);
 
     // Actualizar datos remotos
-    await putPreviusConnections(
-        currentUserEmail, previusConnections);
+    await putPreviusConnections(currentUserEmail, previusConnections);
     await putDevicesForAlexa(currentUserEmail, previusConnections);
+    await removeFromActiveUsers(equipo, sn, currentUserEmail);
 
-    // Remover solo el token del usuario actual del equipo
-    try {
-      await TokenManager.removeCurrentUserToken(deviceName);
-      printLog.i(
-          'Token del usuario actual removido del equipo $deviceName');
-    } catch (e) {
-      printLog.e(
-          'Error removiendo token del usuario actual del equipo $deviceName: $e');
-    }
-
-    final topic =
-        'devices_tx/$equipo/${DeviceManager.extractSerialNumber(deviceName)}';
+    final topic = 'devices_tx/$equipo/$sn';
     unSubToTopicMQTT(topic);
     topicsToSub.remove(topic);
   }

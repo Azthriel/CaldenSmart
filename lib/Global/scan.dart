@@ -28,6 +28,10 @@ class ScanPageState extends State<ScanPage>
   String searchQuery = '';
   bool toastFlag = false;
   Map<String, int> deviceRssi = {};
+  Set<String> lostDevices = {};
+  Timer? _updateTimer;
+  bool _needsUpdate = false;
+  Timer? _cleanupTimer;
 
   int connectionTry = 0;
   final TextEditingController searchController = TextEditingController();
@@ -58,10 +62,17 @@ class ScanPageState extends State<ScanPage>
         duration: const Duration(seconds: 1),
       )..forward();
     }
+    _cleanupTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (mounted) {
+        _removeLostDevices();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _updateTimer?.cancel();
+    _cleanupTimer?.cancel();
     _animationController.dispose();
     searchController.dispose();
     _controller.dispose();
@@ -70,7 +81,11 @@ class ScanPageState extends State<ScanPage>
     super.dispose();
   }
 
-  Icon _signalIcon(int rssi) {
+  Icon _signalIcon(int rssi, {bool isLost = false}) {
+    if (isLost) {
+      return const Icon(HugeIcons.strokeRoundedSignalNo02,
+          color: Colors.white, size: 24);
+    }
     if (rssi >= -60) {
       // Mejor señal: FullSignalIconPlus
       return const Icon(HugeIcons.strokeRoundedSignalFull02,
@@ -93,47 +108,16 @@ class ScanPageState extends State<ScanPage>
       toastFlag = false;
       try {
         FlutterBluePlus.isScanningNow ? FlutterBluePlus.stopScan() : null;
-        // await FlutterBluePlus.startScan(
-        //   withMsd: [
-        //     MsdFilter(0x6143),
-        //   ],
-        //   timeout: const Duration(seconds: 30),
-        //   androidUsesFineLocation: true,
-        //   continuousUpdates: true,
-        //   removeIfGone: const Duration(seconds: 30),
-        // );
-        // await Future.delayed(
-        //   const Duration(seconds: 1),
-        // );
         await FlutterBluePlus.startScan(
           withKeywords: keywords,
           androidUsesFineLocation: true,
           continuousUpdates: true,
-          removeIfGone: const Duration(seconds: 30),
         );
 
         listener = FlutterBluePlus.scanResults.listen(
           (results) {
             if (!mounted) return;
-            for (ScanResult result in results) {
-              deviceRssi[result.device.remoteId.toString()] = result.rssi;
-
-              if (!devices
-                  .any((device) => device.remoteId == result.device.remoteId)) {
-                if (navigatorKey.currentContext?.mounted ?? context.mounted) {
-                  setState(() {
-                    devices.add(result.device);
-
-                    sortedDevices = devices;
-                  });
-                }
-              }
-              lastSeenDevices[result.device.remoteId.toString()] =
-                  DateTime.now();
-            }
-            if (mounted) {
-              _removeLostDevices();
-            }
+            _processScanResults(results);
           },
         );
       } catch (e, stackTrace) {
@@ -143,24 +127,70 @@ class ScanPageState extends State<ScanPage>
     }
   }
 
-  void _removeLostDevices() {
-    if (!context.mounted) {
-      return;
-    }
-    DateTime now = DateTime.now();
-    if (context.mounted) {
-      setState(() {
-        devices.removeWhere((device) {
-          final lastSeen = lastSeenDevices[device.remoteId.toString()];
-          if (lastSeen != null && now.difference(lastSeen).inSeconds > 30) {
-            printLog.i('Borre ${device.platformName}');
-            lastSeenDevices.remove(device.remoteId.toString());
-            return true;
-          }
-          return false;
-        });
+  void _processScanResults(List<ScanResult> results) {
+    bool hasChanges = false;
 
-        sortedDevices = devices;
+    for (ScanResult result in results) {
+      deviceRssi[result.device.remoteId.toString()] = result.rssi;
+
+      if (!devices.any((device) => device.remoteId == result.device.remoteId)) {
+        devices.add(result.device);
+        hasChanges = true;
+      }
+
+      // Si el dispositivo vuelve a aparecer, quitarlo de la lista de perdidos
+      String deviceId = result.device.remoteId.toString();
+      if (lostDevices.contains(deviceId)) {
+        lostDevices.remove(deviceId);
+        hasChanges = true;
+      }
+
+      lastSeenDevices[result.device.remoteId.toString()] = DateTime.now();
+    }
+
+    // Solo actualizar UI si hay cambios y usando debouncing
+    if (hasChanges && !_needsUpdate) {
+      _needsUpdate = true;
+      _updateTimer?.cancel();
+      _updateTimer = Timer(const Duration(milliseconds: 300), () {
+        if (mounted && _needsUpdate) {
+          setState(() {
+            sortedDevices = List.from(devices);
+            _needsUpdate = false;
+          });
+        }
+      });
+    }
+
+    // Llamar a _removeLostDevices con menos frecuencia
+    if (mounted) {
+      _removeLostDevices();
+    }
+  }
+
+  void _removeLostDevices() {
+    if (!context.mounted) return;
+
+    DateTime now = DateTime.now();
+    List<String> devicesToMarkAsLost = [];
+
+    // Identificar dispositivos a marcar como perdidos
+    for (var device in devices) {
+      final lastSeen = lastSeenDevices[device.remoteId.toString()];
+      String deviceId = device.remoteId.toString();
+
+      if (lastSeen != null &&
+          now.difference(lastSeen).inSeconds > 8 &&
+          !lostDevices.contains(deviceId)) {
+        devicesToMarkAsLost.add(deviceId);
+        printLog.i('Marcando como perdido: ${device.platformName}');
+      }
+    }
+
+    //  Solo actualizar si hay dispositivos que marcar como perdidos
+    if (devicesToMarkAsLost.isNotEmpty && context.mounted) {
+      setState(() {
+        lostDevices.addAll(devicesToMarkAsLost);
       });
     }
   }
@@ -259,6 +289,8 @@ class ScanPageState extends State<ScanPage>
     context.mounted
         ? setState(() {
             devices.clear();
+            lostDevices.clear();
+            lastSeenDevices.clear();
           })
         : null;
     scan();
@@ -548,6 +580,9 @@ class ScanPageState extends State<ScanPage>
                           device.platformName);
                       final rssi = deviceRssi[device.remoteId.toString()] ?? 0;
 
+                      final isLost =
+                          lostDevices.contains(device.remoteId.toString());
+
                       List<dynamic> admins =
                           globalDATA['$productCode/$serialNumber']
                                   ?['secondary_admin'] ??
@@ -562,7 +597,8 @@ class ScanPageState extends State<ScanPage>
                               null;
                       bool condicion = productCode != '015773_IOT' &&
                           owner &&
-                          quickAccess.contains(device.platformName);
+                          quickAccess.contains(device.platformName) &&
+                          !isLost;
 
                       bool estadoWState = (productCode == '020010_IOT' ||
                               productCode == '020020_IOT' ||
@@ -598,39 +634,54 @@ class ScanPageState extends State<ScanPage>
                           scale: _animationController
                               .drive(CurveTween(curve: Curves.easeOut)),
                           child: GestureDetector(
-                            onTapDown: (_) {
-                              setState(() {
-                                _touchedDeviceId = device.remoteId.toString();
-                              });
-                            },
-                            onTap: () {
-                              setState(() {
-                                _touchedDeviceId = device.remoteId.toString();
-                              });
+                            onTapDown: isLost
+                                ? null
+                                : (_) {
+                                    setState(() {
+                                      _touchedDeviceId =
+                                          device.remoteId.toString();
+                                    });
+                                  },
+                            onTap: isLost
+                                ? () {
+                                    showToast(
+                                      'Dispositivo fuera de alcance, no se puede conectar',
+                                    );
+                                  }
+                                : () {
+                                    setState(() {
+                                      _touchedDeviceId =
+                                          device.remoteId.toString();
+                                    });
 
-                              Future.delayed(const Duration(milliseconds: 200),
-                                  () {
-                                setState(() {
-                                  _touchedDeviceId = null;
-                                });
-                              });
+                                    Future.delayed(
+                                        const Duration(milliseconds: 200), () {
+                                      setState(() {
+                                        _touchedDeviceId = null;
+                                      });
+                                    });
 
-                              showToast('Intentando conectarse al equipo');
-                              connectToDevice(device);
-                            },
-                            onTapUp: (_) {
-                              Future.delayed(const Duration(milliseconds: 200),
-                                  () {
-                                setState(() {
-                                  _touchedDeviceId = null;
-                                });
-                              });
-                            },
-                            onTapCancel: () {
-                              setState(() {
-                                _touchedDeviceId = null;
-                              });
-                            },
+                                    showToast(
+                                        'Intentando conectarse al equipo');
+                                    connectToDevice(device);
+                                  },
+                            onTapUp: isLost
+                                ? null
+                                : (_) {
+                                    Future.delayed(
+                                        const Duration(milliseconds: 200), () {
+                                      setState(() {
+                                        _touchedDeviceId = null;
+                                      });
+                                    });
+                                  },
+                            onTapCancel: isLost
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _touchedDeviceId = null;
+                                    });
+                                  },
                             child: AnimatedScale(
                               scale: isTouched ? 0.95 : 1.0,
                               duration: const Duration(milliseconds: 200),
@@ -639,181 +690,193 @@ class ScanPageState extends State<ScanPage>
                                 padding: const EdgeInsets.all(10),
                                 child: AspectRatio(
                                   aspectRatio: 1.5,
-                                  child: Card(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(15.0),
-                                      side: const BorderSide(
-                                        color: color6,
-                                        width: 2.0,
+                                  child: Opacity(
+                                    opacity: isLost ? 0.4 : 1.0,
+                                    child: Card(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(15.0),
+                                        side: BorderSide(
+                                          color: isLost ? Colors.grey : color6,
+                                          width: 2.0,
+                                        ),
                                       ),
-                                    ),
-                                    elevation: 8,
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(15.0),
-                                      child: Stack(
-                                        children: [
-                                          Positioned.fill(
-                                            child: imagePath != null
-                                                ? Image.file(
-                                                    File(imagePath),
-                                                    fit: BoxFit.cover,
-                                                  )
-                                                : Image.asset(
-                                                    ImageManager.rutaDeImagen(
-                                                      device.platformName,
+                                      elevation: isLost ? 2 : 8,
+                                      child: ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(15.0),
+                                        child: Stack(
+                                          children: [
+                                            Positioned.fill(
+                                              child: imagePath != null
+                                                  ? Image.file(
+                                                      File(imagePath),
+                                                      fit: BoxFit.cover,
+                                                    )
+                                                  : Image.asset(
+                                                      ImageManager.rutaDeImagen(
+                                                        device.platformName,
+                                                      ),
+                                                      fit: BoxFit.cover,
                                                     ),
-                                                    fit: BoxFit.cover,
+                                            ),
+                                            Positioned.fill(
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    colors: [
+                                                      Colors.transparent,
+                                                      Colors.black.withValues(
+                                                          alpha: 0.7),
+                                                    ],
+                                                    begin: Alignment.topCenter,
+                                                    end: Alignment.bottomCenter,
                                                   ),
-                                          ),
-                                          Positioned.fill(
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  colors: [
-                                                    Colors.transparent,
-                                                    Colors.black
-                                                        .withValues(alpha: 0.7),
-                                                  ],
-                                                  begin: Alignment.topCenter,
-                                                  end: Alignment.bottomCenter,
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                          Positioned(
-                                            top: 16,
-                                            left: 16,
-                                            child: SizedBox(
-                                              width: 270,
-                                              child: Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: Text(
-                                                      nicknamesMap[device
-                                                              .platformName] ??
-                                                          DeviceManager
-                                                              .getComercialName(
-                                                            device.platformName,
-                                                          ),
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 22,
-                                                        color: Colors.white,
-                                                        shadows: const [
-                                                          Shadow(
-                                                            offset: Offset(
-                                                                -1.5, -1.5),
-                                                            color: Colors.black,
-                                                          ),
-                                                          Shadow(
-                                                            offset: Offset(
-                                                                1.5, -1.5),
-                                                            color: Colors.black,
-                                                          ),
-                                                          Shadow(
-                                                            offset: Offset(
-                                                                1.5, 1.5),
-                                                            color: Colors.black,
-                                                          ),
-                                                          Shadow(
-                                                            offset: Offset(
-                                                                -1.5, 1.5),
-                                                            color: Colors.black,
-                                                          ),
-                                                        ],
+                                            Positioned(
+                                              top: 16,
+                                              left: 16,
+                                              child: SizedBox(
+                                                width: 270,
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        nicknamesMap[device
+                                                                .platformName] ??
+                                                            DeviceManager
+                                                                .getComercialName(
+                                                              device
+                                                                  .platformName,
+                                                            ),
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 22,
+                                                          color: Colors.white,
+                                                          shadows: const [
+                                                            Shadow(
+                                                              offset: Offset(
+                                                                  -1.5, -1.5),
+                                                              color:
+                                                                  Colors.black,
+                                                            ),
+                                                            Shadow(
+                                                              offset: Offset(
+                                                                  1.5, -1.5),
+                                                              color:
+                                                                  Colors.black,
+                                                            ),
+                                                            Shadow(
+                                                              offset: Offset(
+                                                                  1.5, 1.5),
+                                                              color:
+                                                                  Colors.black,
+                                                            ),
+                                                            Shadow(
+                                                              offset: Offset(
+                                                                  -1.5, 1.5),
+                                                              color:
+                                                                  Colors.black,
+                                                            ),
+                                                          ],
+                                                        ),
                                                       ),
                                                     ),
-                                                  ),
-                                                ],
+                                                  ],
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          Positioned(
-                                            bottom: 16,
-                                            left: 16,
-                                            right: 16,
-                                            child: Text(
-                                              device.platformName,
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 12,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                          Positioned(
-                                            bottom: 16,
-                                            right: condicion ? 70 : 16,
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 4),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black
-                                                    .withValues(alpha: 0.6),
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  const Icon(
-                                                    HugeIcons
-                                                        .strokeRoundedBluetooth,
-                                                    size: 20,
-                                                    color: Colors.white,
-                                                  ),
-                                                  const SizedBox(width: 10),
-                                                  _signalIcon(rssi),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                          Positioned(
-                                            top: 16,
-                                            right: 16,
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.all(4.0),
-                                              decoration: const BoxDecoration(
-                                                color: Colors.white,
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: const Icon(
-                                                HugeIcons
-                                                    .strokeRoundedBluetoothCircle,
-                                                size: 30,
-                                                color: Colors.black,
-                                              ),
-                                            ),
-                                          ),
-                                          if (condicion) ...[
                                             Positioned(
                                               bottom: 16,
+                                              left: 16,
                                               right: 16,
-                                              child: quickAction
-                                                  ? const CircularProgressIndicator(
-                                                      color: color1,
-                                                    )
-                                                  : Transform.scale(
-                                                      scale: 1.33,
-                                                      child: Switch(
-                                                        value: estadoWState,
-                                                        activeColor: color1,
-                                                        onChanged:
-                                                            (bool newValue) =>
-                                                                _runQuickAction(
-                                                                    device,
-                                                                    newValue),
-                                                      ),
-                                                    ),
+                                              child: Text(
+                                                device.platformName,
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 12,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
                                             ),
+                                            Positioned(
+                                              bottom: 16,
+                                              right: condicion ? 70 : 16,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black
+                                                      .withValues(alpha: 0.6),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    const Icon(
+                                                      HugeIcons
+                                                          .strokeRoundedBluetooth,
+                                                      size: 20,
+                                                      color: Colors.white,
+                                                    ),
+                                                    const SizedBox(width: 10),
+                                                    _signalIcon(rssi,
+                                                        isLost: isLost),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            Positioned(
+                                              top: 16,
+                                              right: 16,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.all(4.0),
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.white,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(
+                                                  HugeIcons
+                                                      .strokeRoundedBluetoothCircle,
+                                                  size: 30,
+                                                  color: Colors.black,
+                                                ),
+                                              ),
+                                            ),
+                                            if (condicion) ...[
+                                              Positioned(
+                                                bottom: 16,
+                                                right: 16,
+                                                child: quickAction
+                                                    ? const CircularProgressIndicator(
+                                                        color: color1,
+                                                      )
+                                                    : Transform.scale(
+                                                        scale: 1.33,
+                                                        child: Switch(
+                                                          value: estadoWState,
+                                                          activeColor: color1,
+                                                          onChanged: (bool
+                                                                  newValue) =>
+                                                              _runQuickAction(
+                                                                  device,
+                                                                  newValue),
+                                                        ),
+                                                      ),
+                                              ),
+                                            ],
                                           ],
-                                        ],
+                                        ),
                                       ),
                                     ),
                                   ),

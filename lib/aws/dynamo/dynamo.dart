@@ -142,7 +142,7 @@ Future<void> queryItems(String pc, String sn) async {
               case 'actualTemp':
                 globalDATA
                     .putIfAbsent('$pc/$sn', () => {})
-                    .addAll({key: value.s ?? '0'});
+                    .addAll({key: int.parse(value.n ?? '0')});
                 break;
               case 'alert_minflag':
                 globalDATA
@@ -1183,8 +1183,17 @@ Future<void> _removeFromOldTable(String activador) async {
 /// [email] es el email del usuario
 /// [nombreEvento] es el nombre del evento
 /// [ejecutores] mapa de ejecutores con sus estados (true/false)
-Future<void> putEventoControlPorHorarios(String horario, String email,
-    String nombreEvento, Map<String, bool> ejecutores) async {
+/// [days] lista de días como números (0=Domingo, 1=Lunes, etc.)
+/// [timezoneOffset] offset del timezone en horas desde UTC
+/// [timezoneName] nombre del timezone (ej: "GMT-03:00")
+Future<void> putEventoControlPorHorarios(
+    String horario,
+    String email,
+    String nombreEvento,
+    Map<String, bool> ejecutores,
+    List<int> days,
+    int timezoneOffset,
+    String timezoneName) async {
   try {
     String sortKey = '$email:$nombreEvento';
 
@@ -1199,10 +1208,17 @@ Future<void> putEventoControlPorHorarios(String horario, String email,
               entry.key: AttributeValue(boolValue: entry.value),
           },
         ),
+        'days': AttributeValue(
+          l: days.map((day) => AttributeValue(n: day.toString())).toList(),
+        ),
+        'timezoneOffset': AttributeValue(n: timezoneOffset.toString()),
+        'timezoneName': AttributeValue(s: timezoneName),
       },
     );
 
     printLog.i('Evento de control por horarios guardado: $response');
+    printLog.i('Días guardados como números: $days');
+    printLog.i('Timezone: $timezoneName (UTC${timezoneOffset >= 0 ? '+' : ''}$timezoneOffset)');
   } catch (e) {
     printLog.i('Error guardando evento de control por horarios: $e');
   }

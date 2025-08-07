@@ -829,8 +829,14 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                 ),
                 filled: true,
                 fillColor: color1,
+                errorText: title.text.contains(':') ? 'No se permiten dos puntos (:)' : null,
               ),
               style: GoogleFonts.poppins(color: color3),
+              onChanged: (value) {
+                setState(() {
+                  // Actualizar el estado para mostrar/ocultar el error
+                });
+              },
             ),
             const SizedBox(height: 16),
           ],
@@ -860,7 +866,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
         return deviceActions.isNotEmpty &&
             deviceActions.length == ejecutores.length;
       case 4:
-        return title.text.isNotEmpty;
+        return title.text.isNotEmpty && !title.text.contains(':');
       default:
         return false;
     }
