@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -438,40 +437,19 @@ class RelayPageState extends ConsumerState<RelayPage> {
     }
   }
 
-  Future<Position> _determinePosition() async {
-    bool serviceEnabled;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      showToast('La ubicación esta desactivada\nPor favor enciendala');
-      return Future.error('Los servicios de ubicación están deshabilitados.');
-    }
-    // Cuando los permisos están OK, obtenemos la ubicación actual
-    return await Geolocator.getCurrentPosition();
-  }
-
-  void controlTask(bool value, String device) async {
-    setState(() {
-      isTaskScheduled.addAll({device: value});
-    });
-    if (isTaskScheduled[device]!) {
+  void controlTask() async {
+    if (distanceControlActive) {
       // Programar la tarea.
       try {
         showToast('Recuerda tener la ubicación encendida.');
         String data = '${DeviceManager.getProductCode(deviceName)}[5](1)';
         myDevice.toolsUuid.write(data.codeUnits);
-        List<String> deviceControl = await loadDevicesForDistanceControl();
+        List<String> deviceControl =
+            await getDevicesInDistanceControl(currentUserEmail);
         deviceControl.add(deviceName);
-        saveDevicesForDistanceControl(deviceControl);
+        putDevicesInDistanceControl(currentUserEmail, deviceControl);
         printLog.i(
             'Hay ${deviceControl.length} equipos con el control x distancia');
-        Position position = await _determinePosition();
-        Map<String, double> maplatitude = await loadLatitude();
-        maplatitude.addAll({deviceName: position.latitude});
-        savePositionLatitude(maplatitude);
-        Map<String, double> maplongitude = await loadLongitud();
-        maplongitude.addAll({deviceName: position.longitude});
-        savePositionLongitud(maplongitude);
 
         if (deviceControl.length == 1) {
           await initializeService();
@@ -489,17 +467,12 @@ class RelayPageState extends ConsumerState<RelayPage> {
       showToast('Se cancelo el control por distancia');
       String data = '${DeviceManager.getProductCode(deviceName)}[5](0)';
       myDevice.toolsUuid.write(data.codeUnits);
-      List<String> deviceControl = await loadDevicesForDistanceControl();
+      List<String> deviceControl =
+          await getDevicesInDistanceControl(currentUserEmail);
       deviceControl.remove(deviceName);
-      saveDevicesForDistanceControl(deviceControl);
+      putDevicesInDistanceControl(currentUserEmail, deviceControl);
       printLog.i(
           'Quedan ${deviceControl.length} equipos con el control x distancia');
-      Map<String, double> maplatitude = await loadLatitude();
-      maplatitude.remove(deviceName);
-      savePositionLatitude(maplatitude);
-      Map<String, double> maplongitude = await loadLongitud();
-      maplongitude.remove(deviceName);
-      savePositionLongitud(maplongitude);
 
       if (deviceControl.isEmpty) {
         final backService = FlutterBackgroundService();
@@ -1047,12 +1020,10 @@ class RelayPageState extends ConsumerState<RelayPage> {
                         verifyPermission().then((result) {
                           if (result == true) {
                             setState(() {
-                              isTaskScheduled[deviceName] =
-                                  !(isTaskScheduled[deviceName] ?? false);
+                              distanceControlActive = !distanceControlActive;
                             });
-                            saveControlValue(isTaskScheduled);
-                            controlTask(isTaskScheduled[deviceName] ?? false,
-                                deviceName);
+
+                            controlTask();
                           } else {
                             showToast(
                               'Permitir ubicación todo el tiempo\nPara usar el control por distancia',
@@ -1068,7 +1039,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                       duration: const Duration(milliseconds: 500),
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: isTaskScheduled[deviceName] ?? false
+                        color: distanceControlActive
                             ? Colors.greenAccent
                             : Colors.redAccent,
                         shape: BoxShape.circle,
@@ -1081,7 +1052,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                         ],
                       ),
                       child: Icon(
-                          (isTaskScheduled[deviceName] ?? false)
+                          distanceControlActive
                               ? Icons.check_circle_outline_rounded
                               : Icons.cancel_rounded,
                           size: 80,
@@ -1090,12 +1061,12 @@ class RelayPageState extends ConsumerState<RelayPage> {
                   ),
                   const SizedBox(height: 10),
                   AnimatedOpacity(
-                    opacity: isTaskScheduled[deviceName] ?? false ? 1.0 : 0.0,
+                    opacity: distanceControlActive ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 500),
                     child: AnimatedSize(
                       duration: const Duration(milliseconds: 500),
                       curve: Curves.easeInOut,
-                      child: isTaskScheduled[deviceName] ?? false
+                      child: distanceControlActive
                           ? Column(
                               children: [
                                 // Tarjeta de Distancia de apagado
@@ -1292,8 +1263,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                     ),
                                   ),
                                 ),
-                                                                const SizedBox(height: 150),
-
+                                const SizedBox(height: 150),
                               ],
                             )
                           : const SizedBox(),
@@ -1725,26 +1695,26 @@ class RelayPageState extends ConsumerState<RelayPage> {
                 bottom: 0,
                 child: IgnorePointer(
                   ignoring: _isTutorialActive,
-                  child:  SafeArea(
-                    child:  CurvedNavigationBar(
-                    index: _selectedIndex,
-                    height: 75.0,
-                    items: const <Widget>[
-                      Icon(Icons.home, size: 30, color: color0),
-                      Icon(Icons.location_on, size: 30, color: color0),
-                      Icon(Icons.input, size: 30, color: color0),
-                      Icon(Icons.settings, size: 30, color: color0),
-                    ],
-                    color: color3,
-                    buttonBackgroundColor: color3,
-                    backgroundColor: Colors.transparent,
-                    animationCurve: Curves.easeInOut,
-                    animationDuration: const Duration(milliseconds: 600),
-                    onTap: onItemTapped,
-                    letIndexChange: (index) => true,
+                  child: SafeArea(
+                    child: CurvedNavigationBar(
+                      index: _selectedIndex,
+                      height: 75.0,
+                      items: const <Widget>[
+                        Icon(Icons.home, size: 30, color: color0),
+                        Icon(Icons.location_on, size: 30, color: color0),
+                        Icon(Icons.input, size: 30, color: color0),
+                        Icon(Icons.settings, size: 30, color: color0),
+                      ],
+                      color: color3,
+                      buttonBackgroundColor: color3,
+                      backgroundColor: Colors.transparent,
+                      animationCurve: Curves.easeInOut,
+                      animationDuration: const Duration(milliseconds: 600),
+                      onTap: onItemTapped,
+                      letIndexChange: (index) => true,
+                    ),
                   ),
                 ),
-              ),
               ),
               Positioned(
                 bottom: 0,

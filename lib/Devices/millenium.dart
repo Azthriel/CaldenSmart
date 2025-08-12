@@ -2,9 +2,6 @@ import 'dart:convert';
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
 import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../Global/manager_screen.dart';
@@ -589,144 +586,6 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
     }
   }
 
-  Future<Position> _determinePosition() async {
-    bool serviceEnabled;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      showToast('La ubicación esta desactivada\nPor favor enciendala');
-      return Future.error('Los servicios de ubicación están deshabilitados.');
-    }
-    // Cuando los permisos están OK, obtenemos la ubicación actual
-    return await Geolocator.getCurrentPosition();
-  }
-
-  void controlTask(bool value, String device) async {
-    setState(() {
-      isTaskScheduled.addAll({device: value});
-    });
-    if (isTaskScheduled[device]!) {
-      // Programar la tarea.
-      try {
-        showToast('Recuerda tener la ubicación encendida.');
-        String data = '${DeviceManager.getProductCode(deviceName)}[5](1)';
-        myDevice.toolsUuid.write(data.codeUnits);
-        List<String> deviceControl = await loadDevicesForDistanceControl();
-        deviceControl.add(deviceName);
-        saveDevicesForDistanceControl(deviceControl);
-        printLog.i(
-            'Hay ${deviceControl.length} equipos con el control x distancia');
-        Position position = await _determinePosition();
-        Map<String, double> maplatitude = await loadLatitude();
-        maplatitude.addAll({deviceName: position.latitude});
-        savePositionLatitude(maplatitude);
-        Map<String, double> maplongitude = await loadLongitud();
-        maplongitude.addAll({deviceName: position.longitude});
-        savePositionLongitud(maplongitude);
-
-        if (deviceControl.length == 1) {
-          await initializeService();
-          final backService = FlutterBackgroundService();
-          await backService.startService();
-          backService.invoke('distanceControl');
-          printLog.i('Servicio iniciado a las ${DateTime.now()}');
-        }
-      } catch (e) {
-        showToast('Error al iniciar control por distancia.');
-        printLog.i('Error al setear la ubicación $e');
-      }
-    } else {
-      // Cancelar la tarea.
-      showToast('Se cancelo el control por distancia');
-      String data = '${DeviceManager.getProductCode(deviceName)}[5](0)';
-      myDevice.toolsUuid.write(data.codeUnits);
-      List<String> deviceControl = await loadDevicesForDistanceControl();
-      deviceControl.remove(deviceName);
-      saveDevicesForDistanceControl(deviceControl);
-      printLog.i(
-          'Quedan ${deviceControl.length} equipos con el control x distancia');
-      Map<String, double> maplatitude = await loadLatitude();
-      maplatitude.remove(deviceName);
-      savePositionLatitude(maplatitude);
-      Map<String, double> maplongitude = await loadLongitud();
-      maplongitude.remove(deviceName);
-      savePositionLongitud(maplongitude);
-
-      if (deviceControl.isEmpty) {
-        final backService = FlutterBackgroundService();
-        backService.invoke("stopService");
-        backTimerDS?.cancel();
-        printLog.i('Servicio apagado');
-      }
-    }
-  }
-
-  Future<bool> verifyPermission() async {
-    try {
-      var permissionStatus4 = await Permission.locationAlways.status;
-      if (!permissionStatus4.isGranted) {
-        await showDialog<void>(
-          context: navigatorKey.currentContext ?? context,
-          barrierDismissible: false,
-          builder: (BuildContext dialogContext) {
-            return AlertDialog(
-              backgroundColor: const Color(0xFF252223),
-              title: const Text(
-                'Habilita la ubicación todo el tiempo',
-                style: TextStyle(color: Color(0xFFFFFFFF)),
-              ),
-              content: Text(
-                '$appName utiliza tu ubicación, incluso cuando la app esta cerrada o en desuso, para poder encender o apagar el calefactor en base a tu distancia con el mismo.',
-                style: const TextStyle(
-                  color: Color(0xFFFFFFFF),
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  style: const ButtonStyle(
-                    foregroundColor: WidgetStatePropertyAll(
-                      Color(0xFFFFFFFF),
-                    ),
-                  ),
-                  child: const Text('Habilitar'),
-                  onPressed: () async {
-                    try {
-                      var permissionStatus4 =
-                          await Permission.locationAlways.request();
-
-                      if (!permissionStatus4.isGranted) {
-                        await Permission.locationAlways.request();
-                      }
-                      permissionStatus4 =
-                          await Permission.locationAlways.status;
-                    } catch (e, s) {
-                      printLog.i(e);
-                      printLog.i(s);
-                    }
-                    Navigator.of(navigatorKey.currentContext ?? context)
-                        .pop(); // Cierra el AlertDialog
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      }
-
-      permissionStatus4 = await Permission.locationAlways.status;
-
-      if (permissionStatus4.isGranted) {
-        return true;
-      } else {
-        return false;
-      }
-    } catch (e, s) {
-      printLog.i('Error al habilitar la ubi: $e');
-      printLog.i(s);
-      return false;
-    }
-  }
-
   //! VISUAL
   @override
   Widget build(BuildContext context) {
@@ -962,8 +821,7 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                     ),
                   ],
                 ),
-                                const SizedBox(height: 120)
-
+                const SizedBox(height: 120)
               ],
             ),
           ),
@@ -1193,8 +1051,7 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                   )
                 else
                   const SizedBox(),
-                                const SizedBox(height: 120),
-
+                const SizedBox(height: 120),
               ],
             ),
           ),
@@ -1363,22 +1220,22 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                   ignoring: _isTutorialActive,
                   child: SafeArea(
                     child: CurvedNavigationBar(
-                    index: _selectedIndex,
-                    height: 75.0,
-                    items: const <Widget>[
-                      Icon(Icons.home, size: 30, color: color0),
-                      Icon(Icons.thermostat, size: 30, color: color0),
-                      Icon(Icons.calculate, size: 30, color: color0),
-                      Icon(Icons.settings, size: 30, color: color0),
-                    ],
-                    color: color3,
-                    buttonBackgroundColor: color3,
-                    backgroundColor: Colors.transparent,
-                    animationCurve: Curves.easeInOut,
-                    animationDuration: const Duration(milliseconds: 600),
-                    onTap: onItemTapped,
-                    letIndexChange: (index) => true,
-                  ),
+                      index: _selectedIndex,
+                      height: 75.0,
+                      items: const <Widget>[
+                        Icon(Icons.home, size: 30, color: color0),
+                        Icon(Icons.thermostat, size: 30, color: color0),
+                        Icon(Icons.calculate, size: 30, color: color0),
+                        Icon(Icons.settings, size: 30, color: color0),
+                      ],
+                      color: color3,
+                      buttonBackgroundColor: color3,
+                      backgroundColor: Colors.transparent,
+                      animationCurve: Curves.easeInOut,
+                      animationDuration: const Duration(milliseconds: 600),
+                      onTap: onItemTapped,
+                      letIndexChange: (index) => true,
+                    ),
                   ),
                 ),
               ),

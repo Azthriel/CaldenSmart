@@ -29,7 +29,8 @@ Future<void> queryItems(String pc, String sn) async {
           var displayValue = value?.s ??
               value?.n ??
               value?.boolValue.toString() ??
-              value?.ss?.join('/') ??
+              value?.ss ??
+              value?.m?.toString() ??
               "Desconocido";
           if (value != null) {
             switch (key) {
@@ -159,6 +160,16 @@ Future<void> queryItems(String pc, String sn) async {
                     .putIfAbsent('$pc/$sn', () => {})
                     .addAll({key: value.s ?? ''});
                 break;
+              case 'distanceControlActive':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.boolValue ?? false});
+                break;
+              case 'deviceLocation':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.s ?? ''});
+                break;
             }
           }
           printLog.i("$key: $displayValue");
@@ -174,70 +185,6 @@ Future<void> queryItems(String pc, String sn) async {
   }
 }
 //*-Lee todos los datos de un equipo-*\\
-
-//*-Guarda y lee Tokens en dynamo-*\\
-Future<void> putTokens(String pc, String sn, List<String> data) async {
-  try {
-    // Filtrar tokens vacíos y duplicados
-    Set<String> uniqueTokens = {};
-    List<String> cleanTokens = [];
-
-    for (String token in data) {
-      if (token.isNotEmpty && !uniqueTokens.contains(token)) {
-        uniqueTokens.add(token);
-        cleanTokens.add(token);
-      }
-    }
-
-    // Si no hay tokens válidos, usar string vacío como placeholder
-    if (cleanTokens.isEmpty) {
-      cleanTokens.add('');
-    }
-
-    final response = await service.updateItem(tableName: 'sime-domotica', key: {
-      'product_code': AttributeValue(s: pc),
-      'device_id': AttributeValue(s: sn),
-    }, attributeUpdates: {
-      'tokens': AttributeValueUpdate(value: AttributeValue(ss: cleanTokens)),
-    });
-
-    printLog.i('Item escrito perfectamente $response');
-  } catch (e) {
-    printLog.i('Error inserting item: $e');
-  }
-}
-
-Future<List<String>> getTokens(String pc, String sn) async {
-  try {
-    final response = await service.getItem(
-      tableName: 'sime-domotica',
-      key: {
-        'product_code': AttributeValue(s: pc),
-        'device_id': AttributeValue(s: sn),
-      },
-    );
-    if (response.item != null) {
-      // Convertir AttributeValue a String
-      var item = response.item!;
-      List<String> tokens = item['tokens']?.ss ?? [];
-
-      printLog.i('Se encontro el siguiente item: $tokens');
-
-      if (tokens.contains('') && tokens.length == 1) {
-        return [];
-      } else {
-        return tokens;
-      }
-    } else {
-      printLog.i('Item no encontrado.');
-      return [];
-    }
-  } catch (e) {
-    printLog.i('Error al obtener el item: $e');
-    return [];
-  }
-}
-//*-Guarda y lee Tokens en dynamo-*\\
 
 //*-Nueva lógica: Tokens en Alexa-Devices y ActiveUsers en sime-domotica-*\\
 /// Guarda tokens del usuario en Alexa-Devices (nueva lógica)
@@ -1218,7 +1165,8 @@ Future<void> putEventoControlPorHorarios(
 
     printLog.i('Evento de control por horarios guardado: $response');
     printLog.i('Días guardados como números: $days');
-    printLog.i('Timezone: $timezoneName (UTC${timezoneOffset >= 0 ? '+' : ''}$timezoneOffset)');
+    printLog.i(
+        'Timezone: $timezoneName (UTC${timezoneOffset >= 0 ? '+' : ''}$timezoneOffset)');
   } catch (e) {
     printLog.i('Error guardando evento de control por horarios: $e');
   }
@@ -1248,3 +1196,52 @@ Future<void> deleteEventoControlPorHorarios(
 }
 
 //*- Guarda evento: Control por horarios -*\\
+
+//*- Dispositivos control por distancia -*\\
+Future<void> putDevicesInDistanceControl(
+    String email, List<String> data) async {
+  if (data.isEmpty) {
+    data.add('');
+  }
+  try {
+    final response = await service.updateItem(tableName: 'Alexa-Devices', key: {
+      'email': AttributeValue(s: email)
+    }, attributeUpdates: {
+      'DevicesInDistanceControl':
+          AttributeValueUpdate(value: AttributeValue(ss: data)),
+    });
+
+    printLog.i('Item escrito perfectamente $response');
+  } catch (e) {
+    printLog.i('Error inserting item: $e');
+  }
+}
+
+Future<List<String>> getDevicesInDistanceControl(String email) async {
+  try {
+    final response = await service.getItem(
+      tableName: 'Alexa-Devices',
+      key: {'email': AttributeValue(s: email)},
+    );
+    if (response.item != null) {
+      // Convertir AttributeValue a String
+      var item = response.item!;
+      List<String> dsControl = item['DevicesInDistanceControl']?.ss ?? [];
+
+      printLog.i('Se encontro el siguiente item: $dsControl');
+
+      if (dsControl.contains('') && dsControl.length == 1) {
+        return [];
+      } else {
+        return dsControl;
+      }
+    } else {
+      printLog.i('Item no encontrado.');
+      return [];
+    }
+  } catch (e) {
+    printLog.i('Error al obtener el item: $e');
+    return [];
+  }
+}
+//*- Dispositivos control por distancia -*\\

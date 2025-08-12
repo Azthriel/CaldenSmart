@@ -1211,185 +1211,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
         ),
       ),
 
-      //*- Página 2 trackeo -*\\
-
-      // Stack(
-      //   children: [
-      //     Center(
-      //       child: Column(
-      //         mainAxisAlignment: MainAxisAlignment.center,
-      //         crossAxisAlignment: CrossAxisAlignment.center,
-      //         children: [
-      //           Text(
-      //             tracking
-      //                 ? 'Control por presencia iniciado'
-      //                 : 'Control por presencia desactivado',
-      //             style: GoogleFonts.poppins(
-      //               fontSize: 28,
-      //               fontWeight: FontWeight.bold,
-      //               color: color3,
-      //             ),
-      //             textAlign: TextAlign.center,
-      //           ),
-      //           const SizedBox(height: 40),
-      //           GestureDetector(
-      //             onTap: isAgreeChecked
-      //                 ? () {
-      //                     if (tracking) {
-      //                       showAlertDialog(
-      //                         context,
-      //                         false,
-      //                         const Text(
-      //                             '¿Seguro que quiere cancelar el control por presencia?'),
-      //                         const Text(
-      //                             'Deshabilitar hará que puedas controlarlo manualmente.\nSi quieres volver a utilizar control por presencia deberás habilitarlo nuevamente'),
-      //                         [
-      //                           TextButton(
-      //                             onPressed: () {
-      //                               Navigator.pop(context);
-      //                             },
-      //                             child: const Text('Cancelar'),
-      //                           ),
-      //                           TextButton(
-      //                             onPressed: () async {
-      //                               setState(() {
-      //                                 tracking = false;
-      //                               });
-      //                               devicesToTrack.remove(deviceName);
-      //                               saveDeviceListToTrack(devicesToTrack);
-      //                               List<String> jijeo = [];
-      //                               savePinToTrack(jijeo, deviceName);
-      //                               context.mounted
-      //                                   ? Navigator.of(context).pop()
-      //                                   : printLog.i("Contextn't");
-      //                             },
-      //                             child: const Text('Aceptar'),
-      //                           ),
-      //                         ],
-      //                       );
-      //                     } else {
-      //                       openTrackingDialog();
-      //                       setState(() {
-      //                         tracking = true;
-      //                       });
-      //                     }
-      //                   }
-      //                 : null,
-      //             child: AnimatedContainer(
-      //               duration: const Duration(milliseconds: 500),
-      //               padding: const EdgeInsets.all(20),
-      //               decoration: BoxDecoration(
-      //                 color: tracking ? Colors.greenAccent : Colors.redAccent,
-      //                 shape: BoxShape.circle,
-      //                 boxShadow: const [
-      //                   BoxShadow(
-      //                     color: Colors.black26,
-      //                     blurRadius: 10,
-      //                     offset: Offset(0, 5),
-      //                   ),
-      //                 ],
-      //               ),
-      //               child: const Icon(
-      //                 Icons.directions_walk,
-      //                 size: 80,
-      //                 color: Colors.white,
-      //               ),
-      //             ),
-      //           ),
-      //           const SizedBox(height: 60),
-      //           Card(
-      //             shape: RoundedRectangleBorder(
-      //               borderRadius: BorderRadius.circular(20),
-      //             ),
-      //             elevation: 5,
-      //             color: color3,
-      //             child: Padding(
-      //               padding: const EdgeInsets.all(20.0),
-      //               child: Column(
-      //                 crossAxisAlignment: CrossAxisAlignment.start,
-      //                 children: [
-      //                   Text(
-      //                     'Habilitar esta función hará que la aplicación use más recursos de lo común. Si decides utilizarla, es bajo tu responsabilidad.',
-      //                     style: GoogleFonts.poppins(
-      //                       fontSize: 16,
-      //                       color: color0,
-      //                     ),
-      //                   ),
-      //                   const SizedBox(height: 10),
-      //                   CheckboxListTile(
-      //                     title: Text(
-      //                       'Sí, estoy de acuerdo',
-      //                       style: GoogleFonts.poppins(
-      //                         fontSize: 16,
-      //                         color: color0,
-      //                       ),
-      //                     ),
-      //                     value: isAgreeChecked,
-      //                     activeColor: color0,
-      //                     onChanged: (bool? value) {
-      //                       if (value == false && tracking) {
-      //                         // Mostrar el diálogo de confirmación si el usuario intenta desmarcar mientras el trackeo está activado
-      //                         showAlertDialog(
-      //                           context,
-      //                           false,
-      //                           const Text(
-      //                             '¿Seguro que quiere cancelar el control por presencia?',
-      //                           ),
-      //                           const Text(
-      //                             'Deshabilitar hará que puedas controlarlo manualmente.\nSi quieres volver a utilizar control por presencia deberás habilitarlo nuevamente',
-      //                           ),
-      //                           [
-      //                             TextButton(
-      //                               onPressed: () {
-      //                                 // Cerrar el diálogo sin cambiar el estado del checkbox
-      //                                 Navigator.pop(context);
-      //                               },
-      //                               child: const Text('Cancelar'),
-      //                             ),
-      //                             TextButton(
-      //                               onPressed: () {
-      //                                 // Confirmación: desmarcar checkbox y detener el trackeo
-      //                                 setState(() {
-      //                                   isAgreeChecked = false;
-      //                                   tracking = false;
-      //                                 });
-      //                                 devicesToTrack.remove(deviceName);
-      //                                 saveDeviceListToTrack(devicesToTrack);
-      //                                 Navigator.pop(context);
-      //                               },
-      //                               child: const Text('Aceptar'),
-      //                             ),
-      //                           ],
-      //                         );
-      //                       } else {
-      //                         // Permitir el cambio si el checkbox se está marcando o si el trackeo está desactivado
-      //                         setState(() {
-      //                           isAgreeChecked = value ?? false;
-      //                         });
-      //                       }
-      //                     },
-      //                     controlAffinity: ListTileControlAffinity.leading,
-      //                   ),
-      //                 ],
-      //               ),
-      //             ),
-      //           ),
-      //         ],
-      //       ),
-      //     ),
-      //     if (!deviceOwner && owner != '')
-      //       Container(
-      //         color: Colors.black.withValues(alpha: 0.7),
-      //         child: const Center(
-      //           child: Text(
-      //             'No tienes acceso a esta función',
-      //             style: TextStyle(color: Colors.white, fontSize: 18),
-      //           ),
-      //         ),
-      //       ),
-      //   ],
-      // ),
-
+      //*- Página 2: Modo de Pines -*\\
       Stack(
         children: [
           SingleChildScrollView(
@@ -1883,22 +1705,22 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                   ignoring: _isTutorialActive,
                   child: SafeArea(
                     child: CurvedNavigationBar(
-                    index: _selectedIndex,
-                    height: 75.0,
-                    items: const <Widget>[
-                      Icon(Icons.home, size: 30, color: color0),
-                      //const Icon(Icons.bluetooth, size: 30, color: color0),
-                      Icon(Icons.input, size: 30, color: color0),
-                      Icon(Icons.settings, size: 30, color: color0),
-                    ],
-                    color: color3,
-                    buttonBackgroundColor: color3,
-                    backgroundColor: Colors.transparent,
-                    animationCurve: Curves.easeInOut,
-                    animationDuration: const Duration(milliseconds: 600),
-                    onTap: onItemTapped,
-                    letIndexChange: (index) => true,
-                  ),
+                      index: _selectedIndex,
+                      height: 75.0,
+                      items: const <Widget>[
+                        Icon(Icons.home, size: 30, color: color0),
+                        //const Icon(Icons.bluetooth, size: 30, color: color0),
+                        Icon(Icons.input, size: 30, color: color0),
+                        Icon(Icons.settings, size: 30, color: color0),
+                      ],
+                      color: color3,
+                      buttonBackgroundColor: color3,
+                      backgroundColor: Colors.transparent,
+                      animationCurve: Curves.easeInOut,
+                      animationDuration: const Duration(milliseconds: 600),
+                      onTap: onItemTapped,
+                      letIndexChange: (index) => true,
+                    ),
                   ),
                 ),
               ),

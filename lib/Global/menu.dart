@@ -27,18 +27,13 @@ class MenuPageState extends State<MenuPage> {
   void initState() {
     super.initState();
     _initialPageFuture = getInitialPageIndex();
-    _setupTokenManagement();
   }
 
-  void _setupTokenManagement() {
-    // Setup inicial de tokens del usuario
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // Esperar a que _initAsync termine de cargar currentUserEmail
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (currentUserEmail.isNotEmpty) {
-        await TokenManager.setupUserTokens();
-      }
-    });
+  void _setupTokenManagement() async {
+    if (currentUserEmail.isNotEmpty) {
+      printLog.i('Iniciando gestión de tokens ');
+      await TokenManager.setupUserTokens();
+    }
 
     // Listener para cambios de token
     _setupTokenRefreshListener();
@@ -51,10 +46,10 @@ class MenuPageState extends State<MenuPage> {
         // El usuario ya está logueado cuando llega al MenuPage
         if (currentUserEmail.isNotEmpty) {
           String userEmail = currentUserEmail;
-          
+
           // Obtener tokens actuales del usuario
           List<String> userTokens = await getTokensFromAlexaDevices(userEmail);
-          
+
           // Añadir nuevo token si no existe
           if (!userTokens.contains(newToken)) {
             userTokens.add(newToken);
@@ -72,16 +67,14 @@ class MenuPageState extends State<MenuPage> {
     final bleState = await FlutterBluePlus.adapterState.first;
     int index = bleState == BluetoothAdapterState.on ? 0 : 1;
     printLog.i('Bluetooth state: $bleState, index: $index', color: 'verde');
-    return index;
+    return 1;
   }
 
   Future<void> _initAsync() async {
     currentUserEmail = await getUserMail();
+    _setupTokenManagement();
     if (currentUserEmail != '') {
-      await getDevices(currentUserEmail);
       await getNicknames(currentUserEmail);
-      await getGroups(currentUserEmail);
-      eventosCreados = await getEventos(currentUserEmail);
     }
     if (mounted) {
       setState(() {});
@@ -136,7 +129,6 @@ class MenuPageState extends State<MenuPage> {
               fToast.init(navigatorKey.currentState?.context ?? context);
             }
           });
-          //BluetoothWatcher().start();
           LocationWatcher().start();
           _initAsync();
         }

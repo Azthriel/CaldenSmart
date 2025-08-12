@@ -48,7 +48,6 @@ class WifiPageState extends ConsumerState<WifiPage> {
 
     todosLosDispositivos.clear();
     await getDevices(currentUserEmail);
-    await getNicknames(currentUserEmail);
     await getGroups(currentUserEmail);
     eventosCreados = await getEventos(currentUserEmail);
 

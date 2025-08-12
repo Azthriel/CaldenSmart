@@ -149,12 +149,11 @@ class LoadState extends State<LoadingPage> {
           varsValues = await myDevice.varsUuid.read();
           var parts2 = utf8.decode(varsValues).split(':');
           printLog.i('Valores Vars: $parts2', color: 'Naranja');
-          var list = await loadDevicesForDistanceControl();
+
           if (parts2[0] == '0' || parts2[0] == '1') {
-            canControlDistance =
-                list.contains(deviceName) ? true : parts2[0] == '0';
-            printLog.i(
-                'Puede utilizar el control por distancia: $canControlDistance');
+            distanceControlActive =
+                globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;
+
             tempValue = double.parse(parts2[1]);
             turnOn = parts2[2] == '1';
             trueStatus = parts2[4] == '1';
@@ -162,9 +161,9 @@ class LoadState extends State<LoadingPage> {
             actualTemp = parts2[6];
             printLog.i('Estado: $turnOn');
           } else {
-            canControlDistance = list.contains(deviceName);
-            printLog.i(
-                'Puede utilizar el control por distancia: $canControlDistance');
+            distanceControlActive =
+                globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;
+
             tempValue = double.parse(parts2[0]);
             turnOn = parts2[1] == '1';
             trueStatus = parts2[3] == '1';
@@ -207,11 +206,8 @@ class LoadState extends State<LoadingPage> {
             tenant = false;
           }
 
-          if (canControlDistance) {
-            distOffValue = globalDATA['$pc/$sn']!['distanceOff'] ?? 100.0;
-            distOnValue = globalDATA['$pc/$sn']!['distanceOn'] ?? 3000.0;
-            isTaskScheduled = await loadControlValue();
-          }
+          distOffValue = globalDATA['$pc/$sn']!['distanceOff'] ?? 100.0;
+          distOnValue = globalDATA['$pc/$sn']!['distanceOn'] ?? 3000.0;
 
           globalDATA
               .putIfAbsent('$pc/$sn', () => {})
@@ -248,12 +244,9 @@ class LoadState extends State<LoadingPage> {
           printLog.i('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
           varsValues = await myDevice.varsUuid.read();
           printLog.i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
-          var parts = utf8.decode(varsValues).split(':');
-          var list = await loadDevicesForDistanceControl();
-          canControlDistance =
-              list.contains(deviceName) ? true : parts[0] == '0';
-          printLog.i(
-              'Puede utilizar el control por distancia: $canControlDistance');
+
+          distanceControlActive =
+              globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;
 
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
@@ -288,23 +281,18 @@ class LoadState extends State<LoadingPage> {
             tenant = false;
           }
 
-          if (canControlDistance) {
-            distOffValue = globalDATA['$pc/$sn']!['distanceOff'] ?? 100.0;
-            distOnValue = globalDATA['$pc/$sn']!['distanceOn'] ?? 3000.0;
-            isTaskScheduled = await loadControlValue();
-          }
+          distOffValue = globalDATA['$pc/$sn']!['distanceOff'] ?? 100.0;
+          distOnValue = globalDATA['$pc/$sn']!['distanceOn'] ?? 3000.0;
+
           break;
         case '020020_IOT':
           ioValues = await myDevice.ioUuid.read();
           printLog.i('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
           varsValues = await myDevice.varsUuid.read();
           printLog.i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
-          var parts = utf8.decode(varsValues).split(':');
-          var list = await loadDevicesForDistanceControl();
-          canControlDistance =
-              list.contains(deviceName) ? true : parts[0] == '0';
-          printLog.i(
-              'Puede utilizar el control por distancia: $canControlDistance');
+
+          distanceControlActive =
+              globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;
 
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
@@ -342,11 +330,8 @@ class LoadState extends State<LoadingPage> {
             tenant = false;
           }
 
-          if (canControlDistance) {
-            distOffValue = globalDATA['$pc/$sn']!['distanceOff'] ?? 100.0;
-            distOnValue = globalDATA['$pc/$sn']!['distanceOn'] ?? 3000.0;
-            isTaskScheduled = await loadControlValue();
-          }
+          distOffValue = globalDATA['$pc/$sn']!['distanceOff'] ?? 100.0;
+          distOnValue = globalDATA['$pc/$sn']!['distanceOn'] ?? 3000.0;
           break;
         case '027313_IOT':
           if (Versioner.isPosterior(hardwareVersion, '241220A')) {
@@ -362,19 +347,11 @@ class LoadState extends State<LoadingPage> {
             var parts2 = utf8.decode(varsValues).split(':');
             turnOn = parts2[1] == '1';
           }
-          var parts = utf8.decode(varsValues).split(':');
 
-          var list = await loadDevicesForDistanceControl();
-          canControlDistance =
-              list.contains(deviceName) ? true : parts[0] == '0';
-          printLog.i(
-              'Puede utilizar el control por distancia: $canControlDistance');
-
-          if (canControlDistance) {
-            distOffValue = globalDATA['$pc/$sn']!['distanceOff'] ?? 100.0;
-            distOnValue = globalDATA['$pc/$sn']!['distanceOn'] ?? 3000.0;
-            isTaskScheduled = await loadControlValue();
-          }
+          distanceControlActive =
+              globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;
+          distOffValue = globalDATA['$pc/$sn']!['distanceOff'] ?? 100.0;
+          distOnValue = globalDATA['$pc/$sn']!['distanceOn'] ?? 3000.0;
 
           isNC = globalDATA['$pc/$sn']!['isNC'] ?? false;
 
@@ -418,12 +395,8 @@ class LoadState extends State<LoadingPage> {
         case '024011_IOT':
           varsValues = await myDevice.varsUuid.read();
           printLog.i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
-          var parts = utf8.decode(varsValues).split(':');
-          var list = await loadDevicesForDistanceControl();
-          canControlDistance =
-              list.contains(deviceName) ? true : parts[0] == '0';
-          printLog.i(
-              'Puede utilizar el control por distancia: $canControlDistance');
+          distanceControlActive =
+              globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
           adminDevices = await getSecondaryAdmins(
@@ -467,11 +440,8 @@ class LoadState extends State<LoadingPage> {
           varsValues = await myDevice.varsUuid.read();
           var parts2 = utf8.decode(varsValues).split(':');
           printLog.i('Valores Vars: $parts2');
-          var list = await loadDevicesForDistanceControl();
-          canControlDistance =
-              list.contains(deviceName) ? true : parts2[0] == '0';
-          printLog.i(
-              'Puede utilizar el control por distancia: $canControlDistance');
+          distanceControlActive =
+              globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;
           turnOn = parts2[2] == '1';
           trueStatus = parts2[4] == '1';
           printLog.i('Estado: $turnOn');
@@ -512,11 +482,8 @@ class LoadState extends State<LoadingPage> {
             tenant = false;
           }
 
-          if (canControlDistance) {
-            distOffValue = globalDATA['$pc/$sn']!['distanceOff'] ?? 100.0;
-            distOnValue = globalDATA['$pc/$sn']!['distanceOn'] ?? 3000.0;
-            isTaskScheduled = await loadControlValue();
-          }
+          distOffValue = globalDATA['$pc/$sn']!['distanceOff'] ?? 100.0;
+          distOnValue = globalDATA['$pc/$sn']!['distanceOn'] ?? 3000.0;
 
           globalDATA
               .putIfAbsent('$pc/$sn', () => {})

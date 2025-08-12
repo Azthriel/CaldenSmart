@@ -233,10 +233,6 @@ bool discNotfActivated = false;
 Map<String, int> configNotiDsc = {};
 //*-Notificación Desconexión-*\\
 
-//*-Control por distancia-*\\
-Map<String, bool> isTaskScheduled = {};
-//*-Control por distancia-*\\
-
 //*- Roller -*\\
 bool distanceControlActive = false;
 int actualPositionGrades = 0;
@@ -270,7 +266,6 @@ bool onlineInCloud = false;
 bool alreadySubTools = false;
 bool trueStatus = false;
 late bool nightMode;
-late bool canControlDistance;
 String actualTemp = '';
 double tempValue = 10.0;
 //*-Calefactores-*\\
@@ -2049,15 +2044,6 @@ Future<void> handleNotifications(RemoteMessage message) async {
         showNotification(displayTitle.toUpperCase(), displayMessage, sound);
       }
     } else if (caso == 'Disconnect') {
-      // if (product == '015773_IOT') {
-      //   final now = DateTime.now();
-      //   String displayTitle =
-      //       '¡El equipo ${nicknamesMap[device] ?? device} se desconecto!';
-      //   String displayMessage =
-      //       'Se detecto una desconexión a las ${now.hour > 10 ? now.hour : '0${now.hour}'}:${now.minute > 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
-      //   showNotification(displayTitle, displayMessage, 'noti');
-      // }
-
       configNotiDsc = await loadconfigNotiDsc();
       if (configNotiDsc.keys.toList().contains(device)) {
         final now = DateTime.now();
@@ -2394,29 +2380,51 @@ Future<bool> backFunctionDS() async {
   printLog.i('Entre a hacer locuritas. ${DateTime.now()}');
   // showNotification('Entre a la función', '${DateTime.now()}');
   try {
-    List<String> devicesStored = await loadDevicesForDistanceControl();
+    currentUserEmail = await loadEmail();
+    List<String> devicesStored =
+        await getDevicesInDistanceControl(currentUserEmail);
     globalDATA = await loadGlobalData();
     await DeviceManager.init();
-    Map<String, double> latitudes = await loadLatitude();
-    Map<String, double> longitudes = await loadLongitud();
-    currentUserEmail = await loadEmail();
     await getNicknames(currentUserEmail);
     Map<String, String> nicks = nicknamesMap;
 
     for (int index = 0; index < devicesStored.length; index++) {
-      String name = devicesStored[index];
+      printLog.i('Analizando dispositivo: ${devicesStored[index]}');
+
+      String name = devicesStored[index].contains('_')
+          ? devicesStored[index].split('_')[0]
+          : devicesStored[index];
       String productCode = DeviceManager.getProductCode(name);
       String sn = DeviceManager.extractSerialNumber(name);
 
       await queryItems(productCode, sn);
 
-      double latitude = latitudes[name]!;
-      double longitude = longitudes[name]!;
-
       double distanceOff =
           globalDATA['$productCode/$sn']?['distanceOff'] ?? 100.0;
       double distanceOn =
           globalDATA['$productCode/$sn']?['distanceOn'] ?? 3000.0;
+
+      String position = globalDATA['$productCode/$sn']?['deviceLocation'] ?? '';
+
+      if (position.isEmpty) {
+        printLog.i('No hay ubicación guardada para el dispositivo $name');
+        continue;
+      }
+
+      // Parse the position string to extract latitude and longitude
+      RegExp latRegExp = RegExp(r'Latitude: (-?\d+\.?\d*)');
+      RegExp lngRegExp = RegExp(r'Longitude: (-?\d+\.?\d*)');
+
+      Match? latMatch = latRegExp.firstMatch(position);
+      Match? lngMatch = lngRegExp.firstMatch(position);
+
+      if (latMatch == null || lngMatch == null) {
+        printLog.i('Formato de ubicación inválido para $name: $position');
+        continue;
+      }
+
+      double latitude = double.parse(latMatch.group(1)!);
+      double longitude = double.parse(lngMatch.group(1)!);
 
       Position storedLocation = Position(
         latitude: latitude,
@@ -2475,16 +2483,15 @@ Future<bool> backFunctionDS() async {
         if (distance2 <= distanceOn && distance1 > distance2) {
           printLog.i('Usuario cerca, encendiendo');
 
-          if (DeviceManager.getProductCode(name) == '027313_IOT' &&
-              globalDATA['$productCode/$sn']!.keys.contains('io')) {
+          if (devicesStored[index].contains('_')) {
             showNotification(
-                'Encendimos ${nicknamesMap['${name}_0'] ?? 'Salida 0'} en ${nicks[name] ?? name}',
+                'Encendimos ${nicknamesMap[devicesStored[index]] ?? 'Salida ${devicesStored[index].split('_')[1]}'} en ${nicks[devicesStored[index].split('_')[0]] ?? name}',
                 'Te acercaste a menos de $distanceOn metros',
                 'noti');
 
             String message = jsonEncode({
               'pinType': '0',
-              'index': 0,
+              'index': devicesStored[index].split('_')[1],
               'w_status': true,
               'r_state': '0',
             });
@@ -2493,7 +2500,7 @@ Future<bool> backFunctionDS() async {
 
             globalDATA
                 .putIfAbsent('$productCode/$sn', () => {})
-                .addAll({"io0": message});
+                .addAll({"io${devicesStored[index].split('_')[1]}": message});
             sendMessagemqtt(topic, message);
             sendMessagemqtt(topic2, message);
           } else {
@@ -2510,20 +2517,20 @@ Future<bool> backFunctionDS() async {
             sendMessagemqtt(topic, message);
             sendMessagemqtt(topic2, message);
           }
+
           //Ta cerca prendo
         } else if (distance2 >= distanceOff && distance1 < distance2) {
           printLog.i('Usuario lejos, apagando');
 
-          if (DeviceManager.getProductCode(name) == '027313_IOT' &&
-              globalDATA['$productCode/$sn']!.keys.contains('io')) {
+          if (devicesStored[index].contains('_')) {
             showNotification(
-                'Apagamos ${nicknamesMap['${name}_0'] ?? 'Salida 0'} en ${nicks[name] ?? name}',
+                'Apagamos ${nicknamesMap[devicesStored[index]] ?? 'Salida ${devicesStored[index].split('_')[1]}'} en ${nicks[devicesStored[index].split('_')[0]] ?? name}',
                 'Te alejaste a más de $distanceOff metros',
                 'noti');
 
             String message = jsonEncode({
               'pinType': '0',
-              'index': 0,
+              'index': devicesStored[index].split('_')[1],
               'w_status': false,
               'r_state': '0',
             });
@@ -2532,20 +2539,20 @@ Future<bool> backFunctionDS() async {
 
             globalDATA
                 .putIfAbsent('$productCode/$sn', () => {})
-                .addAll({"io0": message});
+                .addAll({"io${devicesStored[index].split('_')[1]}": message});
             sendMessagemqtt(topic, message);
             sendMessagemqtt(topic2, message);
           } else {
             showNotification('Apagamos ${nicks[name] ?? name}',
-                'Te acercaste a menos de $distanceOff metros', 'noti');
+                'Te alejaste a más de $distanceOff metros', 'noti');
 
+            globalDATA
+                .putIfAbsent('$productCode/$sn', () => {})
+                .addAll({"w_status": false});
             saveGlobalData(globalDATA);
             String topic = 'devices_rx/$productCode/$sn';
             String topic2 = 'devices_tx/$productCode/$sn';
             String message = jsonEncode({"w_status": false});
-            globalDATA
-                .putIfAbsent('$productCode/$sn', () => {})
-                .addAll({"w_status": false});
             sendMessagemqtt(topic, message);
             sendMessagemqtt(topic2, message);
           }
@@ -2571,7 +2578,6 @@ Future<bool> backFunctionDS() async {
     return Future.value(false);
   }
 }
-
 //*-Background functions-*\\
 
 //*-show dialog generico-*\\
