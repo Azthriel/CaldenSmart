@@ -1,10 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../Global/manager_screen.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/mqtt/mqtt.dart';
@@ -226,8 +224,6 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
 
     tracking = devicesToTrack.contains(deviceName);
 
-    processSelectedPins();
-
     showOptions = currentUserEmail == owner;
 
     if (deviceOwner) {
@@ -309,18 +305,6 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
         }
       });
     }
-  }
-
-  Future<void> processSelectedPins() async {
-    List<String> pins = await loadPinToTrack(deviceName);
-
-    setState(() {
-      for (int i = 0; i < pins.length; i++) {
-        pins.contains(i.toString())
-            ? _selectedPins[i] = true
-            : _selectedPins[i] = false;
-      }
-    });
   }
 
   void controlOut(bool value, int index) {
@@ -525,214 +509,6 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
     myDevice.device.cancelWhenDisconnected(ioSub);
   }
 
-  Future<void> openTrackingDialog() async {
-    bool fun = false;
-    List<bool> tempSelectedPins = List<bool>.from(_selectedPins);
-
-    await showGeneralDialog(
-      context: context,
-      barrierDismissible: false, // Cambiado de true a false
-      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: Colors.black.withValues(alpha: 0.5),
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (BuildContext context, Animation<double> animation,
-          Animation<double> secondaryAnimation) {
-        double screenWidth = MediaQuery.of(context).size.width;
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minWidth: 300.0,
-                  maxWidth: screenWidth - 20,
-                ),
-                child: IntrinsicWidth(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.5),
-                          spreadRadius: 1,
-                          blurRadius: 20,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Card(
-                      color: color3,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30.0),
-                      ),
-                      elevation: 24,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        alignment: Alignment.topCenter,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 70, 20, 20),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Center(
-                                  child: DefaultTextStyle(
-                                    style: GoogleFonts.poppins(
-                                      color: color0,
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    child: const Text(
-                                      'Selecciona los pines para trackear',
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                                Center(
-                                  child: SingleChildScrollView(
-                                    child: ListBody(
-                                      children:
-                                          List.generate(parts.length, (index) {
-                                        return CheckboxListTile(
-                                          title: Text(
-                                            nicknamesMap[
-                                                    '${deviceName}_$index'] ??
-                                                'Pin $index',
-                                            style: GoogleFonts.poppins(
-                                              color: color0,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          value: tempSelectedPins[index],
-                                          activeColor: color6,
-                                          onChanged: (bool? value) {
-                                            setState(() {
-                                              tempSelectedPins[index] =
-                                                  value ?? false;
-                                            });
-                                          },
-                                        );
-                                      }),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 30),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    // *** Eliminado el botón "Cancelar" ***
-                                    TextButton(
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: color0,
-                                        backgroundColor: color3,
-                                      ),
-                                      onPressed: () async {
-                                        if (tempSelectedPins.contains(true)) {
-                                          List<String> pins =
-                                              await loadPinToTrack(deviceName);
-                                          setState(() {
-                                            _selectedPins = List<bool>.from(
-                                                tempSelectedPins);
-
-                                            for (int i = 0;
-                                                i < _selectedPins.length;
-                                                i++) {
-                                              if (_selectedPins[i] &&
-                                                  !pins
-                                                      .contains(i.toString())) {
-                                                pins.add(i.toString());
-                                              }
-                                            }
-                                          });
-                                          await savePinToTrack(
-                                              pins, deviceName);
-
-                                          printLog.i(
-                                              'When haces tus momos en flutter :v');
-                                          fun = true;
-                                          context.mounted
-                                              ? Navigator.of(context).pop()
-                                              : printLog.i("Contextn't");
-                                        } else {
-                                          showToast(
-                                              'Por favor, selecciona al menos una opción.');
-                                        }
-                                      },
-                                      child: const Text('Guardar'),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          Positioned(
-                            top: -50,
-                            child: Material(
-                              elevation: 10,
-                              shape: const CircleBorder(),
-                              shadowColor: Colors.black.withValues(alpha: 0.4),
-                              child: CircleAvatar(
-                                radius: 50,
-                                backgroundColor: color3,
-                                child: Image.asset(
-                                  'assets/branch/dragon.png',
-                                  width: 60,
-                                  height: 60,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(
-          opacity: CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeInOut,
-          ),
-          child: ScaleTransition(
-            scale: CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeInOut,
-            ),
-            child: child,
-          ),
-        );
-      },
-    );
-
-    printLog.i('ME WHEN YOUR MOM WHEN ME WHEN YOUR MOM $fun');
-    if (fun) {
-      printLog.i('Pov: Sos re onichan mal');
-      setState(() {
-        tracking = true;
-      });
-      devicesToTrack.add(deviceName);
-      await saveDeviceListToTrack(devicesToTrack);
-      printLog.i('Equipo $devicesToTrack');
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      bool hasInitService = prefs.getBool('hasInitService') ?? false;
-      printLog.i('Se inició el servicio? $hasInitService');
-      if (!hasInitService) {
-        printLog.i('Empiezo');
-        await initializeService();
-        printLog.i('Acabe');
-      }
-
-      await Future.delayed(const Duration(seconds: 30));
-      final backService = FlutterBackgroundService();
-      printLog.i('Xd');
-      backService.invoke('presenceControl');
-    }
-  }
-
   bool isValidEmail(String email) {
     final RegExp emailRegex = RegExp(
       r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@"
@@ -786,68 +562,6 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
       printLog.i('Error al eliminar administrador secundario: $e');
       showToast('Error al eliminar el administrador. Inténtalo de nuevo.');
     }
-  }
-
-  Future<int?> showPinSelectionDialog(BuildContext context) async {
-    int? selectedPin;
-    return showDialog<int>(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return AlertDialog(
-              backgroundColor: color3,
-              title: Text(
-                'Selecciona un pin',
-                style: GoogleFonts.poppins(
-                  color: color0,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              content: SingleChildScrollView(
-                child: ListBody(
-                  children: List.generate(parts.length, (index) {
-                    var equipo = parts[index].split(':');
-                    printLog.i(equipo);
-                    return equipo[0] == '0'
-                        ? RadioListTile<int>(
-                            title: Text(
-                              nicknamesMap['${deviceName}_$index'] ??
-                                  'Salida $index',
-                              style: GoogleFonts.poppins(
-                                color: color0,
-                                fontSize: 16,
-                              ),
-                            ),
-                            value: index,
-                            groupValue: selectedPin,
-                            activeColor: color6,
-                            onChanged: (int? value) {
-                              setState(() {
-                                selectedPin = value;
-                              });
-                            },
-                          )
-                        : const SizedBox.shrink();
-                  }),
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  child: Text(
-                    'Aceptar',
-                    style: GoogleFonts.poppins(color: color6),
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).pop(selectedPin);
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
   }
 
 //!Visual

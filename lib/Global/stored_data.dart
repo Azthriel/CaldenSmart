@@ -9,8 +9,6 @@ Future<void> loadValues() async {
   notificationMap = await loadNotificationMap();
   deviceImages = await loadDeviceImages();
   soundOfNotification = await loadSounds();
-  devicesToTrack = await loadDeviceListToTrack();
-  msgFlag = await loadmsgFlag();
   configNotiDsc = await loadconfigNotiDsc();
   quickAccess = await loadquickAccess();
   pinQuickAccess = await loadpinQuickAccess();
@@ -124,7 +122,7 @@ Future<Map<String, String>> loadSounds() async {
   if (soundsString != null) {
     return Map<String, String>.from(json.decode(soundsString));
   }
-  return {}; // Devuelve un mapa vacío si no hay nada almacenado
+  return {};
 }
 //*-Sonido notificaciones*-\\
 
@@ -178,43 +176,6 @@ Future<void> removeDeviceImage(String deviceId) async {
 }
 //*-Imagenes Scan-*\\
 
-//*-Omnipresencia-*\\
-Future<void> saveDeviceListToTrack(List<String> listaDispositivos) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setStringList('CSdevicesToTrack', listaDispositivos);
-}
-
-Future<List<String>> loadDeviceListToTrack() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList('CSdevicesToTrack') ?? [];
-}
-
-Future<void> savePinToTrack(List<String> listaPines, String device) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setStringList('CSpinsToTrack$device', listaPines);
-}
-
-Future<List<String>> loadPinToTrack(String device) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList('CSpinsToTrack$device') ?? [];
-}
-
-Future<void> saveMsgFlag(Map<String, bool> msgFlag) async {
-  final prefs = await SharedPreferences.getInstance();
-  String taskMapString = json.encode(msgFlag);
-  await prefs.setString('CSmsgFlag', taskMapString);
-}
-
-Future<Map<String, bool>> loadmsgFlag() async {
-  final prefs = await SharedPreferences.getInstance();
-  String? msgFlagString = prefs.getString('CSmsgFlag');
-  if (msgFlagString != null) {
-    return Map<String, bool>.from(json.decode(msgFlagString));
-  }
-  return {}; // Devuelve un mapa vacío si no hay nada almacenado
-}
-//*-Omnipresencia-*\\
-
 //*-Notificación Desconexión-*\\
 Future<void> saveconfigNotiDsc(Map<String, int> data) async {
   final prefs = await SharedPreferences.getInstance();
@@ -244,10 +205,7 @@ Future<int?> loadLastPage() async {
 }
 //*- Guardar y cargar última página-*\\
 
-//*- Guardar y cargar si el rele es antiguo-*\\
-
 //*- Guardar si el tutorial esta activado -*\\
-
 Future<void> saveTutorial(bool tutorial) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setBool('CSTutorial', tutorial);
@@ -257,7 +215,6 @@ Future<bool> loadTutorial() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   return prefs.getBool('CSTutorial') ?? true;
 }
-
 //*- Guardar si el tutorial esta activado -*\\
 
 //*- Guardar email -*\\

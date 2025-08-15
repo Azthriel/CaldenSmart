@@ -697,9 +697,9 @@ Future<void> putRollerLength(String pc, String sn, String data) async {
 
 ///*-Guardar el largo del Roller-*\\\
 
-///*-Leer las conexiones previas y los grupos-*\\\
-///Está función lee los equipos y grupos de la base de datos de DynamoDB
-///y los guarda en las variables previusConnections y groupsOfDevices respectivamente.
+///*-Leer las conexiones previas-*\\\
+///Está función lee los equipos de la base de datos de DynamoDB
+///y los guarda en las variables previusConnections.
 ///También lee los dispositivos de Asistentes por voz y los guarda en la variable alexaDevices.
 ///A su vez, guarda los topics a los que se va a suscribir el cliente MQTT en la variable topicsToSub.
 ///Por último, guarda los nicknames de los dispositivos en la variable nicknamesMap.
@@ -749,58 +749,7 @@ Future<void> getDevices(String email) async {
   }
 }
 
-Future<void> getGroups(String email) async {
-  try {
-    final response = await service.getItem(
-      tableName: 'Alexa-Devices',
-      key: {'email': AttributeValue(s: email)},
-    );
-    if (response.item != null) {
-      // Convertir AttributeValue a String
-      var item = response.item!;
-      final raw = item['groups']?.m ?? <String, AttributeValue>{};
-      final Map<String, List<String>> grupos = {
-        for (final e in raw.entries)
-          e.key: (e.value.ss ?? []).where((s) => s.isNotEmpty).toList()
-      };
-
-      if (grupos.isNotEmpty) {
-        grupos.forEach((k, v) => printLog.i('$k: $v'));
-        groupsOfDevices = grupos;
-      } else {
-        printLog.i('No se encontraron grupos.');
-      }
-    } else {
-      printLog.i('Item no encontrado. No está el mail en la database');
-    }
-  } catch (e) {
-    printLog.i('Error al obtener el item: $e');
-  }
-}
-//*-Leer las conexiones previas y los grupos-*\\\
-
-//*-Guardar los grupos de dispositivos-*\\
-void putGroupsOfDevices(String email, Map<String, List<String>> data) async {
-  try {
-    final response = await service.updateItem(tableName: 'Alexa-Devices', key: {
-      'email': AttributeValue(s: email),
-    }, attributeUpdates: {
-      'groups': AttributeValueUpdate(
-        value: AttributeValue(
-          m: {
-            for (final entry in data.entries)
-              entry.key: AttributeValue(ss: entry.value),
-          },
-        ),
-      ),
-    });
-
-    printLog.i('Item escrito perfectamente $response');
-  } catch (e) {
-    printLog.i('Error guardando alexa item: $e');
-  }
-}
-//*-Guardar los grupos de dispositivos-*\\
+//*-Leer las conexiones previas-*\\\
 
 /// Guarda la lista [eventosCreados] (List<Map<String, dynamic>>) bajo la clave primaria [email]
 void putEventos(
@@ -818,12 +767,49 @@ void putEventos(
           m[key] = AttributeValue(n: value.toString());
         } else if (value is bool) {
           m[key] = AttributeValue(boolValue: value);
+        } else if (value is Duration) {
+          // Guardar Duration como microsegundos con un marcador especial
+          m[key] = AttributeValue(s: 'DURATION:${value.inMicroseconds}');
         } else if (value is List) {
           m[key] = AttributeValue(
               l: value.map((e) {
             if (e is String) return AttributeValue(s: e);
             if (e is num) return AttributeValue(n: e.toString());
             if (e is bool) return AttributeValue(boolValue: e);
+            if (e is Duration) {
+              return AttributeValue(n: e.inMicroseconds.toString());
+            }
+            if (e is Map<String, dynamic>) {
+              // Manejar Maps dentro de listas (como pasos de cadena)
+              final nestedMap = <String, AttributeValue>{};
+              e.forEach((k, v) {
+                if (v is String) {
+                  nestedMap[k] = AttributeValue(s: v);
+                } else if (v is num) {
+                  nestedMap[k] = AttributeValue(n: v.toString());
+                } else if (v is bool) {
+                  nestedMap[k] = AttributeValue(boolValue: v);
+                } else if (v is Duration) {
+                  nestedMap[k] =
+                      AttributeValue(s: 'DURATION:${v.inMicroseconds}');
+                } else if (v is List) {
+                  // Manejar listas anidadas
+                  nestedMap[k] = AttributeValue(
+                    l: v.map((item) {
+                      if (item is String) return AttributeValue(s: item);
+                      if (item is num) {
+                        return AttributeValue(n: item.toString());
+                      }
+                      if (item is bool) return AttributeValue(boolValue: item);
+                      return AttributeValue(s: item.toString());
+                    }).toList(),
+                  );
+                } else {
+                  nestedMap[k] = AttributeValue(s: v.toString());
+                }
+              });
+              return AttributeValue(m: nestedMap);
+            }
             return AttributeValue(s: e.toString());
           }).toList());
         } else if (value is Map<String, dynamic>) {
@@ -835,6 +821,9 @@ void putEventos(
               nested[k] = AttributeValue(n: v.toString());
             } else if (v is bool) {
               nested[k] = AttributeValue(boolValue: v);
+            } else if (v is Duration) {
+              // Guardar Duration como microsegundos
+              nested[k] = AttributeValue(n: v.inMicroseconds.toString());
             } else {
               nested[k] = AttributeValue(s: v.toString());
             }
@@ -874,23 +863,84 @@ Future<List<Map<String, dynamic>>> getEventos(
     final listAttr = response.item?['events']?.l;
     if (listAttr == null) return [];
 
-    return listAttr.map((av) {
+    final result = listAttr.map((av) {
       final map = <String, dynamic>{};
       av.m?.forEach((key, val) {
         if (val.s != null) {
-          map[key] = val.s;
+          // Verificar si es un Duration codificado
+          if (val.s!.startsWith('DURATION:')) {
+            final microseconds = int.tryParse(val.s!.substring(9));
+            map[key] = microseconds != null
+                ? Duration(microseconds: microseconds)
+                : Duration.zero;
+          } else {
+            map[key] = val.s;
+          }
         } else if (val.n != null) {
           map[key] = num.parse(val.n!);
         } else if (val.boolValue != null) {
           map[key] = val.boolValue;
         } else if (val.l != null) {
-          map[key] =
-              val.l!.map((e) => e.s ?? e.n ?? e.boolValue ?? e.m).toList();
+          map[key] = val.l!.map((e) {
+            if (e.s != null) {
+              return e.s;
+            } else if (e.n != null) {
+              return num.parse(e.n!);
+            } else if (e.boolValue != null) {
+              return e.boolValue;
+            } else if (e.m != null) {
+              // Procesar Map anidado correctamente
+              final nestedMap = <String, dynamic>{};
+              e.m!.forEach((k, v) {
+                if (v.s != null) {
+                  // Verificar si es un Duration codificado
+                  if (v.s!.startsWith('DURATION:')) {
+                    final microseconds = int.tryParse(v.s!.substring(9));
+                    nestedMap[k] = microseconds != null
+                        ? Duration(microseconds: microseconds)
+                        : Duration.zero;
+                  } else {
+                    nestedMap[k] = v.s;
+                  }
+                } else if (v.n != null) {
+                  nestedMap[k] = num.parse(v.n!);
+                } else if (v.boolValue != null) {
+                  nestedMap[k] = v.boolValue;
+                } else if (v.l != null) {
+                  // Manejar listas anidadas dentro de maps
+                  nestedMap[k] = v.l!.map((listItem) {
+                    if (listItem.s != null) {
+                      return listItem.s;
+                    } else if (listItem.n != null) {
+                      return num.parse(listItem.n!);
+                    } else if (listItem.boolValue != null) {
+                      return listItem.boolValue;
+                    } else {
+                      return null;
+                    }
+                  }).toList();
+                } else {
+                  nestedMap[k] = null;
+                }
+              });
+              return nestedMap;
+            } else {
+              return null;
+            }
+          }).toList();
         } else if (val.m != null) {
           final nested = <String, dynamic>{};
           val.m!.forEach((k, v) {
             if (v.s != null) {
-              nested[k] = v.s;
+              // Verificar si es un Duration codificado
+              if (v.s!.startsWith('DURATION:')) {
+                final microseconds = int.tryParse(v.s!.substring(9));
+                nested[k] = microseconds != null
+                    ? Duration(microseconds: microseconds)
+                    : Duration.zero;
+              } else {
+                nested[k] = v.s;
+              }
             } else if (v.n != null) {
               nested[k] = num.parse(v.n!);
             } else if (v.boolValue != null) {
@@ -904,8 +954,12 @@ Future<List<Map<String, dynamic>>> getEventos(
           map[key] = null;
         }
       });
+
       return map;
     }).toList();
+
+    printLog.i('Eventos procesados: ${result.length}');
+    return result;
   } catch (e) {
     printLog.i('Error al cargar eventos: $e');
     return [];
@@ -1176,7 +1230,7 @@ Future<void> putEventoControlPorHorarios(
 /// [horario] es la hora en formato string (PK)
 /// [email] es el email del usuario
 /// [nombreEvento] es el nombre del evento
-Future<void> deleteEventoControlPorHorarios(
+void deleteEventoControlPorHorarios(
     String horario, String email, String nombreEvento) async {
   try {
     String sortKey = '$email:$nombreEvento';
@@ -1245,3 +1299,88 @@ Future<List<String>> getDevicesInDistanceControl(String email) async {
   }
 }
 //*- Dispositivos control por distancia -*\\
+
+//*- Guarda evento: Control por cadena -*\\
+void putEventoControlPorCadena(
+    String email, String nombreEvento, List<Map<String, dynamic>> pasos) async {
+  try {
+    final response = await service.putItem(
+      tableName: 'Eventos_ControlPorCadena',
+      item: {
+        'email': AttributeValue(s: email),
+        'nombreEvento': AttributeValue(s: nombreEvento),
+        'pasos': AttributeValue(
+          l: pasos.map((paso) {
+            return AttributeValue(m: {
+              'paso_index': AttributeValue(n: paso['paso_index'].toString()),
+              'ejecutores': AttributeValue(
+                m: {
+                  for (final entry in paso['ejecutores'].entries)
+                    entry.key: AttributeValue(boolValue: entry.value),
+                },
+              ),
+              'delay': AttributeValue(n: paso['delay'].toString()),
+            });
+          }).toList(),
+        ),
+      },
+    );
+
+    printLog.i('Evento de control por cadena guardado: $response');
+  } catch (e) {
+    printLog.i('Error guardando evento de control por cadena: $e');
+  }
+}
+
+void deleteEventoControlPorCadena(String email, String nombreEvento) async {
+  try {
+    final response = await service.deleteItem(
+      tableName: 'Eventos_ControlPorCadena',
+      key: {
+        'email': AttributeValue(s: email),
+        'nombreEvento': AttributeValue(s: nombreEvento),
+      },
+    );
+
+    printLog.i('Evento de control por cadena eliminado: $response');
+  } catch (e) {
+    printLog.i('Error eliminando evento de control por cadena: $e');
+  }
+}
+//*- Guarda evento: Control por cadena -*\\
+
+//*- Guarda evento: Control por grupos -*\\
+void putEventoControlPorGrupos(
+    String email, String nombreEvento, List<String> grupo) async {
+  try {
+    final response = await service.putItem(
+      tableName: 'Eventos_ControlPorGrupos',
+      item: {
+        'email': AttributeValue(s: email),
+        'nombreEvento': AttributeValue(s: nombreEvento),
+        'grupo': AttributeValue(ss: grupo),
+      },
+    );
+
+    printLog.i('Evento de control por grupos guardado: $response');
+  } catch (e) {
+    printLog.i('Error guardando evento de control por grupos: $e');
+  }
+}
+
+void deleteEventoControlPorGrupos(String email, String nombreEvento) async {
+  try {
+    final response = await service.deleteItem(
+      tableName: 'Eventos_ControlPorGrupos',
+      key: {
+        'email': AttributeValue(s: email),
+        'nombreEvento': AttributeValue(s: nombreEvento),
+      },
+    );
+
+    printLog.i('Evento de control por grupos eliminado: $response');
+  } catch (e) {
+    printLog.i('Error eliminando evento de control por grupos: $e');
+  }
+}
+//*- Guarda evento: Control por grupos -*\\

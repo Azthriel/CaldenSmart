@@ -17,6 +17,7 @@ var printLog = Logger(
       dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
     ),
     trace: 'PrintData:',
+    debug: 'PrintDebug:',
     info: 'PrintData:',
     error: 'PrintData:',
   ),
@@ -305,6 +306,7 @@ abstract class LogFilter {
 enum Level {
   all(0),
   trace(1000),
+  debug(2000),
   info(3000),
   error(5000),
   off(10000),
@@ -415,6 +417,20 @@ class Logger {
     String? color,
   }) {
     log(Level.trace, message,
+        time: time, error: error, stackTrace: stackTrace, color: color);
+  }
+
+  /// Log a message at level [Level.debug].
+  ///
+  /// [color] puede ser: 'rojo', 'verde', 'azul', 'amarillo', 'naranja', 'violeta', 'cyan', 'gris', 'blanco', 'negro', 'rosa', 'lima', 'marron'
+  void d(
+    dynamic message, {
+    DateTime? time,
+    Object? error,
+    StackTrace? stackTrace,
+    String? color,
+  }) {
+    log(Level.debug, message,
         time: time, error: error, stackTrace: stackTrace, color: color);
   }
 
@@ -664,10 +680,12 @@ class HybridPrinter extends LogPrinter {
   HybridPrinter(
     LogPrinter realPrinter, {
     LogPrinter? trace,
+    LogPrinter? debug,
     LogPrinter? info,
     LogPrinter? error,
   }) : _printerMap = {
           Level.trace: trace ?? realPrinter,
+          Level.debug: debug ?? realPrinter,
           Level.info: info ?? realPrinter,
           Level.error: error ?? realPrinter,
         };
@@ -684,6 +702,7 @@ class HybridPrinter extends LogPrinter {
 class LogfmtPrinter extends LogPrinter {
   static final levelPrefixes = {
     Level.trace: 'trace',
+    Level.debug: 'debug',
     Level.info: 'info',
     Level.error: 'error',
   };
@@ -727,11 +746,13 @@ class PrefixPrinter extends LogPrinter {
   PrefixPrinter(
     this._realPrinter, {
     String? trace,
+    String? debug,
     String? info,
     String? error,
   }) {
     _prefixMap = {
       Level.trace: trace ?? 'TRACE',
+      Level.debug: debug ?? 'DEBUG',
       Level.info: info ?? 'INFO',
       Level.error: error ?? 'ERROR',
     };
@@ -774,12 +795,14 @@ class PrettyPrinter extends LogPrinter {
 
   static final Map<Level, AnsiColor> defaultLevelColors = {
     Level.trace: const AnsiColor.fg(12),
+    Level.debug: const AnsiColor.fg(12),
     Level.info: const AnsiColor.fg(12),
     Level.error: const AnsiColor.fg(12),
   };
 
   static final Map<Level, String> defaultLevelEmojis = {
     Level.trace: '',
+    Level.debug: '🐛',
     Level.info: '💡',
     Level.error: '⛔',
   };
@@ -1190,12 +1213,14 @@ class PrettyPrinter extends LogPrinter {
 class SimplePrinter extends LogPrinter {
   static final levelPrefixes = {
     Level.trace: '[T]',
+    Level.debug: '[D]',
     Level.info: '[I]',
     Level.error: '[E]',
   };
 
   static final levelColors = {
     Level.trace: const AnsiColor.fg(12),
+    Level.debug: const AnsiColor.fg(12),
     Level.info: const AnsiColor.fg(12),
     Level.error: const AnsiColor.fg(12),
   };

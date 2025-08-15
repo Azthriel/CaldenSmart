@@ -500,10 +500,7 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
         ),
       );
 
-      putGroupsOfDevices(
-        currentUserEmail,
-        groupsOfDevices,
-      );
+      putEventoControlPorGrupos(currentUserEmail, title.text.trim(), deviceGroup);
 
       deviceGroup.clear();
       showCard = false;

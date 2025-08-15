@@ -6339,3 +6339,155 @@ class NumberWheel extends StatelessWidget {
   }
 }
 //*- Selector de horas -*\\
+
+//*- Funciones de parsing para Maps y Duration -*\\
+/// Parsea un string que representa un Map toString() de vuelta a Map<String, dynamic>
+/// Útil para backward compatibility con datos guardados como strings
+Map<String, dynamic> parseMapString(String mapString) {
+  try {
+    // Remover espacios al inicio y final
+    String cleaned = mapString.trim();
+
+    // Si empieza y termina con llaves, es un Map
+    if (cleaned.startsWith('{') && cleaned.endsWith('}')) {
+      cleaned = cleaned.substring(1, cleaned.length - 1);
+
+      Map<String, dynamic> result = {};
+
+      // Parsear manualmente respetando las estructuras anidadas
+      int i = 0;
+      while (i < cleaned.length) {
+        // Buscar el nombre de la clave
+        int keyStart = i;
+        while (i < cleaned.length && cleaned[i] != ':') {
+          i++;
+        }
+        if (i >= cleaned.length) break;
+
+        String key = cleaned.substring(keyStart, i).trim();
+        i++; // saltar ':'
+
+        // Saltar espacios
+        while (i < cleaned.length && cleaned[i] == ' ') {
+          i++;
+        }
+
+        // Parsear el valor
+        dynamic value;
+        if (i < cleaned.length && cleaned[i] == '[') {
+          // Es una lista - encontrar el ] que cierra
+          int listStart = i;
+          int brackets = 0;
+          do {
+            if (cleaned[i] == '[') brackets++;
+            if (cleaned[i] == ']') brackets--;
+            i++;
+          } while (i < cleaned.length && brackets > 0);
+
+          String listStr = cleaned.substring(listStart + 1, i - 1);
+          value = listStr.split(',').map((e) => e.trim()).toList();
+        } else if (i < cleaned.length && cleaned[i] == '{') {
+          // Es un Map anidado - encontrar el } que cierra
+          int mapStart = i;
+          int braces = 0;
+          do {
+            if (cleaned[i] == '{') braces++;
+            if (cleaned[i] == '}') braces--;
+            i++;
+          } while (i < cleaned.length && braces > 0);
+
+          String mapStr = cleaned.substring(mapStart + 1, i - 1);
+          Map<String, dynamic> nestedMap = {};
+
+          // Parsear el map anidado
+          List<String> pairs = [];
+          int pairStart = 0;
+          int depth = 0;
+          for (int j = 0; j < mapStr.length; j++) {
+            if (mapStr[j] == '{') depth++;
+            if (mapStr[j] == '}') depth--;
+            if (mapStr[j] == ',' && depth == 0) {
+              pairs.add(mapStr.substring(pairStart, j).trim());
+              pairStart = j + 1;
+            }
+          }
+          pairs.add(mapStr.substring(pairStart).trim());
+
+          for (String pair in pairs) {
+            if (pair.contains(':')) {
+              int colonIndex = pair.indexOf(':');
+              String nestedKey = pair.substring(0, colonIndex).trim();
+              String nestedValueStr = pair.substring(colonIndex + 1).trim();
+
+              if (nestedValueStr == 'true') {
+                nestedMap[nestedKey] = true;
+              } else if (nestedValueStr == 'false') {
+                nestedMap[nestedKey] = false;
+              } else {
+                nestedMap[nestedKey] = nestedValueStr;
+              }
+            }
+          }
+          value = nestedMap;
+        } else {
+          // Es un valor simple - buscar hasta la próxima coma o final
+          int valueStart = i;
+          int depth = 0;
+          while (i < cleaned.length) {
+            if (cleaned[i] == '{' || cleaned[i] == '[') depth++;
+            if (cleaned[i] == '}' || cleaned[i] == ']') depth--;
+            if (cleaned[i] == ',' && depth == 0) break;
+            i++;
+          }
+
+          String valueStr = cleaned.substring(valueStart, i).trim();
+          if (valueStr.contains(':') && valueStr.contains('.')) {
+            // Es un Duration
+            value = parseDurationString(valueStr);
+          } else {
+            value = valueStr;
+          }
+        }
+
+        result[key] = value;
+
+        // Saltar la coma si existe
+        if (i < cleaned.length && cleaned[i] == ',') i++;
+
+        // Saltar espacios
+        while (i < cleaned.length && cleaned[i] == ' ') {
+          i++;
+        }
+      }
+
+      return result;
+    }
+  } catch (e) {
+    printLog.e('Error parseando map string: $e');
+  }
+
+  return {};
+}
+
+/// Parsea un string de Duration en formato "0:00:30.000000" de vuelta a Duration
+Duration parseDurationString(String durationStr) {
+  try {
+    List<String> parts = durationStr.split(':');
+    if (parts.length >= 3) {
+      int hours = int.parse(parts[0]);
+      int minutes = int.parse(parts[1]);
+      double seconds = double.parse(parts[2]);
+
+      return Duration(
+        hours: hours,
+        minutes: minutes,
+        seconds: seconds.floor(),
+        microseconds: ((seconds - seconds.floor()) * 1000000).round(),
+      );
+    }
+  } catch (e) {
+    printLog.e('Error parseando duration: $e');
+  }
+  return Duration.zero;
+}
+//*- Funciones de parsing para Maps y Duration -*\\

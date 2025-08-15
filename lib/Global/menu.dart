@@ -67,7 +67,7 @@ class MenuPageState extends State<MenuPage> {
     final bleState = await FlutterBluePlus.adapterState.first;
     int index = bleState == BluetoothAdapterState.on ? 0 : 1;
     printLog.i('Bluetooth state: $bleState, index: $index', color: 'verde');
-    return 1;
+    return index;
   }
 
   Future<void> _initAsync() async {

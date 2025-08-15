@@ -11,6 +11,7 @@ import '../aws/dynamo/dynamo.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../Global/stored_data.dart';
 import 'package:caldensmart/logger.dart';
+import 'package:flutter/services.dart';
 
 // CLASES \\
 
@@ -21,7 +22,8 @@ class CalefactorPage extends ConsumerStatefulWidget {
   ConsumerState<CalefactorPage> createState() => CalefactorPageState();
 }
 
-class CalefactorPageState extends ConsumerState<CalefactorPage> {
+class CalefactorPageState extends ConsumerState<CalefactorPage>
+    with TickerProviderStateMixin {
   var parts2 = utf8.decode(varsValues).split(':');
 
   int _selectedIndex = 0;
@@ -40,6 +42,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage> {
   bool _isTutorialActive = false;
   late bool loading;
   bool ignite = false;
+  late AnimationController _sparkAnimationController;
+  late Animation<double> _sparkPulseAnimation;
 
   String measure = DeviceManager.getProductCode(deviceName) == '022000_IOT'
       ? 'KW/h'
@@ -385,6 +389,19 @@ class CalefactorPageState extends ConsumerState<CalefactorPage> {
     super.initState();
     timeData();
 
+    _sparkAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+
+    _sparkPulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.15,
+    ).animate(CurvedAnimation(
+      parent: _sparkAnimationController,
+      curve: Curves.elasticOut,
+    ));
+
     if (deviceOwner) {
       if (vencimientoAdmSec < 10 && vencimientoAdmSec > 0) {
         showPaymentTest(true, vencimientoAdmSec, navigatorKey.currentContext!);
@@ -427,6 +444,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage> {
     tenantController.dispose();
     costController.dispose();
     emailController.dispose();
+    _sparkAnimationController.dispose();
+
     consuptionController.dispose();
     super.dispose();
   }
@@ -868,57 +887,109 @@ class CalefactorPageState extends ConsumerState<CalefactorPage> {
                   const SizedBox(
                     height: 30,
                   ),
-                  GestureDetector(
-                    key: keys['calefactores:chispero']!,
-                    onLongPressStart: (LongPressStartDetails a) async {
-                      setState(() {
-                        ignite = true;
-                      });
-                      while (ignite) {
-                        await Future.delayed(const Duration(milliseconds: 500));
-                        if (!ignite) break;
-                        String data = '027000_IOT[15](1)';
-                        myDevice.toolsUuid.write(data.codeUnits);
-                        printLog.i(data);
-                      }
-                    },
-                    onLongPressEnd: (LongPressEndDetails a) {
-                      setState(() {
-                        ignite = false;
-                      });
-                      String data = '027000_IOT[15](0)';
-                      myDevice.toolsUuid.write(data.codeUnits);
-                      printLog.i(data);
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 500),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.yellow[600],
-                        shape: BoxShape.circle,
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 10,
-                            offset: Offset(0, 5),
+                  SizedBox(
+                    width: 65,
+                    height: 65,
+                    child: AnimatedBuilder(
+                      animation: _sparkAnimationController,
+                      builder: (context, child) {
+                        return Transform.scale(
+                          scale: ignite ? _sparkPulseAnimation.value : 1.0,
+                          child: GestureDetector(
+                            key: keys['calefactores:chispero']!,
+                            onLongPressStart: (LongPressStartDetails a) async {
+                              HapticFeedback.mediumImpact();
+
+                              setState(() {
+                                ignite = true;
+                              });
+
+                              // Animación repetitiva rápida como chispero real
+                              _sparkAnimationController.repeat(reverse: true);
+
+                              while (ignite) {
+                                await Future.delayed(
+                                    const Duration(milliseconds: 500));
+                                if (!ignite) break;
+                                String data = '027000_IOT[15](1)';
+                                myDevice.toolsUuid.write(data.codeUnits);
+                                printLog.i(data);
+
+                                HapticFeedback.selectionClick();
+                              }
+                            },
+                            onLongPressEnd: (LongPressEndDetails a) {
+                              HapticFeedback.heavyImpact();
+
+                              setState(() {
+                                ignite = false;
+                              });
+
+                              // Detener animación y volver al tamaño original
+                              _sparkAnimationController.stop();
+                              _sparkAnimationController.reset();
+
+                              String data = '027000_IOT[15](0)';
+                              myDevice.toolsUuid.write(data.codeUnits);
+                              printLog.i(data);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(15),
+                              decoration: BoxDecoration(
+                                color: Colors.amber[600],
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: ignite
+                                        ? Colors.amber.withValues(alpha: 0.4)
+                                        : Colors.black26,
+                                    blurRadius: ignite ? 15 : 8,
+                                    spreadRadius: ignite ? 3 : 0,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.auto_awesome,
+                                size: 22,
+                                color: Colors.white,
+                                shadows: ignite
+                                    ? [
+                                        Shadow(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.8),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 0),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                            ),
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.auto_awesome,
-                        size: 30,
-                        color: Colors.white,
-                      ),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(
                     height: 10,
                   ),
-                  const Text(
-                    'Chispero',
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 300),
                     style: TextStyle(
-                      color: Colors.black,
+                      color: ignite ? Colors.amber[700] : Colors.amber[600],
+                      fontWeight: ignite ? FontWeight.w600 : FontWeight.normal,
+                      fontSize: ignite ? 15 : 14,
+                      shadows: ignite
+                          ? [
+                              Shadow(
+                                color: Colors.amber.withValues(alpha: 0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 0),
+                              ),
+                            ]
+                          : null,
                     ),
+                    child: const Text('Chispero'),
                   )
                 }
               ],

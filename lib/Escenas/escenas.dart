@@ -1,7 +1,7 @@
 // ignore_for_file: equal_elements_in_set
 
 import 'package:caldensmart/Escenas/control_disparadores.dart';
-// import 'package:caldensmart/Escenas/control_cadena.dart';
+import 'package:caldensmart/Escenas/control_cadena.dart';
 // import 'package:caldensmart/Escenas/control_clima.dart';
 import 'package:caldensmart/Escenas/control_grupo.dart';
 import 'package:caldensmart/Escenas/control_horario.dart';
@@ -98,6 +98,7 @@ class EscenasPageState extends State<EscenasPage> {
     List<String> ejecutores,
     String? estadoAlerta,
     String? estadoTermometro, {
+    List<Map<String, dynamic>>? pasosCadena,
     required VoidCallback onDelete,
   }) {
     printLog.i('aca estamos revisando $devicesActions', color: 'verde');
@@ -117,6 +118,356 @@ class EscenasPageState extends State<EscenasPage> {
               fontSize: 14,
               color: color0.withValues(alpha: 0.7),
             ),
+          ),
+        );
+      }
+
+      if (evento == 'cadena') {
+        // Manejar estructura de pasos para cadenas
+        if (pasosCadena != null && pasosCadena.isNotEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color0.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: color0.withValues(alpha: 0.2),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      HugeIcons.strokeRoundedSettings02,
+                      size: 20,
+                      color: color6,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'PASOS DE LA CADENA',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: color0.withValues(alpha: 0.9),
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Mostrar cada paso
+                ...pasosCadena.asMap().entries.map((entry) {
+                  final pasoIndex = entry.key;
+                  final paso = entry.value;
+                  final devices = paso['devices'] as List<dynamic>? ?? [];
+                  final actions =
+                      paso['actions'] as Map<String, dynamic>? ?? {};
+                  final stepDelay =
+                      paso['stepDelay'] as Duration? ?? Duration.zero;
+                  final stepDelayUnit =
+                      paso['stepDelayUnit'] as String? ?? 'seg';
+
+                  String delayText = '';
+                  if (stepDelay > Duration.zero) {
+                    if (stepDelayUnit == 'min') {
+                      delayText =
+                          '${stepDelay.inMinutes} ${stepDelay.inMinutes == 1 ? 'minuto' : 'minutos'}';
+                    } else {
+                      delayText =
+                          '${stepDelay.inSeconds} ${stepDelay.inSeconds == 1 ? 'segundo' : 'segundos'}';
+                    }
+                  } else {
+                    delayText = 'Instantáneo';
+                  }
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: color6.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: color6.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Cabecera del paso
+                        Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: color6,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${pasoIndex + 1}',
+                                  style: GoogleFonts.poppins(
+                                    color: color1,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Paso ${pasoIndex + 1}',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: color0,
+                                    ),
+                                  ),
+                                  Text(
+                                    delayText,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: stepDelay > Duration.zero
+                                          ? Colors.orange.shade700
+                                          : Colors.green.shade700,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        // Dispositivos del paso
+                        ...devices.map((device) {
+                          final action = actions[device] ?? false;
+                          String displayName = '';
+                          if (device.contains('_')) {
+                            final apodoSalida = nicknamesMap[device];
+                            final parts = device.split('_');
+                            displayName =
+                                '${nicknamesMap[parts[0]] ?? parts[0]} salida ${apodoSalida ?? parts[1]}';
+                          } else {
+                            displayName = nicknamesMap[device] ?? device;
+                          }
+
+                          final actionIcon = action
+                              ? HugeIcons.strokeRoundedPlug01
+                              : HugeIcons.strokeRoundedPlugSocket;
+                          final actionColor = action ? Colors.green : color6;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: actionColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: actionColor.withValues(alpha: 0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: actionColor.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Icon(
+                                    actionIcon,
+                                    size: 14,
+                                    color: actionColor,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        displayName,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: color0,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Se ${action ? "encenderá" : "apagará"}',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 11,
+                                          color: color0.withValues(alpha: 0.7),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          );
+        }
+
+        // Fallback para estructura antigua
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: color0.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: color0.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    HugeIcons.strokeRoundedSettings02,
+                    size: 20,
+                    color: color6,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'PASOS DE LA CADENA',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: color0.withValues(alpha: 0.9),
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Aquí debemos obtener los pasos desde los datos del evento
+              // Como no tenemos acceso directo, necesitamos pasar los pasos como parámetro
+              // Por ahora, creamos una vista simplificada
+              ...deviceGroup.asMap().entries.map((entry) {
+                final index = entry.key;
+                final equipo = entry.value;
+                String displayName = '';
+                if (equipo.contains('_')) {
+                  final apodoSalida = nicknamesMap[equipo];
+                  final parts = equipo.split('_');
+                  displayName =
+                      '${nicknamesMap[parts[0]] ?? parts[0]} salida ${apodoSalida ?? parts[1]}';
+                } else {
+                  displayName = nicknamesMap[equipo] ?? equipo;
+                }
+
+                final delay = devicesDelay?[equipo] ?? Duration.zero;
+                final action = devicesActions?[equipo] ?? false;
+                final actionIcon = action
+                    ? HugeIcons.strokeRoundedPlug01
+                    : HugeIcons.strokeRoundedPlugSocket;
+                final actionColor = action ? Colors.green : color6;
+
+                String actionText;
+                if (delay > const Duration(seconds: 0)) {
+                  actionText =
+                      'Luego de ${delay.toString().substring(2, 7)} ${delay > const Duration(seconds: 59) ? 'minutos' : 'segundos'} se ${action ? "encenderá" : "apagará"}';
+                } else {
+                  actionText = 'Se ${action ? "encenderá" : "apagará"}';
+                }
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: actionColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: actionColor.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      // Número de posición
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: color6,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${index + 1}',
+                            style: GoogleFonts.poppins(
+                              color: color1,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Icono de acción
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: actionColor.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          actionIcon,
+                          size: 16,
+                          color: actionColor,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Información del dispositivo
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              displayName,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: color0,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              actionText,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: color0.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
           ),
         );
       }
@@ -880,7 +1231,8 @@ class EscenasPageState extends State<EscenasPage> {
         );
 
       case 'cadena':
-        const description = 'Este evento acciona los dispositivos en el orden:';
+        const description =
+            'Este evento ejecuta dispositivos organizados por pasos en secuencia:';
         return Card(
           elevation: 0,
           color: Colors.transparent,
@@ -1041,25 +1393,25 @@ class EscenasPageState extends State<EscenasPage> {
               subtitle: 'Ejecuta dispositivos en secuencia con retrasos',
               color: color0,
               onTap: () {
-                showToast("Próximamente");
-                // setState(() {
-                //   currentBuilder = () => ControlCadenaWidget(
-                //         onBackToMain: () =>
-                //             setState(() => currentBuilder = buildMainOptions),
-                //       );
-                //   deviceGroup.clear();
-                // });
-                // Future.delayed(const Duration(milliseconds: 350), () {
-                //   final context = _configCardKey.currentContext;
-                //   if (context != null && context.mounted) {
-                //     Scrollable.ensureVisible(
-                //       context,
-                //       duration: const Duration(milliseconds: 400),
-                //       curve: Curves.easeInOut,
-                //       alignment: 0.1,
-                //     );
-                //   }
-                // });
+                // showToast("Próximamente");
+                setState(() {
+                  currentBuilder = () => ControlCadenaWidget(
+                        onBackToMain: () =>
+                            setState(() => currentBuilder = buildMainOptions),
+                      );
+                  deviceGroup.clear();
+                });
+                Future.delayed(const Duration(milliseconds: 350), () {
+                  final context = _configCardKey.currentContext;
+                  if (context != null && context.mounted) {
+                    Scrollable.ensureVisible(
+                      context,
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeInOut,
+                      alignment: 0.1,
+                    );
+                  }
+                });
               },
             ),
             const SizedBox(height: 16),
@@ -1372,14 +1724,51 @@ class EscenasPageState extends State<EscenasPage> {
                                 child: Padding(
                                   padding: const EdgeInsets.only(bottom: 20),
                                   child: () {
-                                    final deviceGroup =
-                                        (evento['deviceGroup'] as List?)
-                                                ?.whereType<String>()
-                                                .toList() ??
-                                            <String>[];
+                                    List<String> deviceGroup = [];
 
                                     final eventoType =
                                         evento['evento'] as String;
+
+                                    if (eventoType == 'cadena' &&
+                                        evento['pasos'] != null) {
+                                      // Para eventos de cadena, extraer devices de todos los pasos
+                                      final pasos = evento['pasos'] as List;
+                                      for (final paso in pasos) {
+                                        // Si paso es String, parsearlo para compatibilidad
+                                        dynamic pasoProcessed = paso;
+                                        if (paso is String) {
+                                          try {
+                                            pasoProcessed =
+                                                parseMapString(paso);
+                                          } catch (e) {
+                                            printLog.e(
+                                                'Error parseando paso en escenas: $e');
+                                            continue; // Saltar este paso si hay error
+                                          }
+                                        }
+
+                                        // Validar que el paso tenga la estructura correcta
+                                        if (pasoProcessed is Map &&
+                                            pasoProcessed['devices'] != null) {
+                                          final devices =
+                                              pasoProcessed['devices']
+                                                      as List<dynamic>? ??
+                                                  [];
+                                          deviceGroup.addAll(
+                                              devices.map((e) => e.toString()));
+                                        }
+                                      }
+                                      // Eliminar duplicados
+                                      deviceGroup =
+                                          deviceGroup.toSet().toList();
+                                    } else {
+                                      // Para otros eventos, usar deviceGroup normal
+                                      deviceGroup =
+                                          (evento['deviceGroup'] as List?)
+                                                  ?.whereType<String>()
+                                                  .toList() ??
+                                              <String>[];
+                                    }
                                     final title = evento['title'] as String;
 
                                     final selectedDays =
@@ -1440,6 +1829,24 @@ class EscenasPageState extends State<EscenasPage> {
                                         evento['estadoAlerta']?.toString();
                                     final estadoTermometro =
                                         evento['estadoTermometro']?.toString();
+                                    final pasosCadena = eventoType == 'cadena'
+                                        ? (evento['pasos'] as List?)
+                                            ?.map((paso) {
+                                            // Si paso es String, parsearlo para compatibilidad
+                                            if (paso is String) {
+                                              try {
+                                                return parseMapString(paso);
+                                              } catch (e) {
+                                                printLog.e(
+                                                    'Error parseando paso en pasosCadena: $e');
+                                                return <String, dynamic>{};
+                                              }
+                                            } else {
+                                              return Map<String, dynamic>.from(
+                                                  paso);
+                                            }
+                                          }).toList()
+                                        : null;
 
                                     return buildEvent(
                                       deviceGroup,
@@ -1455,15 +1862,15 @@ class EscenasPageState extends State<EscenasPage> {
                                       ejecutores,
                                       estadoAlerta,
                                       estadoTermometro,
+                                      pasosCadena: pasosCadena,
                                       onDelete: () {
                                         setState(() {
                                           eventosCreados.removeAt(index);
                                           putEventos(
                                               currentUserEmail, eventosCreados);
                                           if (eventoType == 'grupo') {
-                                            groupsOfDevices.remove(title);
-                                            putGroupsOfDevices(currentUserEmail,
-                                                groupsOfDevices);
+                                            deleteEventoControlPorGrupos(
+                                                currentUserEmail, title);
                                             todosLosDispositivos.removeWhere(
                                                 (entry) => entry.key == title);
                                           } else if (eventoType ==
@@ -1482,6 +1889,11 @@ class EscenasPageState extends State<EscenasPage> {
                                                 selectedTime,
                                                 currentUserEmail,
                                                 title);
+                                          } else if (eventoType == 'cadena') {
+                                            deleteEventoControlPorCadena(
+                                                currentUserEmail, title);
+                                            todosLosDispositivos.removeWhere(
+                                                (entry) => entry.key == title);
                                           }
                                         });
                                       },

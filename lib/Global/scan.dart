@@ -62,7 +62,7 @@ class ScanPageState extends State<ScanPage>
         duration: const Duration(seconds: 1),
       )..forward();
     }
-    _cleanupTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+    _cleanupTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         _removeLostDevices();
       }
@@ -112,6 +112,7 @@ class ScanPageState extends State<ScanPage>
           withKeywords: keywords,
           androidUsesFineLocation: true,
           continuousUpdates: true,
+          removeIfGone: const Duration(seconds: 3),
         );
 
         listener = FlutterBluePlus.scanResults.listen(
@@ -188,9 +189,10 @@ class ScanPageState extends State<ScanPage>
     }
 
     //  Solo actualizar si hay dispositivos que marcar como perdidos
-    if (devicesToMarkAsLost.isNotEmpty && context.mounted) {
+    if (devicesToMarkAsLost.isNotEmpty || lostDevices.isNotEmpty) {
       setState(() {
         lostDevices.addAll(devicesToMarkAsLost);
+        sortedDevices = List.from(devices);
       });
     }
   }
@@ -212,7 +214,6 @@ class ScanPageState extends State<ScanPage>
           case BluetoothConnectionState.disconnected:
             {
               if (!quickAction) {
-                printLog.i("Para que mierda hago yo las cosas DIOS");
                 if (!toastFlag) {
                   showToast('Dispositivo desconectado');
                   toastFlag = true;
@@ -738,57 +739,48 @@ class ScanPageState extends State<ScanPage>
                                             Positioned(
                                               top: 16,
                                               left: 16,
-                                              child: SizedBox(
-                                                width: 270,
-                                                child: Row(
-                                                  children: [
-                                                    Expanded(
-                                                      child: Text(
-                                                        nicknamesMap[device
-                                                                .platformName] ??
-                                                            DeviceManager
-                                                                .getComercialName(
-                                                              device
-                                                                  .platformName,
-                                                            ),
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 22,
-                                                          color: Colors.white,
-                                                          shadows: const [
-                                                            Shadow(
-                                                              offset: Offset(
-                                                                  -1.5, -1.5),
-                                                              color:
-                                                                  Colors.black,
-                                                            ),
-                                                            Shadow(
-                                                              offset: Offset(
-                                                                  1.5, -1.5),
-                                                              color:
-                                                                  Colors.black,
-                                                            ),
-                                                            Shadow(
-                                                              offset: Offset(
-                                                                  1.5, 1.5),
-                                                              color:
-                                                                  Colors.black,
-                                                            ),
-                                                            Shadow(
-                                                              offset: Offset(
-                                                                  -1.5, 1.5),
-                                                              color:
-                                                                  Colors.black,
-                                                            ),
-                                                          ],
-                                                        ),
+                                              child: Container(
+                                                constraints: BoxConstraints(
+                                                    maxWidth:
+                                                        MediaQuery.of(context)
+                                                                .size
+                                                                .width *
+                                                            0.6),
+                                                child: Text(
+                                                  nicknamesMap[device
+                                                          .platformName] ??
+                                                      DeviceManager
+                                                          .getComercialName(
+                                                        device.platformName,
                                                       ),
-                                                    ),
-                                                  ],
+                                                  maxLines: 2,
+                                                  style: GoogleFonts.poppins(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 22,
+                                                    color: Colors.white,
+                                                    shadows: const [
+                                                      Shadow(
+                                                        offset:
+                                                            Offset(-1.5, -1.5),
+                                                        color: Colors.black,
+                                                      ),
+                                                      Shadow(
+                                                        offset:
+                                                            Offset(1.5, -1.5),
+                                                        color: Colors.black,
+                                                      ),
+                                                      Shadow(
+                                                        offset:
+                                                            Offset(1.5, 1.5),
+                                                        color: Colors.black,
+                                                      ),
+                                                      Shadow(
+                                                        offset:
+                                                            Offset(-1.5, 1.5),
+                                                        color: Colors.black,
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -805,8 +797,8 @@ class ScanPageState extends State<ScanPage>
                                               ),
                                             ),
                                             Positioned(
-                                              bottom: 16,
-                                              right: condicion ? 70 : 16,
+                                              top: 16,
+                                              right: 16,
                                               child: Container(
                                                 padding:
                                                     const EdgeInsets.symmetric(
@@ -836,45 +828,29 @@ class ScanPageState extends State<ScanPage>
                                               ),
                                             ),
                                             Positioned(
-                                              top: 16,
+                                              bottom: 16,
                                               right: 16,
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.all(4.0),
-                                                decoration: const BoxDecoration(
-                                                  color: Colors.white,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Icon(
-                                                  HugeIcons
-                                                      .strokeRoundedBluetoothCircle,
-                                                  size: 30,
-                                                  color: Colors.black,
-                                                ),
-                                              ),
+                                              child: condicion
+                                                  ? (quickAction
+                                                      ? const CircularProgressIndicator(
+                                                          color: color1)
+                                                      : Transform.scale(
+                                                          scale: 1.33,
+                                                          child: Switch(
+                                                            value: estadoWState,
+                                                            activeColor: color1,
+                                                            onChanged: (bool
+                                                                    newValue) =>
+                                                                _runQuickAction(
+                                                                    device,
+                                                                    newValue),
+                                                          ),
+                                                        ))
+                                                  : const SizedBox(
+                                                      width: 60,
+                                                      height: 36,
+                                                    ),
                                             ),
-                                            if (condicion) ...[
-                                              Positioned(
-                                                bottom: 16,
-                                                right: 16,
-                                                child: quickAction
-                                                    ? const CircularProgressIndicator(
-                                                        color: color1,
-                                                      )
-                                                    : Transform.scale(
-                                                        scale: 1.33,
-                                                        child: Switch(
-                                                          value: estadoWState,
-                                                          activeColor: color1,
-                                                          onChanged: (bool
-                                                                  newValue) =>
-                                                              _runQuickAction(
-                                                                  device,
-                                                                  newValue),
-                                                        ),
-                                                      ),
-                                              ),
-                                            ],
                                           ],
                                         ),
                                       ),
