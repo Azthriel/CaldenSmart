@@ -121,6 +121,12 @@ class MyAppState extends State<MyApp> {
     printLog.i('Empezamos');
   }
 
+  @override
+  void dispose() {
+    cancelGlobalConnectionListener();
+    super.dispose();
+  }
+
   void initAsync() async {
     await loadValues();
     printLog.i('Valores cargados');

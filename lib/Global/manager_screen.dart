@@ -89,6 +89,10 @@ class ManagerScreenState extends State<ManagerScreen> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.0),
+                side: const BorderSide(color: color6, width: 2.0),
+              ),
               backgroundColor: color3,
               title: Text(
                 'Selecciona un pin',

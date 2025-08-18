@@ -75,7 +75,10 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
           '${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}';
       final deviceDATA = globalDATA[deviceKey] ?? {};
       final owner = deviceDATA['owner'] ?? '';
-      return owner == '' || owner == currentUserEmail;
+      final admin = deviceDATA['secondary_admin'] ?? [];
+      return owner == '' ||
+          owner == currentUserEmail ||
+          admin.contains(currentUserEmail);
     }).toList();
 
     if (validDevices.length < 2) {
@@ -340,7 +343,8 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: color0,
                           foregroundColor: color3,
-                          disabledForegroundColor: color3.withValues(alpha: 0.5),
+                          disabledForegroundColor:
+                              color3.withValues(alpha: 0.5),
                           disabledBackgroundColor: color0,
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
                         ),
@@ -434,7 +438,9 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
                 ),
                 filled: true,
                 fillColor: color1,
-                errorText: title.text.contains(':') ? 'No se permiten dos puntos (:)' : null,
+                errorText: title.text.contains(':')
+                    ? 'No se permiten dos puntos (:)'
+                    : null,
               ),
               style: GoogleFonts.poppins(color: color3),
               onChanged: (value) {
@@ -500,7 +506,8 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
         ),
       );
 
-      putEventoControlPorGrupos(currentUserEmail, title.text.trim(), deviceGroup);
+      putEventoControlPorGrupos(
+          currentUserEmail, title.text.trim(), deviceGroup);
 
       deviceGroup.clear();
       showCard = false;

@@ -1,4 +1,5 @@
 import 'package:caldensmart/Global/stored_data.dart';
+import 'package:caldensmart/Global/wifi.dart';
 import 'package:caldensmart/login/welcome.dart';
 import 'package:flutter/material.dart';
 import 'package:caldensmart/master.dart';
@@ -827,57 +828,58 @@ class ProfilePageState extends State<ProfilePage> {
             ),
             SafeArea(
               child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: color3,
-                  side: const BorderSide(color: color3),
-                  padding: const EdgeInsets.symmetric(vertical: 15.0),
-                ),
-                onPressed: () async {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ClosingSessionScreen(),
-                    ),
-                  );
-
-                  await Future.delayed(const Duration(milliseconds: 500));
-
-                  previusConnections.clear();
-                  alexaDevices.clear();
-                  currentUserEmail = '';
-
-                  for (int i = 0; i < topicsToSub.length; i++) {
-                    unSubToTopicMQTT(topicsToSub[i]);
-                  }
-
-                  topicsToSub.clear();
-                  backTimerDS?.cancel();
-
-                  await Amplify.Auth.signOut();
-                  await Future.delayed(const Duration(seconds: 2));
-
-                  if (context.mounted) {
-                    Navigator.pushAndRemoveUntil(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: color3,
+                    side: const BorderSide(color: color3),
+                    padding: const EdgeInsets.symmetric(vertical: 15.0),
+                  ),
+                  onPressed: () async {
+                    Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const WelcomePage(),
+                        builder: (context) => const ClosingSessionScreen(),
                       ),
-                      (route) => false,
                     );
-                  }
-                },
-                child: Text(
-                  "Cerrar sesión",
-                  style: GoogleFonts.poppins(
-                    color: color0,
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
+
+                    await Future.delayed(const Duration(milliseconds: 500));
+
+                    previusConnections.clear();
+                    alexaDevices.clear();
+                    currentUserEmail = '';
+                    WifiPageState.hasInitialized = false;
+
+                    for (int i = 0; i < topicsToSub.length; i++) {
+                      unSubToTopicMQTT(topicsToSub[i]);
+                    }
+
+                    topicsToSub.clear();
+                    backTimerDS?.cancel();
+
+                    await Amplify.Auth.signOut();
+                    await Future.delayed(const Duration(seconds: 2));
+
+                    if (context.mounted) {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const WelcomePage(),
+                        ),
+                        (route) => false,
+                      );
+                    }
+                  },
+                  child: Text(
+                    "Cerrar sesión",
+                    style: GoogleFonts.poppins(
+                      color: color0,
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
-            ),
             ),
           ],
         ),

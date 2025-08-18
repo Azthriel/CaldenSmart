@@ -371,7 +371,8 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
           '${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}';
       final deviceDATA = globalDATA[deviceKey] ?? {};
       final owner = deviceDATA['owner'] ?? '';
-      return owner == '' || owner == currentUserEmail;
+      final admin = deviceDATA['secondary_admin'] ?? [];
+      return owner == '' || owner == currentUserEmail || admin.contains(currentUserEmail);
     }).toList();
 
     if (validDevices.isEmpty) {

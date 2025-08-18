@@ -20,15 +20,15 @@ class WifiPage extends ConsumerStatefulWidget {
 
 class WifiPageState extends ConsumerState<WifiPage> {
   bool charging = false;
-  static bool _hasInitialized = false;
+  static bool hasInitialized = false;
   final Map<String, bool> _expandedStates = {};
   final Set<String> _processingGroups = {};
 
   @override
   void initState() {
     super.initState();
-    if (!_hasInitialized) {
-      _hasInitialized = true;
+    if (!hasInitialized) {
+      hasInitialized = true;
       initAsync();
     } else {
       setState(() {
@@ -55,6 +55,32 @@ class WifiPageState extends ConsumerState<WifiPage> {
     // Agregar individuales
     for (String device in previusConnections) {
       todosLosDispositivos.add(MapEntry('individual', device));
+    }
+
+    for (var evento in eventosCreados) {
+      if (evento['evento'] == 'grupo' || evento['evento'] == 'cadena') {
+        todosLosDispositivos.add(MapEntry(evento['title'] ?? 'Grupo',
+            (evento['deviceGroup'] as List<dynamic>).join(',')));
+      }
+    }
+    List<Map<String, String>> savedOrder =
+        await loadWifiOrderDevices(currentUserEmail);
+    if (savedOrder.isNotEmpty) {
+      List<MapEntry<String, String>> orderedList = [];
+      for (var item in savedOrder) {
+        orderedList.add(MapEntry(item['key']!, item['value']!));
+      }
+      // Agrega los dispositivos nuevos que no estaban en el orden guardado
+      for (var entry in todosLosDispositivos) {
+        bool exists = orderedList
+            .any((e) => e.key == entry.key && e.value == entry.value);
+        if (!exists) {
+          orderedList.add(entry);
+        }
+      }
+      todosLosDispositivos
+        ..clear()
+        ..addAll(orderedList);
     }
 
     printLog.i('Lista de dispositivos: $todosLosDispositivos');
@@ -135,6 +161,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
     previusConnections.remove(deviceName);
     alexaDevices.removeWhere((d) => d.contains(deviceName));
     todosLosDispositivos.removeWhere((e) => e.value == deviceName);
+    await _saveOrder();
+
     setState(() {});
     final String sn = DeviceManager.extractSerialNumber(deviceName);
 
@@ -398,33 +426,24 @@ class WifiPageState extends ConsumerState<WifiPage> {
   }
   //*- Controlar la cadena -*\\
 
+  //*- Guardar orden de equipos -*\\
+  Future<void> _saveOrder() async {
+    List<Map<String, String>> orderedDevices = todosLosDispositivos
+        .map((e) => {'key': e.key, 'value': e.value})
+        .toList();
+    await saveWifiOrderDevices(orderedDevices, currentUserEmail);
+  }
+  //*- Guardar orden de equipos -*\\
+
   @override
   Widget build(BuildContext context) {
     final dispositiosIndividuales = todosLosDispositivos
         .where((device) => device.key == 'individual')
         .toList();
 
-    // Obtener grupos desde eventosCreados
-    final grupos = eventosCreados
-        .where((evento) => evento['evento'] == 'grupo')
-        .map<MapEntry<String, String>>((evento) {
-      return MapEntry(
-        evento['title'] ?? 'Grupo',
-        (evento['deviceGroup'] as List<dynamic>).join(','),
-      );
-    }).toList();
-
-    // Agregar las cadenas a la lista de eventos para que aparezcan en la pestaña
-    final cadenas = eventosCreados
-        .where((evento) => evento['evento'] == 'cadena')
-        .map<MapEntry<String, String>>((evento) {
-      return MapEntry(
-        evento['title'] ?? 'Cadena',
-        (evento['deviceGroup'] as List<dynamic>).join(','),
-      );
-    }).toList();
-
-    final eventos = [...grupos, ...cadenas];
+    final eventos = todosLosDispositivos
+        .where((device) => device.key != 'individual')
+        .toList();
 
     return DefaultTabController(
       length: 2,
@@ -600,36 +619,34 @@ class WifiPageState extends ConsumerState<WifiPage> {
     return ReorderableListView.builder(
       itemCount: deviceList.length,
       footer: const SizedBox(height: 120),
-      onReorder: (int oldIndex, int newIndex) {
+      onReorder: (int oldIndex, int newIndex) async {
+        if (newIndex > oldIndex) newIndex -= 1;
+
+        // Ordenar solo la sublista correspondiente
+        List<MapEntry<String, String>> sublist = List.from(deviceList);
+        final item = sublist.removeAt(oldIndex);
+        sublist.insert(newIndex, item);
+
+        // Reconstruir todosLosDispositivos manteniendo el orden de ambas sublistas
+        List<MapEntry<String, String>> individuales =
+            todosLosDispositivos.where((e) => e.key == 'individual').toList();
+        List<MapEntry<String, String>> grupos =
+            todosLosDispositivos.where((e) => e.key != 'individual').toList();
+
+        if (tipo == 'individual') {
+          individuales = sublist;
+        } else {
+          grupos = sublist;
+        }
+
         setState(() {
-          if (newIndex > oldIndex) {
-            newIndex -= 1;
-          }
-          // Encontrar los índices en la lista original
-          final item = deviceList[oldIndex];
-          final originalIndex = todosLosDispositivos.indexWhere(
-              (device) => device.key == item.key && device.value == item.value);
-
-          if (originalIndex != -1) {
-            final originalItem = todosLosDispositivos.removeAt(originalIndex);
-
-            // Calcular la nueva posición en la lista original
-            int newOriginalIndex;
-            if (newIndex < deviceList.length - 1) {
-              final nextItem =
-                  deviceList[newIndex + (newIndex > oldIndex ? 0 : 1)];
-              newOriginalIndex = todosLosDispositivos.indexWhere((device) =>
-                  device.key == nextItem.key && device.value == nextItem.value);
-              if (newOriginalIndex == -1) {
-                newOriginalIndex = todosLosDispositivos.length;
-              }
-            } else {
-              newOriginalIndex = todosLosDispositivos.length;
-            }
-
-            todosLosDispositivos.insert(newOriginalIndex, originalItem);
-          }
+          todosLosDispositivos
+            ..clear()
+            ..addAll(individuales)
+            ..addAll(grupos);
         });
+
+        await _saveOrder();
       },
       itemBuilder: (BuildContext context, int index) {
         final String grupo = deviceList[index].key;

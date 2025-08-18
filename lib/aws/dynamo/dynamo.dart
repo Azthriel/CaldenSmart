@@ -140,6 +140,11 @@ Future<void> queryItems(String pc, String sn) async {
                     .putIfAbsent('$pc/$sn', () => {})
                     .addAll({key: value.s ?? ''});
                 break;
+              case 'SoftwareVersion':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.s ?? ''});
+                break;
               case 'actualTemp':
                 globalDATA
                     .putIfAbsent('$pc/$sn', () => {})
@@ -154,11 +159,6 @@ Future<void> queryItems(String pc, String sn) async {
                 globalDATA
                     .putIfAbsent('$pc/$sn', () => {})
                     .addAll({key: value.boolValue ?? false});
-                break;
-              case 'SoftwareVersion':
-                globalDATA
-                    .putIfAbsent('$pc/$sn', () => {})
-                    .addAll({key: value.s ?? ''});
                 break;
               case 'distanceControlActive':
                 globalDATA
@@ -427,37 +427,6 @@ Future<void> putSecondaryAdmins(String pc, String sn, List<String> data) async {
     printLog.i('Error inserting item: $e');
   }
 }
-
-Future<List<String>> getSecondaryAdmins(String pc, String sn) async {
-  try {
-    final response = await service.getItem(
-      tableName: 'sime-domotica',
-      key: {
-        'product_code': AttributeValue(s: pc),
-        'device_id': AttributeValue(s: sn),
-      },
-    );
-    if (response.item != null) {
-      // Convertir AttributeValue a String
-      var item = response.item!;
-      List<String> secAdm = item['secondary_admin']?.ss ?? [];
-
-      printLog.i('Se encontro el siguiente item: $secAdm');
-
-      if (secAdm.contains('') && secAdm.length == 1) {
-        return [];
-      } else {
-        return secAdm;
-      }
-    } else {
-      printLog.i('Item no encontrado.');
-      return [];
-    }
-  } catch (e) {
-    printLog.i('Error al obtener el item: $e');
-    return [];
-  }
-}
 //*-Guarda y lee los mails de los admins de un equipo en dynamo-*\\
 
 //*-Lee las fechas de vencimiento de los beneficios que se hayan pagado en un equipo-*\\
@@ -668,6 +637,8 @@ Future<void> getNicknames(String email) async {
       mapa.forEach((key, value) {
         nicknamesMap.addAll({key: value.s ?? ''});
       });
+      // Actualizar el notificador
+      nicknamesNotifier.value = Map.from(nicknamesMap);
       printLog.i('Nicknames encontrados: $nicknamesMap');
     } else {
       printLog.i('Item no encontrado. No está el mail en la database');

@@ -561,6 +561,11 @@ class RollerPageState extends ConsumerState<RollerPage> {
                               context: context,
                               builder: (BuildContext context) {
                                 return AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20.0),
+                                    side: const BorderSide(
+                                        color: color6, width: 2.0),
+                                  ),
                                   backgroundColor: color3,
                                   title: const Text('Modificar largo (mm)',
                                       style: TextStyle(color: color0)),

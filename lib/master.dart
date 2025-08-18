@@ -115,6 +115,9 @@ List<int> varsValues = [];
 bool bluetoothOn = true;
 List<String> keywords = [];
 Map<String, DateTime> lastSeenDevices = {};
+
+// Global Connection Manager
+StreamSubscription<BluetoothConnectionState>? globalConnectionSubscription;
 //*-Relacionado al ble-*\\
 
 //*-Topics mqtt-*\\
@@ -131,6 +134,9 @@ List<MapEntry<String, String>> todosLosDispositivos = [];
 //*-Nicknames-*\\
 late String nickname;
 Map<String, String> nicknamesMap = {};
+// Notificador para cambios en nicknames
+ValueNotifier<Map<String, String>> nicknamesNotifier =
+    ValueNotifier<Map<String, String>>({});
 //*-Nicknames-*\\
 
 //*-Notifications-*\\
@@ -3501,32 +3507,56 @@ class Versioner {
   // ---------------------- COMPARADORES ----------------------
   /// Compara si la primera versión (AAMMDDL) salió después o es igual a la segunda.
   static bool isPosterior(String myVersion, String versionToCompare) {
-    final v1 = _parseVersion(myVersion);
-    final v2 = _parseVersion(versionToCompare);
-    if (v1.date.isAtSameMomentAs(v2.date)) {
-      return v1.letter.compareTo(v2.letter) >= 0;
+    try {
+      final v1 = _parseVersion(myVersion);
+      final v2 = _parseVersion(versionToCompare);
+      if (v1.date.isAtSameMomentAs(v2.date)) {
+        return v1.letter.compareTo(v2.letter) >= 0;
+      }
+      return v1.date.isAfter(v2.date);
+    } catch (e) {
+      // Si hay error en el parseado, asumimos que la versión no es posterior
+      printLog.i(
+          'Error comparing versions "$myVersion" vs "$versionToCompare": $e');
+      return false;
     }
-    return v1.date.isAfter(v2.date);
   }
 
   /// Compara si la primera versión salió antes que la segunda.
   static bool isPrevious(String myVersion, String versionToCompare) {
-    final v1 = _parseVersion(myVersion);
-    final v2 = _parseVersion(versionToCompare);
-    if (v1.date.isAtSameMomentAs(v2.date)) {
-      return v1.letter.compareTo(v2.letter) < 0;
+    try {
+      final v1 = _parseVersion(myVersion);
+      final v2 = _parseVersion(versionToCompare);
+      if (v1.date.isAtSameMomentAs(v2.date)) {
+        return v1.letter.compareTo(v2.letter) < 0;
+      }
+      return v1.date.isBefore(v2.date);
+    } catch (e) {
+      // Si hay error en el parseado, asumimos que la versión no es anterior
+      printLog.i(
+          'Error comparing versions "$myVersion" vs "$versionToCompare": $e');
+      return false;
     }
-    return v1.date.isBefore(v2.date);
   }
 
   // ---------------------- PARSEADO ----------------------
   /// Auxiliar para parsear AAMMDD(Letra) en DateTime y letra.
   static _VersionData _parseVersion(String version) {
-    final yy = int.parse('20${version.substring(0, 2)}');
-    final mm = int.parse(version.substring(2, 4));
-    final dd = int.parse(version.substring(4, 6));
-    final letter = version.substring(6, 7);
-    return _VersionData(DateTime(yy, mm, dd), letter);
+    // Validar que la versión tenga al menos 7 caracteres (AAMMDDL)
+    if (version.length < 7) {
+      throw FormatException(
+          'Version format invalid: $version. Expected format: AAMMDDL (at least 7 characters)');
+    }
+
+    try {
+      final yy = int.parse('20${version.substring(0, 2)}');
+      final mm = int.parse(version.substring(2, 4));
+      final dd = int.parse(version.substring(4, 6));
+      final letter = version.substring(6, 7);
+      return _VersionData(DateTime(yy, mm, dd), letter);
+    } catch (e) {
+      throw FormatException('Error parsing version $version: $e');
+    }
   }
 
   // ---------------------- LISTADO Y OBTENCIÓN ----------------------
@@ -4600,7 +4630,11 @@ class AccessDeniedScreen extends StatelessWidget {
           barrierDismissible: false,
           builder: (context) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF252223),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.0),
+                side: const BorderSide(color: color6, width: 2.0),
+              ),
+              backgroundColor: color3,
               content: Row(
                 children: [
                   Image.asset('assets/branch/dragon.gif',
@@ -4610,7 +4644,7 @@ class AccessDeniedScreen extends StatelessWidget {
                     child: const Text(
                       "Desconectando...",
                       style: TextStyle(
-                        color: Color(0xFFFFFFFF),
+                        color: color0,
                       ),
                     ),
                   ),
@@ -4643,7 +4677,11 @@ class AccessDeniedScreen extends StatelessWidget {
                       barrierDismissible: false,
                       builder: (context) {
                         return AlertDialog(
-                          backgroundColor: const Color(0xFF252223),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                            side: const BorderSide(color: color6, width: 2.0),
+                          ),
+                          backgroundColor: color3,
                           content: Row(
                             children: [
                               Image.asset('assets/branch/dragon.gif',
@@ -4653,7 +4691,7 @@ class AccessDeniedScreen extends StatelessWidget {
                                 child: const Text(
                                   "Desconectando...",
                                   style: TextStyle(
-                                    color: Color(0xFFFFFFFF),
+                                    color: color0,
                                   ),
                                 ),
                               ),
@@ -4777,7 +4815,11 @@ class DeviceInUseScreen extends StatelessWidget {
           barrierDismissible: false,
           builder: (context) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF252223),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.0),
+                side: const BorderSide(color: color6, width: 2.0),
+              ),
+              backgroundColor: color3,
               content: Row(
                 children: [
                   Image.asset('assets/branch/dragon.gif',
@@ -4786,7 +4828,7 @@ class DeviceInUseScreen extends StatelessWidget {
                     margin: const EdgeInsets.only(left: 15),
                     child: const Text(
                       "Desconectando...",
-                      style: TextStyle(color: Color(0xFFFFFFFF)),
+                      style: TextStyle(color: color0),
                     ),
                   ),
                 ],
@@ -4818,7 +4860,11 @@ class DeviceInUseScreen extends StatelessWidget {
                       barrierDismissible: false,
                       builder: (context) {
                         return AlertDialog(
-                          backgroundColor: const Color(0xFF252223),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                            side: const BorderSide(color: color6, width: 2.0),
+                          ),
+                          backgroundColor: color3,
                           content: Row(
                             children: [
                               Image.asset('assets/branch/dragon.gif',
@@ -4827,7 +4873,7 @@ class DeviceInUseScreen extends StatelessWidget {
                                 margin: const EdgeInsets.only(left: 15),
                                 child: const Text(
                                   "Desconectando...",
-                                  style: TextStyle(color: Color(0xFFFFFFFF)),
+                                  style: TextStyle(color: color0),
                                 ),
                               ),
                             ],
@@ -4912,7 +4958,11 @@ class LabProcessNotFinished extends StatelessWidget {
           barrierDismissible: false,
           builder: (context) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF252223),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.0),
+                side: const BorderSide(color: color6, width: 2.0),
+              ),
+              backgroundColor: color3,
               content: Row(
                 children: [
                   Image.asset('assets/branch/dragon.gif',
@@ -4921,7 +4971,7 @@ class LabProcessNotFinished extends StatelessWidget {
                     margin: const EdgeInsets.only(left: 15),
                     child: const Text(
                       "Desconectando...",
-                      style: TextStyle(color: Color(0xFFFFFFFF)),
+                      style: TextStyle(color: color0),
                     ),
                   ),
                 ],
@@ -4953,7 +5003,11 @@ class LabProcessNotFinished extends StatelessWidget {
                       barrierDismissible: false,
                       builder: (context) {
                         return AlertDialog(
-                          backgroundColor: const Color(0xFF252223),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                            side: const BorderSide(color: color6, width: 2.0),
+                          ),
+                          backgroundColor: color3,
                           content: Row(
                             children: [
                               Image.asset('assets/branch/dragon.gif',
@@ -4962,7 +5016,7 @@ class LabProcessNotFinished extends StatelessWidget {
                                 margin: const EdgeInsets.only(left: 15),
                                 child: const Text(
                                   "Desconectando...",
-                                  style: TextStyle(color: Color(0xFFFFFFFF)),
+                                  style: TextStyle(color: color0),
                                 ),
                               ),
                             ],
@@ -6489,5 +6543,55 @@ Duration parseDurationString(String durationStr) {
     printLog.e('Error parseando duration: $e');
   }
   return Duration.zero;
+}
+
+///*-Global Connection Manager-*\\\
+
+/// Inicia el listener global para el estado de conexión del dispositivo
+void setupGlobalConnectionListener() {
+  globalConnectionSubscription?.cancel();
+
+  globalConnectionSubscription = myDevice.device.connectionState.listen(
+    (BluetoothConnectionState state) {
+      printLog.i('Estado de conexión global: $state');
+
+      if (state == BluetoothConnectionState.disconnected) {
+        printLog.e('Dispositivo desconectado - Manejador global');
+
+        // Check if this is not a quick action and show toast
+        if (!quickAction) {
+          showToast('Dispositivo desconectado');
+        }
+
+        // Limpiar variables globales
+        _cleanGlobalDeviceVariables();
+
+        // Navigate to menu if not in quick action mode
+        if (!quickAction) {
+          navigatorKey.currentState?.pushReplacementNamed('/menu');
+        }
+      }
+    },
+  );
+}
+
+/// Cancela el listener global de conexión
+void cancelGlobalConnectionListener() {
+  globalConnectionSubscription?.cancel();
+  globalConnectionSubscription = null;
+}
+
+/// Limpia todas las variables globales relacionadas con el dispositivo
+void _cleanGlobalDeviceVariables() {
+  nameOfWifi = '';
+  connectionFlag = false;
+  deviceName = '';
+  toolsValues = [];
+  varsValues = [];
+  ioValues = [];
+  infoValues = [];
+  hardwareVersion = '';
+  softwareVersion = '';
+  printLog.i('Variables globales del dispositivo limpiadas');
 }
 //*- Funciones de parsing para Maps y Duration -*\\

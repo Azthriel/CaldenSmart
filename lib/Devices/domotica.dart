@@ -517,53 +517,6 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
     return emailRegex.hasMatch(email);
   }
 
-  Future<void> addSecondaryAdmin(String email) async {
-    if (!isValidEmail(email)) {
-      showToast('Por favor, introduce un correo electrónico válido.');
-      return;
-    }
-
-    if (adminDevices.contains(email)) {
-      showToast('Este administrador ya está añadido.');
-      return;
-    }
-
-    try {
-      List<String> updatedAdmins = List.from(adminDevices)..add(email);
-
-      await putSecondaryAdmins(DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
-
-      setState(() {
-        adminDevices = updatedAdmins;
-        emailController.clear();
-      });
-
-      showToast('Administrador añadido correctamente.');
-    } catch (e) {
-      printLog.i('Error al añadir administrador secundario: $e');
-      showToast('Error al añadir el administrador. Inténtalo de nuevo.');
-    }
-  }
-
-  Future<void> removeSecondaryAdmin(String email) async {
-    try {
-      List<String> updatedAdmins = List.from(adminDevices)..remove(email);
-
-      await putSecondaryAdmins(DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
-
-      setState(() {
-        adminDevices.remove(email);
-      });
-
-      showToast('Administrador eliminado correctamente.');
-    } catch (e) {
-      printLog.i('Error al eliminar administrador secundario: $e');
-      showToast('Error al eliminar el administrador. Inténtalo de nuevo.');
-    }
-  }
-
 //!Visual
   @override
   Widget build(BuildContext context) {

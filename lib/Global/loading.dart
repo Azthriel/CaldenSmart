@@ -26,6 +26,7 @@ class LoadState extends State<LoadingPage> {
   void initState() {
     super.initState();
     printLog.i('HOSTIAAAAAAAAAAAAAAAAAAAAAAAA');
+
     _dotTimer =
         Timer.periodic(const Duration(milliseconds: 800), (Timer timer) {
       setState(
@@ -79,6 +80,12 @@ class LoadState extends State<LoadingPage> {
         myDevice.device.disconnect();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _dotTimer.cancel();
+    super.dispose();
   }
 
   Future<bool> precharge() async {
@@ -175,10 +182,7 @@ class LoadState extends State<LoadingPage> {
           lastUser = users;
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = await getSecondaryAdmins(
-            pc,
-            sn,
-          );
+          adminDevices = globalDATA['$pc/$sn']?['secondary_admin'] ?? [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -250,10 +254,7 @@ class LoadState extends State<LoadingPage> {
 
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = await getSecondaryAdmins(
-            pc,
-            sn,
-          );
+          adminDevices = globalDATA['$pc/$sn']?['secondary_admin'] ?? [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -296,10 +297,7 @@ class LoadState extends State<LoadingPage> {
 
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = await getSecondaryAdmins(
-            pc,
-            sn,
-          );
+          adminDevices = globalDATA['$pc/$sn']?['secondary_admin'] ?? [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -357,10 +355,7 @@ class LoadState extends State<LoadingPage> {
 
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = await getSecondaryAdmins(
-            pc,
-            sn,
-          );
+          adminDevices = globalDATA['$pc/$sn']?['secondary_admin'] ?? [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -399,10 +394,7 @@ class LoadState extends State<LoadingPage> {
               globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = await getSecondaryAdmins(
-            pc,
-            sn,
-          );
+          adminDevices = globalDATA['$pc/$sn']?['secondary_admin'] ?? [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -448,10 +440,7 @@ class LoadState extends State<LoadingPage> {
           lastUser = users;
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = await getSecondaryAdmins(
-            pc,
-            sn,
-          );
+          adminDevices = globalDATA['$pc/$sn']?['secondary_admin'] ?? [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -516,12 +505,6 @@ class LoadState extends State<LoadingPage> {
       // handleManualError('$e', '$stackTrace');
       return Future.value(false);
     }
-  }
-
-  @override
-  void dispose() {
-    _dotTimer.cancel();
-    super.dispose();
   }
 
 //!Visual

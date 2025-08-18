@@ -74,10 +74,10 @@ class MenuPageState extends State<MenuPage> {
     currentUserEmail = await getUserMail();
     _setupTokenManagement();
     if (currentUserEmail != '') {
-      await getNicknames(currentUserEmail);
-    }
-    if (mounted) {
-      setState(() {});
+      await getNicknames(currentUserEmail).then((_) {
+        printLog.d('Nicknames cargados en MenuPage');
+        // Ya no necesitamos setState() aquí porque el ValueNotifier se encarga
+      });
     }
   }
 
@@ -123,14 +123,14 @@ class MenuPageState extends State<MenuPage> {
         if (_pageController == null) {
           _selectedIndex = snapshot.data!;
           _pageController = PageController(initialPage: _selectedIndex);
-          WidgetsBinding.instance.addPostFrameCallback((_) {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
             if (mounted) {
               checkForUpdate(context);
               fToast.init(navigatorKey.currentState?.context ?? context);
+              await _initAsync();
             }
           });
           LocationWatcher().start();
-          _initAsync();
         }
         return Scaffold(
           backgroundColor: Colors.transparent,

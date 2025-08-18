@@ -163,8 +163,12 @@ class EscenasPageState extends State<EscenasPage> {
                   final pasoIndex = entry.key;
                   final paso = entry.value;
                   final devices = paso['devices'] as List<dynamic>? ?? [];
+                  if(paso['actions'].runtimeType == String) {
+                    paso['actions'] = parseMapString(paso['actions']);
+                  }
                   final actions =
                       paso['actions'] as Map<String, dynamic>? ?? {};
+                  
                   final stepDelay =
                       paso['stepDelay'] as Duration? ?? Duration.zero;
                   final stepDelayUnit =
@@ -249,6 +253,9 @@ class EscenasPageState extends State<EscenasPage> {
                         const SizedBox(height: 12),
                         // Dispositivos del paso
                         ...devices.map((device) {
+                          if(actions[device].runtimeType == String) {
+                            actions[device] = actions[device] == 'true';
+                          }
                           final action = actions[device] ?? false;
                           String displayName = '';
                           if (device.contains('_')) {

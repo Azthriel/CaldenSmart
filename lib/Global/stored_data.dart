@@ -240,3 +240,22 @@ Future<int> loadEasterEggTopScore() async {
   return prefs.getInt('CSEasterEggTopScore') ?? 0;
 }
 //*- Guardar top score del Easter Egg -*\\
+
+//*- Guardar lista de equipos wifi -*\\
+Future<void> saveWifiOrderDevices(
+    List<Map<String, String>> devices, String email) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  String jsonList = jsonEncode(devices);
+  await prefs.setString('CSwifiOrderDevices_$email', jsonList);
+}
+
+Future<List<Map<String, String>>> loadWifiOrderDevices(String email) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? jsonList = prefs.getString('CSwifiOrderDevices_$email');
+  if (jsonList == null) return [];
+  List<dynamic> decoded = jsonDecode(jsonList);
+  return decoded
+      .map<Map<String, String>>((e) => Map<String, String>.from(e))
+      .toList();
+}
+//*- Guardar lista de equipos wifi -*\\

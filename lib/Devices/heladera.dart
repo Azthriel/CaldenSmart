@@ -666,22 +666,26 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
           barrierDismissible: false,
           builder: (BuildContext dialogContext) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF252223),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.0),
+                side: const BorderSide(color: color6, width: 2.0),
+              ),
+              backgroundColor: color3,
               title: const Text(
                 'Habilita la ubicación todo el tiempo',
-                style: TextStyle(color: Color(0xFFFFFFFF)),
+                style: TextStyle(color: color0),
               ),
               content: Text(
                 '$appName utiliza tu ubicación, incluso cuando la app esta cerrada o en desuso, para poder encender o apagar el calefactor en base a tu distancia con el mismo.',
                 style: const TextStyle(
-                  color: Color(0xFFFFFFFF),
+                  color: color0,
                 ),
               ),
               actions: <Widget>[
                 TextButton(
                   style: const ButtonStyle(
                     foregroundColor: WidgetStatePropertyAll(
-                      Color(0xFFFFFFFF),
+                      color0,
                     ),
                   ),
                   child: const Text('Habilitar'),
@@ -699,8 +703,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                       printLog.i(e);
                       printLog.i(s);
                     }
-                    Navigator.of(navigatorKey.currentContext ?? context)
-                        .pop(); // Cierra el AlertDialog
+                    Navigator.of(navigatorKey.currentContext ?? context).pop();
                   },
                 ),
               ],
@@ -1541,7 +1544,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                 ),
                 TextField(
                   style: const TextStyle(color: color0),
-                  cursorColor: const Color(0xFFFFFFFF),
+                  cursorColor: color0,
                   controller: nicknameController,
                   decoration: const InputDecoration(
                     hintText:

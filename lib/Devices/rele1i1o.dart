@@ -501,53 +501,6 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
     return emailRegex.hasMatch(email);
   }
 
-  Future<void> addSecondaryAdmin(String email) async {
-    if (!isValidEmail(email)) {
-      showToast('Por favor, introduce un correo electrónico válido.');
-      return;
-    }
-
-    if (adminDevices.contains(email)) {
-      showToast('Este administrador ya está añadido.');
-      return;
-    }
-
-    try {
-      List<String> updatedAdmins = List.from(adminDevices)..add(email);
-
-      await putSecondaryAdmins(DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
-
-      setState(() {
-        adminDevices = updatedAdmins;
-        emailController.clear();
-      });
-
-      showToast('Administrador añadido correctamente.');
-    } catch (e) {
-      printLog.i('Error al añadir administrador secundario: $e');
-      showToast('Error al añadir el administrador. Inténtalo de nuevo.');
-    }
-  }
-
-  Future<void> removeSecondaryAdmin(String email) async {
-    try {
-      List<String> updatedAdmins = List.from(adminDevices)..remove(email);
-
-      await putSecondaryAdmins(DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName), updatedAdmins);
-
-      setState(() {
-        adminDevices.remove(email);
-      });
-
-      showToast('Administrador eliminado correctamente.');
-    } catch (e) {
-      printLog.i('Error al eliminar administrador secundario: $e');
-      showToast('Error al eliminar el administrador. Inténtalo de nuevo.');
-    }
-  }
-
   Future<int?> showPinSelectionDialog(BuildContext context) async {
     int? selectedPin;
     return showDialog<int>(
@@ -556,6 +509,10 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.0),
+                side: const BorderSide(color: color6, width: 2.0),
+              ),
               backgroundColor: color3,
               title: Text(
                 'Selecciona un pin',

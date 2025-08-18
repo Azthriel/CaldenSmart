@@ -58,6 +58,10 @@ class PermissionHandlerState extends State<PermissionHandler> {
         showDialog(
           context: context,
           builder: (_) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20.0),
+              side: const BorderSide(color: color6, width: 2.0),
+            ),
             title: const Text('Permisos requeridos'),
             content: const Text(
                 'No se puede seguir sin los permisos\n Por favor activalos manualmente'),
