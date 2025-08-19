@@ -241,7 +241,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
         String serial = DeviceManager.extractSerialNumber(list[0]);
 
         Map<String, dynamic> deviceDATA =
-            jsonDecode(globalDATA['$equipo/$serial']!['io${list[1]}']) ?? {};
+            jsonDecode(globalDATA['$equipo/$serial']?['io${list[1]}']) ?? {};
 
         bool turnOn = deviceDATA['w_status'] ?? false;
 

@@ -3543,9 +3543,8 @@ class Versioner {
   /// Auxiliar para parsear AAMMDD(Letra) en DateTime y letra.
   static _VersionData _parseVersion(String version) {
     // Validar que la versión tenga al menos 7 caracteres (AAMMDDL)
-    if (version.length < 7) {
-      throw FormatException(
-          'Version format invalid: $version. Expected format: AAMMDDL (at least 7 characters)');
+    if (version == '') {
+      version = '999999A';
     }
 
     try {
@@ -6558,13 +6557,15 @@ void setupGlobalConnectionListener() {
       if (state == BluetoothConnectionState.disconnected) {
         printLog.e('Dispositivo desconectado - Manejador global');
 
+        printLog.d('¿Es acción rápida? $quickAction');
+
         // Check if this is not a quick action and show toast
         if (!quickAction) {
           showToast('Dispositivo desconectado');
         }
 
         // Limpiar variables globales
-        _cleanGlobalDeviceVariables();
+        cleanGlobalDeviceVariables();
 
         // Navigate to menu if not in quick action mode
         if (!quickAction) {
@@ -6582,7 +6583,7 @@ void cancelGlobalConnectionListener() {
 }
 
 /// Limpia todas las variables globales relacionadas con el dispositivo
-void _cleanGlobalDeviceVariables() {
+void cleanGlobalDeviceVariables() {
   nameOfWifi = '';
   connectionFlag = false;
   deviceName = '';

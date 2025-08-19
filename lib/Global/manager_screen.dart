@@ -17,7 +17,6 @@ class ManagerScreenState extends State<ManagerScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController tenantController = TextEditingController();
 
-  var parts = utf8.decode(ioValues).split('/');
   bool showSecondaryAdminFields = false;
   bool showSecondaryAdminList = false;
   bool showSmartResident = false;
@@ -88,6 +87,33 @@ class ManagerScreenState extends State<ManagerScreen> {
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
+            String productCode = DeviceManager.getProductCode(deviceName);
+            String serialNumber = DeviceManager.extractSerialNumber(deviceName);
+            String deviceKey = '$productCode/$serialNumber';
+            Map<String, dynamic> deviceDATA = globalDATA[deviceKey] ?? {};
+
+            List<int> availablePins = [];
+
+            // Buscar todas las claves que empiecen con "io" y extraer el número
+            for (String key in deviceDATA.keys) {
+              if (key.startsWith('io') && key.length > 2) {
+                try {
+                  int pinIndex = int.parse(key.substring(2));
+                  Map<String, dynamic> ioMap = jsonDecode(deviceDATA[key]);
+                  String pinType = ioMap['pinType']?.toString() ?? '1';
+                  // Solo agregar si es salida (pinType == '0')
+                  if (pinType == '0') {
+                    availablePins.add(pinIndex);
+                  }
+                } catch (e) {
+                  printLog.e('Error parsing $key: $e');
+                }
+              }
+            }
+
+            // Ordenar los pines para mostrarlos en orden
+            availablePins.sort();
+
             return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20.0),
@@ -103,30 +129,25 @@ class ManagerScreenState extends State<ManagerScreen> {
               ),
               content: SingleChildScrollView(
                 child: ListBody(
-                  children: List.generate(parts.length, (index) {
-                    var equipo = parts[index].split(':');
-                    printLog.i(equipo);
-                    return equipo[0] == '0'
-                        ? RadioListTile<int>(
-                            title: Text(
-                              nicknamesMap['${deviceName}_$index'] ??
-                                  'Salida $index',
-                              style: GoogleFonts.poppins(
-                                color: color0,
-                                fontSize: 16,
-                              ),
-                            ),
-                            value: index,
-                            groupValue: selectedPin,
-                            activeColor: color6,
-                            onChanged: (int? value) {
-                              setState(() {
-                                selectedPin = value;
-                              });
-                            },
-                          )
-                        : const SizedBox.shrink();
-                  }),
+                  children: availablePins.map((index) {
+                    return RadioListTile<int>(
+                      title: Text(
+                        nicknamesMap['${deviceName}_$index'] ?? 'Salida $index',
+                        style: GoogleFonts.poppins(
+                          color: color0,
+                          fontSize: 16,
+                        ),
+                      ),
+                      value: index,
+                      groupValue: selectedPin,
+                      activeColor: color6,
+                      onChanged: (int? value) {
+                        setState(() {
+                          selectedPin = value;
+                        });
+                      },
+                    );
+                  }).toList(),
                 ),
               ),
               actions: <Widget>[

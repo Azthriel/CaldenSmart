@@ -182,7 +182,7 @@ class LoadState extends State<LoadingPage> {
           lastUser = users;
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = globalDATA['$pc/$sn']?['secondary_admin'] ?? [];
+          adminDevices = (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)?.cast<String>() ?? [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -254,7 +254,7 @@ class LoadState extends State<LoadingPage> {
 
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = globalDATA['$pc/$sn']?['secondary_admin'] ?? [];
+          adminDevices = (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)?.cast<String>() ?? [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -297,7 +297,7 @@ class LoadState extends State<LoadingPage> {
 
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = globalDATA['$pc/$sn']?['secondary_admin'] ?? [];
+          adminDevices = (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)?.cast<String>() ?? [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -355,7 +355,7 @@ class LoadState extends State<LoadingPage> {
 
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = globalDATA['$pc/$sn']?['secondary_admin'] ?? [];
+          adminDevices = (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)?.cast<String>() ?? [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -394,7 +394,7 @@ class LoadState extends State<LoadingPage> {
               globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = globalDATA['$pc/$sn']?['secondary_admin'] ?? [];
+          adminDevices = (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)?.cast<String>() ?? [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -440,7 +440,7 @@ class LoadState extends State<LoadingPage> {
           lastUser = users;
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = globalDATA['$pc/$sn']?['secondary_admin'] ?? [];
+          adminDevices = (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)?.cast<String>() ?? [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -500,7 +500,7 @@ class LoadState extends State<LoadingPage> {
 
       return Future.value(true);
     } catch (e, stackTrace) {
-      printLog.i('Error en la precarga $e $stackTrace');
+      printLog.e('Error en la precarga $e $stackTrace');
       showToast('Error en la precarga');
       // handleManualError('$e', '$stackTrace');
       return Future.value(false);

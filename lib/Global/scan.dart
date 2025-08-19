@@ -224,8 +224,8 @@ class ScanPageState extends State<ScanPage>
                     printLog.i('RETORNASHE $valor');
                     connectionTry = 0;
                     if (valor) {
-                      // Setup global connection listener after successful setup
-                      setupGlobalConnectionListener();
+                      // Setup local connection listener for normal connections
+                      _setupNormalConnectionListener(device);
                       navigatorKey.currentState
                           ?.pushReplacementNamed('/loading');
                     } else {
@@ -278,6 +278,34 @@ class ScanPageState extends State<ScanPage>
     _controller.finishRefresh();
   }
 
+  /// Configura el listener de conexión para conexiones normales (no acciones rápidas)
+  void _setupNormalConnectionListener(BluetoothDevice device) {
+    StreamSubscription<BluetoothConnectionState>? localConnectionSub;
+    
+    localConnectionSub = device.connectionState.listen((BluetoothConnectionState state) {
+      printLog.i('Estado de conexión normal: $state');
+      
+      if (state == BluetoothConnectionState.disconnected) {
+        printLog.e('Dispositivo desconectado - Conexión normal');
+        
+        // Mostrar toast
+        showToast('Dispositivo desconectado');
+        
+        // Limpiar variables globales
+        cleanGlobalDeviceVariables();
+        
+        // Navegar al menú
+        navigatorKey.currentState?.pushReplacementNamed('/menu');
+        
+        // Cancelar este listener ya que la conexión terminó
+        localConnectionSub?.cancel();
+      }
+    });
+    
+    // Asegurar que el listener se cancele cuando el dispositivo se desconecte
+    device.cancelWhenDisconnected(localConnectionSub, delayed: true);
+  }
+
   void _runQuickAction(BluetoothDevice device, bool newValue) async {
     printLog.i("=== INICIANDO ACCIÓN RÁPIDA ===");
     printLog.i("Dispositivo: ${device.platformName}");
@@ -327,12 +355,14 @@ class ScanPageState extends State<ScanPage>
           // Para otros productos, actualizar w_status directamente
           globalDATA['$productCode/$serialNumber']?['w_status'] = newValue;
         }
+        
         quickAction = false;
       });
 
       showToast('Comando enviado correctamente');
     } catch (e) {
       printLog.i("Error en acción rápida: $e");
+      
       setState(() {
         quickAction = false;
       });
