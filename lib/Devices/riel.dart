@@ -293,12 +293,11 @@ class RollerPageState extends ConsumerState<RollerPage> {
                 style: GoogleFonts.poppins(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: color3,
+                  color: color1,
                 ),
               ),
               const SizedBox(height: 20),
 
-              //TODO Riel center
               CurtainAnimationRielCenter(
                 position: actualPosition,
                 onTapDown: (details) {
@@ -323,7 +322,6 @@ class RollerPageState extends ConsumerState<RollerPage> {
                 },
               ),
 
-              //TODO riel de izquierda a derecha
               // CurtainAnimationRielLeft(
               //   position: actualPosition,
               //   onTapDown: (details) {
@@ -341,7 +339,6 @@ class RollerPageState extends ConsumerState<RollerPage> {
               //   },
               // ),
 
-              //TODO riel de derecha a izquierda
               //       CurtainAnimationRielRight(
               //   position: actualPosition,
               //   onTapDown: (details) {
@@ -357,7 +354,6 @@ class RollerPageState extends ConsumerState<RollerPage> {
               //   },
               // ),
 
-              //TODO Roll
               // CurtainAnimation(
               //   position: actualPosition,
               //   onTapDown: (details) {
@@ -407,7 +403,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                           splashColor: Colors.white.withValues(alpha: 0.2),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: color3,
+                              color: color1,
                               borderRadius: BorderRadius.circular(30.0),
                               boxShadow: const [
                                 BoxShadow(
@@ -467,7 +463,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                           splashColor: Colors.white.withValues(alpha: 0.2),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: color3,
+                              color: color1,
                               borderRadius: BorderRadius.circular(30.0),
                               boxShadow: const [
                                 BoxShadow(
@@ -515,7 +511,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15.0),
                 ),
-                color: color3,
+                color: color1,
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
@@ -564,9 +560,9 @@ class RollerPageState extends ConsumerState<RollerPage> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(20.0),
                                     side: const BorderSide(
-                                        color: color6, width: 2.0),
+                                        color: color4, width: 2.0),
                                   ),
-                                  backgroundColor: color3,
+                                  backgroundColor: color1,
                                   title: const Text('Modificar largo (mm)',
                                       style: TextStyle(color: color0)),
                                   content: Column(
@@ -625,7 +621,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                               });
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: color6,
+                          backgroundColor: color4,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
@@ -644,7 +640,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15.0),
                 ),
-                color: color3,
+                color: color1,
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
@@ -681,7 +677,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                           context.mounted ? setState(() {}) : null;
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: color6,
+                          backgroundColor: color4,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
@@ -700,7 +696,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15.0),
                 ),
-                color: color3,
+                color: color1,
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -719,7 +715,6 @@ class RollerPageState extends ConsumerState<RollerPage> {
                         children: [
                           ElevatedButton(
                             onPressed: () {
-                              //TODO Configurar velocidad
                               rollerRPM = '100';
                               setMotorSpeed('100');
                             },
@@ -735,7 +730,6 @@ class RollerPageState extends ConsumerState<RollerPage> {
                           const SizedBox(width: 10),
                           ElevatedButton(
                             onPressed: () {
-                              //TODO Configurar velocidad
                               rollerRPM = '100';
                               setMotorSpeed('100');
                             },
@@ -751,12 +745,11 @@ class RollerPageState extends ConsumerState<RollerPage> {
                           const SizedBox(width: 10),
                           ElevatedButton(
                             onPressed: () {
-                              //TODO Configurar velocidad
                               rollerRPM = '100';
                               setMotorSpeed('100');
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: color5,
+                              backgroundColor: color3,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(30),
                               ),
@@ -777,7 +770,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15.0),
                 ),
-                color: color3,
+                color: color1,
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -790,7 +783,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                           });
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: color6,
+                          backgroundColor: color4,
                           minimumSize: const Size(double.infinity, 50),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
@@ -807,7 +800,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                           //TODO Guardar fin logica
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: color6,
+                          backgroundColor: color4,
                           minimumSize: const Size(double.infinity, 50),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
@@ -846,7 +839,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: color3,
+          backgroundColor: color1,
           title: GestureDetector(
             onTap: () async {
               TextEditingController nicknameController =
@@ -953,7 +946,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
             ),
           ],
         ),
-        backgroundColor: color1,
+        backgroundColor: color0,
         resizeToAvoidBottomInset: false,
         body: Stack(
           children: [
@@ -977,8 +970,8 @@ class RollerPageState extends ConsumerState<RollerPage> {
                   Icon(Icons.bluetooth, size: 30, color: color0),
                   Icon(Icons.settings, size: 30, color: color0),
                 ],
-                color: color3,
-                buttonBackgroundColor: color3,
+                color: color1,
+                buttonBackgroundColor: color1,
                 backgroundColor: Colors.transparent,
                 animationCurve: Curves.easeInOut,
                 animationDuration: const Duration(milliseconds: 600),

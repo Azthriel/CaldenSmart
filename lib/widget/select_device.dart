@@ -32,10 +32,10 @@
 //             ),
 //           ),
 //         ),
-//         backgroundColor: color3,
+//         backgroundColor: color1,
 //       ),
 //       body: Container(
-//         color: color1,
+//         color: color0,
 //         child: FutureBuilder<List<String>>(
 //           future: fetchConnections(),
 //           builder: (context, snapshot) {
@@ -88,8 +88,8 @@
 //                           padding: const EdgeInsets.all(20),
 //                           decoration: BoxDecoration(
 //                             color: isTapped
-//                                 ? color3.withValues(alpha: 0.7)
-//                                 : color3,
+//                                 ? color1.withValues(alpha: 0.7)
+//                                 : color1,
 //                             borderRadius: BorderRadius.circular(12),
 //                             boxShadow: isTapped
 //                                 ? [

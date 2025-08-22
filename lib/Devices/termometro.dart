@@ -460,12 +460,12 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                   child: SizedBox(
                     height: tempCardHeight,
                     child: Card(
-                      color: color3,
+                      color: color1,
                       elevation: 6,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                         side: const BorderSide(
-                          color: color6,
+                          color: color4,
                           width: 2,
                         ),
                       ),
@@ -477,7 +477,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                           children: [
                             const Icon(
                               Icons.thermostat_rounded,
-                              color: color6,
+                              color: color4,
                               size: 80,
                             ),
                             const SizedBox(height: 16),
@@ -498,7 +498,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                 child: Text(
                                   '${actualTemp.isEmpty ? "0" : actualTemp}°C',
                                   style: const TextStyle(
-                                    color: color6,
+                                    color: color4,
                                     fontSize: 48,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -526,12 +526,12 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                           duration: const Duration(milliseconds: 800),
                           curve: Curves.easeInOut,
                           child: Card(
-                            color: color3,
+                            color: color1,
                             elevation: 6,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(15),
                               side: BorderSide(
-                                color: alertMinFlag ? color6 : color2,
+                                color: alertMinFlag ? color4 : color0,
                                 width: 2,
                               ),
                             ),
@@ -552,7 +552,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                           ? Icons.warning_amber_rounded
                                           : Icons.keyboard_arrow_down_rounded,
                                       key: ValueKey<bool>(alertMinFlag),
-                                      color: alertMinFlag ? color6 : color2,
+                                      color: alertMinFlag ? color4 : color0,
                                       size: 32,
                                     ),
                                   ),
@@ -599,12 +599,12 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                           duration: const Duration(milliseconds: 800),
                           curve: Curves.easeInOut,
                           child: Card(
-                            color: color3,
+                            color: color1,
                             elevation: 6,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(15),
                               side: BorderSide(
-                                color: alertMaxFlag ? color5 : color2,
+                                color: alertMaxFlag ? color3 : color0,
                                 width: 2,
                               ),
                             ),
@@ -625,7 +625,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                           ? Icons.warning_amber_rounded
                                           : Icons.keyboard_arrow_up_rounded,
                                       key: ValueKey<bool>(alertMaxFlag),
-                                      color: alertMaxFlag ? color5 : color2,
+                                      color: alertMaxFlag ? color3 : color0,
                                       size: 32,
                                     ),
                                   ),
@@ -697,12 +697,12 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                       height: cardHeight,
                       child: Card(
                         key: keys['termometro:configAlertas']!,
-                        color: color3,
+                        color: color1,
                         elevation: 6,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15),
                           side: BorderSide(
-                            color: alertMaxFlag ? color5 : color2,
+                            color: alertMaxFlag ? color3 : color0,
                             width: 2,
                           ),
                         ),
@@ -723,7 +723,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                       ? Icons.warning_amber_rounded
                                       : Icons.keyboard_arrow_up_rounded,
                                   key: ValueKey<bool>(alertMaxFlag),
-                                  color: alertMaxFlag ? color5 : color2,
+                                  color: alertMaxFlag ? color3 : color0,
                                   size: 50,
                                 ),
                               ),
@@ -757,7 +757,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                     Text(
                                       alertMaxFlag ? 'ACTIVADA' : 'Normal',
                                       style: TextStyle(
-                                        color: alertMaxFlag ? color5 : color2,
+                                        color: alertMaxFlag ? color3 : color0,
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -792,12 +792,12 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                     child: SizedBox(
                       height: cardHeight,
                       child: Card(
-                        color: color3,
+                        color: color1,
                         elevation: 6,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15),
                           side: BorderSide(
-                            color: alertMinFlag ? color6 : color2,
+                            color: alertMinFlag ? color4 : color0,
                             width: 2,
                           ),
                         ),
@@ -818,7 +818,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                       ? Icons.warning_amber_rounded
                                       : Icons.keyboard_arrow_down_rounded,
                                   key: ValueKey<bool>(alertMinFlag),
-                                  color: alertMinFlag ? color6 : color2,
+                                  color: alertMinFlag ? color4 : color0,
                                   size: 50,
                                 ),
                               ),
@@ -852,7 +852,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                     Text(
                                       alertMinFlag ? 'ACTIVADA' : 'Normal',
                                       style: TextStyle(
-                                        color: alertMinFlag ? color6 : color2,
+                                        color: alertMinFlag ? color4 : color0,
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -901,7 +901,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: color3,
+          backgroundColor: color1,
           title: GestureDetector(
             onTap: () async {
               if (_isTutorialActive) return;
@@ -1009,7 +1009,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
             ),
           ],
         ),
-        backgroundColor: color1,
+        backgroundColor: color0,
         resizeToAvoidBottomInset: false,
         body: IgnorePointer(
           ignoring: _isTutorialActive,
@@ -1038,8 +1038,8 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                       Icon(Icons.tune, size: 30, color: color0),
                       Icon(Icons.settings, size: 30, color: color0),
                     ],
-                    color: color3,
-                    buttonBackgroundColor: color3,
+                    color: color1,
+                    buttonBackgroundColor: color1,
                     backgroundColor: Colors.transparent,
                     animationCurve: Curves.easeInOut,
                     animationDuration: const Duration(milliseconds: 600),
@@ -1103,7 +1103,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                     }
                   });
                 },
-                backgroundColor: color6,
+                backgroundColor: color4,
                 shape: const CircleBorder(),
                 child: const Icon(Icons.help, size: 30, color: color0),
               ),

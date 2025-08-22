@@ -625,7 +625,7 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                   style: GoogleFonts.poppins(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: color3,
+                    color: color1,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -712,7 +712,7 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                   style: GoogleFonts.poppins(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: color3,
+                    color: color1,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -744,7 +744,7 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                             '${tempValue.round()}°C',
                             style: GoogleFonts.poppins(
                               fontSize: 24,
-                              color: color3,
+                              color: color1,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -855,7 +855,7 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                   style: GoogleFonts.poppins(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: color3,
+                    color: color1,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -866,12 +866,12 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 20.0, vertical: 10.0),
                   decoration: BoxDecoration(
-                    color: color3.withValues(alpha: 0.1),
+                    color: color1.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: color3, width: 2),
+                    border: Border.all(color: color1, width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: color3.withValues(alpha: 0.3),
+                        color: color1.withValues(alpha: 0.3),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -881,14 +881,14 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                     keyboardType: TextInputType.number,
                     controller: costController,
                     style: GoogleFonts.poppins(
-                      color: color3,
+                      color: color1,
                       fontSize: 22,
                     ),
-                    cursorColor: color3,
+                    cursorColor: color1,
                     decoration: InputDecoration(
                       labelText: 'Ingresa valor $measure',
                       labelStyle: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                         fontSize: 18,
                       ),
                       border: InputBorder.none,
@@ -903,12 +903,12 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20.0, vertical: 10.0),
                     decoration: BoxDecoration(
-                      color: color3.withValues(alpha: 0.1),
+                      color: color1.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: color3, width: 2),
+                      border: Border.all(color: color1, width: 2),
                       boxShadow: [
                         BoxShadow(
-                          color: color3.withValues(alpha: 0.3),
+                          color: color1.withValues(alpha: 0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -918,14 +918,14 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                       keyboardType: TextInputType.number,
                       controller: consuptionController,
                       style: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                         fontSize: 22,
                       ),
-                      cursorColor: color3,
+                      cursorColor: color1,
                       decoration: InputDecoration(
                         labelText: 'Ingresa consumo del equipo',
                         labelStyle: GoogleFonts.poppins(
-                          color: color3,
+                          color: color1,
                           fontSize: 18,
                         ),
                         border: InputBorder.none,
@@ -938,7 +938,7 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                   Visibility(
                     visible: loading,
                     child: const CircularProgressIndicator(
-                      color: color3,
+                      color: color1,
                       strokeWidth: 4,
                     ),
                   ),
@@ -948,13 +948,13 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                       '\$$result',
                       style: GoogleFonts.poppins(
                         fontSize: 50,
-                        color: color3,
+                        color: color1,
                         fontWeight: FontWeight.bold,
                         shadows: [
                           Shadow(
                             offset: const Offset(0, 3),
                             blurRadius: 8,
-                            color: color3.withValues(alpha: 0.5),
+                            color: color1.withValues(alpha: 0.5),
                           ),
                         ],
                       ),
@@ -965,14 +965,14 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                 ElevatedButton(
                   key: keys['millenium:calcular']!,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: color3,
+                    backgroundColor: color1,
                     foregroundColor: color0,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 35, vertical: 20),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
                     ),
-                    shadowColor: color3.withValues(alpha: 0.4),
+                    shadowColor: color1.withValues(alpha: 0.4),
                     elevation: 8,
                   ),
                   onPressed: (isOwner || owner == '')
@@ -1007,7 +1007,7 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                 ElevatedButton(
                   key: keys['millenium:mes']!,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: color3,
+                    backgroundColor: color1,
                     foregroundColor: color0,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 35,
@@ -1016,7 +1016,7 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
                     ),
-                    shadowColor: color3.withValues(alpha: 0.4),
+                    shadowColor: color1.withValues(alpha: 0.4),
                     elevation: 8,
                   ),
                   onPressed: (isOwner || owner == '')
@@ -1046,7 +1046,7 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                     'Último reinicio: ${fechaSeleccionada!.day}/${fechaSeleccionada!.month}/${fechaSeleccionada!.year}',
                     style: GoogleFonts.poppins(
                       fontSize: 16,
-                      color: color3,
+                      color: color1,
                     ),
                   )
                 else
@@ -1088,7 +1088,7 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: color3,
+          backgroundColor: color1,
           title: GestureDetector(
             onTap: () async {
               if (_isTutorialActive) return;
@@ -1198,7 +1198,7 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
             ),
           ],
         ),
-        backgroundColor: color1,
+        backgroundColor: color0,
         resizeToAvoidBottomInset: false,
         body: IgnorePointer(
           ignoring: _isTutorialActive,
@@ -1228,8 +1228,8 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                         Icon(Icons.calculate, size: 30, color: color0),
                         Icon(Icons.settings, size: 30, color: color0),
                       ],
-                      color: color3,
-                      buttonBackgroundColor: color3,
+                      color: color1,
+                      buttonBackgroundColor: color1,
                       backgroundColor: Colors.transparent,
                       animationCurve: Curves.easeInOut,
                       animationDuration: const Duration(milliseconds: 600),
@@ -1293,7 +1293,7 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                     }
                   });
                 },
-                backgroundColor: color6,
+                backgroundColor: color4,
                 shape: const CircleBorder(),
                 child: const Icon(Icons.help, size: 30, color: color0),
               ),

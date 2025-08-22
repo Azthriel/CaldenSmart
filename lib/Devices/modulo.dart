@@ -509,7 +509,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
                       decoration: BoxDecoration(
-                        color: color3,
+                        color: color1,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
@@ -731,7 +731,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                         ? Colors.grey
                                         : (estado[index] == '1')
                                             ? Colors.greenAccent.shade400
-                                            : color6,
+                                            : color4,
                                   ),
                                   child: AnimatedAlign(
                                     duration: const Duration(milliseconds: 300),
@@ -759,7 +759,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                           if (_selectedPins[index] && tracking) ...{
                             Container(
                               decoration: BoxDecoration(
-                                color: color1,
+                                color: color0,
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Center(
@@ -768,7 +768,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                   style: GoogleFonts.poppins(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: color3,
+                                    color: color1,
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
@@ -789,7 +789,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
                         decoration: BoxDecoration(
-                          color: color3,
+                          color: color1,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
@@ -949,7 +949,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                               index]
                                           ? const Icon(
                                               Icons.notifications_off,
-                                              color: color6,
+                                              color: color4,
                                             )
                                           : const Icon(
                                               Icons.notification_add_rounded,
@@ -988,7 +988,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
       //             style: GoogleFonts.poppins(
       //               fontSize: 28,
       //               fontWeight: FontWeight.bold,
-      //               color: color3,
+      //               color: color1,
       //             ),
       //             textAlign: TextAlign.center,
       //           ),
@@ -1063,7 +1063,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
       //               borderRadius: BorderRadius.circular(20),
       //             ),
       //             elevation: 5,
-      //             color: color3,
+      //             color: color1,
       //             child: Padding(
       //               padding: const EdgeInsets.all(20.0),
       //               child: Column(
@@ -1170,13 +1170,13 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                   style: GoogleFonts.poppins(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: color3,
+                    color: color1,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
                 Card(
-                  color: color3,
+                  color: color1,
                   elevation: 8,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
@@ -1255,7 +1255,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                         isChangeModeVisible = !isChangeModeVisible;
                       });
                     },
-                    backgroundColor: color3,
+                    backgroundColor: color1,
                     foregroundColor: color0,
                     icon: const Icon(Icons.settings, color: color0),
                     label: Text(
@@ -1271,7 +1271,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                       for (var i = 0; i < parts.length; i++) ...[
                         if (tipo[i] == 'Entrada') ...{
                           Card(
-                            color: color3,
+                            color: color1,
                             elevation: 6,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(15),
@@ -1329,7 +1329,6 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                                         .write(data.codeUnits);
                                                     common[i] = '0';
                                                   });
-                                                  //TODO normal abierto
                                                 },
                                                 child: Container(
                                                   decoration: BoxDecoration(
@@ -1351,7 +1350,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                                           GoogleFonts.poppins(
                                                         fontSize: 14,
                                                         color: common[i] == '0'
-                                                            ? color3
+                                                            ? color1
                                                             : color0,
                                                       ),
                                                       overflow:
@@ -1397,7 +1396,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                                           GoogleFonts.poppins(
                                                         fontSize: 14,
                                                         color: common[i] == '1'
-                                                            ? color3
+                                                            ? color1
                                                             : color0,
                                                       ),
                                                       overflow:
@@ -1463,7 +1462,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: color3,
+          backgroundColor: color1,
           title: GestureDetector(
             onTap: () async {
               if (_isTutorialActive) return;
@@ -1574,7 +1573,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
             ),
           ],
         ),
-        backgroundColor: color1,
+        backgroundColor: color0,
         resizeToAvoidBottomInset: false,
         body: IgnorePointer(
           ignoring: _isTutorialActive,
@@ -1606,8 +1605,8 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                         },
                         const Icon(Icons.settings, size: 30, color: color0),
                       ],
-                      color: color3,
-                      buttonBackgroundColor: color3,
+                      color: color1,
+                      buttonBackgroundColor: color1,
                       backgroundColor: Colors.transparent,
                       animationCurve: Curves.easeInOut,
                       animationDuration: const Duration(milliseconds: 600),
@@ -1671,7 +1670,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                     }
                   });
                 },
-                backgroundColor: color6,
+                backgroundColor: color4,
                 shape: const CircleBorder(),
                 child: const Icon(Icons.help, size: 30, color: color0),
               ),

@@ -511,9 +511,9 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
             return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20.0),
-                side: const BorderSide(color: color6, width: 2.0),
+                side: const BorderSide(color: color4, width: 2.0),
               ),
-              backgroundColor: color3,
+              backgroundColor: color1,
               title: Text(
                 'Selecciona un pin',
                 style: GoogleFonts.poppins(
@@ -536,7 +536,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                             ),
                             value: index,
                             groupValue: selectedPin,
-                            activeColor: color6,
+                            activeColor: color4,
                             onChanged: (int? value) {
                               setState(() {
                                 selectedPin = value;
@@ -551,7 +551,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                 TextButton(
                   child: Text(
                     'Aceptar',
-                    style: GoogleFonts.poppins(color: color6),
+                    style: GoogleFonts.poppins(color: color4),
                   ),
                   onPressed: () {
                     Navigator.of(context).pop(selectedPin);
@@ -732,7 +732,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                           AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
                             decoration: BoxDecoration(
-                              color: color3,
+                              color: color1,
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
@@ -984,7 +984,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                 icon: _notis[index]
                                                     ? const Icon(
                                                         Icons.notifications_off,
-                                                        color: color6,
+                                                        color: color4,
                                                       )
                                                     : const Icon(
                                                         Icons
@@ -1033,7 +1033,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                     : isOn
                                                         ? Colors.greenAccent
                                                             .shade400
-                                                        : color6,
+                                                        : color4,
                                               ),
                                               child: AnimatedAlign(
                                                 duration: const Duration(
@@ -1064,7 +1064,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                 if (isPresenceControlled) ...{
                                   Container(
                                     decoration: BoxDecoration(
-                                      color: color1,
+                                      color: color0,
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Center(
@@ -1073,7 +1073,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                         style: GoogleFonts.poppins(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
-                                          color: color3,
+                                          color: color1,
                                         ),
                                         textAlign: TextAlign.center,
                                       ),
@@ -1118,7 +1118,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                               style: GoogleFonts.poppins(
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
-                                color: color3,
+                                color: color1,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -1181,7 +1181,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                               style: GoogleFonts.poppins(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w600,
-                                color: color3,
+                                color: color1,
                               ),
                             ),
                             const SizedBox(height: 50),
@@ -1237,7 +1237,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                       style: GoogleFonts.poppins(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: color3,
+                        color: color1,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -1247,7 +1247,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                       style: GoogleFonts.poppins(
                         fontSize: 20,
                         fontWeight: FontWeight.w500,
-                        color: color3,
+                        color: color1,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -1310,7 +1310,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                 children: [
                                   // Tarjeta de Distancia de apagado
                                   Card(
-                                    color: color3.withValues(alpha: 0.9),
+                                    color: color1.withValues(alpha: 0.9),
                                     elevation: 6,
                                     margin: const EdgeInsets.symmetric(
                                         vertical: 8.0, horizontal: 20.0),
@@ -1332,7 +1332,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                             'Distancia de apagado',
                                             style: TextStyle(
                                               fontSize: 16,
-                                              color: color1,
+                                              color: color0,
                                             ),
                                           ),
                                           const SizedBox(height: 8),
@@ -1344,14 +1344,14 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                 distOffValue.round().toString(),
                                                 style: const TextStyle(
                                                   fontSize: 24,
-                                                  color: color1,
+                                                  color: color0,
                                                 ),
                                               ),
                                               const Text(
                                                 ' Metros',
                                                 style: TextStyle(
                                                   fontSize: 24,
-                                                  color: color1,
+                                                  color: color0,
                                                 ),
                                               ),
                                             ],
@@ -1361,7 +1361,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                               data: SliderTheme.of(context)
                                                   .copyWith(
                                                 trackHeight: 20.0,
-                                                thumbColor: color3,
+                                                thumbColor: color1,
                                                 activeTrackColor:
                                                     Colors.blueAccent,
                                                 inactiveTrackColor:
@@ -1408,7 +1408,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                   ),
                                   const SizedBox(height: 15),
                                   Card(
-                                    color: color3.withValues(alpha: 0.9),
+                                    color: color1.withValues(alpha: 0.9),
                                     elevation: 6,
                                     margin: const EdgeInsets.symmetric(
                                         vertical: 8.0, horizontal: 20.0),
@@ -1430,7 +1430,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                             'Distancia de encendido',
                                             style: TextStyle(
                                               fontSize: 16,
-                                              color: color1,
+                                              color: color0,
                                             ),
                                           ),
                                           const SizedBox(height: 8),
@@ -1442,14 +1442,14 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                 distOnValue.round().toString(),
                                                 style: const TextStyle(
                                                   fontSize: 24,
-                                                  color: color1,
+                                                  color: color0,
                                                 ),
                                               ),
                                               const Text(
                                                 ' Metros',
                                                 style: TextStyle(
                                                   fontSize: 24,
-                                                  color: color1,
+                                                  color: color0,
                                                 ),
                                               ),
                                             ],
@@ -1459,7 +1459,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                               data: SliderTheme.of(context)
                                                   .copyWith(
                                                 trackHeight: 20.0,
-                                                thumbColor: color3,
+                                                thumbColor: color1,
                                                 activeTrackColor:
                                                     Colors.blueAccent,
                                                 inactiveTrackColor:
@@ -1546,13 +1546,13 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                   style: GoogleFonts.poppins(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: color3,
+                    color: color1,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
                 Card(
-                  color: color3,
+                  color: color1,
                   elevation: 8,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
@@ -1631,7 +1631,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                         isChangeModeVisible = !isChangeModeVisible;
                       });
                     },
-                    backgroundColor: color3,
+                    backgroundColor: color1,
                     foregroundColor: color0,
                     icon: const Icon(Icons.settings, color: color0),
                     label: Text(
@@ -1647,7 +1647,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                       for (var i = 0; i < parts.length; i++) ...[
                         if (tipo[i] == 'Entrada') ...{
                           Card(
-                            color: color3,
+                            color: color1,
                             elevation: 6,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(15),
@@ -1705,7 +1705,6 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                         .write(data.codeUnits);
                                                     common[i] = '0';
                                                   });
-                                                  //TODO normal abierto
                                                 },
                                                 child: Container(
                                                   decoration: BoxDecoration(
@@ -1727,7 +1726,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                           GoogleFonts.poppins(
                                                         fontSize: 14,
                                                         color: common[i] == '0'
-                                                            ? color3
+                                                            ? color1
                                                             : color0,
                                                       ),
                                                       overflow:
@@ -1744,7 +1743,6 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                             Expanded(
                                               child: GestureDetector(
                                                 onTap: () {
-                                                  //TODO normal cerrado
                                                   setState(() {
                                                     String data =
                                                         '${DeviceManager.getProductCode(deviceName)}[14]($i#1)';
@@ -1774,7 +1772,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                           GoogleFonts.poppins(
                                                         fontSize: 14,
                                                         color: common[i] == '1'
-                                                            ? color3
+                                                            ? color1
                                                             : color0,
                                                       ),
                                                       overflow:
@@ -1840,7 +1838,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: color3,
+          backgroundColor: color1,
           title: GestureDetector(
             onTap: () async {
               if (_isTutorialActive) return;
@@ -1950,7 +1948,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
             ),
           ],
         ),
-        backgroundColor: color1,
+        backgroundColor: color0,
         resizeToAvoidBottomInset: false,
         body: IgnorePointer(
           ignoring: _isTutorialActive,
@@ -1980,8 +1978,8 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                         Icon(Icons.input, size: 30, color: color0),
                         Icon(Icons.settings, size: 30, color: color0),
                       ],
-                      color: color3,
-                      buttonBackgroundColor: color3,
+                      color: color1,
+                      buttonBackgroundColor: color1,
                       backgroundColor: Colors.transparent,
                       animationCurve: Curves.easeInOut,
                       animationDuration: const Duration(milliseconds: 600),
@@ -2045,7 +2043,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                     }
                   });
                 },
-                backgroundColor: color6,
+                backgroundColor: color4,
                 shape: const CircleBorder(),
                 child: const Icon(Icons.help, size: 30, color: color0),
               ),

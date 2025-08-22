@@ -60,7 +60,7 @@ class PermissionHandlerState extends State<PermissionHandler> {
           builder: (_) => AlertDialog(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20.0),
-              side: const BorderSide(color: color6, width: 2.0),
+              side: const BorderSide(color: color4, width: 2.0),
             ),
             title: const Text('Permisos requeridos'),
             content: const Text(

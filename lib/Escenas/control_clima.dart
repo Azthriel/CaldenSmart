@@ -86,7 +86,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: color3,
+      color: color1,
       child: Padding(
         padding: const EdgeInsets.all(10.0),
         child: Column(
@@ -101,7 +101,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                     opacity: currentStep == 0 ? 1.0 : 0.0,
                     child: IconButton(
                       icon: const Icon(Icons.arrow_back),
-                      color: color1,
+                      color: color0,
                       onPressed: currentStep == 0
                           ? () {
                               if (widget.onBackToMain != null) {
@@ -116,7 +116,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                       child: Text(
                         'Control por clima',
                         style: GoogleFonts.poppins(
-                          color: color1,
+                          color: color0,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -140,17 +140,17 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                   Container(
                       width: 30,
                       height: 2,
-                      color: currentStep >= 1 ? color6 : color0),
+                      color: currentStep >= 1 ? color4 : color0),
                   _buildStepIndicator(1, 'Dispositivos', currentStep >= 1),
                   Container(
                       width: 30,
                       height: 2,
-                      color: currentStep >= 2 ? color6 : color0),
+                      color: currentStep >= 2 ? color4 : color0),
                   _buildStepIndicator(2, 'Acciones', currentStep >= 2),
                   Container(
                       width: 30,
                       height: 2,
-                      color: currentStep >= 3 ? color6 : color0),
+                      color: currentStep >= 3 ? color4 : color0),
                   _buildStepIndicator(3, 'Nombre', currentStep >= 3),
                 ],
               ),
@@ -181,7 +181,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                           onPressed: () => setState(() => currentStep--),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: color0,
-                            foregroundColor: color3,
+                            foregroundColor: color1,
                             padding: const EdgeInsets.symmetric(vertical: 12.0),
                           ),
                           child: const Text('Anterior'),
@@ -201,8 +201,9 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                             _canContinue() ? () => _handleContinue() : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: color0,
-                          foregroundColor: color3,
-                          disabledForegroundColor: color3.withValues(alpha: 0.5),
+                          foregroundColor: color1,
+                          disabledForegroundColor:
+                              color1.withValues(alpha: 0.5),
                           disabledBackgroundColor: color0,
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
                         ),
@@ -225,14 +226,14 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
           width: 24,
           height: 24,
           decoration: BoxDecoration(
-            color: isActive ? color6 : color0,
+            color: isActive ? color4 : color0,
             shape: BoxShape.circle,
           ),
           child: Center(
             child: Text(
               '${step + 1}',
               style: GoogleFonts.poppins(
-                color: color3,
+                color: color1,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
@@ -243,7 +244,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
         Text(
           label,
           style: GoogleFonts.poppins(
-            color: color1,
+            color: color0,
             fontSize: 9,
           ),
         ),
@@ -273,7 +274,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
         Center(
           child: Text(
             'Selecciona la condición climática',
-            style: GoogleFonts.poppins(color: color1, fontSize: 16),
+            style: GoogleFonts.poppins(color: color0, fontSize: 16),
             textAlign: TextAlign.center,
           ),
         ),
@@ -306,7 +307,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                     HugeIcons.strokeRoundedArrowDown01,
                     color: color0,
                   ),
-                  dropdownColor: color3,
+                  dropdownColor: color1,
                   borderRadius: BorderRadius.circular(15),
                   elevation: 4,
                   style: GoogleFonts.poppins(
@@ -342,13 +343,57 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
   }
 
   Widget _buildDeviceSelectionStep() {
+    final validDevices = filterDevices.where((equipo) {
+      if (!_isValidForClima(equipo)) return false;
+      final deviceKey =
+          '${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}';
+      final deviceDATA = globalDATA[deviceKey] ?? {};
+      final owner = deviceDATA['owner'] ?? '';
+      return owner == '' || owner == currentUserEmail;
+    }).toList();
+
+    final eventosGrupoYCadena = eventosCreados.where((evento) {
+      final eventoType = evento['evento'] as String;
+      return eventoType == 'grupo' || eventoType == 'cadena';
+    }).toList();
+
+    if (validDevices.isEmpty && eventosGrupoYCadena.isEmpty) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Center(
+            child: Text(
+              'Selecciona al menos un dispositivo o evento',
+              style: GoogleFonts.poppins(color: color0, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'No hay dispositivos o eventos válidos disponibles.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  color: Colors.red,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Center(
           child: Text(
             'Selecciona al menos un dispositivo',
-            style: GoogleFonts.poppins(color: color1, fontSize: 16),
+            style: GoogleFonts.poppins(color: color0, fontSize: 16),
             textAlign: TextAlign.center,
           ),
         ),
@@ -372,16 +417,23 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
       final deviceDATA = globalDATA[deviceKey] ?? {};
       final owner = deviceDATA['owner'] ?? '';
       final admin = deviceDATA['secondary_admin'] ?? [];
-      return owner == '' || owner == currentUserEmail || admin.contains(currentUserEmail);
+      return owner == '' ||
+          owner == currentUserEmail ||
+          admin.contains(currentUserEmail);
     }).toList();
 
-    if (validDevices.isEmpty) {
+    final eventosGrupoYCadena = eventosCreados.where((evento) {
+      final eventoType = evento['evento'] as String;
+      return eventoType == 'grupo' || eventoType == 'cadena';
+    }).toList();
+
+    if (validDevices.isEmpty && eventosGrupoYCadena.isEmpty) {
       return [
         Center(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(
-              'No hay dispositivos válidos disponibles.',
+              'No hay dispositivos o eventos válidos disponibles.',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 color: Colors.red,
@@ -394,7 +446,104 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
       ];
     }
 
-    return validDevices.map((equipo) {
+    List<Widget> widgets = [];
+
+    if (eventosGrupoYCadena.isNotEmpty) {
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Text(
+            'EVENTOS DISPONIBLES',
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: color0.withValues(alpha: 0.9),
+              letterSpacing: 1,
+            ),
+          ),
+        ),
+      );
+
+      for (final evento in eventosGrupoYCadena) {
+        final eventoType = evento['evento'] as String;
+        final eventoTitle = evento['title'] as String;
+        final isSelected = deviceGroup.contains(eventoTitle);
+
+        widgets.add(
+          Container(
+            margin: const EdgeInsets.only(bottom: 8.0),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? color4.withValues(alpha: 0.1)
+                  : color0.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(
+                color: isSelected ? color4 : color0,
+                width: 1.0,
+              ),
+            ),
+            child: ListTile(
+              leading: Icon(
+                eventoType == 'grupo' ? Icons.group_work_outlined : Icons.link,
+                color: eventoType == 'grupo' ? color4 : Colors.orange,
+              ),
+              title: Text(
+                eventoTitle,
+                style: GoogleFonts.poppins(color: color0),
+              ),
+              subtitle: Text(
+                'Evento $eventoType',
+                style: GoogleFonts.poppins(
+                  color: color0.withValues(alpha: 0.7),
+                  fontSize: 12,
+                ),
+              ),
+              trailing: Checkbox(
+                value: isSelected,
+                activeColor: color4,
+                onChanged: (value) {
+                  setState(() {
+                    if (value == true) {
+                      deviceGroup.add(eventoTitle);
+                    } else {
+                      deviceGroup.remove(eventoTitle);
+                    }
+                  });
+                },
+              ),
+              onTap: () {
+                setState(() {
+                  if (isSelected) {
+                    deviceGroup.remove(eventoTitle);
+                  } else {
+                    deviceGroup.add(eventoTitle);
+                  }
+                });
+              },
+            ),
+          ),
+        );
+      }
+
+      if (validDevices.isNotEmpty) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12.0),
+            child: Text(
+              'DISPOSITIVOS INDIVIDUALES',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: color0.withValues(alpha: 0.9),
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    widgets.addAll(validDevices.map((equipo) {
       final displayName = nicknamesMap[equipo] ?? equipo;
       final deviceKey =
           '${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}';
@@ -424,11 +573,11 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
         margin: const EdgeInsets.only(bottom: 8.0),
         decoration: BoxDecoration(
           color: isEquipoSelected
-              ? color6.withValues(alpha: 0.1)
+              ? color4.withValues(alpha: 0.1)
               : color0.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8.0),
           border: Border.all(
-            color: isEquipoSelected ? color6 : color0,
+            color: isEquipoSelected ? color4 : color0,
             width: 1.0,
           ),
         ),
@@ -481,7 +630,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                           style: GoogleFonts.poppins(color: color0),
                         ),
                         value: isChecked,
-                        activeColor: color6,
+                        activeColor: color4,
                         onChanged: (value) {
                           setState(() {
                             if (value == true) {
@@ -500,7 +649,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                   title: Text(displayName,
                       style: GoogleFonts.poppins(color: color0)),
                   value: deviceGroup.contains(equipo),
-                  activeColor: color6,
+                  activeColor: color4,
                   onChanged: (value) {
                     setState(() {
                       if (value == true) {
@@ -517,7 +666,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                 title: Text(displayName,
                     style: GoogleFonts.poppins(color: color0)),
                 value: deviceGroup.contains(equipo),
-                activeColor: color6,
+                activeColor: color4,
                 onChanged: (value) {
                   setState(() {
                     if (value == true) {
@@ -532,7 +681,9 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
           ],
         ),
       );
-    }).toList();
+    }));
+
+    return widgets;
   }
 
   Widget _buildActionConfigurationStep() {
@@ -541,8 +692,8 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
       children: [
         Center(
           child: Text(
-            'Selecciona la acción para cada dispositivo',
-            style: GoogleFonts.poppins(color: color1, fontSize: 16),
+            'Configura la acción para cada dispositivo/evento',
+            style: GoogleFonts.poppins(color: color0, fontSize: 16),
             textAlign: TextAlign.center,
           ),
         ),
@@ -555,13 +706,38 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
               final device = deviceGroup[index];
               final isOn = deviceActions[device] ?? false;
 
+              String displayName = device;
+              String deviceType = 'Dispositivo';
+              IconData iconData = Icons.devices_other;
+              bool isCadena = false;
+
+              final eventoEncontrado = eventosCreados.firstWhere(
+                (evento) => evento['title'] == device,
+                orElse: () => <String, dynamic>{},
+              );
+
+              if (eventoEncontrado.isNotEmpty) {
+                final eventoType = eventoEncontrado['evento'] as String;
+                displayName = device;
+                deviceType = eventoType == 'grupo' ? 'Grupo' : 'Cadena';
+                iconData = eventoType == 'grupo'
+                    ? Icons.group_work_outlined
+                    : Icons.link;
+                isCadena = eventoType == 'cadena';
+              } else {
+                displayName = nicknamesMap[device] ?? device;
+              }
+
+              final finalDisplayName =
+                  displayName.isEmpty ? device : displayName;
+
               return Card(
                 elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
                 margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                color: color1,
+                color: color0,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -569,54 +745,106 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.devices_other,
-                              color: color3, size: 20),
+                          Icon(iconData, color: color1, size: 20),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              nicknamesMap[device] ?? device,
+                              finalDisplayName,
                               style: GoogleFonts.poppins(
-                                color: color3,
+                                color: color1,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          if (deviceType != 'Dispositivo') ...{
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: deviceType == 'Grupo'
+                                    ? color4.withValues(alpha: 0.2)
+                                    : Colors.orange.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                deviceType,
+                                style: GoogleFonts.poppins(
+                                  color: deviceType == 'Grupo'
+                                      ? color4
+                                      : Colors.orange,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          },
                         ],
                       ),
                       const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ToggleButtons(
-                          isSelected: [isOn == true, isOn == false],
-                          onPressed: (i) => setState(() {
-                            deviceActions[device] = i == 0 ? true : false;
-                          }),
-                          borderRadius: BorderRadius.circular(12),
-                          selectedColor: color1,
-                          fillColor: isOn
-                              ? Colors.green.withValues(alpha: 0.8)
-                              : color5.withValues(alpha: 0.8),
-                          color: color3,
-                          borderColor: color3,
-                          selectedBorderColor: isOn
-                              ? Colors.green.withValues(alpha: 0.8)
-                              : color5.withValues(alpha: 0.8),
-                          constraints: BoxConstraints(
-                            minHeight: 36,
-                            minWidth: MediaQuery.of(context).size.width * 0.25,
+                      if (isCadena) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.orange, width: 1),
                           ),
-                          children: [
-                            Text('Encender',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.play_arrow,
+                                  color: Colors.orange, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Se ejecutará automáticamente',
                                 style: GoogleFonts.poppins(
-                                    fontWeight: FontWeight.w500, fontSize: 12)),
-                            Text('Apagar',
-                                style: GoogleFonts.poppins(
-                                    fontWeight: FontWeight.w500, fontSize: 12)),
-                          ],
+                                  color: Colors.orange,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                      ] else ...[
+                        SizedBox(
+                          width: double.infinity,
+                          child: ToggleButtons(
+                            isSelected: [isOn == true, isOn == false],
+                            onPressed: (i) => setState(() {
+                              deviceActions[device] = i == 0 ? true : false;
+                            }),
+                            borderRadius: BorderRadius.circular(12),
+                            selectedColor: color0,
+                            fillColor: isOn
+                                ? Colors.green.withValues(alpha: 0.8)
+                                : color3.withValues(alpha: 0.8),
+                            color: color1,
+                            borderColor: color1,
+                            selectedBorderColor: isOn
+                                ? Colors.green.withValues(alpha: 0.8)
+                                : color3.withValues(alpha: 0.8),
+                            constraints: BoxConstraints(
+                              minHeight: 36,
+                              minWidth:
+                                  MediaQuery.of(context).size.width * 0.25,
+                            ),
+                            children: [
+                              Text('Encender',
+                                  style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 12)),
+                              Text('Apagar',
+                                  style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -635,7 +863,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
         Center(
           child: Text(
             'Escribe el nombre del control climático',
-            style: GoogleFonts.poppins(color: color1, fontSize: 16),
+            style: GoogleFonts.poppins(color: color0, fontSize: 16),
             textAlign: TextAlign.center,
           ),
         ),
@@ -644,20 +872,20 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
           controller: title,
           decoration: InputDecoration(
             hintText: 'Ej: Control lluvia',
-            hintStyle: GoogleFonts.poppins(color: color3),
+            hintStyle: GoogleFonts.poppins(color: color1),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16.0),
-              borderSide: const BorderSide(color: color6),
+              borderSide: const BorderSide(color: color4),
             ),
             filled: true,
-            fillColor: color1,
-            errorText: title.text.contains(':') ? 'No se permiten dos puntos (:)' : null,
+            fillColor: color0,
+            errorText: title.text.contains(':')
+                ? 'No se permiten dos puntos (:)'
+                : null,
           ),
-          style: GoogleFonts.poppins(color: color3),
+          style: GoogleFonts.poppins(color: color1),
           onChanged: (value) {
-            setState(() {
-              // Actualizar el estado para mostrar/ocultar el error
-            });
+            setState(() {});
           },
         ),
         const SizedBox(height: 16),
@@ -672,7 +900,25 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
       case 1:
         return deviceGroup.isNotEmpty;
       case 2:
-        return deviceGroup.every((device) => deviceActions.containsKey(device));
+        int requiredActions = deviceGroup.where((device) {
+          final eventoEncontrado = eventosCreados.firstWhere(
+            (evento) => evento['title'] == device,
+            orElse: () => <String, dynamic>{},
+          );
+          return !(eventoEncontrado.isNotEmpty &&
+              eventoEncontrado['evento'] == 'cadena');
+        }).length;
+
+        int configuredActions = deviceActions.entries.where((entry) {
+          final eventoEncontrado = eventosCreados.firstWhere(
+            (evento) => evento['title'] == entry.key,
+            orElse: () => <String, dynamic>{},
+          );
+          return !(eventoEncontrado.isNotEmpty &&
+              eventoEncontrado['evento'] == 'cadena');
+        }).length;
+
+        return deviceActions.isNotEmpty && configuredActions >= requiredActions;
       case 3:
         return title.text.isNotEmpty && !title.text.contains(':');
       default:
@@ -686,8 +932,18 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
         currentStep++;
         // Inicializar valores por defecto para nuevos dispositivos en el paso 2
         if (currentStep == 2) {
-          for (final device in deviceGroup) {
-            deviceActions[device] ??= false;
+          for (String device in deviceGroup) {
+            final eventoEncontrado = eventosCreados.firstWhere(
+              (evento) => evento['title'] == device,
+              orElse: () => <String, dynamic>{},
+            );
+
+            if (eventoEncontrado.isNotEmpty &&
+                eventoEncontrado['evento'] == 'cadena') {
+              deviceActions[device] = true;
+            } else {
+              deviceActions[device] ??= false;
+            }
           }
         }
       });
@@ -697,23 +953,30 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
   }
 
   void _confirmarClima() {
-    printLog.i("=== CONTROL POR CLIMA CREADO ===");
-    printLog.i("Nombre: ${title.text}");
-    printLog.i("Condición: $selectedWeatherCondition");
-    printLog.i("Equipos seleccionados: $deviceGroup");
-    printLog.i("Acciones: $deviceActions");
+    printLog.d("=== CONTROL POR CLIMA CREADO ===");
+    printLog.d("Nombre: ${title.text}");
+    printLog.d("Condición: $selectedWeatherCondition");
+    printLog.d("Dispositivos/Eventos seleccionados: $deviceGroup");
+    printLog.d("Acciones: $deviceActions");
 
-    eventosCreados.add({
+    Map<String, dynamic> eventoData = {
       'evento': 'clima',
       'title': title.text,
       'condition': selectedWeatherCondition,
       'deviceGroup': List<String>.from(deviceGroup),
       'deviceActions': Map<String, bool>.from(deviceActions),
-    });
+    };
 
-    _initializeData();
-    title.clear();
-    showToast("Control climático confirmado");
+    eventosCreados.add(eventoData);
+    //putEventos(currentUserEmail, eventosCreados);
+
+    showToast("Control climático creado exitosamente");
+    printLog.d("$eventosCreados", color: 'verde');
+
+    setState(() {
+      _initializeData();
+      title.clear();
+    });
 
     if (widget.onBackToMain != null) {
       widget.onBackToMain!();

@@ -600,7 +600,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                             style: GoogleFonts.poppins(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
-                              color: color3,
+                              color: color1,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -662,7 +662,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                             style: GoogleFonts.poppins(
                               fontSize: 24,
                               fontWeight: FontWeight.w600,
-                              color: color3,
+                              color: color1,
                             ),
                           ),
                           const SizedBox(height: 50),
@@ -672,7 +672,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                           //       borderRadius: BorderRadius.circular(20),
                           //     ),
                           //     elevation: 5,
-                          //     color: color3,
+                          //     color: color1,
                           //     child: Padding(
                           //       padding: const EdgeInsets.all(20.0),
                           //       child: Column(
@@ -734,7 +734,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                           //                           style: GoogleFonts.poppins(
                           //                             fontSize: 14,
                           //                             color: !isNC
-                          //                                 ? color3
+                          //                                 ? color1
                           //                                 : color0,
                           //                           ),
                           //                         ),
@@ -781,7 +781,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                           //                           style: GoogleFonts.poppins(
                           //                             fontSize: 14,
                           //                             color: isNC
-                          //                                 ? color3
+                          //                                 ? color1
                           //                                 : color0,
                           //                           ),
                           //                         ),
@@ -845,7 +845,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
       //               style: GoogleFonts.poppins(
       //                 fontSize: 28,
       //                 fontWeight: FontWeight.bold,
-      //                 color: color3,
+      //                 color: color1,
       //               ),
       //               textAlign: TextAlign.center,
       //             ),
@@ -925,7 +925,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
       //                 borderRadius: BorderRadius.circular(20),
       //               ),
       //               elevation: 5,
-      //               color: color3,
+      //               color: color1,
       //               child: Padding(
       //                 padding: const EdgeInsets.all(20.0),
       //                 child: Column(
@@ -998,7 +998,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                     style: GoogleFonts.poppins(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: color3,
+                      color: color1,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -1008,7 +1008,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.w500,
-                      color: color3,
+                      color: color1,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -1071,7 +1071,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                               children: [
                                 // Tarjeta de Distancia de apagado
                                 Card(
-                                  color: color3.withValues(alpha: 0.9),
+                                  color: color1.withValues(alpha: 0.9),
                                   elevation: 6,
                                   margin: const EdgeInsets.symmetric(
                                       vertical: 8.0, horizontal: 20.0),
@@ -1093,7 +1093,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                           'Distancia de apagado',
                                           style: TextStyle(
                                             fontSize: 16,
-                                            color: color1,
+                                            color: color0,
                                           ),
                                         ),
                                         const SizedBox(height: 8),
@@ -1105,14 +1105,14 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                               distOffValue.round().toString(),
                                               style: const TextStyle(
                                                 fontSize: 24,
-                                                color: color1,
+                                                color: color0,
                                               ),
                                             ),
                                             const Text(
                                               ' Metros',
                                               style: TextStyle(
                                                 fontSize: 24,
-                                                color: color1,
+                                                color: color0,
                                               ),
                                             ),
                                           ],
@@ -1122,7 +1122,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                             data: SliderTheme.of(context)
                                                 .copyWith(
                                               trackHeight: 20.0,
-                                              thumbColor: color3,
+                                              thumbColor: color1,
                                               activeTrackColor:
                                                   Colors.blueAccent,
                                               inactiveTrackColor:
@@ -1168,7 +1168,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                 ),
                                 const SizedBox(height: 15),
                                 Card(
-                                  color: color3.withValues(alpha: 0.9),
+                                  color: color1.withValues(alpha: 0.9),
                                   elevation: 6,
                                   margin: const EdgeInsets.symmetric(
                                       vertical: 8.0, horizontal: 20.0),
@@ -1190,7 +1190,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                           'Distancia de encendido',
                                           style: TextStyle(
                                             fontSize: 16,
-                                            color: color1,
+                                            color: color0,
                                           ),
                                         ),
                                         const SizedBox(height: 8),
@@ -1202,14 +1202,14 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                               distOnValue.round().toString(),
                                               style: const TextStyle(
                                                 fontSize: 24,
-                                                color: color1,
+                                                color: color0,
                                               ),
                                             ),
                                             const Text(
                                               ' Metros',
                                               style: TextStyle(
                                                 fontSize: 24,
-                                                color: color1,
+                                                color: color0,
                                               ),
                                             ),
                                           ],
@@ -1219,7 +1219,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                             data: SliderTheme.of(context)
                                                 .copyWith(
                                               trackHeight: 20.0,
-                                              thumbColor: color3,
+                                              thumbColor: color1,
                                               activeTrackColor:
                                                   Colors.blueAccent,
                                               inactiveTrackColor:
@@ -1306,13 +1306,13 @@ class RelayPageState extends ConsumerState<RelayPage> {
                   style: GoogleFonts.poppins(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: color3,
+                    color: color1,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
                 Card(
-                  color: color3,
+                  color: color1,
                   elevation: 8,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
@@ -1391,7 +1391,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                         isChangeModeVisible = !isChangeModeVisible;
                       });
                     },
-                    backgroundColor: color3,
+                    backgroundColor: color1,
                     foregroundColor: color0,
                     icon: const Icon(Icons.settings, color: color0),
                     label: Text(
@@ -1409,7 +1409,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         elevation: 5,
-                        color: color3,
+                        color: color1,
                         child: Padding(
                           padding: const EdgeInsets.all(20.0),
                           child: Column(
@@ -1465,7 +1465,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                               'Normal Abierto',
                                               style: GoogleFonts.poppins(
                                                 fontSize: 14,
-                                                color: !isNC ? color3 : color0,
+                                                color: !isNC ? color1 : color0,
                                               ),
                                               overflow: TextOverflow.ellipsis,
                                             ),
@@ -1507,7 +1507,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                               'Normal Cerrado',
                                               style: GoogleFonts.poppins(
                                                 fontSize: 14,
-                                                color: isNC ? color3 : color0,
+                                                color: isNC ? color1 : color0,
                                               ),
                                               overflow: TextOverflow.ellipsis,
                                             ),
@@ -1565,7 +1565,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: color3,
+          backgroundColor: color1,
           title: GestureDetector(
             onTap: () async {
               if (_isTutorialActive) return;
@@ -1675,7 +1675,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
             ),
           ],
         ),
-        backgroundColor: color1,
+        backgroundColor: color0,
         resizeToAvoidBottomInset: false,
         body: IgnorePointer(
           ignoring: _isTutorialActive,
@@ -1705,8 +1705,8 @@ class RelayPageState extends ConsumerState<RelayPage> {
                         Icon(Icons.input, size: 30, color: color0),
                         Icon(Icons.settings, size: 30, color: color0),
                       ],
-                      color: color3,
-                      buttonBackgroundColor: color3,
+                      color: color1,
+                      buttonBackgroundColor: color1,
                       backgroundColor: Colors.transparent,
                       animationCurve: Curves.easeInOut,
                       animationDuration: const Duration(milliseconds: 600),
@@ -1770,7 +1770,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                     }
                   });
                 },
-                backgroundColor: color6,
+                backgroundColor: color4,
                 shape: const CircleBorder(),
                 child: const Icon(Icons.help, size: 30, color: color0),
               ),

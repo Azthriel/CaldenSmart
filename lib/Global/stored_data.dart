@@ -259,3 +259,36 @@ Future<List<Map<String, String>>> loadWifiOrderDevices(String email) async {
       .toList();
 }
 //*- Guardar lista de equipos wifi -*\\
+
+//*- Manejar cadenas en ejecución -*\\
+Future<void> setCadenaExecuting(String cadenaName, String email) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('CSCadenaExecuting_${email}_$cadenaName', true);
+}
+
+Future<void> removeCadenaExecuting(String cadenaName, String email) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.remove('CSCadenaExecuting_${email}_$cadenaName');
+}
+
+Future<bool> isCadenaExecuting(String cadenaName, String email) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getBool('CSCadenaExecuting_${email}_$cadenaName') ?? false;
+}
+
+Future<List<String>> getExecutingCadenas(String email) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final Set<String> keys = prefs.getKeys();
+  final String prefix = 'CSCadenaExecuting_${email}_';
+  
+  List<String> executingCadenas = [];
+  for (String key in keys) {
+    if (key.startsWith(prefix) && prefs.getBool(key) == true) {
+      String cadenaName = key.substring(prefix.length);
+      executingCadenas.add(cadenaName);
+    }
+  }
+  
+  return executingCadenas;
+}
+//*- Manejar cadenas en ejecución -*\\

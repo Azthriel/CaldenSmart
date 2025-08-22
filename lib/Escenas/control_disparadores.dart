@@ -139,11 +139,11 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
           margin: const EdgeInsets.only(bottom: 8.0),
           decoration: BoxDecoration(
             color: isEquipoSelected
-                ? color6.withValues(alpha: 0.1)
+                ? color4.withValues(alpha: 0.1)
                 : color0.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8.0),
             border: Border.all(
-              color: isEquipoSelected ? color6 : color0,
+              color: isEquipoSelected ? color4 : color0,
               width: 1.0,
             ),
           ),
@@ -183,7 +183,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                         value: entradaId,
                         groupValue:
                             activadores.isNotEmpty ? activadores.first : null,
-                        activeColor: color6,
+                        activeColor: color4,
                         onChanged: (value) {
                           setState(() {
                             activadores.clear();
@@ -202,7 +202,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                       style: GoogleFonts.poppins(color: color0)),
                   value: equipo,
                   groupValue: activadores.isNotEmpty ? activadores.first : null,
-                  activeColor: color6,
+                  activeColor: color4,
                   onChanged: (value) {
                     setState(() {
                       activadores.clear();
@@ -242,9 +242,137 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
   }
 
   List<Widget> _buildEjecutoresSelection() {
+    final validDevices = previusConnections.where((equipo) {
+      if (!_isEjecutor(equipo)) return false;
+      final deviceKey =
+          '${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}';
+      final deviceDATA = globalDATA[deviceKey] ?? {};
+      final owner = deviceDATA['owner'] ?? '';
+      return owner == '' || owner == currentUserEmail;
+    }).toList();
+
+    final eventosGrupoYCadena = eventosCreados.where((evento) {
+      final eventoType = evento['evento'] as String;
+      return eventoType == 'grupo' || eventoType == 'cadena';
+    }).toList();
+
+    if (validDevices.isEmpty && eventosGrupoYCadena.isEmpty) {
+      return [
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'No hay dispositivos o eventos válidos para control por disparadores.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                color: Colors.red,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ];
+    }
+
     List<Widget> widgets = [];
 
-    for (String equipo in previusConnections) {
+    if (eventosGrupoYCadena.isNotEmpty) {
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Text(
+            'EVENTOS DISPONIBLES',
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: color0.withValues(alpha: 0.9),
+              letterSpacing: 1,
+            ),
+          ),
+        ),
+      );
+
+      for (final evento in eventosGrupoYCadena) {
+        final eventoType = evento['evento'] as String;
+        final eventoTitle = evento['title'] as String;
+        final isSelected = ejecutores.contains(eventoTitle);
+
+        widgets.add(
+          Container(
+            margin: const EdgeInsets.only(bottom: 8.0),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? color4.withValues(alpha: 0.1)
+                  : color0.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(
+                color: isSelected ? color4 : color0,
+                width: 1.0,
+              ),
+            ),
+            child: ListTile(
+              leading: Icon(
+                eventoType == 'grupo' ? Icons.group_work_outlined : Icons.link,
+                color: eventoType == 'grupo' ? color4 : Colors.orange,
+              ),
+              title: Text(
+                eventoTitle,
+                style: GoogleFonts.poppins(color: color0),
+              ),
+              subtitle: Text(
+                'Evento $eventoType',
+                style: GoogleFonts.poppins(
+                  color: color0.withValues(alpha: 0.7),
+                  fontSize: 12,
+                ),
+              ),
+              trailing: Checkbox(
+                value: isSelected,
+                activeColor: color4,
+                onChanged: (value) {
+                  setState(() {
+                    if (value == true) {
+                      ejecutores.add(eventoTitle);
+                    } else {
+                      ejecutores.remove(eventoTitle);
+                    }
+                  });
+                },
+              ),
+              onTap: () {
+                setState(() {
+                  if (isSelected) {
+                    ejecutores.remove(eventoTitle);
+                  } else {
+                    ejecutores.add(eventoTitle);
+                  }
+                });
+              },
+            ),
+          ),
+        );
+      }
+
+      if (validDevices.isNotEmpty) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12.0),
+            child: Text(
+              'DISPOSITIVOS INDIVIDUALES',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: color0.withValues(alpha: 0.9),
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    for (String equipo in validDevices) {
       if (!_isEjecutor(equipo)) continue;
 
       final displayName = nicknamesMap[equipo] ?? equipo;
@@ -279,11 +407,11 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
           margin: const EdgeInsets.only(bottom: 8.0),
           decoration: BoxDecoration(
             color: isEquipoSelected
-                ? color6.withValues(alpha: 0.1)
+                ? color4.withValues(alpha: 0.1)
                 : color0.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8.0),
             border: Border.all(
-              color: isEquipoSelected ? color6 : color0,
+              color: isEquipoSelected ? color4 : color0,
               width: 1.0,
             ),
           ),
@@ -323,7 +451,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                             style: GoogleFonts.poppins(color: color0),
                           ),
                           value: isChecked,
-                          activeColor: color6,
+                          activeColor: color4,
                           onChanged: (value) {
                             setState(() {
                               if (value == true) {
@@ -342,7 +470,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                     title: Text(displayName.isEmpty ? equipo : displayName,
                         style: GoogleFonts.poppins(color: color0)),
                     value: ejecutores.contains(equipo),
-                    activeColor: color6,
+                    activeColor: color4,
                     onChanged: (value) {
                       setState(() {
                         if (value == true) {
@@ -359,7 +487,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                   title: Text(displayName.isEmpty ? equipo : displayName,
                       style: GoogleFonts.poppins(color: color0)),
                   value: ejecutores.contains(equipo),
-                  activeColor: color6,
+                  activeColor: color4,
                   onChanged: (value) {
                     setState(() {
                       if (value == true) {
@@ -405,8 +533,8 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
       children: [
         Center(
           child: Text(
-            'Configura la acción para cada ejecutor',
-            style: GoogleFonts.poppins(color: color1, fontSize: 16),
+            'Configura la acción para cada ejecutor/evento',
+            style: GoogleFonts.poppins(color: color0, fontSize: 16),
             textAlign: TextAlign.center,
           ),
         ),
@@ -418,7 +546,27 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
             itemBuilder: (context, index) {
               final device = ejecutores[index];
               final isOn = deviceActions[device] ?? false;
-              final displayName = nicknamesMap[device] ?? device;
+              String displayName = device;
+              String deviceType = 'Dispositivo';
+              IconData iconData = Icons.devices_other;
+              bool isCadena = false;
+
+              final eventoEncontrado = eventosCreados.firstWhere(
+                (evento) => evento['title'] == device,
+                orElse: () => <String, dynamic>{},
+              );
+
+              if (eventoEncontrado.isNotEmpty) {
+                final eventoType = eventoEncontrado['evento'] as String;
+                displayName = device;
+                deviceType = eventoType == 'grupo' ? 'Grupo' : 'Cadena';
+                iconData = eventoType == 'grupo'
+                    ? Icons.group_work_outlined
+                    : Icons.link;
+                isCadena = eventoType == 'cadena';
+              } else {
+                displayName = nicknamesMap[device] ?? device;
+              }
               final finalDisplayName =
                   displayName.isEmpty ? device : displayName;
 
@@ -428,7 +576,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                color: color1,
+                color: color0,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -436,66 +584,122 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.devices_other,
-                              color: color3, size: 20),
+                          Icon(iconData, color: color1, size: 20),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               finalDisplayName,
                               style: GoogleFonts.poppins(
-                                color: color3,
+                                color: color1,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          if (deviceType != 'Dispositivo') ...{
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: deviceType == 'Grupo'
+                                    ? color4.withValues(alpha: 0.2)
+                                    : Colors.orange.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                deviceType,
+                                style: GoogleFonts.poppins(
+                                  color: deviceType == 'Grupo'
+                                      ? color4
+                                      : Colors.orange,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          },
                         ],
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ToggleButtons(
-                              isSelected: [isOn == true, isOn == false],
-                              onPressed: (i) => setState(() {
-                                deviceActions[device] = i == 0 ? true : false;
-                                printLog.i('$deviceActions', color: 'verde');
-                              }),
-                              borderRadius: BorderRadius.circular(12),
-                              selectedColor: color1,
-                              fillColor: isOn
-                                  ? Colors.green.withValues(alpha: 0.8)
-                                  : color5.withValues(alpha: 0.8),
-                              color: color3,
-                              borderColor: color3,
-                              selectedBorderColor: isOn
-                                  ? Colors.green.withValues(alpha: 0.8)
-                                  : color5.withValues(alpha: 0.8),
-                              constraints: const BoxConstraints(
-                                minHeight: 36,
-                                minWidth: 80,
-                              ),
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
-                                  child: Text('Encender',
-                                      style: GoogleFonts.poppins(
-                                          fontWeight: FontWeight.w500)),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
-                                  child: Text('Apagar',
-                                      style: GoogleFonts.poppins(
-                                          fontWeight: FontWeight.w500)),
-                                ),
-                              ],
+                      if (isCadena) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.orange.withValues(alpha: 0.3),
+                              width: 1,
                             ),
                           ),
-                        ],
-                      ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.play_arrow,
+                                color: Colors.orange,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Se ejecutará la secuencia completa',
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.orange,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ToggleButtons(
+                                isSelected: [isOn == true, isOn == false],
+                                onPressed: (i) => setState(() {
+                                  deviceActions[device] = i == 0 ? true : false;
+                                  printLog.i('$deviceActions', color: 'verde');
+                                }),
+                                borderRadius: BorderRadius.circular(12),
+                                selectedColor: color0,
+                                fillColor: isOn
+                                    ? Colors.green.withValues(alpha: 0.8)
+                                    : color3.withValues(alpha: 0.8),
+                                color: color1,
+                                borderColor: color1,
+                                selectedBorderColor: isOn
+                                    ? Colors.green.withValues(alpha: 0.8)
+                                    : color3.withValues(alpha: 0.8),
+                                constraints: const BoxConstraints(
+                                  minHeight: 36,
+                                  minWidth: 80,
+                                ),
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    child: Text('Encender',
+                                        style: GoogleFonts.poppins(
+                                            fontWeight: FontWeight.w500)),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    child: Text('Apagar',
+                                        style: GoogleFonts.poppins(
+                                            fontWeight: FontWeight.w500)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -510,7 +714,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: color3,
+      color: color1,
       child: Padding(
         padding: const EdgeInsets.all(10.0),
         child: Column(
@@ -524,7 +728,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                     opacity: currentStep == 0 ? 1.0 : 0.0,
                     child: IconButton(
                       icon: const Icon(Icons.arrow_back),
-                      color: color1,
+                      color: color0,
                       onPressed: currentStep == 0
                           ? () {
                               if (widget.onBackToMain != null) {
@@ -539,7 +743,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                       child: Text(
                         'Control por disparadores',
                         style: GoogleFonts.poppins(
-                          color: color1,
+                          color: color0,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -561,22 +765,22 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                   Container(
                       width: 30,
                       height: 2,
-                      color: currentStep >= 1 ? color6 : color0),
+                      color: currentStep >= 1 ? color4 : color0),
                   _buildStepIndicator(1, 'Alerta', currentStep >= 1),
                   Container(
                       width: 30,
                       height: 2,
-                      color: currentStep >= 2 ? color6 : color0),
+                      color: currentStep >= 2 ? color4 : color0),
                   _buildStepIndicator(2, 'Ejecutores', currentStep >= 2),
                   Container(
                       width: 30,
                       height: 2,
-                      color: currentStep >= 3 ? color6 : color0),
+                      color: currentStep >= 3 ? color4 : color0),
                   _buildStepIndicator(3, 'Acciones', currentStep >= 3),
                   Container(
                       width: 30,
                       height: 2,
-                      color: currentStep >= 4 ? color6 : color0),
+                      color: currentStep >= 4 ? color4 : color0),
                   _buildStepIndicator(4, 'Nombre', currentStep >= 4),
                 ],
               ),
@@ -603,7 +807,9 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                           onPressed: () => setState(() => currentStep--),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: color0,
-                            foregroundColor: color3,
+                            foregroundColor: color1,
+                            disabledForegroundColor:
+                                color1.withValues(alpha: 0.5),
                             padding: const EdgeInsets.symmetric(vertical: 12.0),
                           ),
                           child: const Text('Anterior'),
@@ -623,9 +829,9 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                             _canContinue() ? () => _handleContinue() : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: color0,
-                          foregroundColor: color3,
+                          foregroundColor: color1,
                           disabledForegroundColor:
-                              color3.withValues(alpha: 0.5),
+                              color1.withValues(alpha: 0.5),
                           disabledBackgroundColor: color0,
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
                         ),
@@ -648,14 +854,14 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
           width: 24,
           height: 24,
           decoration: BoxDecoration(
-            color: isActive ? color6 : color0,
+            color: isActive ? color4 : color0,
             shape: BoxShape.circle,
           ),
           child: Center(
             child: Text(
               '${step + 1}',
               style: GoogleFonts.poppins(
-                color: color3,
+                color: color1,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
@@ -666,7 +872,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
         Text(
           label,
           style: GoogleFonts.poppins(
-            color: color1,
+            color: color0,
             fontSize: 9,
           ),
         ),
@@ -683,7 +889,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
             Center(
               child: Text(
                 'Selecciona el equipo activador',
-                style: GoogleFonts.poppins(color: color1, fontSize: 16),
+                style: GoogleFonts.poppins(color: color0, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -706,7 +912,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
             Center(
               child: Text(
                 'Elige en que estado debe estar el activador para accionar los ejecutores',
-                style: GoogleFonts.poppins(color: color1, fontSize: 16),
+                style: GoogleFonts.poppins(color: color0, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -720,11 +926,11 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                   });
                 },
                 borderRadius: BorderRadius.circular(12),
-                selectedColor: color3,
-                fillColor: color6.withValues(alpha: 0.8),
-                color: color1,
-                borderColor: color6,
-                selectedBorderColor: color6,
+                selectedColor: color1,
+                fillColor: color4.withValues(alpha: 0.8),
+                color: color0,
+                borderColor: color4,
+                selectedBorderColor: color4,
                 constraints: const BoxConstraints(
                   minHeight: 40,
                   minWidth: 120,
@@ -746,14 +952,14 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
             const SizedBox(height: 16),
             if (isTermometro) ...{
               const Divider(
-                color: color2,
+                color: color0,
                 thickness: 1.0,
                 height: 24,
               ),
               Center(
                 child: Text(
                   'Elige con que alerta ejecutarse',
-                  style: GoogleFonts.poppins(color: color1, fontSize: 16),
+                  style: GoogleFonts.poppins(color: color0, fontSize: 16),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -770,11 +976,11 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                     });
                   },
                   borderRadius: BorderRadius.circular(12),
-                  selectedColor: color3,
-                  fillColor: color6.withValues(alpha: 0.8),
-                  color: color1,
-                  borderColor: color6,
-                  selectedBorderColor: color6,
+                  selectedColor: color1,
+                  fillColor: color4.withValues(alpha: 0.8),
+                  color: color0,
+                  borderColor: color4,
+                  selectedBorderColor: color4,
                   constraints: const BoxConstraints(
                     minHeight: 40,
                     minWidth: 120,
@@ -802,7 +1008,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
             Center(
               child: Text(
                 'Selecciona los equipos ejecutores',
-                style: GoogleFonts.poppins(color: color1, fontSize: 16),
+                style: GoogleFonts.poppins(color: color0, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -824,7 +1030,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
             Center(
               child: Text(
                 'Nombre del grupo en cadena',
-                style: GoogleFonts.poppins(color: color1, fontSize: 16),
+                style: GoogleFonts.poppins(color: color0, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -833,22 +1039,20 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
               controller: title,
               decoration: InputDecoration(
                 hintText: 'Ej: Cadena de seguridad',
-                hintStyle: GoogleFonts.poppins(color: color3),
+                hintStyle: GoogleFonts.poppins(color: color1),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16.0),
-                  borderSide: const BorderSide(color: color6),
+                  borderSide: const BorderSide(color: color4),
                 ),
                 filled: true,
-                fillColor: color1,
+                fillColor: color0,
                 errorText: title.text.contains(':')
                     ? 'No se permiten dos puntos (:)'
                     : null,
               ),
-              style: GoogleFonts.poppins(color: color3),
+              style: GoogleFonts.poppins(color: color1),
               onChanged: (value) {
-                setState(() {
-                  // Actualizar el estado para mostrar/ocultar el error
-                });
+                setState(() {});
               },
             ),
             const SizedBox(height: 16),
@@ -876,8 +1080,25 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
       case 2:
         return ejecutores.isNotEmpty;
       case 3:
-        return deviceActions.isNotEmpty &&
-            deviceActions.length == ejecutores.length;
+        int requiredActions = ejecutores.where((device) {
+          final eventoEncontrado = eventosCreados.firstWhere(
+            (evento) => evento['title'] == device,
+            orElse: () => <String, dynamic>{},
+          );
+          return !(eventoEncontrado.isNotEmpty &&
+              eventoEncontrado['evento'] == 'cadena');
+        }).length;
+
+        int configuredActions = deviceActions.entries.where((entry) {
+          final eventoEncontrado = eventosCreados.firstWhere(
+            (evento) => evento['title'] == entry.key,
+            orElse: () => <String, dynamic>{},
+          );
+          return !(eventoEncontrado.isNotEmpty &&
+              eventoEncontrado['evento'] == 'cadena');
+        }).length;
+
+        return deviceActions.isNotEmpty && configuredActions >= requiredActions;
       case 4:
         return title.text.isNotEmpty && !title.text.contains(':');
       default:
@@ -891,7 +1112,17 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
         currentStep++;
         if (currentStep == 3) {
           for (String device in ejecutores) {
-            deviceActions[device] ??= false;
+            final eventoEncontrado = eventosCreados.firstWhere(
+              (evento) => evento['title'] == device,
+              orElse: () => <String, dynamic>{},
+            );
+
+            if (eventoEncontrado.isNotEmpty &&
+                eventoEncontrado['evento'] == 'cadena') {
+              deviceActions[device] = true;
+            } else {
+              deviceActions[device] ??= false;
+            }
           }
         }
       });
@@ -908,57 +1139,81 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
     printLog.i("Acciones: $deviceActions");
 
     List<String> deviceGroup = [];
+    Map<String, bool> finalDeviceActions = {};
+
     deviceGroup.addAll(activadores);
+
     deviceGroup.addAll(ejecutores);
 
-    eventosCreados.add({
+    for (String item in ejecutores) {
+      finalDeviceActions[item] = deviceActions[item] ?? false;
+    }
+
+    printLog.i("DeviceGroup completo: $deviceGroup");
+    printLog.i("Acciones finales: $finalDeviceActions");
+
+    Map<String, dynamic> eventoData = {
       'evento': 'disparador',
       'title': title.text,
       'activadores': List<String>.from(activadores),
       'ejecutores': List<String>.from(ejecutores),
       'deviceGroup': List<String>.from(deviceGroup),
-      'deviceActions': Map<String, bool>.from(deviceActions),
+      'deviceActions': Map<String, bool>.from(finalDeviceActions),
       'estadoAlerta': estadoAlerta,
       'estadoTermometro': estadoTermometro,
-    });
+    };
 
+    eventosCreados.add(eventoData);
     putEventos(currentUserEmail, eventosCreados);
 
-    Map<String, bool> ejecutoresMap = {};
+    if (ejecutores.isNotEmpty) {
+      Map<String, bool> ejecutoresMap = {};
+      for (String item in ejecutores) {
+        final eventoEncontrado = eventosCreados.firstWhere(
+          (evento) => evento['title'] == item,
+          orElse: () => <String, dynamic>{},
+        );
 
-    for (String device in ejecutores) {
-      ejecutoresMap[device] = deviceActions[device] ?? false;
-    }
-
-    // Determinar el tipo de alerta basado en el activador y los estados
-    String tipoAlerta;
-    String activador = activadores.first;
-    bool isTermometro = activador.contains('Termometro');
-
-    if (isTermometro) {
-      // Para termómetros, usar estado de temperatura (MAX/MIN) y estado de alerta
-      if (estadoTermometro == "1") {
-        tipoAlerta =
-            estadoAlerta == "1" ? 'ejecutoresMAX_true' : 'ejecutoresMAX_false';
-      } else {
-        tipoAlerta =
-            estadoAlerta == "1" ? 'ejecutoresMIN_true' : 'ejecutoresMIN_false';
+        String finalKey;
+        if (eventoEncontrado.isNotEmpty) {
+          // Es un evento, agregar el tipo
+          final eventoType = eventoEncontrado['evento'] as String;
+          finalKey = '$item:$eventoType';
+        } else {
+          // Es un dispositivo individual, agregar el tipo 'dispositivo'
+          finalKey = '$item:dispositivo';
+        }
+        ejecutoresMap[finalKey] = finalDeviceActions[item] ?? false;
       }
-    } else {
-      // Para otros dispositivos, usar solo estado de alerta
-      tipoAlerta = estadoAlerta == "1"
-          ? 'ejecutoresAlert_true'
-          : 'ejecutoresAlert_false';
-    }
 
-    // Usar la nueva función para guardar en Eventos_ControlPorDisparadores
-    putEventoControlPorDisparadores(
-      activadores.first,
-      currentUserEmail,
-      title.text,
-      ejecutoresMap,
-      tipoAlerta: tipoAlerta,
-    );
+      String tipoAlerta;
+      String activador = activadores.first;
+      bool isTermometro = activador.contains('Termometro');
+
+      if (isTermometro) {
+        if (estadoTermometro == "1") {
+          tipoAlerta = estadoAlerta == "1"
+              ? 'ejecutoresMAX_true'
+              : 'ejecutoresMAX_false';
+        } else {
+          tipoAlerta = estadoAlerta == "1"
+              ? 'ejecutoresMIN_true'
+              : 'ejecutoresMIN_false';
+        }
+      } else {
+        tipoAlerta = estadoAlerta == "1"
+            ? 'ejecutoresAlert_true'
+            : 'ejecutoresAlert_false';
+      }
+
+      putEventoControlPorDisparadores(
+        activadores.first,
+        currentUserEmail,
+        title.text,
+        ejecutoresMap,
+        tipoAlerta: tipoAlerta,
+      );
+    }
 
     showToast("Evento creado exitosamente");
     printLog.i("$eventosCreados", color: 'verde');

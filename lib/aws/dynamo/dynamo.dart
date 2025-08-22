@@ -577,13 +577,28 @@ Future<void> putDevicesForAlexa(String email, List<String> data) async {
   }
 }
 
-Future<void> putPreviusConnections(String email, List<String> data) async {
-  if (data.isEmpty) {
+Future<void> putPreviusConnections(String email, List<String> data,
+    {bool isIntentionalClear = false}) async {
+  // Si es un borrado intencional y la lista está vacía, usar el marcador fantasma
+  if (data.isEmpty && isIntentionalClear) {
+    data = [intentionallyEmptyMarker];
+    printLog.i('Lista vaciada intencionalmente, usando marcador fantasma');
+  }
+  // Si la lista está vacía sin ser intencional, bloquear solo si no es usuario nuevo
+  else if (data.isEmpty && deviceLoadState != DeviceLoadState.newUser) {
+    printLog.e(
+        'Intento de sobrescritura con lista vacía bloqueado para usuario existente');
+    throw Exception(
+        'Operación bloqueada: intento de sobrescritura con lista vacía');
+  }
+  // Si la lista está vacía y es usuario nuevo, usar string vacío (comportamiento original)
+  else if (data.isEmpty) {
     data.add('');
   }
+
   try {
-    // Se actualiza el ítem, asignando 'devices' con la lista proporcionada (vacía o no).
-    final response = await service.updateItem(
+    // Se actualiza el ítem, asignando 'devices' con la lista proporcionada
+    await service.updateItem(
       tableName: 'Alexa-Devices',
       key: {
         'email': AttributeValue(s: email),
@@ -593,9 +608,14 @@ Future<void> putPreviusConnections(String email, List<String> data) async {
             AttributeValueUpdate(value: AttributeValue(ss: data)),
       },
     );
-    printLog.i('Item actualizado correctamente: $response');
+
+    List<String> realDevices = data
+        .where((d) => d.isNotEmpty && d != intentionallyEmptyMarker)
+        .toList();
+    printLog.i('Lista de dispositivos actualizada correctamente: $realDevices');
   } catch (e) {
-    printLog.i('Error actualizando el ítem de Alexa: $e');
+    printLog.e('Error actualizando la lista de dispositivos: $e');
+    rethrow;
   }
 }
 
@@ -675,27 +695,37 @@ Future<void> putRollerLength(String pc, String sn, String data) async {
 ///A su vez, guarda los topics a los que se va a suscribir el cliente MQTT en la variable topicsToSub.
 ///Por último, guarda los nicknames de los dispositivos en la variable nicknamesMap.
 Future<void> getDevices(String email) async {
+  deviceLoadState = DeviceLoadState.loading;
+
   try {
     final response = await service.getItem(
       tableName: 'Alexa-Devices',
       key: {'email': AttributeValue(s: email)},
     );
+
     if (response.item != null) {
-      // Convertir AttributeValue a String
+      // Usuario existe en la base de datos
       var item = response.item!;
       List<String> equipos = item['previusConnections']?.ss ?? [];
-      if (equipos.contains('') && equipos.length == 1) {
-        equipos = [];
-      }
+
+      // Filtrar marcadores fantasma y strings vacíos
+      equipos = equipos
+          .where((device) =>
+              device.isNotEmpty && device != intentionallyEmptyMarker)
+          .toList();
+
+      // Sin validaciones de formato - permitir cualquier formato de nombre de dispositivo
 
       previusConnections = equipos;
+      deviceLoadState = DeviceLoadState.existingUserLoaded;
+      lastSuccessfulLoad = DateTime.now();
+      loadRetryCount = 0;
 
       for (String equipo in previusConnections) {
-        topicsToSub.add(
-            'devices_tx/${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}');
-
-        subToTopicMQTT(
-            'devices_tx/${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}');
+        String pc = DeviceManager.getProductCode(equipo);
+        String sn = DeviceManager.extractSerialNumber(equipo);
+        topicsToSub.add('devices_tx/$pc/$sn');
+        subToTopicMQTT('devices_tx/$pc/$sn');
       }
 
       printLog.i('Se encontro el siguiente item: $equipos');
@@ -713,10 +743,88 @@ Future<void> getDevices(String email) async {
             DeviceManager.extractSerialNumber(device));
       }
     } else {
-      printLog.i('Item no encontrado. No está el mail en la database');
+      // Usuario NO existe en la base de datos = Usuario nuevo
+      printLog.i('Item no encontrado. Usuario nuevo detectado');
+      deviceLoadState = DeviceLoadState.newUser;
+      previusConnections = [];
+      lastSuccessfulLoad = DateTime.now();
+      loadRetryCount = 0;
     }
   } catch (e) {
-    printLog.i('Error al obtener el item: $e');
+    printLog.e('Error al obtener dispositivos del usuario: $e');
+    deviceLoadState = DeviceLoadState.loadError;
+    loadRetryCount++;
+
+    // NO modificar previusConnections en caso de error
+    // Mantener el estado anterior si existe
+  }
+}
+
+/// Agrega un dispositivo de forma segura, con protecciones contra sobrescritura accidental
+/// Retorna:
+/// - 'added': Dispositivo agregado exitosamente
+/// - 'exists': Dispositivo ya existía en la lista
+/// - 'error': Error al agregar el dispositivo
+Future<String> safeAddDevice(String email, String deviceName) async {
+  // Verificar el estado de carga antes de proceder
+  switch (deviceLoadState) {
+    case DeviceLoadState.unknown:
+    case DeviceLoadState.loading:
+      printLog
+          .i('Estado de carga incierto, reintentando cargar dispositivos...');
+      await getDevices(email);
+      if (deviceLoadState == DeviceLoadState.loadError) {
+        return 'error';
+      }
+      break;
+
+    case DeviceLoadState.loadError:
+      printLog.e(
+          'Error de carga detectado. No se agregará dispositivo para evitar sobrescritura');
+      if (loadRetryCount < maxRetryAttempts) {
+        printLog.i(
+            'Reintentando carga de dispositivos (intento ${loadRetryCount + 1}/$maxRetryAttempts)');
+        await getDevices(email);
+        if (deviceLoadState == DeviceLoadState.loadError) {
+          return 'error';
+        }
+      } else {
+        return 'error';
+      }
+      break;
+
+    case DeviceLoadState.newUser:
+    case DeviceLoadState.existingUserLoaded:
+      // Estados seguros para proceder
+      break;
+  }
+
+  // Validar que el dispositivo no esté ya en la lista
+  if (previusConnections.contains(deviceName)) {
+    printLog.i('Dispositivo $deviceName ya está en la lista');
+    return 'exists';
+  }
+
+  // Sin validación de formato - permitir cualquier nombre de dispositivo
+
+  // Crear backup de la lista actual
+  List<String> backupList = List<String>.from(previusConnections);
+
+  try {
+    // Agregar el nuevo dispositivo
+    previusConnections.add(deviceName);
+
+    // Intentar guardar en DynamoDB
+    await putPreviusConnections(email, previusConnections);
+
+    printLog.i('Dispositivo $deviceName agregado exitosamente');
+    return 'added';
+  } catch (e) {
+    // En caso de error, restaurar la lista anterior
+    printLog.e('Error al guardar dispositivo, restaurando lista anterior: $e');
+    previusConnections.clear();
+    previusConnections.addAll(backupList);
+    return 'error';
   }
 }
 
@@ -1155,6 +1263,10 @@ Future<void> _removeFromOldTable(String activador) async {
 /// [email] es el email del usuario
 /// [nombreEvento] es el nombre del evento
 /// [ejecutores] mapa de ejecutores con sus estados (true/false)
+///   - Las claves deben estar en formato "nombre:tipo" donde:
+///   - tipo = 'dispositivo' para dispositivos individuales
+///   - tipo = 'grupo' para eventos de tipo grupo
+///   - tipo = 'cadena' para eventos de tipo cadena
 /// [days] lista de días como números (0=Domingo, 1=Lunes, etc.)
 /// [timezoneOffset] offset del timezone en horas desde UTC
 /// [timezoneName] nombre del timezone (ej: "GMT-03:00")
@@ -1189,6 +1301,7 @@ Future<void> putEventoControlPorHorarios(
     );
 
     printLog.i('Evento de control por horarios guardado: $response');
+    printLog.i('Ejecutores con formato nombre:tipo: ${ejecutores.keys.toList()}');
     printLog.i('Días guardados como números: $days');
     printLog.i(
         'Timezone: $timezoneName (UTC${timezoneOffset >= 0 ? '+' : ''}$timezoneOffset)');

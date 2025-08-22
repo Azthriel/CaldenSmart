@@ -481,9 +481,9 @@ class ScanPageState extends State<ScanPage>
         try {
           return Scaffold(
             resizeToAvoidBottomInset: false,
-            backgroundColor: color1,
+            backgroundColor: color0,
             appBar: AppBar(
-              backgroundColor: color3,
+              backgroundColor: color1,
               title: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6.0),
                 child: AnimSearchBar(
@@ -506,24 +506,24 @@ class ScanPageState extends State<ScanPage>
                   helpText: "",
                   suffixIcon: const Icon(
                     Icons.clear,
-                    color: color3,
+                    color: color1,
                   ),
                   prefixIcon: toggle == 1
                       ? const Icon(
                           Icons.arrow_back_ios,
-                          color: color3,
+                          color: color1,
                         )
                       : const Icon(
                           Icons.search,
-                          color: color3,
+                          color: color1,
                         ),
                   animationDurationInMilli: 400,
                   color: color0,
                   textFieldColor: color0,
-                  searchIconColor: color3,
-                  textFieldIconColor: color3,
+                  searchIconColor: color1,
+                  textFieldIconColor: color1,
                   style: const TextStyle(
-                    color: color3,
+                    color: color1,
                   ),
                   onTap: () {
                     setState(() {
@@ -554,8 +554,8 @@ class ScanPageState extends State<ScanPage>
                 processingText: 'Escaneando dispositivos',
                 processedText: 'Escaneo completo',
                 showMessage: false,
-                textStyle: TextStyle(color: color3),
-                iconTheme: IconThemeData(color: color3),
+                textStyle: TextStyle(color: color1),
+                iconTheme: IconThemeData(color: color1),
               ),
               onRefresh: () async {
                 reescan();
@@ -573,7 +573,7 @@ class ScanPageState extends State<ScanPage>
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
-                                  color: color3,
+                                  color: color1,
                                 ),
                               ),
                             ),
@@ -719,7 +719,7 @@ class ScanPageState extends State<ScanPage>
                                                 BorderRadius.circular(15.0),
                                             side: BorderSide(
                                               color:
-                                                  isLost ? Colors.grey : color6,
+                                                  isLost ? Colors.grey : color4,
                                               width: 2.0,
                                             ),
                                           ),
@@ -863,14 +863,14 @@ class ScanPageState extends State<ScanPage>
                                                   child: condicion
                                                       ? (quickAction
                                                           ? const CircularProgressIndicator(
-                                                              color: color1)
+                                                              color: color0)
                                                           : Transform.scale(
                                                               scale: 1.33,
                                                               child: Switch(
                                                                 value:
                                                                     estadoWState,
                                                                 activeColor:
-                                                                    color1,
+                                                                    color0,
                                                                 onChanged: (bool
                                                                         newValue) =>
                                                                     _runQuickAction(
@@ -907,11 +907,11 @@ class ScanPageState extends State<ScanPage>
           printLog.e('Error en ScanPage: $e');
           printLog.e('Stack trace: $s');
           return const Scaffold(
-            backgroundColor: color1,
+            backgroundColor: color0,
             body: Center(
               child: Text(
                 'Error al cargar la página de escaneo',
-                style: TextStyle(color: color3, fontSize: 20),
+                style: TextStyle(color: color1, fontSize: 20),
               ),
             ),
           );

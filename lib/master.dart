@@ -36,7 +36,7 @@ import 'package:caldensmart/logger.dart';
 
 //*-Informacion crucial app-*\\
 late String appVersionNumber;
-//ACORDATE: 0 = Caldén Smart
+//ACORDATE: 0 = Caldén Smart, 1 = Silema, 2 = Millenium
 const int app = 0;
 //*-Informacion crucial app-\*\
 
@@ -46,12 +46,10 @@ Map<String, Map<String, dynamic>> globalDATA = {};
 
 //*-Colores-*\\
 const Color color0 = Color(0xFFFFFFFF);
-const Color color1 = Color(0xFFFFFFFF);
-const Color color2 = Color(0xFFFFFFFF);
-const Color color3 = Color(0xFF000000);
-const Color color4 = Color(0xFFFF3D47);
-const Color color5 = Color(0xFFED3724);
-const Color color6 = Color(0xFF97292c);
+const Color color1 = Color(0xFF000000);
+const Color color2 = Color(0xFFFF3D47);
+const Color color3 = Color(0xFFED3724);
+const Color color4 = Color(0xFF97292c);
 //*-Colores-*\\
 
 //*-Datos de la app-*\\
@@ -128,6 +126,24 @@ List<String> topicsToSub = [];
 List<String> previusConnections = [];
 List<String> adminDevices = [];
 List<String> alexaDevices = [];
+List<Map<String, String>> savedOrder = [];
+
+//*-Marcador para listas vacias intencionales-*\\
+const String intentionallyEmptyMarker = '__INTENTIONALLY_EMPTY__';
+
+//*-Control de estado de carga-*\\
+enum DeviceLoadState {
+  unknown,
+  loading,
+  newUser,
+  existingUserLoaded,
+  loadError
+}
+
+DeviceLoadState deviceLoadState = DeviceLoadState.unknown;
+DateTime? lastSuccessfulLoad;
+int loadRetryCount = 0;
+const int maxRetryAttempts = 3;
 List<MapEntry<String, String>> todosLosDispositivos = [];
 //*-Equipos registrados-*\\
 
@@ -147,6 +163,9 @@ Map<String, String> soundOfNotification = {};
 int? selectedSoundDomotica;
 int? selectedSoundDetector;
 int? selectedSoundTermometro;
+
+// StreamController para notificar cuando las cadenas terminan
+StreamController<String> cadenaCompletedController = StreamController<String>.broadcast();
 //*-Notifications-*\\
 
 //*-Relacionado al Alquiler temporario (Airbnb)-*\\
@@ -438,7 +457,6 @@ late FToast fToast;
 //*- Toast -*\\
 
 //*- Escenas -*\\
-Map<String, List<String>> groupsOfDevices = {};
 List<Map<String, dynamic>> eventosCreados = [];
 //*- Escenas -*\\
 
@@ -488,7 +506,7 @@ Widget contactInfo(int type) {
           // Contacto comercial
           Container(
             decoration: BoxDecoration(
-              color: color3,
+              color: color1,
               borderRadius: BorderRadius.circular(8.0),
               border: Border.all(color: color0),
             ),
@@ -571,7 +589,7 @@ Widget contactInfo(int type) {
           // Contacto técnico
           Container(
             decoration: BoxDecoration(
-              color: color3,
+              color: color1,
               borderRadius: BorderRadius.circular(8.0),
               border: Border.all(color: color0),
             ),
@@ -627,7 +645,7 @@ Widget contactInfo(int type) {
           // Customer service
           Container(
             decoration: BoxDecoration(
-              color: color3,
+              color: color1,
               borderRadius: BorderRadius.circular(8.0),
               border: Border.all(color: color0),
             ),
@@ -716,7 +734,7 @@ Widget contactInfo(int type) {
           // Contacto comercial
           Container(
             decoration: BoxDecoration(
-              color: color3,
+              color: color1,
               borderRadius: BorderRadius.circular(8.0),
               border: Border.all(color: color0),
             ),
@@ -799,7 +817,7 @@ Widget contactInfo(int type) {
           // Contacto técnico
           Container(
             decoration: BoxDecoration(
-              color: color3,
+              color: color1,
               borderRadius: BorderRadius.circular(8.0),
               border: Border.all(color: color0),
             ),
@@ -855,7 +873,7 @@ Widget contactInfo(int type) {
           // Customer service
           Container(
             decoration: BoxDecoration(
-              color: color3,
+              color: color1,
               borderRadius: BorderRadius.circular(8.0),
               border: Border.all(color: color0),
             ),
@@ -1022,9 +1040,9 @@ void showToast(String message) {
     padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(25.0),
-      color: color3,
+      color: color1,
       border: Border.all(
-        color: color6,
+        color: color4,
         width: 1.0,
       ),
     ),
@@ -1216,10 +1234,10 @@ void wifiText(BuildContext context) {
               }
 
               return AlertDialog(
-                backgroundColor: color3,
+                backgroundColor: color1,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20.0),
-                  side: const BorderSide(color: color6, width: 2.0),
+                  side: const BorderSide(color: color4, width: 2.0),
                 ),
                 title: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -1229,7 +1247,7 @@ void wifiText(BuildContext context) {
                         text: 'Estado de conexión: ',
                         style: TextStyle(
                           fontSize: 14,
-                          color: color1,
+                          color: color0,
                         ),
                       ),
                     ),
@@ -1253,7 +1271,7 @@ void wifiText(BuildContext context) {
                             text: 'Error: $errorMessage',
                             style: const TextStyle(
                               fontSize: 10,
-                              color: color1,
+                              color: color0,
                             ),
                           ),
                         ),
@@ -1263,7 +1281,7 @@ void wifiText(BuildContext context) {
                             text: 'Sintax:',
                             style: TextStyle(
                               fontSize: 10,
-                              color: color1,
+                              color: color0,
                             ),
                           ),
                         ),
@@ -1272,7 +1290,7 @@ void wifiText(BuildContext context) {
                             text: errorSintax,
                             style: const TextStyle(
                               fontSize: 10,
-                              color: color1,
+                              color: color0,
                             ),
                           ),
                         ),
@@ -1286,7 +1304,7 @@ void wifiText(BuildContext context) {
                               text: 'Red actual:',
                               style: TextStyle(
                                 fontSize: 20,
-                                color: color1,
+                                color: color0,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -1295,7 +1313,7 @@ void wifiText(BuildContext context) {
                             nameOfWifi,
                             style: const TextStyle(
                               fontSize: 20,
-                              color: color1,
+                              color: color0,
                             ),
                           ),
                         ],
@@ -1310,7 +1328,7 @@ void wifiText(BuildContext context) {
                           },
                           style: const ButtonStyle(
                             foregroundColor: WidgetStatePropertyAll(
-                              color1,
+                              color0,
                             ),
                           ),
                           child: const Row(
@@ -1326,7 +1344,7 @@ void wifiText(BuildContext context) {
                       if (android) ...[
                         _wifiNetworksList.isEmpty && _scanInProgress
                             ? const Center(
-                                child: CircularProgressIndicator(color: color1),
+                                child: CircularProgressIndicator(color: color0),
                               )
                             : SizedBox(
                                 width: double.maxFinite,
@@ -1361,12 +1379,12 @@ void wifiText(BuildContext context) {
                                               title: Text(
                                                 network.ssid,
                                                 style: const TextStyle(
-                                                    color: color1),
+                                                    color: color0),
                                               ),
-                                              backgroundColor: color3,
-                                              collapsedBackgroundColor: color3,
-                                              textColor: color1,
-                                              iconColor: color1,
+                                              backgroundColor: color1,
+                                              collapsedBackgroundColor: color1,
+                                              textColor: color0,
+                                              iconColor: color0,
                                               children: [
                                                 Padding(
                                                   padding: const EdgeInsets
@@ -1377,7 +1395,7 @@ void wifiText(BuildContext context) {
                                                     children: [
                                                       const Icon(
                                                         Icons.lock,
-                                                        color: color1,
+                                                        color: color0,
                                                         size: 20,
                                                       ),
                                                       const SizedBox(
@@ -1388,7 +1406,7 @@ void wifiText(BuildContext context) {
                                                               wifiPassNode,
                                                           style:
                                                               const TextStyle(
-                                                            color: color1,
+                                                            color: color0,
                                                           ),
                                                           decoration:
                                                               InputDecoration(
@@ -1404,7 +1422,7 @@ void wifiText(BuildContext context) {
                                                               borderSide:
                                                                   BorderSide(
                                                                       color:
-                                                                          color1),
+                                                                          color0),
                                                             ),
                                                             focusedBorder:
                                                                 const UnderlineInputBorder(
@@ -1427,7 +1445,7 @@ void wifiText(BuildContext context) {
                                                                         .visibility
                                                                     : Icons
                                                                         .visibility_off,
-                                                                color: color1,
+                                                                color: color0,
                                                               ),
                                                               onPressed: () {
                                                                 setState(() {
@@ -1471,22 +1489,22 @@ void wifiText(BuildContext context) {
                                 children: [
                                   const Icon(
                                     Icons.wifi,
-                                    color: color1,
+                                    color: color0,
                                   ),
                                   const SizedBox(width: 8.0),
                                   Expanded(
                                     child: TextField(
-                                      cursorColor: color1,
-                                      style: const TextStyle(color: color1),
+                                      cursorColor: color0,
+                                      style: const TextStyle(color: color0),
                                       decoration: const InputDecoration(
                                         hintText: 'Agregar WiFi',
                                         hintStyle:
                                             TextStyle(color: Colors.grey),
                                         enabledBorder: UnderlineInputBorder(
-                                          borderSide: BorderSide(color: color2),
+                                          borderSide: BorderSide(color: color0),
                                         ),
                                         focusedBorder: UnderlineInputBorder(
-                                          borderSide: BorderSide(color: color2),
+                                          borderSide: BorderSide(color: color0),
                                         ),
                                       ),
                                       onChanged: (value) {
@@ -1501,31 +1519,31 @@ void wifiText(BuildContext context) {
                                 children: [
                                   const Icon(
                                     Icons.lock,
-                                    color: color1,
+                                    color: color0,
                                   ),
                                   const SizedBox(width: 8.0),
                                   Expanded(
                                     child: TextField(
-                                      cursorColor: color1,
-                                      style: const TextStyle(color: color1),
+                                      cursorColor: color0,
+                                      style: const TextStyle(color: color0),
                                       decoration: InputDecoration(
                                         hintText: 'Contraseña',
                                         hintStyle:
                                             const TextStyle(color: Colors.grey),
                                         enabledBorder:
                                             const UnderlineInputBorder(
-                                          borderSide: BorderSide(color: color1),
+                                          borderSide: BorderSide(color: color0),
                                         ),
                                         focusedBorder:
                                             const UnderlineInputBorder(
-                                          borderSide: BorderSide(color: color1),
+                                          borderSide: BorderSide(color: color0),
                                         ),
                                         suffixIcon: IconButton(
                                           icon: Icon(
                                             obscureText
                                                 ? Icons.visibility
                                                 : Icons.visibility_off,
-                                            color: color1,
+                                            color: color0,
                                           ),
                                           onPressed: () {
                                             setState(() {
@@ -1556,7 +1574,7 @@ void wifiText(BuildContext context) {
                       IconButton(
                         icon: const Icon(
                           Icons.qr_code,
-                          color: color1,
+                          color: color0,
                         ),
                         iconSize: 30,
                         onPressed: () async {
@@ -1578,7 +1596,7 @@ void wifiText(BuildContext context) {
                               child: const Text(
                                 'Agregar\nRed',
                                 style: TextStyle(
-                                  color: color1,
+                                  color: color0,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
@@ -1594,7 +1612,7 @@ void wifiText(BuildContext context) {
                         child: const Text(
                           'Conectar',
                           style: TextStyle(
-                            color: color1,
+                            color: color0,
                           ),
                         ),
                         onPressed: () {
@@ -1628,17 +1646,17 @@ void wifiText(BuildContext context) {
 
             Widget buildAddNetworkView() {
               return AlertDialog(
-                backgroundColor: color3,
+                backgroundColor: color1,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20.0),
-                  side: const BorderSide(color: color6, width: 2.0),
+                  side: const BorderSide(color: color4, width: 2.0),
                 ),
                 title: Row(
                   children: [
                     IconButton(
                       icon: const Icon(
                         Icons.arrow_back,
-                        color: color1,
+                        color: color0,
                       ),
                       onPressed: () {
                         setState(() {
@@ -1649,7 +1667,7 @@ void wifiText(BuildContext context) {
                     const Text(
                       'Agregar red\nmanualmente',
                       style: TextStyle(
-                        color: color1,
+                        color: color0,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1665,21 +1683,21 @@ void wifiText(BuildContext context) {
                         children: [
                           const Icon(
                             Icons.wifi,
-                            color: color1,
+                            color: color0,
                           ),
                           const SizedBox(width: 8.0),
                           Expanded(
                             child: TextField(
-                              cursorColor: color1,
-                              style: const TextStyle(color: color1),
+                              cursorColor: color0,
+                              style: const TextStyle(color: color0),
                               decoration: const InputDecoration(
                                 hintText: 'Agregar WiFi',
                                 hintStyle: TextStyle(color: Colors.grey),
                                 enabledBorder: UnderlineInputBorder(
-                                  borderSide: BorderSide(color: color2),
+                                  borderSide: BorderSide(color: color0),
                                 ),
                                 focusedBorder: UnderlineInputBorder(
-                                  borderSide: BorderSide(color: color1),
+                                  borderSide: BorderSide(color: color0),
                                 ),
                               ),
                               onChanged: (value) {
@@ -1694,28 +1712,28 @@ void wifiText(BuildContext context) {
                         children: [
                           const Icon(
                             Icons.lock,
-                            color: color1,
+                            color: color0,
                           ),
                           const SizedBox(width: 8.0),
                           Expanded(
                             child: TextField(
-                              cursorColor: color1,
-                              style: const TextStyle(color: color1),
+                              cursorColor: color0,
+                              style: const TextStyle(color: color0),
                               decoration: InputDecoration(
                                 hintText: 'Contraseña',
                                 hintStyle: const TextStyle(color: Colors.grey),
                                 enabledBorder: const UnderlineInputBorder(
-                                  borderSide: BorderSide(color: color1),
+                                  borderSide: BorderSide(color: color0),
                                 ),
                                 focusedBorder: const UnderlineInputBorder(
-                                  borderSide: BorderSide(color: color1),
+                                  borderSide: BorderSide(color: color0),
                                 ),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     obscureText
                                         ? Icons.visibility
                                         : Icons.visibility_off,
-                                    color: color1,
+                                    color: color0,
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -1749,12 +1767,12 @@ void wifiText(BuildContext context) {
                     },
                     style: ButtonStyle(
                       backgroundColor: WidgetStateProperty.all<Color>(
-                        color3,
+                        color1,
                       ),
                     ),
                     child: const Text(
                       'Agregar',
-                      style: TextStyle(color: color1),
+                      style: TextStyle(color: color0),
                     ),
                   ),
                 ],
@@ -2078,6 +2096,21 @@ Future<void> handleNotifications(RemoteMessage message) async {
       String displayMessage =
           'A las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
       showNotification(displayTitle, displayMessage, 'noti');
+    } else if (caso == 'cadena') {
+      String cadenaName = message.data['name'] ?? 'Cadena';
+      final now = DateTime.now();
+      String displayTitle = '¡La cadena $cadenaName terminó de ejecutarse!';
+      String displayMessage =
+          'A las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+      showNotification(displayTitle, displayMessage, 'noti');
+      
+      // Remover la flag de ejecución de la cadena
+      await removeCadenaExecuting(cadenaName, currentUserEmail);
+      printLog.i('Flag de ejecución removida para cadena: $cadenaName');
+      
+      // Notificar a los listeners que la cadena terminó (para UI en tiempo real)
+      cadenaCompletedController.add(cadenaName);
+      printLog.i('Evento de cadena completada enviado para: $cadenaName');
     }
   } catch (e, s) {
     printLog.e("Error: $e");
@@ -2619,7 +2652,7 @@ void showAlertDialog(BuildContext context, bool dismissible, Widget? title,
                     ],
                   ),
                   child: Card(
-                    color: color3,
+                    color: color1,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30.0),
                     ),
@@ -2667,7 +2700,7 @@ void showAlertDialog(BuildContext context, bool dismissible, Widget? title,
                                           child: TextButton(
                                             style: TextButton.styleFrom(
                                               foregroundColor: color0,
-                                              backgroundColor: color3,
+                                              backgroundColor: color1,
                                             ),
                                             onPressed: widget.onPressed,
                                             child: widget.child!,
@@ -2690,7 +2723,7 @@ void showAlertDialog(BuildContext context, bool dismissible, Widget? title,
                             shadowColor: Colors.black.withValues(alpha: 0.4),
                             child: CircleAvatar(
                               radius: 50,
-                              backgroundColor: color3,
+                              backgroundColor: color1,
                               child: Image.asset(
                                 'assets/branch/dragon.png',
                                 width: 60,
@@ -2735,10 +2768,10 @@ void showDisconnectDialog(BuildContext ctx) {
     barrierDismissible: false,
     builder: (context) {
       return AlertDialog(
-        backgroundColor: color3,
+        backgroundColor: color1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20.0),
-          side: const BorderSide(color: color6, width: 2.0),
+          side: const BorderSide(color: color4, width: 2.0),
         ),
         content: Row(
           children: [
@@ -2748,7 +2781,7 @@ void showDisconnectDialog(BuildContext ctx) {
                 margin: const EdgeInsets.only(left: 15),
                 child: const Text(
                   "Desconectando...",
-                  style: TextStyle(color: color1),
+                  style: TextStyle(color: color0),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -2905,10 +2938,10 @@ Future<void> showUpdateDialog(BuildContext ctx) {
       return StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) {
           return AlertDialog(
-            backgroundColor: color3,
+            backgroundColor: color1,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20.0),
-              side: const BorderSide(color: color6, width: 2.0),
+              side: const BorderSide(color: color4, width: 2.0),
             ),
             title: Text(
               'Actualmente tu equipo ${nicknamesMap[deviceName] ?? deviceName} esta desactualizado',
@@ -2928,7 +2961,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                     const Icon(
                       Icons.error,
                       size: 20,
-                      color: color6,
+                      color: color4,
                     ),
                     const SizedBox(
                       height: 20,
@@ -2993,7 +3026,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                 TextButton(
                   child: Text(
                     'Cerrar',
-                    style: GoogleFonts.poppins(color: color5),
+                    style: GoogleFonts.poppins(color: color3),
                   ),
                   onPressed: () {
                     Navigator.pop(ctx);
@@ -3004,7 +3037,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                 TextButton(
                   child: Text(
                     'Mas tarde',
-                    style: GoogleFonts.poppins(color: color5),
+                    style: GoogleFonts.poppins(color: color3),
                   ),
                   onPressed: () {
                     Navigator.pop(ctx);
@@ -3013,7 +3046,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                 TextButton(
                   child: Text(
                     'Actualizar ahora',
-                    style: GoogleFonts.poppins(color: color5),
+                    style: GoogleFonts.poppins(color: color3),
                   ),
                   onPressed: () async {
                     setState(() => updating = true);
@@ -4631,9 +4664,9 @@ class AccessDeniedScreen extends StatelessWidget {
             return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20.0),
-                side: const BorderSide(color: color6, width: 2.0),
+                side: const BorderSide(color: color4, width: 2.0),
               ),
-              backgroundColor: color3,
+              backgroundColor: color1,
               content: Row(
                 children: [
                   Image.asset('assets/branch/dragon.gif',
@@ -4662,14 +4695,14 @@ class AccessDeniedScreen extends StatelessWidget {
         return;
       },
       child: Scaffold(
-        backgroundColor: color1,
+        backgroundColor: color0,
         body: SafeArea(
           child: Column(
             children: [
               Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: color3),
+                  icon: const Icon(Icons.arrow_back, color: color1),
                   onPressed: () {
                     showDialog(
                       context: context,
@@ -4678,9 +4711,9 @@ class AccessDeniedScreen extends StatelessWidget {
                         return AlertDialog(
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20.0),
-                            side: const BorderSide(color: color6, width: 2.0),
+                            side: const BorderSide(color: color4, width: 2.0),
                           ),
-                          backgroundColor: color3,
+                          backgroundColor: color1,
                           content: Row(
                             children: [
                               Image.asset('assets/branch/dragon.gif',
@@ -4717,14 +4750,14 @@ class AccessDeniedScreen extends StatelessWidget {
                   const Icon(
                     Icons.dangerous,
                     size: 80,
-                    color: color3,
+                    color: color1,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'No eres dueño de este equipo',
                     style: GoogleFonts.poppins(
                       fontSize: 24,
-                      color: color3,
+                      color: color1,
                       fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,
@@ -4739,7 +4772,7 @@ class AccessDeniedScreen extends StatelessWidget {
                   text: TextSpan(
                     style: GoogleFonts.poppins(
                       fontSize: 16,
-                      color: color3,
+                      color: color1,
                     ),
                     children: [
                       const TextSpan(text: 'Si crees que es un error,\n'),
@@ -4747,7 +4780,7 @@ class AccessDeniedScreen extends StatelessWidget {
                         text: 'contáctanos por correo',
                         style: const TextStyle(
                           decoration: TextDecoration.underline,
-                          color: color3,
+                          color: color1,
                         ),
                         recognizer: TapGestureRecognizer()
                           ..onTap = () {
@@ -4770,7 +4803,7 @@ class AccessDeniedScreen extends StatelessWidget {
                         text: 'WhatsApp',
                         style: const TextStyle(
                           decoration: TextDecoration.underline,
-                          color: color3,
+                          color: color1,
                         ),
                         recognizer: TapGestureRecognizer()
                           ..onTap = () {
@@ -4816,9 +4849,9 @@ class DeviceInUseScreen extends StatelessWidget {
             return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20.0),
-                side: const BorderSide(color: color6, width: 2.0),
+                side: const BorderSide(color: color4, width: 2.0),
               ),
-              backgroundColor: color3,
+              backgroundColor: color1,
               content: Row(
                 children: [
                   Image.asset('assets/branch/dragon.gif',
@@ -4845,14 +4878,14 @@ class DeviceInUseScreen extends StatelessWidget {
         return;
       },
       child: Scaffold(
-        backgroundColor: color1,
+        backgroundColor: color0,
         body: SafeArea(
           child: Column(
             children: [
               Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: color3),
+                  icon: const Icon(Icons.arrow_back, color: color1),
                   onPressed: () {
                     showDialog(
                       context: context,
@@ -4861,9 +4894,9 @@ class DeviceInUseScreen extends StatelessWidget {
                         return AlertDialog(
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20.0),
-                            side: const BorderSide(color: color6, width: 2.0),
+                            side: const BorderSide(color: color4, width: 2.0),
                           ),
-                          backgroundColor: color3,
+                          backgroundColor: color1,
                           content: Row(
                             children: [
                               Image.asset('assets/branch/dragon.gif',
@@ -4898,14 +4931,14 @@ class DeviceInUseScreen extends StatelessWidget {
                   const Icon(
                     Icons.dangerous,
                     size: 80,
-                    color: color3,
+                    color: color1,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'Actualmente hay un usuario\nusando el equipo...',
                     style: GoogleFonts.poppins(
                       fontSize: 24,
-                      color: color3,
+                      color: color1,
                       fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,
@@ -4917,7 +4950,7 @@ class DeviceInUseScreen extends StatelessWidget {
                     'Espere a que\nse desconecte\npara poder usarlo',
                     style: GoogleFonts.poppins(
                       fontSize: 24,
-                      color: color3,
+                      color: color1,
                       fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,
@@ -4959,9 +4992,9 @@ class LabProcessNotFinished extends StatelessWidget {
             return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20.0),
-                side: const BorderSide(color: color6, width: 2.0),
+                side: const BorderSide(color: color4, width: 2.0),
               ),
-              backgroundColor: color3,
+              backgroundColor: color1,
               content: Row(
                 children: [
                   Image.asset('assets/branch/dragon.gif',
@@ -4988,14 +5021,14 @@ class LabProcessNotFinished extends StatelessWidget {
         return;
       },
       child: Scaffold(
-        backgroundColor: color1,
+        backgroundColor: color0,
         body: SafeArea(
           child: Column(
             children: [
               Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: color3),
+                  icon: const Icon(Icons.arrow_back, color: color1),
                   onPressed: () {
                     showDialog(
                       context: context,
@@ -5004,9 +5037,9 @@ class LabProcessNotFinished extends StatelessWidget {
                         return AlertDialog(
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20.0),
-                            side: const BorderSide(color: color6, width: 2.0),
+                            side: const BorderSide(color: color4, width: 2.0),
                           ),
-                          backgroundColor: color3,
+                          backgroundColor: color1,
                           content: Row(
                             children: [
                               Image.asset('assets/branch/dragon.gif',
@@ -5055,7 +5088,7 @@ class LabProcessNotFinished extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: const BoxDecoration(
-                              color: color4,
+                              color: color2,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -5071,16 +5104,16 @@ class LabProcessNotFinished extends StatelessWidget {
                             style: poppinsStyle.copyWith(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: color4,
+                              color: color2,
                             ),
                           ),
                           const SizedBox(height: 16),
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: color1,
+                              color: color0,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: color2, width: 2),
+                              border: Border.all(color: color0, width: 2),
                             ),
                             child: Column(
                               children: [
@@ -5089,7 +5122,7 @@ class LabProcessNotFinished extends StatelessWidget {
                                   children: [
                                     const Icon(
                                       Icons.warning_amber,
-                                      color: color4,
+                                      color: color2,
                                       size: 24,
                                     ),
                                     const SizedBox(width: 12),
@@ -5099,7 +5132,7 @@ class LabProcessNotFinished extends StatelessWidget {
                                         style: poppinsStyle.copyWith(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w500,
-                                          color: color3,
+                                          color: color1,
                                         ),
                                       ),
                                     ),
@@ -5111,7 +5144,7 @@ class LabProcessNotFinished extends StatelessWidget {
                                   children: [
                                     const Icon(
                                       Icons.assignment_return,
-                                      color: color4,
+                                      color: color2,
                                       size: 24,
                                     ),
                                     const SizedBox(width: 12),
@@ -5121,7 +5154,7 @@ class LabProcessNotFinished extends StatelessWidget {
                                         style: poppinsStyle.copyWith(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w500,
-                                          color: color3,
+                                          color: color1,
                                         ),
                                       ),
                                     ),
@@ -5155,7 +5188,7 @@ class ImageManager {
       BuildContext context, String deviceName, VoidCallback onImageChanged) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: color3,
+      backgroundColor: color1,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(20),
@@ -5380,7 +5413,7 @@ class ClosingSessionScreenState extends State<ClosingSessionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: color3,
+      backgroundColor: color1,
       body: Center(
         child: Stack(
           alignment: AlignmentDirectional.center,
@@ -5401,7 +5434,7 @@ class ClosingSessionScreenState extends State<ClosingSessionScreen> {
                   text: TextSpan(
                     text: 'Cerrando sesión',
                     style: const TextStyle(
-                      color: color1,
+                      color: color0,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -5409,7 +5442,7 @@ class ClosingSessionScreenState extends State<ClosingSessionScreen> {
                       TextSpan(
                         text: _dots,
                         style: const TextStyle(
-                          color: color1,
+                          color: color0,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -5794,7 +5827,7 @@ class Tutorial {
                   right: 32,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: color6,
+                      backgroundColor: color4,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
@@ -6362,7 +6395,7 @@ class NumberWheel extends StatelessWidget {
   });
 
   static const TextStyle wheelTextStyle = TextStyle(
-    color: color1,
+    color: color0,
     fontSize: 36,
     fontWeight: FontWeight.bold,
   );

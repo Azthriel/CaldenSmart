@@ -85,7 +85,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: color3,
+      color: color1,
       child: Padding(
         padding: const EdgeInsets.all(10.0),
         child: Column(
@@ -99,7 +99,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                     opacity: currentStep == 0 ? 1.0 : 0.0,
                     child: IconButton(
                       icon: const Icon(Icons.arrow_back),
-                      color: color1,
+                      color: color0,
                       onPressed: currentStep == 0
                           ? () {
                               if (widget.onBackToMain != null) {
@@ -114,7 +114,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                       child: Text(
                         'Control por cadena',
                         style: GoogleFonts.poppins(
-                          color: color1,
+                          color: color0,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -136,17 +136,17 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                   Container(
                       width: 30,
                       height: 2,
-                      color: currentStep >= 1 ? color6 : color0),
+                      color: currentStep >= 1 ? color4 : color0),
                   _buildStepIndicator(1, 'Configuración', currentStep >= 1),
                   Container(
                       width: 30,
                       height: 2,
-                      color: currentStep >= 2 ? color6 : color0),
+                      color: currentStep >= 2 ? color4 : color0),
                   _buildStepIndicator(2, 'Gestión de Pasos', currentStep >= 2),
                   Container(
                       width: 30,
                       height: 2,
-                      color: currentStep >= 3 ? color6 : color0),
+                      color: currentStep >= 3 ? color4 : color0),
                   _buildStepIndicator(3, 'Nombre', currentStep >= 3),
                 ],
               ),
@@ -175,7 +175,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                           }),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: color0,
-                            foregroundColor: color3,
+                            foregroundColor: color1,
                             padding: const EdgeInsets.symmetric(vertical: 12.0),
                           ),
                           child: const Text('Anterior'),
@@ -191,8 +191,8 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                           label: const Text('Agregar Paso'),
                           onPressed: _addNewStep,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: color6,
-                            foregroundColor: color1,
+                            backgroundColor: color4,
+                            foregroundColor: color0,
                             padding: const EdgeInsets.symmetric(vertical: 12.0),
                           ),
                         ),
@@ -208,9 +208,9 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                             _canContinue() ? () => _handleContinue() : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: color0,
-                          foregroundColor: color3,
+                          foregroundColor: color1,
                           disabledForegroundColor:
-                              color3.withValues(alpha: 0.5),
+                              color1.withValues(alpha: 0.5),
                           disabledBackgroundColor: color0,
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
                         ),
@@ -233,14 +233,14 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
           width: 24,
           height: 24,
           decoration: BoxDecoration(
-            color: isActive ? color6 : color0,
+            color: isActive ? color4 : color0,
             shape: BoxShape.circle,
           ),
           child: Center(
             child: Text(
               '${step + 1}',
               style: GoogleFonts.poppins(
-                color: color3,
+                color: color1,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
@@ -251,7 +251,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
         Text(
           label,
           style: GoogleFonts.poppins(
-            color: color1,
+            color: color0,
             fontSize: 9,
           ),
         ),
@@ -268,7 +268,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
             Center(
               child: Text(
                 'Selecciona los dispositivos para el Paso ${currentStepIndex + 1}',
-                style: GoogleFonts.poppins(color: color1, fontSize: 16),
+                style: GoogleFonts.poppins(color: color0, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -288,7 +288,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
             Center(
               child: Text(
                 'Configura las acciones y delay del Paso ${currentStepIndex + 1}',
-                style: GoogleFonts.poppins(color: color1, fontSize: 16),
+                style: GoogleFonts.poppins(color: color0, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -299,7 +299,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                 borderRadius: BorderRadius.circular(16),
               ),
               margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              color: color1,
+              color: color0,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -307,13 +307,13 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.schedule, color: color3, size: 20),
+                        const Icon(Icons.schedule, color: color1, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Delay antes de ejecutar este paso',
                             style: GoogleFonts.poppins(
-                              color: color3,
+                              color: color1,
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                             ),
@@ -333,15 +333,15 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                             textAlign: TextAlign.center,
                             decoration: InputDecoration(
                               filled: true,
-                              fillColor: color2,
+                              fillColor: color0,
                               hintText: '0',
                               hintStyle: GoogleFonts.poppins(
-                                color: color3.withAlpha(150),
+                                color: color1.withAlpha(150),
                                 fontSize: 12,
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: color6),
+                                borderSide: const BorderSide(color: color4),
                               ),
                               contentPadding: const EdgeInsets.symmetric(
                                 vertical: 8,
@@ -391,11 +391,11 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                                   : Duration(minutes: currentValue);
                             }),
                             borderRadius: BorderRadius.circular(12),
-                            selectedColor: color1,
-                            fillColor: color4.withValues(alpha: 0.8),
-                            color: color3,
-                            borderColor: color4,
-                            selectedBorderColor: color4,
+                            selectedColor: color0,
+                            fillColor: color2.withValues(alpha: 0.8),
+                            color: color1,
+                            borderColor: color2,
+                            selectedBorderColor: color2,
                             constraints: const BoxConstraints(
                               minHeight: 32,
                               minWidth: 40,
@@ -434,7 +434,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                     ),
                     margin:
                         const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                    color: color1,
+                    color: color0,
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
@@ -443,13 +443,13 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                           Row(
                             children: [
                               const Icon(Icons.devices_other,
-                                  color: color3, size: 20),
+                                  color: color1, size: 20),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   nicknamesMap[device] ?? device,
                                   style: GoogleFonts.poppins(
-                                    color: color3,
+                                    color: color1,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -468,15 +468,15 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                                     i == 0 ? true : false;
                               }),
                               borderRadius: BorderRadius.circular(12),
-                              selectedColor: color1,
+                              selectedColor: color0,
                               fillColor: isOn
                                   ? Colors.green.withValues(alpha: 0.8)
-                                  : color5.withValues(alpha: 0.8),
-                              color: color3,
-                              borderColor: color3,
+                                  : color3.withValues(alpha: 0.8),
+                              color: color1,
+                              borderColor: color1,
                               selectedBorderColor: isOn
                                   ? Colors.green.withValues(alpha: 0.8)
-                                  : color5.withValues(alpha: 0.8),
+                                  : color3.withValues(alpha: 0.8),
                               constraints: BoxConstraints(
                                 minHeight: 36,
                                 minWidth:
@@ -512,7 +512,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
             Center(
               child: Text(
                 'Escribe el nombre de la cascada',
-                style: GoogleFonts.poppins(color: color1, fontSize: 16),
+                style: GoogleFonts.poppins(color: color0, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -521,15 +521,15 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
               controller: title,
               decoration: InputDecoration(
                 hintText: 'Ej: Cascada de luces',
-                hintStyle: GoogleFonts.poppins(color: color3),
+                hintStyle: GoogleFonts.poppins(color: color1),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16.0),
-                  borderSide: const BorderSide(color: color6),
+                  borderSide: const BorderSide(color: color4),
                 ),
                 filled: true,
-                fillColor: color1,
+                fillColor: color0,
               ),
-              style: GoogleFonts.poppins(color: color3),
+              style: GoogleFonts.poppins(color: color1),
             ),
             const SizedBox(height: 16),
           ],
@@ -547,7 +547,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
           child: Text(
             'Gestión de Pasos de la Cadena',
             style: GoogleFonts.poppins(
-                color: color1, fontSize: 16, fontWeight: FontWeight.bold),
+                color: color0, fontSize: 16, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
         ),
@@ -558,7 +558,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
           Text(
             'Pasos configurados:',
             style: GoogleFonts.poppins(
-                color: color1, fontSize: 14, fontWeight: FontWeight.w600),
+                color: color0, fontSize: 14, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Flexible(
@@ -571,8 +571,10 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                   final paso = pasosCadena[index];
                   final devices = paso['devices'] as List<dynamic>;
                   final actions = paso['actions'] as Map<String, dynamic>;
-                  final stepDelay = paso['stepDelay'] as Duration? ?? Duration.zero;
-                  final stepDelayUnit = paso['stepDelayUnit'] as String? ?? 'seg';
+                  final stepDelay =
+                      paso['stepDelay'] as Duration? ?? Duration.zero;
+                  final stepDelayUnit =
+                      paso['stepDelayUnit'] as String? ?? 'seg';
 
                   // Debug printLog.i para ver qué valores tenemos
                   printLog.i('=== DEBUG DELAY ===');
@@ -612,7 +614,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    color: color1,
+                    color: color0,
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
@@ -620,12 +622,12 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            color1,
-                            color1.withValues(alpha: 0.95),
+                            color0,
+                            color0.withValues(alpha: 0.95),
                           ],
                         ),
                         border: Border.all(
-                          color: color6.withValues(alpha: 0.2),
+                          color: color4.withValues(alpha: 0.2),
                           width: 1,
                         ),
                       ),
@@ -642,8 +644,8 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: [
-                                        color6,
-                                        color6.withValues(alpha: 0.8)
+                                        color4,
+                                        color4.withValues(alpha: 0.8)
                                       ],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
@@ -651,7 +653,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                                     borderRadius: BorderRadius.circular(20),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: color6.withValues(alpha: 0.3),
+                                        color: color4.withValues(alpha: 0.3),
                                         blurRadius: 4,
                                         offset: const Offset(0, 2),
                                       ),
@@ -662,14 +664,14 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                                     children: [
                                       const Icon(
                                         Icons.play_arrow,
-                                        color: color1,
+                                        color: color0,
                                         size: 16,
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
                                         'Paso ${index + 1}',
                                         style: GoogleFonts.poppins(
-                                          color: color1,
+                                          color: color0,
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -683,11 +685,11 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                                 // Botones de acción en la esquina superior derecha
                                 Container(
                                   decoration: BoxDecoration(
-                                    color: color6,
+                                    color: color4,
                                     borderRadius: BorderRadius.circular(8),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: color6.withValues(alpha: 0.3),
+                                        color: color4.withValues(alpha: 0.3),
                                         blurRadius: 2,
                                         offset: const Offset(0, 1),
                                       ),
@@ -701,7 +703,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                                       child: Icon(
                                         Icons.edit,
                                         size: 16,
-                                        color: color1,
+                                        color: color0,
                                       ),
                                     ),
                                   ),
@@ -911,7 +913,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                                             Text(
                                               displayName,
                                               style: GoogleFonts.poppins(
-                                                color: color3,
+                                                color: color1,
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w500,
                                                 height: 1.2,
@@ -1047,7 +1049,9 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
       final deviceDATA = globalDATA[deviceKey] ?? {};
       final owner = deviceDATA['owner'] ?? '';
       final admin = deviceDATA['secondary_admin'] ?? [];
-      return owner == '' || owner == currentUserEmail || admin.contains(currentUserEmail);
+      return owner == '' ||
+          owner == currentUserEmail ||
+          admin.contains(currentUserEmail);
     }).toList();
 
     if (validDevices.length < 2) {
@@ -1099,11 +1103,11 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
         margin: const EdgeInsets.only(bottom: 8.0),
         decoration: BoxDecoration(
           color: isEquipoSelected
-              ? color6.withValues(alpha: 0.1)
+              ? color4.withValues(alpha: 0.1)
               : color0.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8.0),
           border: Border.all(
-            color: isEquipoSelected ? color6 : color0,
+            color: isEquipoSelected ? color4 : color0,
             width: 1.0,
           ),
         ),
@@ -1155,7 +1159,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                           style: GoogleFonts.poppins(color: color0),
                         ),
                         value: isChecked,
-                        activeColor: color6,
+                        activeColor: color4,
                         onChanged: (value) {
                           setState(() {
                             if (value == true) {
@@ -1174,7 +1178,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                   title: Text(displayName,
                       style: GoogleFonts.poppins(color: color0)),
                   value: tempDeviceGroup.contains(equipo),
-                  activeColor: color6,
+                  activeColor: color4,
                   onChanged: (value) {
                     setState(() {
                       if (value == true) {
@@ -1191,7 +1195,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                 title: Text(displayName,
                     style: GoogleFonts.poppins(color: color0)),
                 value: tempDeviceGroup.contains(equipo),
-                activeColor: color6,
+                activeColor: color4,
                 onChanged: (value) {
                   setState(() {
                     if (value == true) {
@@ -1270,12 +1274,10 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
 
     printLog.d("A dynamo se envia: $stepsToDynamo");
 
-    putEventoControlPorCadena(
-        currentUserEmail, title.text.trim(), stepsToDynamo);
-
-    eventosCreados.add({
+    // Crear el evento y agregarlo a eventosCreados
+    final cadenaEvent = {
       'evento': 'cadena',
-      'title': title.text,
+      'title': title.text.trim(),
       'deviceGroup': allDevices,
       'pasos': pasosCadena
           .map((paso) => {
@@ -1285,8 +1287,18 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                 'stepDelayUnit': paso['stepDelayUnit'] as String,
               })
           .toList(),
-    });
+    };
+    
+    eventosCreados.add(cadenaEvent);
 
+    todosLosDispositivos.add(MapEntry(
+      cadenaEvent['title'] as String? ?? 'Cadena',
+      (cadenaEvent['deviceGroup'] as List<dynamic>).join(','),
+    ));
+
+    // Guardar en DynamoDB
+    putEventoControlPorCadena(
+        currentUserEmail, title.text.trim(), stepsToDynamo);
     putEventos(currentUserEmail, eventosCreados);
 
     _initializeData();

@@ -504,26 +504,26 @@ class WelcomePageState extends State<WelcomePage>
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
-      cursorColor: color3,
+      cursorColor: color1,
       decoration: InputDecoration(
         hintText: hintText,
-        prefixIcon: Icon(icon, color: color3),
+        prefixIcon: Icon(icon, color: color1),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: color1.withValues(alpha: 0.5),
+        fillColor: color0.withValues(alpha: 0.5),
         contentPadding:
             const EdgeInsets.symmetric(vertical: 15.0, horizontal: 20.0),
-        hintStyle: TextStyle(color: color3.withValues(alpha: 0.7)),
+        hintStyle: TextStyle(color: color1.withValues(alpha: 0.7)),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30.0),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30.0),
-          borderSide: const BorderSide(color: color3),
+          borderSide: const BorderSide(color: color1),
         ),
       ),
-      style: const TextStyle(color: color3),
+      style: const TextStyle(color: color1),
       validator: validator,
     );
   }

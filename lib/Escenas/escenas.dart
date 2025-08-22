@@ -101,7 +101,7 @@ class EscenasPageState extends State<EscenasPage> {
     List<Map<String, dynamic>>? pasosCadena,
     required VoidCallback onDelete,
   }) {
-    printLog.i('aca estamos revisando $devicesActions', color: 'verde');
+    // printLog.i('aca estamos revisando $devicesActions', color: 'verde');
     String formatDays(List<String> days) {
       if (days.isEmpty) return 'No hay días seleccionados';
       if (days.length == 1) return days.first;
@@ -143,7 +143,7 @@ class EscenasPageState extends State<EscenasPage> {
                     const Icon(
                       HugeIcons.strokeRoundedSettings02,
                       size: 20,
-                      color: color6,
+                      color: color4,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -163,7 +163,7 @@ class EscenasPageState extends State<EscenasPage> {
                   final pasoIndex = entry.key;
                   final paso = entry.value;
                   final devices = paso['devices'] as List<dynamic>? ?? [];
-                  if(paso['actions'].runtimeType == String) {
+                  if (paso['actions'].runtimeType == String) {
                     paso['actions'] = parseMapString(paso['actions']);
                   }
                   final actions =
@@ -191,10 +191,10 @@ class EscenasPageState extends State<EscenasPage> {
                     margin: const EdgeInsets.only(bottom: 16),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: color6.withValues(alpha: 0.1),
+                      color: color4.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: color6.withValues(alpha: 0.3),
+                        color: color4.withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),
@@ -208,14 +208,14 @@ class EscenasPageState extends State<EscenasPage> {
                               width: 32,
                               height: 32,
                               decoration: BoxDecoration(
-                                color: color6,
+                                color: color4,
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Center(
                                 child: Text(
                                   '${pasoIndex + 1}',
                                   style: GoogleFonts.poppins(
-                                    color: color1,
+                                    color: color0,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                   ),
@@ -253,7 +253,7 @@ class EscenasPageState extends State<EscenasPage> {
                         const SizedBox(height: 12),
                         // Dispositivos del paso
                         ...devices.map((device) {
-                          if(actions[device].runtimeType == String) {
+                            if (actions[device].runtimeType == String) {
                             actions[device] = actions[device] == 'true';
                           }
                           final action = actions[device] ?? false;
@@ -270,7 +270,7 @@ class EscenasPageState extends State<EscenasPage> {
                           final actionIcon = action
                               ? HugeIcons.strokeRoundedPlug01
                               : HugeIcons.strokeRoundedPlugSocket;
-                          final actionColor = action ? Colors.green : color6;
+                          final actionColor = action ? Colors.green : color4;
 
                           return Container(
                             margin: const EdgeInsets.only(bottom: 8),
@@ -353,7 +353,7 @@ class EscenasPageState extends State<EscenasPage> {
                   const Icon(
                     HugeIcons.strokeRoundedSettings02,
                     size: 20,
-                    color: color6,
+                    color: color4,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -389,7 +389,7 @@ class EscenasPageState extends State<EscenasPage> {
                 final actionIcon = action
                     ? HugeIcons.strokeRoundedPlug01
                     : HugeIcons.strokeRoundedPlugSocket;
-                final actionColor = action ? Colors.green : color6;
+                final actionColor = action ? Colors.green : color4;
 
                 String actionText;
                 if (delay > const Duration(seconds: 0)) {
@@ -417,14 +417,14 @@ class EscenasPageState extends State<EscenasPage> {
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: color6,
+                          color: color4,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Center(
                           child: Text(
                             '${index + 1}',
                             style: GoogleFonts.poppins(
-                              color: color1,
+                              color: color0,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
@@ -504,7 +504,7 @@ class EscenasPageState extends State<EscenasPage> {
                       const Icon(
                         HugeIcons.strokeRoundedPlayCircle,
                         size: 20,
-                        color: color6,
+                        color: color4,
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -524,10 +524,10 @@ class EscenasPageState extends State<EscenasPage> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: color6.withValues(alpha: 0.1),
+                        color: color4.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: color6.withValues(alpha: 0.3),
+                          color: color4.withValues(alpha: 0.3),
                           width: 1,
                         ),
                       ),
@@ -539,13 +539,13 @@ class EscenasPageState extends State<EscenasPage> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: color6.withValues(alpha: 0.2),
+                                  color: color4.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Icon(
                                   HugeIcons.strokeRoundedLink01,
                                   size: 16,
-                                  color: color6,
+                                  color: color4,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -600,7 +600,7 @@ class EscenasPageState extends State<EscenasPage> {
                       const Icon(
                         HugeIcons.strokeRoundedInformationCircle,
                         size: 20,
-                        color: color6,
+                        color: color4,
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -758,7 +758,7 @@ class EscenasPageState extends State<EscenasPage> {
                       const Icon(
                         HugeIcons.strokeRoundedSettings02,
                         size: 20,
-                        color: color6,
+                        color: color4,
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -775,14 +775,33 @@ class EscenasPageState extends State<EscenasPage> {
                   const SizedBox(height: 12),
                   ...deviceGroup.skip(1).map((equipo) {
                     String displayName = '';
-                    if (equipo.contains('_')) {
-                      final apodoSalida = nicknamesMap[equipo];
-                      final parts = equipo.split('_');
-                      displayName =
-                          '${nicknamesMap[parts[0]] ?? parts[0]} salida ${apodoSalida ?? parts[1]}';
+                    String deviceType = 'Dispositivo';
+                    bool isCadena = false;
+
+                    // Verificar si es un evento buscando en eventosCreados
+                    final eventoEncontrado = eventosCreados.firstWhere(
+                      (evento) => evento['title'] == equipo,
+                      orElse: () => <String, dynamic>{},
+                    );
+
+                    if (eventoEncontrado.isNotEmpty) {
+                      // Es un evento (grupo o cadena)
+                      final eventoType = eventoEncontrado['evento'] as String;
+                      displayName = equipo;
+                      deviceType = eventoType == 'grupo' ? 'Grupo' : 'Cadena';
+                      isCadena = eventoType == 'cadena';
                     } else {
-                      displayName = nicknamesMap[equipo] ?? equipo;
+                      // Es un dispositivo individual
+                      if (equipo.contains('_')) {
+                        final apodoSalida = nicknamesMap[equipo];
+                        final parts = equipo.split('_');
+                        displayName =
+                            '${nicknamesMap[parts[0]] ?? parts[0]} salida ${apodoSalida ?? parts[1]}';
+                      } else {
+                        displayName = nicknamesMap[equipo] ?? equipo;
+                      }
                     }
+
                     final action =
                         devicesActions != null ? devicesActions[equipo] : null;
 
@@ -790,12 +809,16 @@ class EscenasPageState extends State<EscenasPage> {
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: (action == true ? Colors.green : color6)
-                            .withValues(alpha: 0.1),
+                        color: isCadena
+                            ? Colors.orange.withValues(alpha: 0.1)
+                            : (action == true ? Colors.green : color4)
+                                .withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: (action == true ? Colors.green : color6)
-                              .withValues(alpha: 0.3),
+                          color: isCadena
+                              ? Colors.orange.withValues(alpha: 0.3)
+                              : (action == true ? Colors.green : color4)
+                                  .withValues(alpha: 0.3),
                           width: 1,
                         ),
                       ),
@@ -804,16 +827,22 @@ class EscenasPageState extends State<EscenasPage> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: (action == true ? Colors.green : color6)
-                                  .withValues(alpha: 0.2),
+                              color: isCadena
+                                  ? Colors.orange.withValues(alpha: 0.2)
+                                  : (action == true ? Colors.green : color4)
+                                      .withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
-                              action == true
-                                  ? HugeIcons.strokeRoundedPlug01
-                                  : HugeIcons.strokeRoundedPlugSocket,
+                              isCadena
+                                  ? HugeIcons.strokeRoundedPlayCircle
+                                  : (action == true
+                                      ? HugeIcons.strokeRoundedPlug01
+                                      : HugeIcons.strokeRoundedPlugSocket),
                               size: 16,
-                              color: action == true ? Colors.green : color6,
+                              color: isCadena
+                                  ? Colors.orange
+                                  : (action == true ? Colors.green : color4),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -821,17 +850,48 @@ class EscenasPageState extends State<EscenasPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  displayName,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: color0,
-                                  ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        displayName,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: color0,
+                                        ),
+                                      ),
+                                    ),
+                                    if (deviceType != 'Dispositivo')
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: deviceType == 'Grupo'
+                                              ? color4.withValues(alpha: 0.2)
+                                              : Colors.orange
+                                                  .withValues(alpha: 0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          deviceType,
+                                          style: GoogleFonts.poppins(
+                                            color: deviceType == 'Grupo'
+                                                ? color4
+                                                : Colors.orange,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Se ${action == true ? "encenderá" : "apagará"}',
+                                  isCadena
+                                      ? 'Se ejecutará automáticamente'
+                                      : 'Se ${action == true ? "encenderá" : "apagará"}',
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
@@ -870,7 +930,7 @@ class EscenasPageState extends State<EscenasPage> {
                 const Icon(
                   HugeIcons.strokeRoundedSettings02,
                   size: 20,
-                  color: color6,
+                  color: color4,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -889,81 +949,119 @@ class EscenasPageState extends State<EscenasPage> {
               final index = entry.key;
               final equipo = entry.value;
               String displayName = '';
-              if (equipo.contains('_')) {
-                final apodoSalida = nicknamesMap[equipo];
-                final parts = equipo.split('_');
-                displayName =
-                    '${nicknamesMap[parts[0]] ?? parts[0]} salida ${apodoSalida ?? parts[1]}';
+              String deviceType = 'Dispositivo';
+              bool isEvento = false;
+              bool isCadena = false;
+
+              // Verificar si es un evento buscando en eventosCreados
+              final eventoEncontrado = eventosCreados.firstWhere(
+                (evento) => evento['title'] == equipo,
+                orElse: () => <String, dynamic>{},
+              );
+
+              if (eventoEncontrado.isNotEmpty) {
+                // Es un evento (grupo o cadena)
+                final eventoType = eventoEncontrado['evento'] as String;
+                displayName = equipo;
+                deviceType = eventoType == 'grupo' ? 'Grupo' : 'Cadena';
+                isEvento = true;
+                isCadena = eventoType == 'cadena';
               } else {
-                displayName = nicknamesMap[equipo] ?? equipo;
+                // Es un dispositivo individual
+                if (equipo.contains('_')) {
+                  final apodoSalida = nicknamesMap[equipo];
+                  final parts = equipo.split('_');
+                  displayName =
+                      '${nicknamesMap[parts[0]] ?? parts[0]} salida ${apodoSalida ?? parts[1]}';
+                } else {
+                  displayName = nicknamesMap[equipo] ?? equipo;
+                }
               }
 
               String actionText = '';
               IconData actionIcon = HugeIcons.strokeRoundedSettings02;
-              Color actionColor = color3;
+              Color actionColor = color1;
 
-              switch (evento) {
-                case 'horario':
-                  final delay = devicesDelay?[equipo] ?? Duration.zero;
+              if (isEvento) {
+                // Manejo especial para eventos
+                if (isCadena) {
+                  actionText = 'Se ejecutará automáticamente';
+                  actionIcon = HugeIcons.strokeRoundedPlayCircle;
+                  actionColor = Colors.orange;
+                } else {
+                  // Es un grupo
                   final action = devicesActions?[equipo] ?? false;
+                  actionText = 'Se ${action ? "activará" : "desactivará"}';
                   actionIcon = action
                       ? HugeIcons.strokeRoundedPlug01
                       : HugeIcons.strokeRoundedPlugSocket;
-                  actionColor = action ? Colors.green : color6;
+                  actionColor = action ? Colors.green : color4;
+                }
+              } else {
+                // Manejo para dispositivos individuales
+                switch (evento) {
+                  case 'horario':
+                    final delay = devicesDelay?[equipo] ?? Duration.zero;
+                    final action = devicesActions?[equipo] ?? false;
+                    actionIcon = action
+                        ? HugeIcons.strokeRoundedPlug01
+                        : HugeIcons.strokeRoundedPlugSocket;
+                    actionColor = action ? Colors.green : color4;
 
-                  if (delay > const Duration(seconds: 0)) {
-                    actionText =
-                        'Luego de ${delay.toString().substring(2, 7)} ${delay > const Duration(seconds: 59) ? 'minutos' : 'segundos'} se ${action ? "encenderá" : "apagará"}';
-                  } else {
-                    actionText = 'Se ${action ? "encenderá" : "apagará"}';
-                  }
-                  break;
-                case 'grupo':
-                  final action = devicesActions?[equipo];
-                  if (action == true) {
-                    // Encender - verde con enchufe común
-                    actionText = 'Se encenderá';
-                    actionIcon = HugeIcons.strokeRoundedPlug01;
-                    actionColor = Colors.green;
-                  } else if (action == false) {
-                    // Apagar - color6 con enchufe desconectado
-                    actionText = 'Se apagará';
-                    actionIcon = HugeIcons.strokeRoundedPlugSocket;
-                    actionColor = color6;
-                  } else {
-                    // Sin acción específica - color neutro
-                    actionText = 'Parte del grupo';
-                    actionIcon = HugeIcons.strokeRoundedEqualSign;
-                    actionColor = color0;
-                  }
-                  break;
-                case 'cadena':
-                  final delay = devicesDelay?[equipo] ?? Duration.zero;
-                  final action = devicesActions?[equipo] ?? false;
-                  actionIcon = action
-                      ? HugeIcons.strokeRoundedPlug01
-                      : HugeIcons.strokeRoundedPlugSocket;
-                  actionColor = action ? Colors.green : color6;
+                    if (delay > const Duration(seconds: 0)) {
+                      actionText =
+                          'Luego de ${delay.toString().substring(2, 7)} ${delay > const Duration(seconds: 59) ? 'minutos' : 'segundos'} se ${action ? "encenderá" : "apagará"}';
+                    } else {
+                      actionText = 'Se ${action ? "encenderá" : "apagará"}';
+                    }
+                    break;
+                  case 'grupo':
+                    final action = devicesActions?[equipo];
+                    if (action == true) {
+                      // Encender - verde con enchufe común
+                      actionText = 'Se encenderá';
+                      actionIcon = HugeIcons.strokeRoundedPlug01;
+                      actionColor = Colors.green;
+                    } else if (action == false) {
+                      // Apagar - color4 con enchufe desconectado
+                      actionText = 'Se apagará';
+                      actionIcon = HugeIcons.strokeRoundedPlugSocket;
+                      actionColor = color4;
+                    } else {
+                      // Sin acción específica - color neutro
+                      actionText = 'Parte del grupo';
+                      actionIcon = HugeIcons.strokeRoundedEqualSign;
+                      actionColor = color0;
+                    }
+                    break;
+                  case 'cadena':
+                    final delay = devicesDelay?[equipo] ?? Duration.zero;
+                    final action = devicesActions?[equipo] ?? false;
+                    actionIcon = action
+                        ? HugeIcons.strokeRoundedPlug01
+                        : HugeIcons.strokeRoundedPlugSocket;
+                    actionColor = action ? Colors.green : color4;
 
-                  if (delay > const Duration(seconds: 0)) {
+                    if (delay > const Duration(seconds: 0)) {
+                      actionText =
+                          'Posición ${index + 1} - Luego de ${delay.toString().substring(2, 7)} ${delay > const Duration(seconds: 59) ? 'minutos' : 'segundos'} se ${action ? "encenderá" : "apagará"}';
+                    } else {
+                      actionText =
+                          'Posición ${index + 1} - Se ${action ? "encenderá" : "apagará"}';
+                    }
+                    break;
+                  case 'clima':
+                    final action = devicesActions?[equipo] ?? false;
+                    actionIcon = action
+                        ? HugeIcons.strokeRoundedPlug01
+                        : HugeIcons.strokeRoundedPlugSocket;
+                    actionColor = action ? Colors.green : color4;
                     actionText =
-                        'Posición ${index + 1} - Luego de ${delay.toString().substring(2, 7)} ${delay > const Duration(seconds: 59) ? 'minutos' : 'segundos'} se ${action ? "encenderá" : "apagará"}';
-                  } else {
-                    actionText =
-                        'Posición ${index + 1} - Se ${action ? "encenderá" : "apagará"}';
-                  }
-                  break;
-                case 'clima':
-                  final action = devicesActions?[equipo] ?? false;
-                  actionIcon = action
-                      ? HugeIcons.strokeRoundedPlug01
-                      : HugeIcons.strokeRoundedPlugSocket;
-                  actionColor = action ? Colors.green : color6;
-                  actionText =
-                      'Se ${action ? "encenderá" : "apagará"} según condición climática';
-                  break;
-                default:
-                  actionText = displayName;
+                        'Se ${action ? "encenderá" : "apagará"} según condición climática';
+                    break;
+                  default:
+                    actionText = displayName;
+                }
               }
 
               return Container(
@@ -1020,13 +1118,40 @@ class EscenasPageState extends State<EscenasPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            displayName,
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: color0,
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  displayName,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: color0,
+                                  ),
+                                ),
+                              ),
+                              if (isEvento && deviceType != 'Dispositivo')
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: deviceType == 'Grupo'
+                                        ? color4.withValues(alpha: 0.2)
+                                        : Colors.orange.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    deviceType,
+                                    style: GoogleFonts.poppins(
+                                      color: deviceType == 'Grupo'
+                                          ? color4
+                                          : Colors.orange,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -1059,11 +1184,11 @@ class EscenasPageState extends State<EscenasPage> {
     }) {
       return Container(
         decoration: BoxDecoration(
-          color: color3,
+          color: color1,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: color3.withValues(alpha: 0.3),
+              color: color1.withValues(alpha: 0.3),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -1149,17 +1274,17 @@ class EscenasPageState extends State<EscenasPage> {
                   ),
                   Container(
                     decoration: BoxDecoration(
-                      color: color5.withValues(alpha: 0.2),
+                      color: color3.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: color5.withValues(alpha: 0.4),
+                        color: color3.withValues(alpha: 0.4),
                         width: 1,
                       ),
                     ),
                     child: IconButton(
                       icon:
                           const Icon(HugeIcons.strokeRoundedDelete02, size: 20),
-                      color: color5,
+                      color: color3,
                       onPressed: onDelete,
                       tooltip: 'Eliminar evento',
                     ),
@@ -1218,7 +1343,7 @@ class EscenasPageState extends State<EscenasPage> {
             title: title,
             description: description,
             devices: deviceGroup,
-            iconColor: color6,
+            iconColor: color4,
           ),
         );
 
@@ -1233,7 +1358,7 @@ class EscenasPageState extends State<EscenasPage> {
             title: title,
             description: description,
             devices: deviceGroup,
-            iconColor: color6,
+            iconColor: color4,
           ),
         );
 
@@ -1249,7 +1374,7 @@ class EscenasPageState extends State<EscenasPage> {
             title: title,
             description: description,
             devices: deviceGroup,
-            iconColor: color6,
+            iconColor: color4,
           ),
         );
       case 'clima':
@@ -1275,7 +1400,7 @@ class EscenasPageState extends State<EscenasPage> {
             title: title,
             description: description,
             devices: deviceGroup,
-            iconColor: color6,
+            iconColor: color4,
           ),
         );
 
@@ -1291,7 +1416,7 @@ class EscenasPageState extends State<EscenasPage> {
             title: title,
             description: description,
             devices: deviceGroup,
-            iconColor: color6,
+            iconColor: color4,
           ),
         );
 
@@ -1305,11 +1430,11 @@ class EscenasPageState extends State<EscenasPage> {
   Widget buildMainOptions() {
     return Container(
       decoration: BoxDecoration(
-        color: color3,
+        color: color1,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: color3.withValues(alpha: 0.3),
+            color: color1.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -1335,17 +1460,17 @@ class EscenasPageState extends State<EscenasPage> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: color6.withValues(alpha: 0.2),
+                      color: color4.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: color6.withValues(alpha: 0.3),
+                        color: color4.withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),
                     child: const Icon(
                       HugeIcons.strokeRoundedSettings02,
                       size: 24,
-                      color: color6,
+                      color: color4,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -1616,7 +1741,7 @@ class EscenasPageState extends State<EscenasPage> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          backgroundColor: color3,
+          backgroundColor: color1,
           leading: IconButton(
             icon: const Icon(HugeIcons.strokeRoundedArrowLeft02, color: color0),
             onPressed: () => Navigator.pushReplacementNamed(context, '/menu'),
@@ -1625,7 +1750,7 @@ class EscenasPageState extends State<EscenasPage> {
         resizeToAvoidBottomInset: false,
         body: SafeArea(
           child: Container(
-            color: color1,
+            color: color0,
             width: double.infinity,
             height: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -1638,13 +1763,13 @@ class EscenasPageState extends State<EscenasPage> {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: showCard
-                            ? [color5, color4]
-                            : [color3, color3.withValues(alpha: 0.8)],
+                            ? [color3, color2]
+                            : [color1, color1.withValues(alpha: 0.8)],
                       ),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: (showCard ? color5 : color3)
+                          color: (showCard ? color3 : color1)
                               .withValues(alpha: 0.3),
                           blurRadius: 15,
                           offset: const Offset(0, 8),
@@ -1913,10 +2038,10 @@ class EscenasPageState extends State<EscenasPage> {
                         : Container(
                             padding: const EdgeInsets.all(40),
                             decoration: BoxDecoration(
-                              color: color3.withValues(alpha: 0.1),
+                              color: color1.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: color3.withValues(alpha: 0.3),
+                                color: color1.withValues(alpha: 0.3),
                                 width: 2,
                                 style: BorderStyle.solid,
                               ),
@@ -1926,13 +2051,13 @@ class EscenasPageState extends State<EscenasPage> {
                                 Icon(
                                   HugeIcons.strokeRoundedFileNotFound,
                                   size: 48,
-                                  color: color3.withValues(alpha: 0.6),
+                                  color: color1.withValues(alpha: 0.6),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
                                   'No hay eventos creados',
                                   style: GoogleFonts.poppins(
-                                    color: color3,
+                                    color: color1,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -1942,7 +2067,7 @@ class EscenasPageState extends State<EscenasPage> {
                                   'Toca "Configurar evento" para crear tu primer evento',
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.poppins(
-                                    color: color3.withValues(alpha: 0.7),
+                                    color: color1.withValues(alpha: 0.7),
                                     fontSize: 14,
                                     fontWeight: FontWeight.w400,
                                   ),

@@ -41,7 +41,7 @@ Widget buildForgotPasswordForm(WelcomePageState state) {
                   children: [
                     IconButton(
                       icon: const Icon(HugeIcons.strokeRoundedArrowLeft01,
-                          color: color3),
+                          color: color1),
                       onPressed: () {
                         state.switchForm(FormType.login);
                       },
@@ -53,7 +53,7 @@ Widget buildForgotPasswordForm(WelcomePageState state) {
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: color3,
+                          color: color1,
                         ),
                       ),
                     ),
@@ -64,7 +64,7 @@ Widget buildForgotPasswordForm(WelcomePageState state) {
                   'Ingrese el correo electrónico de su cuenta',
                   style: TextStyle(
                     fontSize: 18,
-                    color: color1,
+                    color: color0,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -87,7 +87,7 @@ Widget buildForgotPasswordForm(WelcomePageState state) {
                   'Se le enviará un código de recuperación para su cuenta',
                   style: TextStyle(
                     fontSize: 14,
-                    color: color1,
+                    color: color0,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -106,7 +106,7 @@ Widget buildForgotPasswordForm(WelcomePageState state) {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: color3,
+                      backgroundColor: color1,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 12),
                       shape: RoundedRectangleBorder(

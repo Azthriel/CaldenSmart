@@ -561,7 +561,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   decoration: BoxDecoration(
-                    color: color3,
+                    color: color1,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
@@ -787,7 +787,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                                       icon: _notis[index]
                                           ? const Icon(
                                               Icons.notifications_off,
-                                              color: color6,
+                                              color: color4,
                                             )
                                           : const Icon(
                                               Icons.notification_add_rounded,
@@ -825,7 +825,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                                           ? Colors.grey
                                           : isOn
                                               ? Colors.greenAccent.shade400
-                                              : color6,
+                                              : color4,
                                     ),
                                     child: AnimatedAlign(
                                       duration:
@@ -853,7 +853,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                       if (isPresenceControlled) ...{
                         Container(
                           decoration: BoxDecoration(
-                            color: color1,
+                            color: color0,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Center(
@@ -862,7 +862,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: color3,
+                                color: color1,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -896,13 +896,13 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                   style: GoogleFonts.poppins(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: color3,
+                    color: color1,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
                 Card(
-                  color: color3,
+                  color: color1,
                   elevation: 8,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
@@ -981,7 +981,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                         isChangeModeVisible = !isChangeModeVisible;
                       });
                     },
-                    backgroundColor: color3,
+                    backgroundColor: color1,
                     foregroundColor: color0,
                     icon: const Icon(Icons.settings, color: color0),
                     label: Text(
@@ -997,7 +997,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                       for (var i = 0; i < parts.length; i++) ...[
                         if (tipo[i] == 'Entrada') ...{
                           Card(
-                            color: color3,
+                            color: color1,
                             elevation: 6,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(15),
@@ -1055,7 +1055,6 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                                                         .write(data.codeUnits);
                                                     common[i] = '0';
                                                   });
-                                                  //TODO normal abierto
                                                 },
                                                 child: Container(
                                                   decoration: BoxDecoration(
@@ -1077,7 +1076,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                                                           GoogleFonts.poppins(
                                                         fontSize: 14,
                                                         color: common[i] == '0'
-                                                            ? color3
+                                                            ? color1
                                                             : color0,
                                                       ),
                                                       overflow:
@@ -1094,7 +1093,6 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                                             Expanded(
                                               child: GestureDetector(
                                                 onTap: () {
-                                                  //TODO normal cerrado
                                                   setState(() {
                                                     String data =
                                                         '${DeviceManager.getProductCode(deviceName)}[14]($i#1)';
@@ -1124,7 +1122,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                                                           GoogleFonts.poppins(
                                                         fontSize: 14,
                                                         color: common[i] == '1'
-                                                            ? color3
+                                                            ? color1
                                                             : color0,
                                                       ),
                                                       overflow:
@@ -1160,7 +1158,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                                     Center(
                                       child: ElevatedButton(
                                         style: ElevatedButton.styleFrom(
-                                          foregroundColor: color3,
+                                          foregroundColor: color1,
                                           backgroundColor: color0,
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 24.0, vertical: 12.0),
@@ -1235,7 +1233,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: color3,
+          backgroundColor: color1,
           title: GestureDetector(
             onTap: () async {
               if (_isTutorialActive) return;
@@ -1350,7 +1348,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
             ),
           ],
         ),
-        backgroundColor: color1,
+        backgroundColor: color0,
         resizeToAvoidBottomInset: false,
         body: IgnorePointer(
           ignoring: _isTutorialActive,
@@ -1380,8 +1378,8 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                         Icon(Icons.input, size: 30, color: color0),
                         Icon(Icons.settings, size: 30, color: color0),
                       ],
-                      color: color3,
-                      buttonBackgroundColor: color3,
+                      color: color1,
+                      buttonBackgroundColor: color1,
                       backgroundColor: Colors.transparent,
                       animationCurve: Curves.easeInOut,
                       animationDuration: const Duration(milliseconds: 600),
@@ -1446,7 +1444,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                     }
                   });
                 },
-                backgroundColor: color6,
+                backgroundColor: color4,
                 shape: const CircleBorder(),
                 child: const Icon(Icons.help, size: 30, color: color0),
               ),

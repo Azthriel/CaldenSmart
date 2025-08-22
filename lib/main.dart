@@ -143,18 +143,18 @@ class MyAppState extends State<MyApp> {
       title: nameOfApp(app),
       theme: ThemeData(
         textTheme: GoogleFonts.poppinsTextTheme(),
-        primaryColor: color5,
-        primaryColorLight: color6,
+        primaryColor: color3,
+        primaryColorLight: color4,
         textSelectionTheme: const TextSelectionThemeData(
-          selectionColor: color1,
-          selectionHandleColor: color1,
+          selectionColor: color0,
+          selectionHandleColor: color0,
         ),
         bottomSheetTheme: const BottomSheetThemeData(
           surfaceTintColor: Colors.transparent,
           backgroundColor: Colors.transparent,
         ),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: color5,
+          seedColor: color3,
         ),
         useMaterial3: true,
       ),

@@ -8,6 +8,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '/Global/scan.dart';
 import '/Global/wifi.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../master.dart';
 
 class MenuPage extends StatefulWidget {
@@ -22,11 +23,21 @@ class MenuPageState extends State<MenuPage> {
   int _selectedIndex = 0;
   int counter = 0;
   late Future<int> _initialPageFuture;
+  bool _isLoading = true;
+  static bool hasInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _initialPageFuture = getInitialPageIndex();
+    if (!hasInitialized) {
+      hasInitialized = true;
+      _loadInitialData();
+    } else {
+      // Si ya se inicializó anteriormente, no mostrar pantalla de carga
+      printLog.i('Datos ya inicializados, evitando recarga', color: 'azul');
+      _isLoading = false;
+    }
   }
 
   void _setupTokenManagement() async {
@@ -36,6 +47,7 @@ class MenuPageState extends State<MenuPage> {
     }
 
     // Listener para cambios de token
+
     _setupTokenRefreshListener();
   }
 
@@ -70,13 +82,35 @@ class MenuPageState extends State<MenuPage> {
     return index;
   }
 
-  Future<void> _initAsync() async {
-    currentUserEmail = await getUserMail();
-    _setupTokenManagement();
-    if (currentUserEmail != '') {
-      await getNicknames(currentUserEmail).then((_) {
-        printLog.d('Nicknames cargados en MenuPage');
-        // Ya no necesitamos setState() aquí porque el ValueNotifier se encarga
+  // Nueva función para cargar datos iniciales críticos
+  Future<void> _loadInitialData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      currentUserEmail = await getUserMail();
+
+      _setupTokenManagement();
+
+      if (currentUserEmail.isNotEmpty) {
+        await getDevices(currentUserEmail);
+        eventosCreados = await getEventos(currentUserEmail);
+        await getNicknames(currentUserEmail);
+        savedOrder = await loadWifiOrderDevices(currentUserEmail);
+
+        printLog.i(
+            'Datos iniciales cargados - Dispositivos: ${previusConnections.length}');
+        printLog.i('Eventos cargados: ${eventosCreados.length}');
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      printLog.e('Error cargando datos iniciales: $e');
+      setState(() {
+        _isLoading = false;
       });
     }
   }
@@ -120,6 +154,39 @@ class MenuPageState extends State<MenuPage> {
             body: Center(child: CircularProgressIndicator()),
           );
         }
+
+        // Mostrar pantalla de carga hasta que los datos críticos estén listos
+        if (_isLoading) {
+          return Scaffold(
+            backgroundColor: color0,
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/branch/dragon.gif',
+                      width: 150,
+                      height: 150,
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Se están cargando los datos de la app, aguarde un momento por favor...',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: color1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
         if (_pageController == null) {
           _selectedIndex = snapshot.data!;
           _pageController = PageController(initialPage: _selectedIndex);
@@ -127,7 +194,6 @@ class MenuPageState extends State<MenuPage> {
             if (mounted) {
               checkForUpdate(context);
               fToast.init(navigatorKey.currentState?.context ?? context);
-              await _initAsync();
             }
           });
           LocationWatcher().start();
@@ -169,7 +235,7 @@ class MenuPageState extends State<MenuPage> {
                     topRight: Radius.circular(30.0),
                   ),
                   child: BottomAppBar(
-                    color: color3,
+                    color: color1,
                     shape: const CircularNotchedRectangle(),
                     notchMargin: 6.0,
                     child: Row(
@@ -182,7 +248,7 @@ class MenuPageState extends State<MenuPage> {
                             iconSize: _selectedIndex == 0 ? 35.0 : 30.0,
                             icon: Icon(
                               HugeIcons.strokeRoundedBluetoothSearch,
-                              color: _selectedIndex == 0 ? color5 : Colors.grey,
+                              color: _selectedIndex == 0 ? color3 : Colors.grey,
                             ),
                             onPressed: () => _onItemTapped(0),
                           ),
@@ -194,7 +260,7 @@ class MenuPageState extends State<MenuPage> {
                             iconSize: _selectedIndex == 1 ? 35.0 : 30.0,
                             icon: Icon(
                               HugeIcons.strokeRoundedWifi02,
-                              color: _selectedIndex == 1 ? color5 : Colors.grey,
+                              color: _selectedIndex == 1 ? color3 : Colors.grey,
                             ),
                             onPressed: () => _onItemTapped(1),
                           ),
@@ -217,7 +283,7 @@ class MenuPageState extends State<MenuPage> {
                   navigatorKey.currentState?.pushNamed('/eg');
                 }
               },
-              backgroundColor: color3,
+              backgroundColor: color1,
               elevation: 0,
               shape: const CircleBorder(),
               child: ClipOval(

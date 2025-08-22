@@ -95,12 +95,29 @@ class LoadState extends State<LoadingPage> {
       toolsValues = await myDevice.toolsUuid.read();
       printLog.i('Valores tools: $toolsValues');
       printLog.i('Valores info: $infoValues');
-      if (!previusConnections.contains(deviceName)) {
-        previusConnections.add(deviceName);
-        await putPreviusConnections(currentUserEmail, previusConnections);
-        todosLosDispositivos.add(MapEntry('individual', deviceName));
-        topicsToSub.add('devices_tx/$pc/$sn');
-        subToTopicMQTT('devices_tx/$pc/$sn');
+
+      // Usar la función segura para agregar dispositivos
+      String result = await safeAddDevice(currentUserEmail, deviceName);
+
+      switch (result) {
+        case 'added':
+          // Dispositivo agregado exitosamente - agregar a listas locales
+          todosLosDispositivos.add(MapEntry('individual', deviceName));
+          topicsToSub.add('devices_tx/$pc/$sn');
+          subToTopicMQTT('devices_tx/$pc/$sn');
+          printLog.i('Dispositivo $deviceName agregado exitosamente');
+          break;
+
+        case 'exists':
+          // Dispositivo ya existía - no hacer nada adicional
+          printLog.i('Dispositivo $deviceName ya estaba registrado');
+          break;
+
+        case 'error':
+          printLog.e(
+              'No se pudo agregar el dispositivo $deviceName de forma segura');
+          // Aquí podrías mostrar un mensaje al usuario o implementar lógica de recuperación
+          break;
       }
 
       await addToActiveUsers(pc, sn, currentUserEmail);
@@ -182,7 +199,10 @@ class LoadState extends State<LoadingPage> {
           lastUser = users;
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)?.cast<String>() ?? [];
+          adminDevices =
+              (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)
+                      ?.cast<String>() ??
+                  [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -254,7 +274,10 @@ class LoadState extends State<LoadingPage> {
 
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)?.cast<String>() ?? [];
+          adminDevices =
+              (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)
+                      ?.cast<String>() ??
+                  [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -297,7 +320,10 @@ class LoadState extends State<LoadingPage> {
 
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)?.cast<String>() ?? [];
+          adminDevices =
+              (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)
+                      ?.cast<String>() ??
+                  [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -355,7 +381,10 @@ class LoadState extends State<LoadingPage> {
 
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)?.cast<String>() ?? [];
+          adminDevices =
+              (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)
+                      ?.cast<String>() ??
+                  [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -394,7 +423,10 @@ class LoadState extends State<LoadingPage> {
               globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)?.cast<String>() ?? [];
+          adminDevices =
+              (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)
+                      ?.cast<String>() ??
+                  [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -440,7 +472,10 @@ class LoadState extends State<LoadingPage> {
           lastUser = users;
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
-          adminDevices = (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)?.cast<String>() ?? [];
+          adminDevices =
+              (globalDATA['$pc/$sn']?['secondary_admin'] as List<dynamic>?)
+                      ?.cast<String>() ??
+                  [];
           printLog.i('Administradores: $adminDevices');
 
           if (owner != '') {
@@ -496,6 +531,9 @@ class LoadState extends State<LoadingPage> {
           alertMinTemp = partes[6];
           // tempMap = partes[7] == '1';
           break;
+        default:
+          printLog.i('Dispositivo no reconocido');
+          return Future.value(false);
       }
 
       return Future.value(true);
@@ -511,7 +549,7 @@ class LoadState extends State<LoadingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: color3,
+      backgroundColor: color1,
       body: Center(
         child: Stack(
           alignment: AlignmentDirectional.center,
@@ -530,7 +568,7 @@ class LoadState extends State<LoadingPage> {
                   text: TextSpan(
                     text: 'Cargando',
                     style: const TextStyle(
-                      color: color1,
+                      color: color0,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -538,7 +576,7 @@ class LoadState extends State<LoadingPage> {
                       TextSpan(
                         text: _dots,
                         style: const TextStyle(
-                          color: color1,
+                          color: color0,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -557,7 +595,7 @@ class LoadState extends State<LoadingPage> {
                   child: Text(
                     'Versión $appVersionNumber',
                     style: const TextStyle(
-                      color: color1,
+                      color: color0,
                       fontSize: 12,
                     ),
                   ),

@@ -83,16 +83,23 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
       final deviceDATA = globalDATA[deviceKey] ?? {};
       final owner = deviceDATA['owner'] ?? '';
       final admin = deviceDATA['secondary_admin'] ?? [];
-      return owner == '' || owner == currentUserEmail || admin.contains(currentUserEmail);
+      return owner == '' ||
+          owner == currentUserEmail ||
+          admin.contains(currentUserEmail);
     }).toList();
 
-    if (validDevices.isEmpty) {
+    final eventosGrupoYCadena = eventosCreados.where((evento) {
+      final eventoType = evento['evento'] as String;
+      return eventoType == 'grupo' || eventoType == 'cadena';
+    }).toList();
+
+    if (validDevices.isEmpty && eventosGrupoYCadena.isEmpty) {
       return [
         Center(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(
-              'No hay dispositivos válidos para control horario.',
+              'No hay dispositivos o eventos válidos para control horario.',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 color: Colors.red,
@@ -105,7 +112,108 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
       ];
     }
 
-    return validDevices.map((equipo) {
+    List<Widget> widgets = [];
+
+    if (eventosGrupoYCadena.isNotEmpty) {
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Text(
+            'EVENTOS DISPONIBLES',
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: color0.withValues(alpha: 0.9),
+              letterSpacing: 1,
+            ),
+          ),
+        ),
+      );
+
+      for (final evento in eventosGrupoYCadena) {
+        final eventoType = evento['evento'] as String;
+        final eventoTitle = evento['title'] as String;
+        final isSelected = selectedDevices.contains(eventoTitle);
+
+        widgets.add(
+          Container(
+            margin: const EdgeInsets.only(bottom: 8.0),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? color4.withValues(alpha: 0.1)
+                  : color0.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(
+                color: isSelected ? color4 : color0,
+                width: 1.0,
+              ),
+            ),
+            child: ListTile(
+              leading: Icon(
+                eventoType == 'grupo' ? Icons.group_work_outlined : Icons.link,
+                color: eventoType == 'grupo' ? color4 : Colors.orange,
+              ),
+              title: Text(
+                eventoTitle,
+                style: GoogleFonts.poppins(color: color0),
+              ),
+              subtitle: Text(
+                'Evento $eventoType',
+                style: GoogleFonts.poppins(
+                  color: color0.withValues(alpha: 0.7),
+                  fontSize: 12,
+                ),
+              ),
+              trailing: Checkbox(
+                value: isSelected,
+                activeColor: color4,
+                onChanged: (value) {
+                  setState(() {
+                    if (value == true) {
+                      selectedDevices.add(eventoTitle);
+                    } else {
+                      selectedDevices.remove(eventoTitle);
+                    }
+                  });
+                },
+              ),
+              onTap: () {
+                setState(() {
+                  if (isSelected) {
+                    selectedDevices.remove(eventoTitle);
+                  } else {
+                    selectedDevices.add(eventoTitle);
+                  }
+                });
+              },
+            ),
+          ),
+        );
+      }
+
+      if (validDevices.isNotEmpty) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12.0),
+            child: Text(
+              'DISPOSITIVOS INDIVIDUALES',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: color0.withValues(alpha: 0.9),
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    if (validDevices.isEmpty && eventosGrupoYCadena.isNotEmpty) {
+      return widgets;
+    }
+
+    widgets.addAll(validDevices.map((equipo) {
       final displayName = nicknamesMap[equipo] ?? equipo;
       final deviceKey =
           '${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}';
@@ -132,12 +240,12 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
         margin: const EdgeInsets.only(bottom: 8.0),
         decoration: BoxDecoration(
           color: (selectedDevices.contains(equipo) || hasSelectedSalida)
-              ? color6.withValues(alpha: 0.1)
+              ? color4.withValues(alpha: 0.1)
               : color0.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8.0),
           border: Border.all(
             color: (selectedDevices.contains(equipo) || hasSelectedSalida)
-                ? color6
+                ? color4
                 : color0,
             width: 1.0,
           ),
@@ -192,7 +300,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                           style: GoogleFonts.poppins(color: color0),
                         ),
                         value: isChecked,
-                        activeColor: color6,
+                        activeColor: color4,
                         onChanged: (value) {
                           setState(() {
                             if (value == true) {
@@ -211,7 +319,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                   title: Text(displayName,
                       style: GoogleFonts.poppins(color: color0)),
                   value: selectedDevices.contains(equipo),
-                  activeColor: color6,
+                  activeColor: color4,
                   onChanged: (value) {
                     setState(() {
                       if (value == true) {
@@ -228,7 +336,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                 title: Text(displayName,
                     style: GoogleFonts.poppins(color: color0)),
                 value: selectedDevices.contains(equipo),
-                activeColor: color6,
+                activeColor: color4,
                 onChanged: (value) {
                   setState(() {
                     if (value == true) {
@@ -243,7 +351,9 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
           ],
         ),
       );
-    }).toList();
+    }).toList());
+
+    return widgets;
   }
 
   Widget _buildTimeAndDaySelection() {
@@ -253,7 +363,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
         Center(
           child: Text(
             'Selecciona los días del evento',
-            style: GoogleFonts.poppins(color: color1, fontSize: 16),
+            style: GoogleFonts.poppins(color: color0, fontSize: 16),
             textAlign: TextAlign.center,
           ),
         ),
@@ -274,14 +384,14 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                 DayInWeek("S", dayKey: "Sábado"),
                 DayInWeek("D", dayKey: "Domingo"),
               ],
-              unSelectedDayTextColor: color3,
-              selectedDayTextColor: color3,
-              selectedDaysFillColor: color6,
+              unSelectedDayTextColor: color1,
+              selectedDayTextColor: color1,
+              selectedDaysFillColor: color4,
               unselectedDaysFillColor: color0,
               border: false,
               width: MediaQuery.of(context).size.width * 0.9,
               boxDecoration: BoxDecoration(
-                color: color1,
+                color: color0,
                 borderRadius: BorderRadius.circular(20.0),
               ),
               onSelect: (values) {
@@ -296,12 +406,12 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
         Center(
           child: Text(
             'Selecciona la hora del evento',
-            style: GoogleFonts.poppins(color: color1, fontSize: 16),
+            style: GoogleFonts.poppins(color: color0, fontSize: 16),
             textAlign: TextAlign.center,
           ),
         ),
         const Divider(
-          color: color6,
+          color: color4,
           thickness: 1,
           height: 24,
         ),
@@ -331,8 +441,8 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
       children: [
         Center(
           child: Text(
-            'Configura la acción para cada dispositivo',
-            style: GoogleFonts.poppins(color: color1, fontSize: 16),
+            'Configura la acción para cada dispositivo/evento',
+            style: GoogleFonts.poppins(color: color0, fontSize: 16),
             textAlign: TextAlign.center,
           ),
         ),
@@ -344,7 +454,29 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
             itemBuilder: (context, index) {
               final device = selectedDevices[index];
               final isOn = deviceActions[device] ?? false;
-              final displayName = nicknamesMap[device] ?? device;
+              String displayName = device;
+              String deviceType = 'Dispositivo';
+              IconData iconData = Icons.devices_other;
+              bool isCadena = false;
+
+              final eventoEncontrado = eventosCreados.firstWhere(
+                (evento) => evento['title'] == device,
+                orElse: () => <String, dynamic>{},
+              );
+
+              if (eventoEncontrado.isNotEmpty) {
+                final eventoType = eventoEncontrado['evento'] as String;
+                displayName = device;
+                deviceType = eventoType == 'grupo' ? 'Grupo' : 'Cadena';
+                iconData = eventoType == 'grupo'
+                    ? Icons.group_work_outlined
+                    : Icons.link;
+                isCadena = eventoType == 'cadena';
+              } else {
+                displayName = nicknamesMap[device] ?? device;
+              }
+
+              printLog.i('Device Type = $deviceType');
 
               return Card(
                 elevation: 4,
@@ -352,7 +484,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                color: color1,
+                color: color0,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -360,14 +492,13 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.devices_other,
-                              color: color3, size: 20),
+                          Icon(iconData, color: color1, size: 20),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               displayName,
                               style: GoogleFonts.poppins(
-                                color: color3,
+                                color: color1,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -377,40 +508,75 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                         ],
                       ),
                       const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ToggleButtons(
-                              isSelected: [isOn == true, isOn == false],
-                              onPressed: (i) => setState(() {
-                                deviceActions[device] = i == 0 ? true : false;
-                              }),
-                              borderRadius: BorderRadius.circular(12),
-                              selectedColor: color1,
-                              fillColor: isOn
-                                  ? Colors.green.withValues(alpha: 0.8)
-                                  : color5.withValues(alpha: 0.8),
-                              color: color3,
-                              borderColor: color3,
-                              selectedBorderColor: isOn
-                                  ? Colors.green.withValues(alpha: 0.8)
-                                  : color5.withValues(alpha: 0.8),
-                              constraints: const BoxConstraints(
-                                minHeight: 36,
-                                minWidth: 100,
-                              ),
-                              children: [
-                                Text('Encender',
-                                    style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.w500)),
-                                Text('Apagar',
-                                    style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.w500)),
-                              ],
+                      if (isCadena) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.blue.withValues(alpha: 0.3),
+                              width: 1,
                             ),
                           ),
-                        ],
-                      ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.play_arrow,
+                                color: Colors.blue,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Se ejecutará la secuencia completa',
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.blue,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ToggleButtons(
+                                isSelected: [isOn == true, isOn == false],
+                                onPressed: (i) => setState(() {
+                                  deviceActions[device] = i == 0 ? true : false;
+                                }),
+                                borderRadius: BorderRadius.circular(12),
+                                selectedColor: color0,
+                                fillColor: isOn
+                                    ? Colors.green.withValues(alpha: 0.8)
+                                    : color3.withValues(alpha: 0.8),
+                                color: color1,
+                                borderColor: color1,
+                                selectedBorderColor: isOn
+                                    ? Colors.green.withValues(alpha: 0.8)
+                                    : color3.withValues(alpha: 0.8),
+                                constraints: const BoxConstraints(
+                                  minHeight: 36,
+                                  minWidth: 100,
+                                ),
+                                children: [
+                                  Text('Encender',
+                                      style: GoogleFonts.poppins(
+                                          fontWeight: FontWeight.w500)),
+                                  Text('Apagar',
+                                      style: GoogleFonts.poppins(
+                                          fontWeight: FontWeight.w500)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -425,7 +591,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: color3,
+      color: color1,
       child: Padding(
         padding: const EdgeInsets.all(10.0),
         child: Column(
@@ -439,7 +605,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                     opacity: currentStep == 0 ? 1.0 : 0.0,
                     child: IconButton(
                       icon: const Icon(Icons.arrow_back),
-                      color: color1,
+                      color: color0,
                       onPressed: currentStep == 0
                           ? () {
                               if (widget.onBackToMain != null) {
@@ -454,7 +620,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                       child: Text(
                         'Control por Horario',
                         style: GoogleFonts.poppins(
-                          color: color1,
+                          color: color0,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
@@ -476,17 +642,17 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                   Container(
                       width: 30,
                       height: 2,
-                      color: currentStep >= 1 ? color6 : color0),
+                      color: currentStep >= 1 ? color4 : color0),
                   _buildStepIndicator(1, 'Horario', currentStep >= 1),
                   Container(
                       width: 30,
                       height: 2,
-                      color: currentStep >= 2 ? color6 : color0),
+                      color: currentStep >= 2 ? color4 : color0),
                   _buildStepIndicator(2, 'Acciones', currentStep >= 2),
                   Container(
                       width: 30,
                       height: 2,
-                      color: currentStep >= 3 ? color6 : color0),
+                      color: currentStep >= 3 ? color4 : color0),
                   _buildStepIndicator(3, 'Nombre', currentStep >= 3),
                 ],
               ),
@@ -518,8 +684,8 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                             });
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: color1,
-                            foregroundColor: color3,
+                            backgroundColor: color0,
+                            foregroundColor: color1,
                             elevation: 2,
                           ),
                         ),
@@ -537,10 +703,10 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                         onPressed: _canContinue() ? _handleContinue : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: color0,
-                          foregroundColor: color3,
+                          foregroundColor: color1,
                           disabledBackgroundColor:
-                              color3.withValues(alpha: 0.5),
-                          disabledForegroundColor: color1,
+                              color1.withValues(alpha: 0.5),
+                          disabledForegroundColor: color0,
                         ),
                       ),
                     ),
@@ -561,14 +727,14 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
           width: 24,
           height: 24,
           decoration: BoxDecoration(
-            color: isActive ? color6 : color0,
+            color: isActive ? color4 : color0,
             shape: BoxShape.circle,
           ),
           child: Center(
             child: Text(
               '${step + 1}',
               style: GoogleFonts.poppins(
-                color: color3,
+                color: color1,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
@@ -579,7 +745,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
         Text(
           label,
           style: GoogleFonts.poppins(
-            color: color1,
+            color: color0,
             fontSize: 9,
           ),
         ),
@@ -596,7 +762,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
             Center(
               child: Text(
                 'Selecciona los dispositivos',
-                style: GoogleFonts.poppins(color: color1, fontSize: 16),
+                style: GoogleFonts.poppins(color: color0, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -620,7 +786,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
             Center(
               child: Text(
                 'Nombre del control horario',
-                style: GoogleFonts.poppins(color: color1, fontSize: 16),
+                style: GoogleFonts.poppins(color: color0, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -629,18 +795,18 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
               controller: title,
               decoration: InputDecoration(
                 hintText: 'Ej: Luces del jardín',
-                hintStyle: GoogleFonts.poppins(color: color3),
+                hintStyle: GoogleFonts.poppins(color: color1),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16.0),
-                  borderSide: const BorderSide(color: color6),
+                  borderSide: const BorderSide(color: color4),
                 ),
                 filled: true,
-                fillColor: color1,
+                fillColor: color0,
                 errorText: title.text.contains(':')
                     ? 'No se permiten dos puntos (:)'
                     : null,
               ),
-              style: GoogleFonts.poppins(color: color3),
+              style: GoogleFonts.poppins(color: color1),
               onChanged: (value) {
                 setState(() {
                   // Actualizar el estado para mostrar/ocultar el error
@@ -662,8 +828,27 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
       case 1:
         return selectedDays.isNotEmpty && selectedTime != null;
       case 2:
-        return deviceActions.isNotEmpty &&
-            deviceActions.length == selectedDevices.length;
+        int requiredActions = selectedDevices.where((device) {
+          final eventoEncontrado = eventosCreados.firstWhere(
+            (evento) => evento['title'] == device,
+            orElse: () => <String, dynamic>{},
+          );
+          // Excluir cadenas de los requerimientos
+          return !(eventoEncontrado.isNotEmpty &&
+              eventoEncontrado['evento'] == 'cadena');
+        }).length;
+
+        int configuredActions = deviceActions.entries.where((entry) {
+          final eventoEncontrado = eventosCreados.firstWhere(
+            (evento) => evento['title'] == entry.key,
+            orElse: () => <String, dynamic>{},
+          );
+          // Excluir cadenas del conteo
+          return !(eventoEncontrado.isNotEmpty &&
+              eventoEncontrado['evento'] == 'cadena');
+        }).length;
+
+        return deviceActions.isNotEmpty && configuredActions >= requiredActions;
       case 3:
         return title.text.isNotEmpty && !title.text.contains(':');
       default:
@@ -677,7 +862,20 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
         currentStep++;
         if (currentStep == 2) {
           for (String device in selectedDevices) {
-            deviceActions[device] ??= false;
+            // Verificar si es una cadena buscando en eventosCreados
+            final eventoEncontrado = eventosCreados.firstWhere(
+              (evento) => evento['title'] == device,
+              orElse: () => <String, dynamic>{},
+            );
+
+            if (eventoEncontrado.isNotEmpty &&
+                eventoEncontrado['evento'] == 'cadena') {
+              // Para cadenas, configurar automáticamente como 'ejecutar' (true)
+              deviceActions[device] = true;
+            } else {
+              // Para dispositivos y grupos, valor por defecto false
+              deviceActions[device] ??= false;
+            }
           }
         }
       });
@@ -720,33 +918,58 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
     int timezoneOffset = now.timeZoneOffset.inHours;
     String timezoneName = now.timeZoneName;
 
+    Map<String, bool> finalDeviceActions = {};
+
+    for (String item in selectedDevices) {
+      // Verificar si es un evento (grupo o cadena)
+      final eventoEncontrado = eventosCreados.firstWhere(
+        (evento) => evento['title'] == item,
+        orElse: () => <String, dynamic>{},
+      );
+
+      String finalKey;
+      if (eventoEncontrado.isNotEmpty) {
+        // Es un evento, agregar el tipo
+        final eventoType = eventoEncontrado['evento'] as String;
+        finalKey = '$item:$eventoType';
+      } else {
+        // Es un dispositivo individual, agregar el tipo 'dispositivo'
+        finalKey = '$item:dispositivo';
+      }
+      
+      finalDeviceActions[finalKey] = deviceActions[item] ?? false;
+    }
+
     printLog.i("=== CONTROL HORARIO CREADO ===");
     printLog.i("Nombre: ${title.text}");
-    printLog.i("Dispositivos: $selectedDevices");
+    printLog.i("Dispositivos/Eventos seleccionados: $selectedDevices");
     printLog.i("Días originales: $selectedDays");
     printLog.i("Días como números: $daysAsNumbers");
     printLog.i("Hora: $horario");
-    printLog.i("Acciones: $deviceActions");
+    printLog.i("Acciones (con tipo): $finalDeviceActions");
     printLog.i("Timezone offset: $timezoneOffset");
     printLog.i("Timezone name: $timezoneName");
 
-    eventosCreados.add({
+    Map<String, dynamic> eventoData = {
       'evento': 'horario',
       'title': title.text,
       'selectedDays': List<String>.from(selectedDays),
       'selectedTime': horario,
-      'deviceActions': Map<String, bool>.from(deviceActions),
+      'deviceActions': Map<String, bool>.from(finalDeviceActions),
       'deviceGroup': List<String>.from(selectedDevices),
-    });
+    };
+
+    eventosCreados.add(eventoData);
 
     showToast("Control horario creado exitosamente");
-    printLog.i("$eventosCreados", color: 'verde');
+    printLog.d("$eventosCreados", color: 'verde');
 
     putEventos(currentUserEmail, eventosCreados);
 
-    // Llamar con los días como números y timezone info
-    putEventoControlPorHorarios(horario, currentUserEmail, title.text,
-        deviceActions, daysAsNumbers, timezoneOffset, timezoneName);
+    if (selectedDevices.isNotEmpty) {
+      putEventoControlPorHorarios(horario, currentUserEmail, title.text,
+          finalDeviceActions, daysAsNumbers, timezoneOffset, timezoneName);
+    }
 
     setState(() {
       _initializeData();

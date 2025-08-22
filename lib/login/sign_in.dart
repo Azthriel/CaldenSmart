@@ -59,7 +59,7 @@ Widget buildLoginForm(WelcomePageState state) {
                   //   style: TextStyle(
                   //     fontSize: 24,
                   //     fontWeight: FontWeight.bold,
-                  //     color: color3,
+                  //     color: color1,
                   //   ),
                   // ),
                   const SizedBox(height: 20),
@@ -109,12 +109,12 @@ Widget buildLoginForm(WelcomePageState state) {
                             ? const Icon(
                                 Icons.visibility_off,
                                 key: ValueKey('icon1'),
-                                color: color3,
+                                color: color1,
                               )
                             : const Icon(
                                 Icons.visibility,
                                 key: ValueKey('icon2'),
-                                color: color3,
+                                color: color1,
                               ),
                       ),
                     ),
@@ -128,13 +128,13 @@ Widget buildLoginForm(WelcomePageState state) {
                         state.switchForm(FormType.forgotPassword);
                       },
                       style: TextButton.styleFrom(
-                        foregroundColor: color3,
+                        foregroundColor: color1,
                       ),
                       child: Text(
                         '¿Olvidaste tu contraseña?',
                         style: GoogleFonts.montserrat(
                           textStyle: const TextStyle(
-                            color: color1,
+                            color: color0,
                             fontSize: 14,
                           ),
                         ),
@@ -184,7 +184,7 @@ Widget buildLoginForm(WelcomePageState state) {
                     children: <Widget>[
                       Expanded(
                         child: Divider(
-                          color: color3,
+                          color: color1,
                           thickness: 1,
                         ),
                       ),
@@ -202,7 +202,7 @@ Widget buildLoginForm(WelcomePageState state) {
                         await signInWithGoogle(state.context);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: color2.withValues(alpha: 0.60),
+                        backgroundColor: color0.withValues(alpha: 0.60),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,
                           vertical: 12,
@@ -212,7 +212,7 @@ Widget buildLoginForm(WelcomePageState state) {
                             30.0,
                           ),
                           side: const BorderSide(
-                            color: color3,
+                            color: color1,
                           ),
                         ),
                         elevation: 5,
@@ -225,7 +225,7 @@ Widget buildLoginForm(WelcomePageState state) {
                       label: const Text(
                         'Google',
                         style: TextStyle(
-                          color: color1,
+                          color: color0,
                           fontSize: 16,
                         ),
                       ),
@@ -239,14 +239,14 @@ Widget buildLoginForm(WelcomePageState state) {
                         state.switchForm(FormType.register);
                       },
                       style: TextButton.styleFrom(
-                        foregroundColor: color3,
+                        foregroundColor: color1,
                       ),
                       child: Text(
                         '¿No tienes una cuenta?\nRegístrate',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.montserrat(
                           textStyle: const TextStyle(
-                            color: color1,
+                            color: color0,
                             fontSize: 16,
                           ),
                         ),

@@ -21,13 +21,13 @@ Widget buildEnterCodeForm(WelcomePageState state) {
                 const Text(
                   'Código de verificación',
                   style: TextStyle(
-                      fontSize: 24, fontWeight: FontWeight.bold, color: color3),
+                      fontSize: 24, fontWeight: FontWeight.bold, color: color1),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 10),
                 const Text(
                   'Ingrese el código enviado a su correo y su nueva contraseña',
-                  style: TextStyle(fontSize: 18, color: color1),
+                  style: TextStyle(fontSize: 18, color: color0),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 15),
@@ -69,9 +69,9 @@ Widget buildEnterCodeForm(WelcomePageState state) {
                       },
                       child: state.obscurePassword
                           ? const Icon(Icons.visibility_off,
-                              key: ValueKey('icon1'), color: color3)
+                              key: ValueKey('icon1'), color: color1)
                           : const Icon(Icons.visibility,
-                              key: ValueKey('icon2'), color: color3),
+                              key: ValueKey('icon2'), color: color1),
                     ),
                   ),
                   keyboardType: TextInputType.text,
@@ -106,7 +106,7 @@ Widget buildEnterCodeForm(WelcomePageState state) {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: color3,
+                      backgroundColor: color1,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 12,
@@ -130,10 +130,10 @@ Widget buildEnterCodeForm(WelcomePageState state) {
                       state.resendResetCode(
                           state.forgotPasswordEmailController.text.trim());
                     },
-                    style: TextButton.styleFrom(foregroundColor: color3),
+                    style: TextButton.styleFrom(foregroundColor: color1),
                     child: const Text(
                       'Reenviar código',
-                      style: TextStyle(color: color1, fontSize: 14),
+                      style: TextStyle(color: color0, fontSize: 14),
                     ),
                   ),
                 ),
@@ -164,7 +164,7 @@ Widget buildRegisterVerificationCodeForm(WelcomePageState state) {
                   children: [
                     IconButton(
                       icon: const Icon(HugeIcons.strokeRoundedArrowLeft01,
-                          color: color3),
+                          color: color1),
                       onPressed: () {
                         state.switchForm(FormType.register);
                       },
@@ -176,7 +176,7 @@ Widget buildRegisterVerificationCodeForm(WelcomePageState state) {
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: color3,
+                          color: color1,
                         ),
                       ),
                     ),
@@ -187,7 +187,7 @@ Widget buildRegisterVerificationCodeForm(WelcomePageState state) {
                   'Ingrese el código enviado a su correo para completar el registro',
                   style: TextStyle(
                     fontSize: 18,
-                    color: color1,
+                    color: color0,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -220,7 +220,7 @@ Widget buildRegisterVerificationCodeForm(WelcomePageState state) {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: color3,
+                      backgroundColor: color1,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 12),
                       shape: RoundedRectangleBorder(
@@ -241,10 +241,10 @@ Widget buildRegisterVerificationCodeForm(WelcomePageState state) {
                       state.resendSignUpCode(
                           state.registerEmailController.text.trim());
                     },
-                    style: TextButton.styleFrom(foregroundColor: color3),
+                    style: TextButton.styleFrom(foregroundColor: color1),
                     child: const Text(
                       'Reenviar código de verificación',
-                      style: TextStyle(color: color1, fontSize: 14),
+                      style: TextStyle(color: color0, fontSize: 14),
                     ),
                   ),
                 ),

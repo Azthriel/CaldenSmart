@@ -130,11 +130,11 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
         margin: const EdgeInsets.only(bottom: 8.0),
         decoration: BoxDecoration(
           color: isEquipoSelected
-              ? color6.withValues(alpha: 0.1)
+              ? color4.withValues(alpha: 0.1)
               : color0.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8.0),
           border: Border.all(
-            color: isEquipoSelected ? color6 : color0,
+            color: isEquipoSelected ? color4 : color0,
             width: 1.0,
           ),
         ),
@@ -187,7 +187,7 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
                           style: GoogleFonts.poppins(color: color0),
                         ),
                         value: isChecked,
-                        activeColor: color6,
+                        activeColor: color4,
                         onChanged: (value) {
                           setState(() {
                             if (value == true) {
@@ -206,7 +206,7 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
                   title: Text(displayName,
                       style: GoogleFonts.poppins(color: color0)),
                   value: deviceGroup.contains(equipo),
-                  activeColor: color6,
+                  activeColor: color4,
                   onChanged: (value) {
                     setState(() {
                       if (value == true) {
@@ -223,7 +223,7 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
                 title: Text(displayName,
                     style: GoogleFonts.poppins(color: color0)),
                 value: deviceGroup.contains(equipo),
-                activeColor: color6,
+                activeColor: color4,
                 onChanged: (value) {
                   setState(() {
                     if (value == true) {
@@ -244,7 +244,7 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: color3,
+      color: color1,
       child: Padding(
         padding: const EdgeInsets.all(10.0),
         child: Column(
@@ -258,7 +258,7 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
                     opacity: currentStep == 0 ? 1.0 : 0.0,
                     child: IconButton(
                       icon: const Icon(Icons.arrow_back),
-                      color: color1,
+                      color: color0,
                       onPressed: currentStep == 0
                           ? () {
                               if (widget.onBackToMain != null) {
@@ -273,7 +273,7 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
                       child: Text(
                         'Control por Grupo',
                         style: GoogleFonts.poppins(
-                          color: color1,
+                          color: color0,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -295,7 +295,7 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
                   Container(
                       width: 30,
                       height: 2,
-                      color: currentStep >= 1 ? color6 : color0),
+                      color: currentStep >= 1 ? color4 : color0),
                   _buildStepIndicator(1, 'Nombre', currentStep >= 1),
                 ],
               ),
@@ -322,7 +322,7 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
                           onPressed: () => setState(() => currentStep--),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: color0,
-                            foregroundColor: color3,
+                            foregroundColor: color1,
                             padding: const EdgeInsets.symmetric(vertical: 12.0),
                           ),
                           child: const Text('Anterior'),
@@ -342,9 +342,9 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
                             _canContinue() ? () => _handleContinue() : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: color0,
-                          foregroundColor: color3,
+                          foregroundColor: color1,
                           disabledForegroundColor:
-                              color3.withValues(alpha: 0.5),
+                              color1.withValues(alpha: 0.5),
                           disabledBackgroundColor: color0,
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
                         ),
@@ -367,14 +367,14 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
           width: 24,
           height: 24,
           decoration: BoxDecoration(
-            color: isActive ? color6 : color0,
+            color: isActive ? color4 : color0,
             shape: BoxShape.circle,
           ),
           child: Center(
             child: Text(
               '${step + 1}',
               style: GoogleFonts.poppins(
-                color: color3,
+                color: color1,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
@@ -385,7 +385,7 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
         Text(
           label,
           style: GoogleFonts.poppins(
-            color: color1,
+            color: color0,
             fontSize: 9,
           ),
         ),
@@ -402,7 +402,7 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
             Center(
               child: Text(
                 'Selecciona al menos dos equipos',
-                style: GoogleFonts.poppins(color: color1, fontSize: 16),
+                style: GoogleFonts.poppins(color: color0, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -422,7 +422,7 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
             Center(
               child: Text(
                 'Escribe el nombre del grupo',
-                style: GoogleFonts.poppins(color: color1, fontSize: 16),
+                style: GoogleFonts.poppins(color: color0, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -431,18 +431,18 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
               controller: title,
               decoration: InputDecoration(
                 hintText: 'Ej: Grupo de luces',
-                hintStyle: GoogleFonts.poppins(color: color3),
+                hintStyle: GoogleFonts.poppins(color: color1),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16.0),
-                  borderSide: const BorderSide(color: color6),
+                  borderSide: const BorderSide(color: color4),
                 ),
                 filled: true,
-                fillColor: color1,
+                fillColor: color0,
                 errorText: title.text.contains(':')
                     ? 'No se permiten dos puntos (:)'
                     : null,
               ),
-              style: GoogleFonts.poppins(color: color3),
+              style: GoogleFonts.poppins(color: color1),
               onChanged: (value) {
                 setState(() {
                   // Actualizar el estado para mostrar/ocultar el error
@@ -494,10 +494,6 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
         currentUserEmail,
         eventosCreados,
       );
-
-      groupsOfDevices.addAll({
-        title.text.trim(): deviceGroup,
-      });
 
       todosLosDispositivos.add(
         MapEntry(

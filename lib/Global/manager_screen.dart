@@ -117,9 +117,9 @@ class ManagerScreenState extends State<ManagerScreen> {
             return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20.0),
-                side: const BorderSide(color: color6, width: 2.0),
+                side: const BorderSide(color: color4, width: 2.0),
               ),
-              backgroundColor: color3,
+              backgroundColor: color1,
               title: Text(
                 'Selecciona un pin',
                 style: GoogleFonts.poppins(
@@ -140,7 +140,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                       ),
                       value: index,
                       groupValue: selectedPin,
-                      activeColor: color6,
+                      activeColor: color4,
                       onChanged: (int? value) {
                         setState(() {
                           selectedPin = value;
@@ -154,7 +154,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                 TextButton(
                   child: Text(
                     'Aceptar',
-                    style: GoogleFonts.poppins(color: color6),
+                    style: GoogleFonts.poppins(color: color4),
                   ),
                   onPressed: () {
                     Navigator.of(context).pop(selectedPin);
@@ -184,7 +184,7 @@ class ManagerScreenState extends State<ManagerScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: color3,
+                color: color1,
               ),
               textAlign: TextAlign.center,
             ),
@@ -271,7 +271,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                   duration: const Duration(milliseconds: 600),
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: color6,
+                    color: color4,
                     shape: BoxShape.rectangle,
                     borderRadius: BorderRadius.circular(15),
                     boxShadow: const [
@@ -323,7 +323,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                 margin: const EdgeInsets.symmetric(vertical: 0),
                                 padding: const EdgeInsets.all(15),
                                 decoration: BoxDecoration(
-                                  color: color3,
+                                  color: color1,
                                   borderRadius: BorderRadius.circular(15),
                                 ),
                                 child: Row(
@@ -362,15 +362,15 @@ class ManagerScreenState extends State<ManagerScreen> {
                                               const Duration(milliseconds: 600),
                                           child: TextField(
                                             controller: emailController,
-                                            cursorColor: color3,
+                                            cursorColor: color1,
                                             style: GoogleFonts.poppins(
-                                              color: color3,
+                                              color: color1,
                                             ),
                                             decoration: InputDecoration(
                                               labelText: 'Correo electrónico',
                                               labelStyle: GoogleFonts.poppins(
                                                 fontSize: 16,
-                                                color: color3,
+                                                color: color1,
                                               ),
                                               filled: true,
                                               fillColor: Colors.transparent,
@@ -378,7 +378,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                 borderRadius:
                                                     BorderRadius.circular(15),
                                                 borderSide: const BorderSide(
-                                                  color: color3,
+                                                  color: color1,
                                                   width: 2,
                                                 ),
                                               ),
@@ -471,7 +471,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                           child: Container(
                                             padding: const EdgeInsets.all(15),
                                             decoration: BoxDecoration(
-                                              color: color3,
+                                              color: color1,
                                               borderRadius:
                                                   BorderRadius.circular(15),
                                             ),
@@ -503,7 +503,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(15),
                                 decoration: BoxDecoration(
-                                  color: color3,
+                                  color: color1,
                                   borderRadius: BorderRadius.circular(15),
                                 ),
                                 child: Row(
@@ -537,7 +537,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                           'No hay administradores secundarios.',
                                           style: GoogleFonts.poppins(
                                             fontSize: 16,
-                                            color: color3,
+                                            color: color1,
                                           ),
                                         )
                                       : Column(
@@ -554,7 +554,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                       vertical: 10,
                                                       horizontal: 15),
                                               decoration: BoxDecoration(
-                                                color: color3,
+                                                color: color1,
                                                 borderRadius:
                                                     BorderRadius.circular(15),
                                                 border: Border.all(
@@ -586,7 +586,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                   IconButton(
                                                     icon: const Icon(
                                                         Icons.delete,
-                                                        color: color5),
+                                                        color: color3),
                                                     onPressed: () {
                                                       removeSecondaryAdmin(
                                                           email);
@@ -662,7 +662,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(15),
                                 decoration: BoxDecoration(
-                                  color: color3,
+                                  color: color1,
                                   borderRadius: BorderRadius.circular(15),
                                 ),
                                 child: Row(
@@ -696,7 +696,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                           margin:
                                               const EdgeInsets.only(top: 20),
                                           decoration: BoxDecoration(
-                                            color: color3,
+                                            color: color1,
                                             borderRadius:
                                                 BorderRadius.circular(15),
                                             boxShadow: const [
@@ -759,7 +759,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                   padding:
                                                       const EdgeInsets.all(15),
                                                   decoration: BoxDecoration(
-                                                    color: color3,
+                                                    color: color1,
                                                     borderRadius:
                                                         BorderRadius.circular(
                                                             15),
@@ -956,7 +956,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                         'Activar',
                                                         style:
                                                             GoogleFonts.poppins(
-                                                                color: color3,
+                                                                color: color1,
                                                                 fontSize: 16),
                                                       ),
                                                     ),
@@ -987,7 +987,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                         'Cancelar',
                                                         style:
                                                             GoogleFonts.poppins(
-                                                                color: color3,
+                                                                color: color1,
                                                                 fontSize: 16),
                                                       ),
                                                     ),
@@ -1065,7 +1065,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                   },
                   style: ElevatedButton.styleFrom(
                     foregroundColor: color0,
-                    backgroundColor: color3,
+                    backgroundColor: color1,
                     padding: const EdgeInsets.symmetric(
                         vertical: 11, horizontal: 20),
                     shape: RoundedRectangleBorder(
@@ -1146,7 +1146,7 @@ class ManagerScreenState extends State<ManagerScreen> {
             //     },
             //     style: ElevatedButton.styleFrom(
             //       foregroundColor: color0,
-            //       backgroundColor: color3,
+            //       backgroundColor: color1,
             //       padding:
             //           const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
             //       shape: RoundedRectangleBorder(
@@ -1181,7 +1181,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                       padding: const EdgeInsets.all(20),
                       margin: const EdgeInsets.only(top: 20),
                       decoration: BoxDecoration(
-                        color: color3,
+                        color: color1,
                         borderRadius: BorderRadius.circular(15),
                       ),
                       child: Column(
@@ -1202,7 +1202,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                 selectedNotificationOption = value!;
                               });
                             },
-                            activeColor: color1,
+                            activeColor: color0,
                             title: Text(
                               'Instantáneo',
                               style: GoogleFonts.poppins(color: color0),
@@ -1216,7 +1216,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                 selectedNotificationOption = value!;
                               });
                             },
-                            activeColor: color1,
+                            activeColor: color0,
                             title: Text(
                               'Si permanece 10 minutos desconectado',
                               style: GoogleFonts.poppins(color: color0),
@@ -1230,7 +1230,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                 selectedNotificationOption = value!;
                               });
                             },
-                            activeColor: color1,
+                            activeColor: color0,
                             title: Text(
                               'Si permanece 1 hora desconectado',
                               style: GoogleFonts.poppins(color: color0),
@@ -1265,7 +1265,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                             child: Text(
                               'Aceptar',
                               style: GoogleFonts.poppins(
-                                  color: color3, fontSize: 16),
+                                  color: color1, fontSize: 16),
                             ),
                           ),
                         ],
@@ -1285,7 +1285,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                 padding:
                     const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                 decoration: BoxDecoration(
-                  color: color3,
+                  color: color1,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -1305,11 +1305,11 @@ class ManagerScreenState extends State<ManagerScreen> {
                     Transform.scale(
                       scale: 1.5,
                       child: Switch(
-                        activeColor: color3,
+                        activeColor: color1,
                         activeTrackColor: color0,
-                        inactiveThumbColor: color3,
+                        inactiveThumbColor: color1,
                         inactiveTrackColor: color0,
-                        trackOutlineColor: const WidgetStatePropertyAll(color3),
+                        trackOutlineColor: const WidgetStatePropertyAll(color1),
                         thumbIcon: WidgetStateProperty.resolveWith<Icon?>(
                           (Set<WidgetState> states) {
                             if (states.contains(WidgetState.selected)) {
@@ -1352,7 +1352,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                 },
                 style: ElevatedButton.styleFrom(
                   foregroundColor: color0,
-                  backgroundColor: color3,
+                  backgroundColor: color1,
                   padding: const EdgeInsets.symmetric(
                     vertical: 11,
                     horizontal: 20,
@@ -1404,7 +1404,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                   },
                   style: ElevatedButton.styleFrom(
                     foregroundColor: color0,
-                    backgroundColor: color3,
+                    backgroundColor: color1,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
@@ -1427,7 +1427,7 @@ class ManagerScreenState extends State<ManagerScreen> {
               width: MediaQuery.of(context).size.width * 1.5,
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
               decoration: BoxDecoration(
-                color: color3,
+                color: color1,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -1447,7 +1447,7 @@ class ManagerScreenState extends State<ManagerScreen> {
               width: MediaQuery.of(context).size.width * 1.5,
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
               decoration: BoxDecoration(
-                color: color3,
+                color: color1,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(

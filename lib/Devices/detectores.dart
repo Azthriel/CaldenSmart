@@ -427,7 +427,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                   child: SizedBox(
                     height: cardHeight,
                     child: Card(
-                      color: color3,
+                      color: color1,
                       elevation: 6,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
@@ -503,7 +503,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                   child: SizedBox(
                     height: cardHeight,
                     child: Card(
-                      color: color3,
+                      color: color1,
                       elevation: 6,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
@@ -574,7 +574,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                   child: SizedBox(
                     height: cardHeight,
                     child: Card(
-                      color: color3,
+                      color: color1,
                       elevation: 6,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
@@ -661,7 +661,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                       key: keys['detectores:gas1']!,
                       height: cardHeight,
                       child: Card(
-                        color: color3,
+                        color: color1,
                         elevation: 6,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15),
@@ -760,7 +760,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                       key: keys['detectores:co1']!,
                       height: cardHeight,
                       child: Card(
-                        color: color3,
+                        color: color1,
                         elevation: 6,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15),
@@ -882,7 +882,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                       key: keys['detectores:gas2']!,
                       height: cardHeight,
                       child: Card(
-                        color: color3,
+                        color: color1,
                         elevation: 6,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15),
@@ -981,7 +981,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                       key: keys['detectores:co2']!,
                       height: cardHeight,
                       child: Card(
-                        color: color3,
+                        color: color1,
                         elevation: 6,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15),
@@ -1104,7 +1104,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                       key: keys['detectores:gas3']!,
                       height: cardHeight,
                       child: Card(
-                        color: color3,
+                        color: color1,
                         elevation: 6,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15),
@@ -1203,7 +1203,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                       key: keys['detectores:co3']!,
                       height: cardHeight,
                       child: Card(
-                        color: color3,
+                        color: color1,
                         elevation: 6,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15),
@@ -1445,7 +1445,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: color3,
+          backgroundColor: color1,
           title: GestureDetector(
             onTap: () async {
               if (_isTutorialActive) return;
@@ -1553,7 +1553,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
             ),
           ],
         ),
-        backgroundColor: color1,
+        backgroundColor: color0,
         resizeToAvoidBottomInset: false,
         body: IgnorePointer(
           ignoring: _isTutorialActive,
@@ -1586,8 +1586,8 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                       Icon(Icons.lightbulb, size: 30, color: color0),
                       Icon(Icons.settings, size: 30, color: color0),
                     ],
-                    color: color3,
-                    buttonBackgroundColor: color3,
+                    color: color1,
+                    buttonBackgroundColor: color1,
                     backgroundColor: Colors.transparent,
                     animationCurve: Curves.easeInOut,
                     animationDuration: const Duration(milliseconds: 600),
@@ -1651,7 +1651,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                     }
                   });
                 },
-                backgroundColor: color6,
+                backgroundColor: color4,
                 shape: const CircleBorder(),
                 child: const Icon(Icons.help, size: 30, color: color0),
               ),

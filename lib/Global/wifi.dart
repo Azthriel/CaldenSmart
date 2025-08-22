@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:caldensmart/master.dart';
 import 'package:caldensmart/Global/stored_data.dart';
@@ -18,75 +19,127 @@ class WifiPage extends ConsumerStatefulWidget {
   ConsumerState<WifiPage> createState() => WifiPageState();
 }
 
-class WifiPageState extends ConsumerState<WifiPage> {
-  bool charging = false;
-  static bool hasInitialized = false;
+class WifiPageState extends ConsumerState<WifiPage>
+    with WidgetsBindingObserver {
   final Map<String, bool> _expandedStates = {};
   final Set<String> _processingGroups = {};
+  final Set<String> _processingCadenas = {};
+  StreamSubscription<String>? _cadenaCompletedSubscription;
 
   @override
   void initState() {
     super.initState();
-    if (!hasInitialized) {
-      hasInitialized = true;
-      initAsync();
-    } else {
-      setState(() {
-        todosLosDispositivos;
+    WidgetsBinding.instance.addObserver(this);
 
-        printLog.i('Lista de dispositivos: $todosLosDispositivos');
-      });
+    setState(() {
+      _buildDeviceListFromLoadedData();
+    });
+
+    // Verificar el estado de las cadenas al inicializar
+    _checkCadenasStatus();
+
+    // Escuchar notificaciones de cadenas completadas
+    _setupCadenaCompletedListener();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _cadenaCompletedSubscription?.cancel();
+    super.dispose();
+  }
+
+  // Configurar listener para cadenas completadas en tiempo real
+  void _setupCadenaCompletedListener() {
+    _cadenaCompletedSubscription =
+        cadenaCompletedController.stream.listen((cadenaName) {
+      printLog.i(
+          'Recibida notificación de cadena completada en WiFi UI: $cadenaName');
+      if (mounted) {
+        setState(() {
+          _processingCadenas.remove(cadenaName);
+        });
+        showToast('🎉 ¡Cadena "$cadenaName" completada exitosamente!');
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      // Verificar el estado cuando la app vuelve al foreground
+      _checkCadenasStatus();
     }
   }
 
-  void initAsync() async {
-    setState(
-      () {
-        charging = true;
-      },
-    );
+  // Verificar el estado de las cadenas en SharedPreferences
+  Future<void> _checkCadenasStatus() async {
+    List<String> executingCadenas = await getExecutingCadenas(currentUserEmail);
+    setState(() {
+      _processingCadenas.clear();
+      _processingCadenas.addAll(executingCadenas);
+    });
+    printLog.i('Cadenas en ejecución recuperadas: $executingCadenas');
+  }
 
-    currentUserEmail = await getUserMail();
+  // Construir la lista de dispositivos desde datos ya cargados
+  void _buildDeviceListFromLoadedData() {
+    try {
+      todosLosDispositivos.clear();
 
-    todosLosDispositivos.clear();
-    await getDevices(currentUserEmail);
-    eventosCreados = await getEventos(currentUserEmail);
-
-    // Agregar individuales
-    for (String device in previusConnections) {
-      todosLosDispositivos.add(MapEntry('individual', device));
-    }
-
-    for (var evento in eventosCreados) {
-      if (evento['evento'] == 'grupo' || evento['evento'] == 'cadena') {
-        todosLosDispositivos.add(MapEntry(evento['title'] ?? 'Grupo',
-            (evento['deviceGroup'] as List<dynamic>).join(',')));
-      }
-    }
-    List<Map<String, String>> savedOrder =
-        await loadWifiOrderDevices(currentUserEmail);
-    if (savedOrder.isNotEmpty) {
-      List<MapEntry<String, String>> orderedList = [];
-      for (var item in savedOrder) {
-        orderedList.add(MapEntry(item['key']!, item['value']!));
-      }
-      // Agrega los dispositivos nuevos que no estaban en el orden guardado
-      for (var entry in todosLosDispositivos) {
-        bool exists = orderedList
-            .any((e) => e.key == entry.key && e.value == entry.value);
+      // Agregar individuales
+      for (String device in previusConnections) {
+        MapEntry<String, String> newEntry = MapEntry('individual', device);
+        bool exists = todosLosDispositivos
+            .any((e) => e.key == newEntry.key && e.value == newEntry.value);
         if (!exists) {
-          orderedList.add(entry);
+          todosLosDispositivos.add(newEntry);
         }
       }
-      todosLosDispositivos
-        ..clear()
-        ..addAll(orderedList);
-    }
 
-    printLog.i('Lista de dispositivos: $todosLosDispositivos');
-    charging = false;
-    if (mounted) {
-      setState(() {});
+      // Agregar eventos (grupos y cadenas)
+      for (var evento in eventosCreados) {
+        if (evento['evento'] == 'grupo' || evento['evento'] == 'cadena') {
+          MapEntry<String, String> newEntry = MapEntry(
+              evento['title'] ?? 'Grupo',
+              (evento['deviceGroup'] as List<dynamic>).join(','));
+          bool exists = todosLosDispositivos
+              .any((e) => e.key == newEntry.key && e.value == newEntry.value);
+          if (!exists) {
+            todosLosDispositivos.add(newEntry);
+          }
+        }
+      }
+
+      printLog.i(
+          'Lista de dispositivos construida: ${todosLosDispositivos.length} elementos');
+
+      if (savedOrder.isNotEmpty) {
+        List<MapEntry<String, String>> orderedList = [];
+        for (var item in savedOrder) {
+          orderedList.add(MapEntry(item['key']!, item['value']!));
+        }
+        // Agrega los dispositivos nuevos que no estaban en el orden guardado
+        for (var entry in todosLosDispositivos) {
+          bool exists = orderedList
+              .any((e) => e.key == entry.key && e.value == entry.value);
+          if (!exists) {
+            orderedList.add(entry);
+          }
+        }
+        todosLosDispositivos
+          ..clear()
+          ..addAll(orderedList);
+      }
+
+      printLog.i('Lista de dispositivos: $todosLosDispositivos');
+
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      printLog.e('Error construyendo lista de dispositivos: $e');
     }
   }
 
@@ -112,10 +165,10 @@ class WifiPageState extends ConsumerState<WifiPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: color3,
+          backgroundColor: color1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20.0),
-            side: const BorderSide(color: color6, width: 2.0),
+            side: const BorderSide(color: color4, width: 2.0),
           ),
           title: Text(
             'Confirmación',
@@ -166,8 +219,10 @@ class WifiPageState extends ConsumerState<WifiPage> {
     setState(() {});
     final String sn = DeviceManager.extractSerialNumber(deviceName);
 
-    // Actualizar datos remotos
-    await putPreviusConnections(currentUserEmail, previusConnections);
+    // Actualizar datos remotos - usar marcador fantasma si la lista queda vacía
+    bool isListEmpty = previusConnections.isEmpty;
+    await putPreviusConnections(currentUserEmail, previusConnections,
+        isIntentionalClear: isListEmpty);
     await putDevicesForAlexa(currentUserEmail, previusConnections);
     await removeFromActiveUsers(equipo, sn, currentUserEmail);
 
@@ -407,21 +462,73 @@ class WifiPageState extends ConsumerState<WifiPage> {
 
   //*- Controlar la cadena -*\\
   void controlarCadena(String name) async {
+    // Verificar si la cadena ya está siendo procesada usando SharedPreferences
+    bool isAlreadyExecuting = await isCadenaExecuting(name, currentUserEmail);
+    if (isAlreadyExecuting) {
+      showToast(
+          '⏳ La cadena "$name" ya se está ejecutando, aguarde un momento...');
+      return;
+    }
+
+    // Agregar la cadena al Set de procesamiento y actualizar UI
+    setState(() {
+      _processingCadenas.add(name);
+    });
+
     String bd = jsonEncode({'nombreEvento': name, 'email': currentUserEmail});
 
     printLog.i('Controlling cadena with body: $bd', color: 'rosa');
 
-    final response = await http.post(
-      Uri.parse(controlCadenaAPI),
-      body: bd,
-    );
+    try {
+      showToast('🔄 Iniciando cadena "$name"...');
 
-    showToast('Se accionó el evento');
+      final response = await http.post(
+        Uri.parse(controlCadenaAPI),
+        body: bd,
+      );
 
-    if (response.statusCode == 200) {
-      printLog.i('Cadena controlada exitosamente');
-    } else {
-      printLog.e('Error al controlar la cadena: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        printLog.i('Cadena iniciada exitosamente');
+        showToast('✅ Cadena "$name" iniciada exitosamente');
+
+        // Marcar la cadena como en ejecución en SharedPreferences
+        await setCadenaExecuting(name, currentUserEmail);
+
+        // Ya no usamos timer, la cadena se desmarcará cuando llegue la notificación
+        printLog
+            .i('Cadena "$name" marcada como en ejecución en SharedPreferences');
+      } else if (response.statusCode == 404) {
+        printLog.e('Cadena no encontrada: ${response.statusCode}');
+        showToast(
+            '🔍 No se encontró la cadena "$name". Verifica que existe y tienes permisos.');
+        // Remover inmediatamente si hay error
+        setState(() {
+          _processingCadenas.remove(name);
+        });
+      } else if (response.statusCode == 400) {
+        printLog.e('Error de validación: ${response.statusCode}');
+        showToast(
+            '🚫 Error en los datos de la cadena. Por favor intenta nuevamente.');
+        // Remover inmediatamente si hay error
+        setState(() {
+          _processingCadenas.remove(name);
+        });
+      } else {
+        printLog.e('Error al controlar la cadena: ${response.statusCode}');
+        showToast('⚡ Error del servidor. Intenta nuevamente en unos momentos.');
+        // Remover inmediatamente si hay error
+        setState(() {
+          _processingCadenas.remove(name);
+        });
+      }
+    } catch (e) {
+      printLog.e('Error de conexión al controlar la cadena: $e');
+      showToast(
+          '📶 Sin conexión a internet. Verifica tu red y vuelve a intentar.');
+      // Remover inmediatamente si hay error de conexión
+      setState(() {
+        _processingCadenas.remove(name);
+      });
     }
   }
   //*- Controlar la cadena -*\\
@@ -450,122 +557,91 @@ class WifiPageState extends ConsumerState<WifiPage> {
       child: Scaffold(
         extendBody: true,
         resizeToAvoidBottomInset: false,
-        backgroundColor: color1,
+        backgroundColor: color0,
         appBar: AppBar(
           automaticallyImplyLeading: false,
           title: Text(
             'Mis equipos registrados',
             style: GoogleFonts.poppins(color: color0),
           ),
-          backgroundColor: color3,
+          backgroundColor: color1,
           actions: [
-            charging
-                ? const SizedBox.shrink()
-                : IconButton(
-                    icon: const Icon(HugeIcons.strokeRoundedSettings02,
-                        color: color0),
-                    onPressed: () =>
-                        Navigator.pushReplacementNamed(context, '/escenas'),
-                  ),
+            IconButton(
+              icon:
+                  const Icon(HugeIcons.strokeRoundedSettings02, color: color0),
+              onPressed: () =>
+                  Navigator.pushReplacementNamed(context, '/escenas'),
+            ),
           ],
-          bottom: charging
-              ? null
-              : TabBar(
-                  labelColor: color0,
-                  unselectedLabelColor: color0.withValues(alpha: 0.6),
-                  indicatorColor: color6,
-                  dividerColor: Colors.transparent,
-                  labelStyle: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                  unselectedLabelStyle: GoogleFonts.poppins(
-                    fontWeight: FontWeight.normal,
-                    fontSize: 14,
-                  ),
-                  tabs: [
-                    Tab(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(HugeIcons.strokeRoundedSmartPhone01,
-                              size: 18),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              'Individuales (${dispositiosIndividuales.length})',
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 2,
-                              softWrap: true,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Tab(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(HugeIcons.strokeRoundedUserGroup,
-                              size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Eventos (${eventos.length})',
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
-                            softWrap: true,
-                          ),
-                        ],
+          bottom: TabBar(
+            labelColor: color0,
+            unselectedLabelColor: color0.withValues(alpha: 0.6),
+            indicatorColor: color4,
+            dividerColor: Colors.transparent,
+            labelStyle: GoogleFonts.poppins(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+            unselectedLabelStyle: GoogleFonts.poppins(
+              fontWeight: FontWeight.normal,
+              fontSize: 14,
+            ),
+            tabs: [
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(HugeIcons.strokeRoundedSmartPhone01, size: 18),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'Individuales (${dispositiosIndividuales.length})',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                        softWrap: true,
                       ),
                     ),
                   ],
                 ),
+              ),
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(HugeIcons.strokeRoundedUserGroup, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Eventos (${eventos.length})',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                      softWrap: true,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
         body: Container(
           padding: const EdgeInsets.only(bottom: 100.0),
-          color: color1,
-          child: charging
-              ? Center(
-                  child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset(
-                            'assets/branch/dragon.gif',
-                            width: 150,
-                            height: 150,
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            'Se están cargando los equipos, aguarde un momento por favor...',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.poppins(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: color3,
-                            ),
-                          ),
-                        ],
-                      )),
-                )
-              : TabBarView(
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    // Tab de Equipos Individuales
-                    _buildDeviceList(dispositiosIndividuales, 'individual'),
-                    // Tab de Grupos
-                    _buildDeviceList(eventos, 'grupos'),
-                  ],
-                ),
+          color: color0,
+          child: TabBarView(
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              // Tab de Equipos Individuales
+              _buildDeviceList(dispositiosIndividuales, 'individual'),
+              // Tab de Grupos
+              _buildDeviceList(eventos, 'grupos'),
+            ],
+          ),
         ),
       ),
     );
@@ -585,7 +661,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                     ? HugeIcons.strokeRoundedSmartPhone01
                     : HugeIcons.strokeRoundedUserGroup,
                 size: 80,
-                color: color3.withValues(alpha: 0.3),
+                color: color1.withValues(alpha: 0.3),
               ),
               const SizedBox(height: 20),
               Text(
@@ -596,7 +672,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: color3,
+                  color: color1,
                 ),
               ),
               const SizedBox(height: 10),
@@ -607,7 +683,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   fontSize: 14,
-                  color: color3.withValues(alpha: 0.7),
+                  color: color1.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -694,7 +770,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                 bool alert = deviceDATA['alert'] == 1;
                 return Card(
                   key: ValueKey(deviceName),
-                  color: color3,
+                  color: color1,
                   margin:
                       const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                   elevation: 2,
@@ -703,8 +779,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                         .copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color6,
-                      collapsedIconColor: color6,
+                      iconColor: color4,
+                      collapsedIconColor: color4,
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -730,13 +806,13 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                   Text(
                                     online ? '● CONECTADO' : '● DESCONECTADO',
                                     style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color5,
+                                      color: online ? Colors.green : color3,
                                       fontSize: 15,
                                     ),
                                   ),
                                   Icon(
                                     online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color5,
+                                    color: online ? Colors.green : color3,
                                     size: 15,
                                   ),
                                 ],
@@ -787,7 +863,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                   ? const Icon(
                                                       HugeIcons
                                                           .strokeRoundedAlert02,
-                                                      color: color6,
+                                                      color: color4,
                                                     )
                                                   : const Icon(
                                                       HugeIcons
@@ -801,7 +877,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                     : Text(
                                         'El equipo debe estar\nconectado para su uso',
                                         style: GoogleFonts.poppins(
-                                          color: color5,
+                                          color: color3,
                                           fontSize: 15,
                                         ),
                                       ),
@@ -832,7 +908,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                 bool heaterOn = deviceDATA['f_status'] ?? false;
                 return Card(
                   key: ValueKey(deviceName),
-                  color: color3,
+                  color: color1,
                   margin:
                       const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                   elevation: 2,
@@ -841,8 +917,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                         .copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color6,
-                      collapsedIconColor: color6,
+                      iconColor: color4,
+                      collapsedIconColor: color4,
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -868,13 +944,13 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                   Text(
                                     online ? '● CONECTADO' : '● DESCONECTADO',
                                     style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color5,
+                                      color: online ? Colors.green : color3,
                                       fontSize: 15,
                                     ),
                                   ),
                                   Icon(
                                     online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color5,
+                                    color: online ? Colors.green : color3,
                                     size: 15,
                                   ),
                                 ],
@@ -929,7 +1005,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                               : Text(
                                                   'Apagado',
                                                   style: GoogleFonts.poppins(
-                                                      color: color6,
+                                                      color: color4,
                                                       fontSize: 15),
                                                 ),
                                           const SizedBox(width: 5),
@@ -959,7 +1035,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                     : Text(
                                         'El equipo debe estar\nconectado para su uso',
                                         style: GoogleFonts.poppins(
-                                          color: color5,
+                                          color: color3,
                                           fontSize: 15,
                                         ),
                                       ),
@@ -990,7 +1066,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                 bool heaterOn = deviceDATA['f_status'] ?? false;
                 return Card(
                   key: ValueKey(deviceName),
-                  color: color3,
+                  color: color1,
                   margin:
                       const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                   elevation: 2,
@@ -999,8 +1075,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                         .copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color6,
-                      collapsedIconColor: color6,
+                      iconColor: color4,
+                      collapsedIconColor: color4,
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -1026,13 +1102,13 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                   Text(
                                     online ? '● CONECTADO' : '● DESCONECTADO',
                                     style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color5,
+                                      color: online ? Colors.green : color3,
                                       fontSize: 15,
                                     ),
                                   ),
                                   Icon(
                                     online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color5,
+                                    color: online ? Colors.green : color3,
                                     size: 15,
                                   ),
                                 ],
@@ -1087,7 +1163,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                               : Text(
                                                   'Apagado',
                                                   style: GoogleFonts.poppins(
-                                                    color: color6,
+                                                    color: color4,
                                                     fontSize: 15,
                                                   ),
                                                 ),
@@ -1121,7 +1197,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                     : Text(
                                         'El equipo debe estar\nconectado para su uso',
                                         style: GoogleFonts.poppins(
-                                          color: color5,
+                                          color: color3,
                                           fontSize: 15,
                                         ),
                                       ),
@@ -1150,7 +1226,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
               case '020010_IOT':
                 return Card(
                   key: ValueKey(deviceName),
-                  color: color3,
+                  color: color1,
                   margin: const EdgeInsets.symmetric(
                     vertical: 5,
                     horizontal: 10,
@@ -1163,8 +1239,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                       tilePadding: const EdgeInsets.symmetric(
                         horizontal: 16.0,
                       ),
-                      iconColor: color6,
-                      collapsedIconColor: color6,
+                      iconColor: color4,
+                      collapsedIconColor: color4,
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -1190,13 +1266,13 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                   Text(
                                     online ? '● CONECTADO' : '● DESCONECTADO',
                                     style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color5,
+                                      color: online ? Colors.green : color3,
                                       fontSize: 15,
                                     ),
                                   ),
                                   Icon(
                                     online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color5,
+                                    color: online ? Colors.green : color3,
                                     size: 15,
                                   ),
                                 ],
@@ -1279,7 +1355,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                             'Abierto',
                                                             style: GoogleFonts
                                                                 .poppins(
-                                                              color: color6,
+                                                              color: color4,
                                                               fontSize: 15,
                                                               fontWeight:
                                                                   FontWeight
@@ -1291,7 +1367,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                             'Abierto',
                                                             style: GoogleFonts
                                                                 .poppins(
-                                                              color: color6,
+                                                              color: color4,
                                                               fontSize: 15,
                                                               fontWeight:
                                                                   FontWeight
@@ -1325,7 +1401,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                         'Apagado',
                                                         style:
                                                             GoogleFonts.poppins(
-                                                          color: color6,
+                                                          color: color4,
                                                           fontSize: 15,
                                                           fontWeight:
                                                               FontWeight.bold,
@@ -1346,12 +1422,12 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                         )
                                                       : const Icon(
                                                           Icons.new_releases,
-                                                          color: color6,
+                                                          color: color4,
                                                         )
                                                   : comunWifi == '1'
                                                       ? const Icon(
                                                           Icons.new_releases,
-                                                          color: color6,
+                                                          color: color4,
                                                         )
                                                       : const Icon(
                                                           Icons.new_releases,
@@ -1423,7 +1499,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                     ? Text(
                                         'El equipo debe estar\nconectado para su uso',
                                         style: GoogleFonts.poppins(
-                                          color: color5,
+                                          color: color3,
                                           fontSize: 15,
                                         ),
                                       )
@@ -1477,7 +1553,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
 
                 return Card(
                   key: ValueKey(deviceName),
-                  color: color3,
+                  color: color1,
                   margin: const EdgeInsets.symmetric(
                     vertical: 5,
                     horizontal: 10,
@@ -1490,8 +1566,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                       tilePadding: const EdgeInsets.symmetric(
                         horizontal: 16.0,
                       ),
-                      iconColor: color6,
-                      collapsedIconColor: color6,
+                      iconColor: color4,
+                      collapsedIconColor: color4,
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -1517,13 +1593,13 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                   Text(
                                     online ? '● CONECTADO' : '● DESCONECTADO',
                                     style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color5,
+                                      color: online ? Colors.green : color3,
                                       fontSize: 15,
                                     ),
                                   ),
                                   Icon(
                                     online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color5,
+                                    color: online ? Colors.green : color3,
                                     size: 15,
                                   ),
                                 ],
@@ -1559,7 +1635,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                         'APAGADO',
                                                         style:
                                                             GoogleFonts.poppins(
-                                                          color: color6,
+                                                          color: color4,
                                                           fontSize: 15,
                                                         ),
                                                       ),
@@ -1598,7 +1674,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                               child: Text(
                                                 'El equipo debe estar\nconectado para su uso',
                                                 style: GoogleFonts.poppins(
-                                                  color: color5,
+                                                  color: color3,
                                                   fontSize: 15,
                                                 ),
                                               ),
@@ -1760,7 +1836,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                                   style: GoogleFonts
                                                                       .poppins(
                                                                     color:
-                                                                        color6,
+                                                                        color4,
                                                                     fontSize:
                                                                         15,
                                                                   ),
@@ -1842,7 +1918,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                         'El equipo debe estar\nconectado para su uso',
                                                         style:
                                                             GoogleFonts.poppins(
-                                                          color: color5,
+                                                          color: color3,
                                                           fontSize: 15,
                                                         ),
                                                       ),
@@ -1882,7 +1958,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                       (rState == '1' &&
                                                           !wStatus);
                                               return mismatch
-                                                  ? color6
+                                                  ? color4
                                                   : const Color(0xFF9C9D98);
                                             })(),
                                           ),
@@ -1901,7 +1977,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                         child: Text(
                                           'El equipo debe estar\nconectado para su uso',
                                           style: GoogleFonts.poppins(
-                                            color: color5,
+                                            color: color3,
                                             fontSize: 15,
                                           ),
                                         ),
@@ -1948,7 +2024,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                 bool heaterOn = deviceDATA['f_status'] ?? false;
                 return Card(
                   key: ValueKey(deviceName),
-                  color: color3,
+                  color: color1,
                   margin:
                       const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                   elevation: 2,
@@ -1957,8 +2033,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                         .copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color6,
-                      collapsedIconColor: color6,
+                      iconColor: color4,
+                      collapsedIconColor: color4,
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -1984,13 +2060,13 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                   Text(
                                     online ? '● CONECTADO' : '● DESCONECTADO',
                                     style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color5,
+                                      color: online ? Colors.green : color3,
                                       fontSize: 15,
                                     ),
                                   ),
                                   Icon(
                                     online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color5,
+                                    color: online ? Colors.green : color3,
                                     size: 15,
                                   ),
                                 ],
@@ -2044,7 +2120,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                               : Text(
                                                   'Apagado',
                                                   style: GoogleFonts.poppins(
-                                                      color: color6,
+                                                      color: color4,
                                                       fontSize: 15),
                                                 ),
                                           const SizedBox(width: 5),
@@ -2077,7 +2153,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                         child: Text(
                                           'El equipo debe estar\nconectado para su uso',
                                           style: GoogleFonts.poppins(
-                                            color: color5,
+                                            color: color3,
                                             fontSize: 15,
                                           ),
                                         ),
@@ -2107,7 +2183,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
               case '020020_IOT':
                 return Card(
                   key: ValueKey(deviceName),
-                  color: color3,
+                  color: color1,
                   margin:
                       const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                   elevation: 2,
@@ -2116,8 +2192,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                         .copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color6,
-                      collapsedIconColor: color6,
+                      iconColor: color4,
+                      collapsedIconColor: color4,
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -2143,13 +2219,13 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                   Text(
                                     online ? '● CONECTADO' : '● DESCONECTADO',
                                     style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color5,
+                                      color: online ? Colors.green : color3,
                                       fontSize: 15,
                                     ),
                                   ),
                                   Icon(
                                     online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color5,
+                                    color: online ? Colors.green : color3,
                                     size: 15,
                                   ),
                                 ],
@@ -2227,7 +2303,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                           'Abierto',
                                                           style: GoogleFonts
                                                               .poppins(
-                                                            color: color6,
+                                                            color: color4,
                                                             fontSize: 15,
                                                             fontWeight:
                                                                 FontWeight.bold,
@@ -2238,7 +2314,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                           'Abierto',
                                                           style: GoogleFonts
                                                               .poppins(
-                                                            color: color6,
+                                                            color: color4,
                                                             fontSize: 15,
                                                             fontWeight:
                                                                 FontWeight.bold,
@@ -2269,7 +2345,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                       'Apagado',
                                                       style:
                                                           GoogleFonts.poppins(
-                                                        color: color6,
+                                                        color: color4,
                                                         fontSize: 15,
                                                         fontWeight:
                                                             FontWeight.bold,
@@ -2289,12 +2365,12 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                       )
                                                     : const Icon(
                                                         Icons.new_releases,
-                                                        color: color6,
+                                                        color: color4,
                                                       )
                                                 : comunWifi == '1'
                                                     ? const Icon(
                                                         Icons.new_releases,
-                                                        color: color6,
+                                                        color: color4,
                                                       )
                                                     : const Icon(
                                                         Icons.new_releases,
@@ -2356,7 +2432,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                     ? Text(
                                         'El equipo debe estar\nconectado para su uso',
                                         style: GoogleFonts.poppins(
-                                          color: color5,
+                                          color: color3,
                                           fontSize: 15,
                                         ),
                                       )
@@ -2408,7 +2484,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
 
                 return Card(
                   key: ValueKey(deviceName),
-                  color: color3,
+                  color: color1,
                   margin:
                       const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                   elevation: 2,
@@ -2417,8 +2493,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                         .copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color6,
-                      collapsedIconColor: color6,
+                      iconColor: color4,
+                      collapsedIconColor: color4,
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -2444,13 +2520,13 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                   Text(
                                     online ? '● CONECTADO' : '● DESCONECTADO',
                                     style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color5,
+                                      color: online ? Colors.green : color3,
                                       fontSize: 15,
                                     ),
                                   ),
                                   Icon(
                                     online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color5,
+                                    color: online ? Colors.green : color3,
                                     size: 15,
                                   ),
                                 ],
@@ -2505,7 +2581,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                 : Text(
                                                     'Apagado',
                                                     style: GoogleFonts.poppins(
-                                                        color: color6,
+                                                        color: color4,
                                                         fontSize: 15),
                                                   ),
                                             const SizedBox(width: 5),
@@ -2535,7 +2611,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                       : Text(
                                           'El equipo debe estar\nconectado para su uso',
                                           style: GoogleFonts.poppins(
-                                            color: color5,
+                                            color: color3,
                                             fontSize: 15,
                                           ),
                                         )),
@@ -2565,7 +2641,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                 bool heaterOn = deviceDATA['f_status'] ?? false;
                 return Card(
                   key: ValueKey(deviceName),
-                  color: color3,
+                  color: color1,
                   margin:
                       const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                   elevation: 2,
@@ -2574,8 +2650,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                         .copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color6,
-                      collapsedIconColor: color6,
+                      iconColor: color4,
+                      collapsedIconColor: color4,
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -2601,13 +2677,13 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                   Text(
                                     online ? '● CONECTADO' : '● DESCONECTADO',
                                     style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color5,
+                                      color: online ? Colors.green : color3,
                                       fontSize: 15,
                                     ),
                                   ),
                                   Icon(
                                     online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color5,
+                                    color: online ? Colors.green : color3,
                                     size: 15,
                                   ),
                                 ],
@@ -2664,7 +2740,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                 : Text(
                                                     'Apagado',
                                                     style: GoogleFonts.poppins(
-                                                        color: color6,
+                                                        color: color4,
                                                         fontSize: 15),
                                                   ),
                                             const SizedBox(width: 5),
@@ -2694,7 +2770,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                       : Text(
                                           'El equipo debe estar\nconectado para su uso',
                                           style: GoogleFonts.poppins(
-                                            color: color5,
+                                            color: color3,
                                             fontSize: 15,
                                           ),
                                         )),
@@ -2725,7 +2801,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                 bool alertMinFlag = deviceDATA['alert_minflag'] ?? false;
                 return Card(
                   key: ValueKey(deviceName),
-                  color: color3,
+                  color: color1,
                   margin:
                       const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                   elevation: 2,
@@ -2734,8 +2810,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                         .copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color6,
-                      collapsedIconColor: color6,
+                      iconColor: color4,
+                      collapsedIconColor: color4,
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -2761,13 +2837,13 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                   Text(
                                     online ? '● CONECTADO' : '● DESCONECTADO',
                                     style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color5,
+                                      color: online ? Colors.green : color3,
                                       fontSize: 15,
                                     ),
                                   ),
                                   Icon(
                                     online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color5,
+                                    color: online ? Colors.green : color3,
                                     size: 15,
                                   ),
                                 ],
@@ -2812,7 +2888,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                   ? const Icon(
                                                       HugeIcons
                                                           .strokeRoundedAlert02,
-                                                      color: color6,
+                                                      color: color4,
                                                     )
                                                   : const Icon(
                                                       HugeIcons
@@ -2836,7 +2912,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                                   ? const Icon(
                                                       HugeIcons
                                                           .strokeRoundedAlert02,
-                                                      color: color6,
+                                                      color: color4,
                                                     )
                                                   : const Icon(
                                                       HugeIcons
@@ -2853,7 +2929,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                         child: Text(
                                           'El equipo debe estar\nconectado para su uso',
                                           style: GoogleFonts.poppins(
-                                            color: color5,
+                                            color: color3,
                                             fontSize: 15,
                                           ),
                                         ),
@@ -2889,7 +2965,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
             printLog.e('Error al procesar el equipo $deviceName: $e');
             return Card(
               key: ValueKey('${deviceName}_error'),
-              color: color3,
+              color: color1,
               margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
               elevation: 2,
               child: Theme(
@@ -2909,7 +2985,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                         subtitle: Text(
                           'Por favor, verifica la conexión y actualice su equipo.',
                           style: GoogleFonts.poppins(
-                            color: color1,
+                            color: color0,
                             fontSize: 15,
                           ),
                         ),
@@ -2938,7 +3014,6 @@ class WifiPageState extends ConsumerState<WifiPage> {
                 )
               : null;
 
-          //TODO visual evento cadena
           if (eventoCadena != null) {
             try {
               // Verificar si todos los equipos de la cadena están online
@@ -2947,7 +3022,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
 
               return Card(
                 key: ValueKey('cadena_$grupo'),
-                color: color3,
+                color: color1,
                 margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                 elevation: 2,
                 child: Theme(
@@ -2955,8 +3030,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                       .copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
                     tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    iconColor: color6,
-                    collapsedIconColor: color6,
+                    iconColor: color4,
+                    collapsedIconColor: color4,
                     onExpansionChanged: (bool expanded) {
                       setState(() {
                         _expandedStates[deviceName] = expanded;
@@ -2965,7 +3040,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                     title: Row(
                       children: [
                         const Icon(HugeIcons.strokeRoundedLink01,
-                            color: color6),
+                            color: color4),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -3039,25 +3114,44 @@ class WifiPageState extends ConsumerState<WifiPage> {
                             // Botón para activar la cadena
                             Center(
                               child: ElevatedButton.icon(
-                                onPressed: cadenaOnline
+                                onPressed: (cadenaOnline &&
+                                        !_processingCadenas.contains(grupo))
                                     ? () => controlarCadena(grupo)
                                     : null,
-                                icon: Icon(
-                                  HugeIcons.strokeRoundedPlay,
-                                  color: cadenaOnline ? color0 : Colors.grey,
-                                  size: 20,
-                                ),
+                                icon: _processingCadenas.contains(grupo)
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  color0),
+                                        ),
+                                      )
+                                    : Icon(
+                                        HugeIcons.strokeRoundedPlay,
+                                        color:
+                                            cadenaOnline ? color0 : Colors.grey,
+                                        size: 20,
+                                      ),
                                 label: Text(
-                                  'Activar Cadena',
+                                  _processingCadenas.contains(grupo)
+                                      ? 'Ejecutando Cadena...'
+                                      : 'Activar Cadena',
                                   style: GoogleFonts.poppins(
-                                    color: cadenaOnline ? color0 : Colors.grey,
+                                    color: (cadenaOnline ||
+                                            _processingCadenas.contains(grupo))
+                                        ? color0
+                                        : Colors.grey,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                   ),
                                 ),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: cadenaOnline
-                                      ? color6
+                                  backgroundColor: (cadenaOnline ||
+                                          _processingCadenas.contains(grupo))
+                                      ? color4
                                       : Colors.grey.withValues(alpha: 0.3),
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 24,
@@ -3066,7 +3160,10 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(20),
                                   ),
-                                  elevation: cadenaOnline ? 3 : 0,
+                                  elevation: (cadenaOnline ||
+                                          _processingCadenas.contains(grupo))
+                                      ? 3
+                                      : 0,
                                 ),
                               ),
                             ),
@@ -3144,10 +3241,10 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                 margin: const EdgeInsets.only(bottom: 12),
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: color1.withValues(alpha: 0.1),
+                                  color: color0.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: color6.withValues(alpha: 0.3),
+                                    color: color4.withValues(alpha: 0.3),
                                     width: 1,
                                   ),
                                 ),
@@ -3160,14 +3257,14 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                           width: 24,
                                           height: 24,
                                           decoration: const BoxDecoration(
-                                            color: color6,
+                                            color: color4,
                                             shape: BoxShape.circle,
                                           ),
                                           child: Center(
                                             child: Text(
                                               '$idx',
                                               style: GoogleFonts.poppins(
-                                                color: color3,
+                                                color: color1,
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 12,
                                               ),
@@ -3179,7 +3276,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                           'Paso $idx',
                                           style: GoogleFonts.poppins(
                                             fontWeight: FontWeight.bold,
-                                            color: color6,
+                                            color: color4,
                                             fontSize: 14,
                                           ),
                                         ),
@@ -3285,7 +3382,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
               printLog.e('Error al procesar la cadena $grupo: $e');
               return Card(
                 key: ValueKey('cadena_error_$grupo'),
-                color: color3,
+                color: color1,
                 margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                 elevation: 2,
                 child: Theme(
@@ -3302,7 +3399,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                     subtitle: Text(
                       'Por favor, elimine el evento y vuelva a crearlo.',
                       style: GoogleFonts.poppins(
-                        color: color1,
+                        color: color0,
                         fontSize: 15,
                       ),
                     ),
@@ -3350,11 +3447,10 @@ class WifiPageState extends ConsumerState<WifiPage> {
           bool estado = isGroupOn(devicesInGroup);
           bool owner = canControlGroup(devicesInGroup);
 
-          //TODO visual evento grupo
           try {
             return Card(
               key: ValueKey(deviceName),
-              color: color3,
+              color: color1,
               margin: const EdgeInsets.symmetric(
                 vertical: 5,
                 horizontal: 10,
@@ -3368,8 +3464,8 @@ class WifiPageState extends ConsumerState<WifiPage> {
                   tilePadding: const EdgeInsets.symmetric(
                     horizontal: 16.0,
                   ),
-                  iconColor: color6,
-                  collapsedIconColor: color6,
+                  iconColor: color4,
+                  collapsedIconColor: color4,
                   onExpansionChanged: (bool expanded) {
                     setState(() {
                       _expandedStates[deviceName] = expanded;
@@ -3378,7 +3474,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                   title: Row(
                     children: [
                       const Icon(HugeIcons.strokeRoundedUserGroup,
-                          color: color6),
+                          color: color4),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -3478,7 +3574,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                           ? 'Grupo encendido'
                                           : 'Grupo apagado',
                                       style: GoogleFonts.poppins(
-                                        color: estado ? Colors.green : color6,
+                                        color: estado ? Colors.green : color4,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -3489,9 +3585,9 @@ class WifiPageState extends ConsumerState<WifiPage> {
                                       activeColor: Colors.green,
                                       activeTrackColor:
                                           Colors.green.withValues(alpha: 0.3),
-                                      inactiveThumbColor: color6,
+                                      inactiveThumbColor: color4,
                                       inactiveTrackColor:
-                                          color6.withValues(alpha: 0.3),
+                                          color4.withValues(alpha: 0.3),
                                       value: estado,
                                       onChanged: (newValue) {
                                         controlGroup(
@@ -3521,7 +3617,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
-                                color: color3.withValues(alpha: 0.1),
+                                color: color1.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                   color: color0.withValues(alpha: 0.1),
@@ -3564,7 +3660,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
             printLog.e('Error al procesar el grupo $grupo: $e');
             return Card(
               key: ValueKey('grupo_error_$grupo'),
-              color: color3,
+              color: color1,
               margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
               elevation: 2,
               child: Theme(
@@ -3581,7 +3677,7 @@ class WifiPageState extends ConsumerState<WifiPage> {
                   subtitle: Text(
                     'Por favor, elimine el evento y vuelva a crearlo.',
                     style: GoogleFonts.poppins(
-                      color: color1,
+                      color: color0,
                       fontSize: 15,
                     ),
                   ),

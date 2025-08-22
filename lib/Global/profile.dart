@@ -1,5 +1,5 @@
+import 'package:caldensmart/Global/menu.dart';
 import 'package:caldensmart/Global/stored_data.dart';
-import 'package:caldensmart/Global/wifi.dart';
 import 'package:caldensmart/login/welcome.dart';
 import 'package:flutter/material.dart';
 import 'package:caldensmart/master.dart';
@@ -62,7 +62,7 @@ class ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: color3,
+        backgroundColor: color1,
         leading: IconButton(
           icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
           color: color0,
@@ -77,7 +77,7 @@ class ProfilePageState extends State<ProfilePage> {
         ),
       ),
       body: Container(
-        color: color1,
+        color: color0,
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
@@ -86,18 +86,18 @@ class ProfilePageState extends State<ProfilePage> {
                 children: [
                   ListTile(
                     leading:
-                        const Icon(HugeIcons.strokeRoundedUser, color: color3),
+                        const Icon(HugeIcons.strokeRoundedUser, color: color1),
                     title: Text(
                       "Cuenta",
                       style: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     subtitle: Text(
                       "Ver cuenta conectada",
                       style: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                       ),
                     ),
                     onTap: () {
@@ -109,7 +109,7 @@ class ProfilePageState extends State<ProfilePage> {
                       isAccountOpen
                           ? HugeIcons.strokeRoundedArrowUp01
                           : HugeIcons.strokeRoundedArrowDown01,
-                      color: color3,
+                      color: color1,
                     ),
                   ),
                   AnimatedCrossFade(
@@ -121,7 +121,7 @@ class ProfilePageState extends State<ProfilePage> {
                         children: [
                           Container(
                             decoration: BoxDecoration(
-                              color: color3,
+                              color: color1,
                               borderRadius: BorderRadius.circular(8.0),
                               border: Border.all(color: color0),
                             ),
@@ -201,7 +201,7 @@ class ProfilePageState extends State<ProfilePage> {
                             child: Text(
                               'Borrar cuenta',
                               style: GoogleFonts.poppins(
-                                color: color3,
+                                color: color1,
                               ),
                             ),
                           )
@@ -212,22 +212,22 @@ class ProfilePageState extends State<ProfilePage> {
                         ? CrossFadeState.showSecond
                         : CrossFadeState.showFirst,
                   ),
-                  const Divider(color: color3),
+                  const Divider(color: color1),
                   ListTile(
                     leading: const Icon(
                         HugeIcons.strokeRoundedComputerPhoneSync,
-                        color: color3),
+                        color: color1),
                     title: Text(
                       "Dispositivos",
                       style: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     subtitle: Text(
                       "Ver dispositivos registrados",
                       style: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                       ),
                     ),
                     onTap: () {
@@ -239,7 +239,7 @@ class ProfilePageState extends State<ProfilePage> {
                       isDevicesOpen
                           ? HugeIcons.strokeRoundedArrowUp01
                           : HugeIcons.strokeRoundedArrowDown01,
-                      color: color3,
+                      color: color1,
                     ),
                   ),
                   AnimatedCrossFade(
@@ -254,7 +254,7 @@ class ProfilePageState extends State<ProfilePage> {
                                   child: Text(
                                     "No hay dispositivos registrados",
                                     style: GoogleFonts.poppins(
-                                      color: color3,
+                                      color: color1,
                                     ),
                                   ),
                                 )
@@ -266,7 +266,7 @@ class ProfilePageState extends State<ProfilePage> {
                                             vertical: 8.0),
                                         child: Container(
                                           decoration: BoxDecoration(
-                                            color: color3,
+                                            color: color1,
                                             borderRadius:
                                                 BorderRadius.circular(8.0),
                                             border: Border.all(color: color0),
@@ -288,21 +288,21 @@ class ProfilePageState extends State<ProfilePage> {
                         ? CrossFadeState.showSecond
                         : CrossFadeState.showFirst,
                   ),
-                  const Divider(color: color3),
+                  const Divider(color: color1),
                   ListTile(
                     leading: const Icon(HugeIcons.strokeRoundedHome11,
-                        color: color3),
+                        color: color1),
                     title: Text(
                       "Domotica",
                       style: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     subtitle: Text(
                       "Alarma para domotica",
                       style: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                       ),
                     ),
                     onTap: () {
@@ -314,7 +314,7 @@ class ProfilePageState extends State<ProfilePage> {
                       isDomoticaOpen
                           ? HugeIcons.strokeRoundedArrowUp01
                           : HugeIcons.strokeRoundedArrowDown01,
-                      color: color3,
+                      color: color1,
                     ),
                   ),
                   AnimatedCrossFade(
@@ -328,17 +328,17 @@ class ProfilePageState extends State<ProfilePage> {
                             title: Row(
                               children: [
                                 const Icon(HugeIcons.strokeRoundedVolumeHigh,
-                                    color: color3),
+                                    color: color1),
                                 const SizedBox(width: 10),
                                 Text(
                                   alarmSounds[index],
                                   style: GoogleFonts.poppins(
-                                    color: color3,
+                                    color: color1,
                                   ),
                                 ),
                               ],
                             ),
-                            activeColor: color3,
+                            activeColor: color1,
                             value: index,
                             groupValue: selectedSoundDomotica,
                             onChanged: (int? value) {
@@ -369,23 +369,23 @@ class ProfilePageState extends State<ProfilePage> {
                         ? CrossFadeState.showSecond
                         : CrossFadeState.showFirst,
                   ),
-                  const Divider(color: color3),
+                  const Divider(color: color1),
                   ListTile(
                     leading: const Icon(
                       HugeIcons.strokeRoundedHotspot,
-                      color: color3,
+                      color: color1,
                     ),
                     title: Text(
                       "Detector",
                       style: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     subtitle: Text(
                       "Alarma para detectores",
                       style: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                       ),
                     ),
                     onTap: () {
@@ -397,7 +397,7 @@ class ProfilePageState extends State<ProfilePage> {
                       isDetectorOpen
                           ? HugeIcons.strokeRoundedArrowUp01
                           : HugeIcons.strokeRoundedArrowDown01,
-                      color: color3,
+                      color: color1,
                     ),
                   ),
                   AnimatedCrossFade(
@@ -411,17 +411,17 @@ class ProfilePageState extends State<ProfilePage> {
                             title: Row(
                               children: [
                                 const Icon(HugeIcons.strokeRoundedVolumeHigh,
-                                    color: color3),
+                                    color: color1),
                                 const SizedBox(width: 10),
                                 Text(
                                   alarmSounds[index],
                                   style: GoogleFonts.poppins(
-                                    color: color3,
+                                    color: color1,
                                   ),
                                 ),
                               ],
                             ),
-                            activeColor: color3,
+                            activeColor: color1,
                             value: index,
                             groupValue: selectedSoundDetector,
                             onChanged: (int? value) {
@@ -448,23 +448,23 @@ class ProfilePageState extends State<ProfilePage> {
                         ? CrossFadeState.showSecond
                         : CrossFadeState.showFirst,
                   ),
-                  const Divider(color: color3),
+                  const Divider(color: color1),
                   ListTile(
                     leading: const Icon(
                       HugeIcons.strokeRoundedTemperature,
-                      color: color3,
+                      color: color1,
                     ),
                     title: Text(
                       "Termómetro",
                       style: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     subtitle: Text(
                       "Alarma para termómetros",
                       style: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                       ),
                     ),
                     onTap: () {
@@ -476,7 +476,7 @@ class ProfilePageState extends State<ProfilePage> {
                       isTermometroOpen
                           ? HugeIcons.strokeRoundedArrowUp01
                           : HugeIcons.strokeRoundedArrowDown01,
-                      color: color3,
+                      color: color1,
                     ),
                   ),
                   AnimatedCrossFade(
@@ -490,17 +490,17 @@ class ProfilePageState extends State<ProfilePage> {
                             title: Row(
                               children: [
                                 const Icon(HugeIcons.strokeRoundedVolumeHigh,
-                                    color: color3),
+                                    color: color1),
                                 const SizedBox(width: 10),
                                 Text(
                                   alarmSounds[index],
                                   style: GoogleFonts.poppins(
-                                    color: color3,
+                                    color: color1,
                                   ),
                                 ),
                               ],
                             ),
-                            activeColor: color3,
+                            activeColor: color1,
                             value: index,
                             groupValue: selectedSoundTermometro,
                             onChanged: (int? value) {
@@ -527,22 +527,22 @@ class ProfilePageState extends State<ProfilePage> {
                         ? CrossFadeState.showSecond
                         : CrossFadeState.showFirst,
                   ),
-                  const Divider(color: color3),
+                  const Divider(color: color1),
                   ListTile(
                     leading: const Icon(
                         HugeIcons.strokeRoundedBubbleChatQuestion,
-                        color: color3),
+                        color: color1),
                     title: Text(
                       "Tutorial",
                       style: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     subtitle: Text(
                       "Activar o desactivar tutoriales",
                       style: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                       ),
                     ),
                     onTap: () {
@@ -554,7 +554,7 @@ class ProfilePageState extends State<ProfilePage> {
                       isTutorialOpen
                           ? HugeIcons.strokeRoundedArrowUp01
                           : HugeIcons.strokeRoundedArrowDown01,
-                      color: color3,
+                      color: color1,
                     ),
                   ),
                   AnimatedCrossFade(
@@ -565,7 +565,7 @@ class ProfilePageState extends State<ProfilePage> {
                           horizontal: MediaQuery.of(context).size.width * 0.1),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: color3,
+                          color: color1,
                           borderRadius: BorderRadius.circular(10.0),
                         ),
                         padding: const EdgeInsets.all(8.0),
@@ -600,23 +600,23 @@ class ProfilePageState extends State<ProfilePage> {
                         ? CrossFadeState.showSecond
                         : CrossFadeState.showFirst,
                   ),
-                  const Divider(color: color3),
+                  const Divider(color: color1),
                   // ListTile(
                   //   leading: const Icon(
                   //     HugeIcons.strokeRoundedVoice,
-                  //     color: color3,
+                  //     color: color1,
                   //   ),
                   //   title: Text(
                   //     "Asistentes por voz",
                   //     style: GoogleFonts.poppins(
-                  //       color: color3,
+                  //       color: color1,
                   //       fontWeight: FontWeight.bold,
                   //     ),
                   //   ),
                   //   subtitle: Text(
                   //     "VIncular Asistentes por voz",
                   //     style: GoogleFonts.poppins(
-                  //       color: color3,
+                  //       color: color1,
                   //     ),
                   //   ),
                   //   onTap: () {
@@ -628,7 +628,7 @@ class ProfilePageState extends State<ProfilePage> {
                   //     isAssistantOpen
                   //         ? HugeIcons.strokeRoundedArrowUp01
                   //         : HugeIcons.strokeRoundedArrowDown01,
-                  //     color: color3,
+                  //     color: color1,
                   //   ),
                   // ),
                   // AnimatedCrossFade(
@@ -648,7 +648,7 @@ class ProfilePageState extends State<ProfilePage> {
                   //           title: Text(
                   //             'Alexa',
                   //             style: GoogleFonts.poppins(
-                  //               color: color3,
+                  //               color: color1,
                   //             ),
                   //           ),
                   //           onTap: () {
@@ -664,7 +664,7 @@ class ProfilePageState extends State<ProfilePage> {
                   //           title: Text(
                   //             'Google Home',
                   //             style: GoogleFonts.poppins(
-                  //               color: color3,
+                  //               color: color1,
                   //             ),
                   //           ),
                   //           onTap: () {
@@ -680,7 +680,7 @@ class ProfilePageState extends State<ProfilePage> {
                   //           title: Text(
                   //             'Siri',
                   //             style: GoogleFonts.poppins(
-                  //               color: color3,
+                  //               color: color1,
                   //             ),
                   //           ),
                   //           onTap: () {
@@ -695,23 +695,23 @@ class ProfilePageState extends State<ProfilePage> {
                   //       ? CrossFadeState.showSecond
                   //       : CrossFadeState.showFirst,
                   // ),
-                  // const Divider(color: color3),
+                  // const Divider(color: color1),
                   ListTile(
                     leading: const Icon(
                       HugeIcons.strokeRoundedContactBook,
-                      color: color3,
+                      color: color1,
                     ),
                     title: Text(
                       "Contáctanos",
                       style: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     subtitle: Text(
                       "Ver información de contacto",
                       style: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                       ),
                     ),
                     onTap: () {
@@ -723,7 +723,7 @@ class ProfilePageState extends State<ProfilePage> {
                       isContactOpen
                           ? HugeIcons.strokeRoundedArrowUp01
                           : HugeIcons.strokeRoundedArrowDown01,
-                      color: color3,
+                      color: color1,
                     ),
                   ),
                   AnimatedCrossFade(
@@ -737,21 +737,21 @@ class ProfilePageState extends State<ProfilePage> {
                         ? CrossFadeState.showSecond
                         : CrossFadeState.showFirst,
                   ),
-                  const Divider(color: color3),
+                  const Divider(color: color1),
                   ListTile(
                     leading: const Icon(HugeIcons.strokeRoundedShare01,
-                        color: color3),
+                        color: color1),
                     title: Text(
                       "Nuestras redes",
                       style: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     subtitle: Text(
                       "Ver nuestras redes sociales",
                       style: GoogleFonts.poppins(
-                        color: color3,
+                        color: color1,
                       ),
                     ),
                     onTap: () {
@@ -763,7 +763,7 @@ class ProfilePageState extends State<ProfilePage> {
                       isSocialOpen
                           ? HugeIcons.strokeRoundedArrowUp01
                           : HugeIcons.strokeRoundedArrowDown01,
-                      color: color3,
+                      color: color1,
                     ),
                   ),
                   AnimatedCrossFade(
@@ -777,11 +777,11 @@ class ProfilePageState extends State<ProfilePage> {
                           ListTile(
                             leading: const Icon(
                                 HugeIcons.strokeRoundedInstagram,
-                                color: color3),
+                                color: color1),
                             title: Text(
                               'Instagram',
                               style: GoogleFonts.poppins(
-                                color: color3,
+                                color: color1,
                               ),
                             ),
                             onTap: () {
@@ -791,11 +791,11 @@ class ProfilePageState extends State<ProfilePage> {
                           ListTile(
                             leading: const Icon(
                                 HugeIcons.strokeRoundedFacebook01,
-                                color: color3),
+                                color: color1),
                             title: Text(
                               'Facebook',
                               style: GoogleFonts.poppins(
-                                color: color3,
+                                color: color1,
                               ),
                             ),
                             onTap: () {
@@ -804,11 +804,11 @@ class ProfilePageState extends State<ProfilePage> {
                           ),
                           ListTile(
                             leading: const Icon(HugeIcons.strokeRoundedInternet,
-                                color: color3),
+                                color: color1),
                             title: Text(
                               'Sitio web',
                               style: GoogleFonts.poppins(
-                                color: color3,
+                                color: color1,
                               ),
                             ),
                             onTap: () {
@@ -822,7 +822,7 @@ class ProfilePageState extends State<ProfilePage> {
                         ? CrossFadeState.showSecond
                         : CrossFadeState.showFirst,
                   ),
-                  const Divider(color: color3),
+                  const Divider(color: color1),
                 ],
               ),
             ),
@@ -831,8 +831,8 @@ class ProfilePageState extends State<ProfilePage> {
                 width: double.infinity,
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: color3,
-                    side: const BorderSide(color: color3),
+                    backgroundColor: color1,
+                    side: const BorderSide(color: color1),
                     padding: const EdgeInsets.symmetric(vertical: 15.0),
                   ),
                   onPressed: () async {
@@ -848,7 +848,7 @@ class ProfilePageState extends State<ProfilePage> {
                     previusConnections.clear();
                     alexaDevices.clear();
                     currentUserEmail = '';
-                    WifiPageState.hasInitialized = false;
+                    MenuPageState.hasInitialized = false;
 
                     for (int i = 0; i < topicsToSub.length; i++) {
                       unSubToTopicMQTT(topicsToSub[i]);

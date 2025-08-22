@@ -67,9 +67,9 @@ Widget buildRegisterForm(WelcomePageState state) {
                           },
                           child: state.obscurePassword
                               ? const Icon(Icons.visibility_off,
-                                  key: ValueKey('icon1'), color: color3)
+                                  key: ValueKey('icon1'), color: color1)
                               : const Icon(Icons.visibility,
-                                  key: ValueKey('icon2'), color: color3),
+                                  key: ValueKey('icon2'), color: color1),
                         ),
                       ),
                       validator: (value) {
@@ -113,9 +113,9 @@ Widget buildRegisterForm(WelcomePageState state) {
                           },
                           child: state.obscurePassword
                               ? const Icon(Icons.visibility_off,
-                                  key: ValueKey('icon1'), color: color3)
+                                  key: ValueKey('icon1'), color: color1)
                               : const Icon(Icons.visibility,
-                                  key: ValueKey('icon2'), color: color3),
+                                  key: ValueKey('icon2'), color: color1),
                         ),
                       ),
                       validator: (value) {
@@ -138,7 +138,7 @@ Widget buildRegisterForm(WelcomePageState state) {
                           onChanged: (bool? value) {
                             state.updateAcceptTerms(value ?? false);
                           },
-                          activeColor: color3,
+                          activeColor: color1,
                           checkColor: color0,
                         ),
                         Expanded(
@@ -146,12 +146,12 @@ Widget buildRegisterForm(WelcomePageState state) {
                             text: TextSpan(
                               text: 'Acepto los ',
                               style:
-                                  const TextStyle(color: color1, fontSize: 12),
+                                  const TextStyle(color: color0, fontSize: 12),
                               children: [
                                 TextSpan(
                                   text: 'términos de uso',
                                   style: const TextStyle(
-                                    color: color1,
+                                    color: color0,
                                     fontSize: 12,
                                     decoration: TextDecoration.underline,
                                   ),
@@ -162,12 +162,12 @@ Widget buildRegisterForm(WelcomePageState state) {
                                 ),
                                 const TextSpan(
                                   text: ' y ',
-                                  style: TextStyle(color: color1, fontSize: 12),
+                                  style: TextStyle(color: color0, fontSize: 12),
                                 ),
                                 TextSpan(
                                   text: 'políticas de privacidad',
                                   style: const TextStyle(
-                                    color: color1,
+                                    color: color0,
                                     fontSize: 12,
                                     decoration: TextDecoration.underline,
                                   ),
@@ -222,7 +222,7 @@ Widget buildRegisterForm(WelcomePageState state) {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: <Widget>[
                         Expanded(
-                          child: Divider(color: color3, thickness: 1),
+                          child: Divider(color: color1, thickness: 1),
                         ),
                       ],
                     ),
@@ -241,12 +241,12 @@ Widget buildRegisterForm(WelcomePageState state) {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: color2.withValues(alpha: 0.60),
+                          backgroundColor: color0.withValues(alpha: 0.60),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30.0),
-                            side: const BorderSide(color: color3),
+                            side: const BorderSide(color: color1),
                           ),
                           elevation: 5,
                         ),
@@ -255,7 +255,7 @@ Widget buildRegisterForm(WelcomePageState state) {
                         label: const Text(
                           'Google',
                           style: TextStyle(
-                            color: color1,
+                            color: color0,
                             fontSize: 14,
                           ),
                         ),
@@ -267,12 +267,12 @@ Widget buildRegisterForm(WelcomePageState state) {
                         onPressed: () {
                           state.switchForm(FormType.login);
                         },
-                        style: TextButton.styleFrom(foregroundColor: color3),
+                        style: TextButton.styleFrom(foregroundColor: color1),
                         child: const Text(
                           '¿Ya tienes una cuenta?\nIniciar sesión',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: color1,
+                            color: color0,
                             fontSize: 14,
                           ),
                         ),
