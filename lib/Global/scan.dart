@@ -281,27 +281,28 @@ class ScanPageState extends State<ScanPage>
   /// Configura el listener de conexión para conexiones normales (no acciones rápidas)
   void _setupNormalConnectionListener(BluetoothDevice device) {
     StreamSubscription<BluetoothConnectionState>? localConnectionSub;
-    
-    localConnectionSub = device.connectionState.listen((BluetoothConnectionState state) {
+
+    localConnectionSub =
+        device.connectionState.listen((BluetoothConnectionState state) {
       printLog.i('Estado de conexión normal: $state');
-      
+
       if (state == BluetoothConnectionState.disconnected) {
         printLog.e('Dispositivo desconectado - Conexión normal');
-        
+
         // Mostrar toast
         showToast('Dispositivo desconectado');
-        
+
         // Limpiar variables globales
         cleanGlobalDeviceVariables();
-        
+
         // Navegar al menú
         navigatorKey.currentState?.pushReplacementNamed('/menu');
-        
+
         // Cancelar este listener ya que la conexión terminó
         localConnectionSub?.cancel();
       }
     });
-    
+
     // Asegurar que el listener se cancele cuando el dispositivo se desconecte
     device.cancelWhenDisconnected(localConnectionSub, delayed: true);
   }
@@ -355,14 +356,14 @@ class ScanPageState extends State<ScanPage>
           // Para otros productos, actualizar w_status directamente
           globalDATA['$productCode/$serialNumber']?['w_status'] = newValue;
         }
-        
+
         quickAction = false;
       });
 
       showToast('Comando enviado correctamente');
     } catch (e) {
       printLog.i("Error en acción rápida: $e");
-      
+
       setState(() {
         quickAction = false;
       });
@@ -607,7 +608,7 @@ class ScanPageState extends State<ScanPage>
                           bool owner = globalDATA['$productCode/$serialNumber']
                                       ?['owner'] ==
                                   currentUserEmail ||
-                              admins.contains(device.platformName) ||
+                              admins.contains(currentUserEmail) ||
                               globalDATA['$productCode/$serialNumber']
                                       ?['owner'] ==
                                   '' ||

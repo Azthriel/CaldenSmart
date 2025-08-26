@@ -340,7 +340,7 @@ class WifiPageState extends ConsumerState<WifiPage>
       List<dynamic> admins = deviceDATA['secondary_admin'] ?? [];
 
       bool owner = deviceDATA['owner'] == currentUserEmail ||
-          admins.contains(deviceName) ||
+          admins.contains(currentUserEmail) ||
           deviceDATA['owner'] == '' ||
           deviceDATA['owner'] == null;
 

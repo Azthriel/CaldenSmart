@@ -1301,7 +1301,8 @@ Future<void> putEventoControlPorHorarios(
     );
 
     printLog.i('Evento de control por horarios guardado: $response');
-    printLog.i('Ejecutores con formato nombre:tipo: ${ejecutores.keys.toList()}');
+    printLog
+        .i('Ejecutores con formato nombre:tipo: ${ejecutores.keys.toList()}');
     printLog.i('Días guardados como números: $days');
     printLog.i(
         'Timezone: $timezoneName (UTC${timezoneOffset >= 0 ? '+' : ''}$timezoneOffset)');
@@ -1380,6 +1381,22 @@ Future<List<String>> getDevicesInDistanceControl(String email) async {
   } catch (e) {
     printLog.i('Error al obtener el item: $e');
     return [];
+  }
+}
+
+Future<void> putDistanceControl(String pc, String sn, bool status) async {
+  try {
+    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+      'product_code': AttributeValue(s: pc),
+      'device_id': AttributeValue(s: sn),
+    }, attributeUpdates: {
+      'distanceControlActive':
+          AttributeValueUpdate(value: AttributeValue(boolValue: status)),
+    });
+
+    printLog.i('Item escrito perfectamente $response');
+  } catch (e) {
+    printLog.i('Error inserting item: $e');
   }
 }
 //*- Dispositivos control por distancia -*\\

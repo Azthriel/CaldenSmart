@@ -669,8 +669,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
       // Programar la tarea.
       try {
         showToast('Recuerda tener la ubicación encendida.');
-        String data = '${DeviceManager.getProductCode(deviceName)}[5](1)';
-        myDevice.toolsUuid.write(data.codeUnits);
+        putDistanceControl(DeviceManager.getProductCode(deviceName),
+            DeviceManager.extractSerialNumber(deviceName), true);
         List<String> deviceControl =
             await getDevicesInDistanceControl(currentUserEmail);
         deviceControl.add(deviceName);
@@ -692,8 +692,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
     } else {
       // Cancelar la tarea.
       showToast('Se cancelo el control por distancia');
-      String data = '${DeviceManager.getProductCode(deviceName)}[5](0)';
-      myDevice.toolsUuid.write(data.codeUnits);
+      putDistanceControl(DeviceManager.getProductCode(deviceName),
+          DeviceManager.extractSerialNumber(deviceName), false);
       List<String> deviceControl =
           await getDevicesInDistanceControl(currentUserEmail);
       deviceControl.remove(deviceName);
