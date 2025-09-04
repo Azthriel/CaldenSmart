@@ -48,7 +48,7 @@ class ScanPageState extends State<ScanPage>
     BluetoothWatcher().start();
     List<dynamic> lista = dbData['Keywords'] ?? [];
     keywords = lista.map((item) => item.toString()).toList();
-    scan();
+    // scan();
 
     searchController.addListener(() {
       setState(() {
@@ -559,20 +559,106 @@ class ScanPageState extends State<ScanPage>
           },
           child: filteredDevices.isEmpty
               ? ListView(
-                  children: const [
+                  children: [
                     Center(
                       child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Center(
-                          child: Text(
-                            'Deslice el dedo hacia abajo para buscar nuevos dispositivos cercanos',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              HugeIcons.strokeRoundedSearchRemove,
+                              size: 80,
                               color: color1,
                             ),
-                          ),
+                            const SizedBox(height: 20),
+                            const Text(
+                              'No se encontraron equipos nuevos',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: color1,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Puedes usar el menú de WiFi para controlar tus equipos desde cualquier distancia',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: color1,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: color1.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: color1.withValues(alpha: 0.3)),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    HugeIcons.strokeRoundedSwipeDown01,
+                                    size: 24,
+                                    color: color1,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      'Desliza hacia abajo para escanear de nuevo',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: color1,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: color1.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: color1.withValues(alpha: 0.2)),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    HugeIcons.strokeRoundedWifi01,
+                                    size: 24,
+                                    color: color1,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Icon(
+                                    HugeIcons.strokeRoundedSwipeRight01,
+                                    size: 20,
+                                    color: color1,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      'Desliza hacia la derecha para ir al menú WiFi',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: color1,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
