@@ -1506,10 +1506,14 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
               children: [
                 Expanded(
                   key: keys['detectores:titulo']!,
-                  child: Text(
-                    nickname,
-                    overflow: TextOverflow.ellipsis,
-                    style: poppinsStyle.copyWith(color: color0),
+                  child: SizedBox(
+                    height: 24,
+                    width: 2,
+                    child: AutoScrollingText(
+                      text: nickname,
+                      style: poppinsStyle.copyWith(color: color0),
+                      velocity: 50,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 3),

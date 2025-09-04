@@ -647,15 +647,16 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Flexible(
-                                    child: Text(
-                                      nicknamesMap['${deviceName}_$index'] ??
+                                    child: AutoScrollingText(
+                                      velocity: 50,
+                                      text: nicknamesMap[
+                                              '${deviceName}_$index'] ??
                                           '${tipo[index]} $index',
                                       style: GoogleFonts.poppins(
                                         color: color0,
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   IconButton(
@@ -1294,10 +1295,14 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
               children: [
                 Expanded(
                   key: keys['domotica:titulo']!,
-                  child: Text(
-                    nickname,
-                    overflow: TextOverflow.ellipsis,
-                    style: poppinsStyle.copyWith(color: color0),
+                  child: SizedBox(
+                    height: 24,
+                    width: 2,
+                    child: AutoScrollingText(
+                      text: nickname,
+                      style: poppinsStyle.copyWith(color: color0),
+                      velocity: 50,
+                    ),
                   ),
                   // ScrollingText(
                   //   text: nickname,

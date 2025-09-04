@@ -880,15 +880,15 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                   child: SizedBox(
                                     height: 30,
                                     width: 180,
-                                    child: Text(
-                                      nicknamesMap['${deviceName}_$index'] ??
+                                    child: AutoScrollingText(
+                                      text: nicknamesMap[
+                                              '${deviceName}_$index'] ??
                                           '${tipo[index]} $index',
                                       style: GoogleFonts.poppins(
                                         color: color0,
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ),
@@ -1523,10 +1523,14 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
               children: [
                 Expanded(
                   key: keys['modulo:titulo']!,
-                  child: Text(
-                    nickname,
-                    overflow: TextOverflow.ellipsis,
-                    style: poppinsStyle.copyWith(color: color0),
+                  child: SizedBox(
+                    height: 24,
+                    width: 2,
+                    child: AutoScrollingText(
+                      text: nickname,
+                      style: poppinsStyle.copyWith(color: color0),
+                      velocity: 50,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 3),

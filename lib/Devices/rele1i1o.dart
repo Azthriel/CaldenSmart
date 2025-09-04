@@ -830,8 +830,8 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                         children: [
                                           SizedBox(
                                             width: 150,
-                                            child: Text(
-                                              nicknamesMap[
+                                            child: AutoScrollingText(
+                                              text: nicknamesMap[
                                                       '${deviceName}_$index'] ??
                                                   '${tipo[index]} $index',
                                               style: GoogleFonts.poppins(
@@ -839,7 +839,6 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                 fontSize: 20,
                                                 fontWeight: FontWeight.bold,
                                               ),
-                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
                                           IconButton(
@@ -1899,10 +1898,14 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
               children: [
                 Expanded(
                   key: keys['rele1i1o:titulo']!,
-                  child: Text(
-                    nickname,
-                    overflow: TextOverflow.ellipsis,
-                    style: poppinsStyle.copyWith(color: color0),
+                  child: SizedBox(
+                    height: 24,
+                    width: 2,
+                    child: AutoScrollingText(
+                      text: nickname,
+                      style: poppinsStyle.copyWith(color: color0),
+                      velocity: 50,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 3),

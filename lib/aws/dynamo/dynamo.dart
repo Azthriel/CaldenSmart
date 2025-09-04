@@ -657,8 +657,6 @@ Future<void> getNicknames(String email) async {
       mapa.forEach((key, value) {
         nicknamesMap.addAll({key: value.s ?? ''});
       });
-      // Actualizar el notificador
-      nicknamesNotifier.value = Map.from(nicknamesMap);
       printLog.i('Nicknames encontrados: $nicknamesMap');
     } else {
       printLog.i('Item no encontrado. No está el mail en la database');
@@ -1485,3 +1483,50 @@ void deleteEventoControlPorGrupos(String email, String nombreEvento) async {
   }
 }
 //*- Guarda evento: Control por grupos -*\\
+
+//*- Guarda evento: Control por clima -*\\
+void putEventoControlPorClima(String email, String nombreEvento, String clima,
+    Map<String, Map<String, bool>> ejecutores) async {
+  try {
+    final response = await service.putItem(
+      tableName: 'Eventos_ControlPorClima',
+      item: {
+        'email': AttributeValue(s: email),
+        'nombreEvento': AttributeValue(s: nombreEvento),
+        'clima': AttributeValue(s: clima),
+        'ejecutores': AttributeValue(
+          m: {
+            for (final entry in ejecutores.entries) ...{
+              entry.key: AttributeValue(m: {
+                for (final subEntry in entry.value.entries) ...{
+                  subEntry.key: AttributeValue(boolValue: subEntry.value),
+                }
+              }),
+            }
+          },
+        ),
+      },
+    );
+
+    printLog.i('Evento de control por clima guardado: $response');
+  } catch (e) {
+    printLog.i('Error guardando evento de control por clima: $e');
+  }
+}
+
+void deleteEventoControlPorClima(String email, String nombreEvento) async {
+  try {
+    final response = await service.deleteItem(
+      tableName: 'Eventos_ControlPorClima',
+      key: {
+        'email': AttributeValue(s: email),
+        'nombreEvento': AttributeValue(s: nombreEvento),
+      },
+    );
+
+    printLog.i('Evento de control por clima eliminado: $response');
+  } catch (e) {
+    printLog.i('Error eliminando evento de control por clima: $e');
+  }
+}
+//*- Guarda evento: Control por clima -*\\

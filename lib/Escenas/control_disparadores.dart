@@ -248,7 +248,10 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
           '${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}';
       final deviceDATA = globalDATA[deviceKey] ?? {};
       final owner = deviceDATA['owner'] ?? '';
-      return owner == '' || owner == currentUserEmail;
+      final admin = deviceDATA['secondary_admin'] ?? [];
+      return owner == '' ||
+          owner == currentUserEmail ||
+          admin.contains(currentUserEmail);
     }).toList();
 
     final eventosGrupoYCadena = eventosCreados.where((evento) {

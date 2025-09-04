@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:caldensmart/aws/dynamo/dynamo.dart';
 import 'package:caldensmart/logger.dart';
 import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
@@ -20,17 +21,6 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
   List<String> deviceGroup = [];
   Map<String, bool> deviceActions = {};
   String selectedWeatherCondition = '';
-
-  final List<String> weatherConditions = [
-    'Lluvia',
-    'Sol',
-    'Viento fuerte',
-    'Nieve',
-    'Granizo',
-    'Neblina',
-    'Calor extremo',
-    'Frío extremo',
-  ];
 
   @override
   void initState() {
@@ -968,7 +958,44 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
     };
 
     eventosCreados.add(eventoData);
-    //putEventos(currentUserEmail, eventosCreados);
+
+    putEventos(currentUserEmail, eventosCreados);
+
+    Map<String, Map<String, bool>> ejecutores = {};
+
+    for (String item in deviceGroup) {
+      // Verificar si es un evento (grupo o cadena)
+      final eventoEncontrado = eventosCreados.firstWhere(
+        (evento) => evento['title'] == item,
+        orElse: () => <String, dynamic>{},
+      );
+
+      String finalKey;
+      if (eventoEncontrado.isNotEmpty) {
+        // Es un evento, agregar el tipo
+        final eventoType = eventoEncontrado['evento'] as String;
+        finalKey = '$item:$eventoType';
+      } else {
+        // Es un dispositivo individual, agregar el tipo 'dispositivo'
+        finalKey = '$item:dispositivo';
+      }
+
+      final name = item.contains('_') ? item.split('_')[0] : item;
+      final pc = DeviceManager.getProductCode(name);
+      final sn = DeviceManager.extractSerialNumber(name);
+
+      final map = globalDATA['$pc/$sn'] ?? {};
+      String ubi = map['deviceLocation'] ?? '';
+
+      printLog.d('Ubicación del dispositivo $name: $ubi');
+
+      ejecutores[ubi] = {finalKey: deviceActions[item] ?? false};
+    }
+
+    printLog.d("Ejecutores: $ejecutores");
+
+    putEventoControlPorClima(currentUserEmail, title.text.trim(),
+        selectedWeatherCondition, ejecutores);
 
     showToast("Control climático creado exitosamente");
     printLog.d("$eventosCreados", color: 'verde');

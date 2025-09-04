@@ -1,5 +1,6 @@
 // ignore_for_file: equal_elements_in_set
 
+import 'package:caldensmart/Escenas/control_clima.dart';
 import 'package:caldensmart/Escenas/control_disparadores.dart';
 import 'package:caldensmart/Escenas/control_cadena.dart';
 // import 'package:caldensmart/Escenas/control_clima.dart';
@@ -168,7 +169,7 @@ class EscenasPageState extends State<EscenasPage> {
                   }
                   final actions =
                       paso['actions'] as Map<String, dynamic>? ?? {};
-                  
+
                   final stepDelay =
                       paso['stepDelay'] as Duration? ?? Duration.zero;
                   final stepDelayUnit =
@@ -253,7 +254,7 @@ class EscenasPageState extends State<EscenasPage> {
                         const SizedBox(height: 12),
                         // Dispositivos del paso
                         ...devices.map((device) {
-                            if (actions[device].runtimeType == String) {
+                          if (actions[device].runtimeType == String) {
                             actions[device] = actions[device] == 'true';
                           }
                           final action = actions[device] ?? false;
@@ -1581,25 +1582,25 @@ class EscenasPageState extends State<EscenasPage> {
               subtitle: 'Activa eventos según condiciones meteorológicas',
               color: color0,
               onTap: () {
-                showToast("Próximamente");
-                // setState(() {
-                //   currentBuilder = () => ControlClimaWidget(
-                //         onBackToMain: () =>
-                //             setState(() => currentBuilder = buildMainOptions),
-                //       );
-                //   deviceGroup.clear();
-                // });
-                // Future.delayed(const Duration(milliseconds: 350), () {
-                //   final context = _configCardKey.currentContext;
-                //   if (context != null && context.mounted) {
-                //     Scrollable.ensureVisible(
-                //       context,
-                //       duration: const Duration(milliseconds: 400),
-                //       curve: Curves.easeInOut,
-                //       alignment: 0.1,
-                //     );
-                //   }
-                // });
+                // showToast("Próximamente");
+                setState(() {
+                  currentBuilder = () => ControlClimaWidget(
+                        onBackToMain: () =>
+                            setState(() => currentBuilder = buildMainOptions),
+                      );
+                  deviceGroup.clear();
+                });
+                Future.delayed(const Duration(milliseconds: 350), () {
+                  final context = _configCardKey.currentContext;
+                  if (context != null && context.mounted) {
+                    Scrollable.ensureVisible(
+                      context,
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeInOut,
+                      alignment: 0.1,
+                    );
+                  }
+                });
               },
             ),
             const SizedBox(height: 16),
@@ -2026,6 +2027,9 @@ class EscenasPageState extends State<EscenasPage> {
                                                 currentUserEmail, title);
                                             todosLosDispositivos.removeWhere(
                                                 (entry) => entry.key == title);
+                                          } else if (eventoType == 'clima') {
+                                            deleteEventoControlPorClima(
+                                                currentUserEmail, title);
                                           }
                                         });
                                       },

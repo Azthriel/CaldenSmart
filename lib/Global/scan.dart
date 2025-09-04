@@ -470,423 +470,399 @@ class ScanPageState extends State<ScanPage>
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Map<String, String>>(
-      valueListenable: nicknamesNotifier,
-      builder: (context, nicknames, child) {
-        final filteredDevices = sortedDevices.where((device) {
-          final deviceName = nicknames[device.platformName]?.toLowerCase() ??
-              device.platformName.toLowerCase();
-          return deviceName.contains(searchQuery);
-        }).toList();
+    final filteredDevices = sortedDevices.where((device) {
+      final deviceName = nicknamesMap[device.platformName]?.toLowerCase() ??
+          device.platformName.toLowerCase();
+      return deviceName.contains(searchQuery);
+    }).toList();
 
-        try {
-          return Scaffold(
-            resizeToAvoidBottomInset: false,
-            backgroundColor: color0,
-            appBar: AppBar(
-              backgroundColor: color1,
-              title: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6.0),
-                child: AnimSearchBar(
-                  width: MediaQuery.of(context).size.width * 0.8,
-                  textController: searchController,
-                  onSuffixTap: () {
-                    setState(() {
-                      printLog.i('ANASHARDO TERRARIUM EPICARDOPOLIS');
-                      searchQuery = '';
-                      toggle = 0;
-                    });
-                  },
-                  onSubmitted: (value) {
-                    setState(() {
-                      searchQuery = value.toLowerCase();
-                    });
-                  },
-                  rtl: false,
-                  autoFocus: true,
-                  helpText: "",
-                  suffixIcon: const Icon(
-                    Icons.clear,
-                    color: color1,
-                  ),
-                  prefixIcon: toggle == 1
-                      ? const Icon(
-                          Icons.arrow_back_ios,
-                          color: color1,
-                        )
-                      : const Icon(
-                          Icons.search,
-                          color: color1,
-                        ),
-                  animationDurationInMilli: 400,
-                  color: color0,
-                  textFieldColor: color0,
-                  searchIconColor: color1,
-                  textFieldIconColor: color1,
-                  style: const TextStyle(
-                    color: color1,
-                  ),
-                  onTap: () {
-                    setState(() {
-                      printLog.i('Eso Tilin si fuera campana, tilin tilin');
-                      toggle = 1;
-                    });
-                  },
-                ),
-              ),
-              actions: [
-                IconButton(
-                  icon:
-                      const Icon(HugeIcons.strokeRoundedUserCircle, size: 40.0),
-                  color: color0,
-                  onPressed: () {
-                    navigatorKey.currentState?.pushNamed('/profile');
-                  },
-                ),
-              ],
-            ),
-            body: EasyRefresh(
-              controller: _controller,
-              header: const ClassicHeader(
-                dragText: 'Desliza para escanear',
-                armedText:
-                    'Suelta para escanear\nO desliza para arriba para cancelar',
-                readyText: 'Escaneando dispositivos',
-                processingText: 'Escaneando dispositivos',
-                processedText: 'Escaneo completo',
-                showMessage: false,
-                textStyle: TextStyle(color: color1),
-                iconTheme: IconThemeData(color: color1),
-              ),
-              onRefresh: () async {
-                reescan();
+    try {
+      return Scaffold(
+        resizeToAvoidBottomInset: false,
+        backgroundColor: color0,
+        appBar: AppBar(
+          backgroundColor: color1,
+          title: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6.0),
+            child: AnimSearchBar(
+              width: MediaQuery.of(context).size.width * 0.8,
+              textController: searchController,
+              onSuffixTap: () {
+                setState(() {
+                  printLog.i('ANASHARDO TERRARIUM EPICARDOPOLIS');
+                  searchQuery = '';
+                  toggle = 0;
+                });
               },
-              child: filteredDevices.isEmpty
-                  ? ListView(
-                      children: const [
-                        Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(20),
-                            child: Center(
-                              child: Text(
-                                'Deslice el dedo hacia abajo para buscar nuevos dispositivos cercanos',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: color1,
-                                ),
-                              ),
+              onSubmitted: (value) {
+                setState(() {
+                  searchQuery = value.toLowerCase();
+                });
+              },
+              rtl: false,
+              autoFocus: true,
+              helpText: "",
+              suffixIcon: const Icon(
+                Icons.clear,
+                color: color1,
+              ),
+              prefixIcon: toggle == 1
+                  ? const Icon(
+                      Icons.arrow_back_ios,
+                      color: color1,
+                    )
+                  : const Icon(
+                      Icons.search,
+                      color: color1,
+                    ),
+              animationDurationInMilli: 400,
+              color: color0,
+              textFieldColor: color0,
+              searchIconColor: color1,
+              textFieldIconColor: color1,
+              style: const TextStyle(
+                color: color1,
+              ),
+              onTap: () {
+                setState(() {
+                  printLog.i('Eso Tilin si fuera campana, tilin tilin');
+                  toggle = 1;
+                });
+              },
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(HugeIcons.strokeRoundedUserCircle, size: 40.0),
+              color: color0,
+              onPressed: () {
+                navigatorKey.currentState?.pushNamed('/profile');
+              },
+            ),
+          ],
+        ),
+        body: EasyRefresh(
+          controller: _controller,
+          header: const ClassicHeader(
+            dragText: 'Desliza para escanear',
+            armedText:
+                'Suelta para escanear\nO desliza para arriba para cancelar',
+            readyText: 'Escaneando dispositivos',
+            processingText: 'Escaneando dispositivos',
+            processedText: 'Escaneo completo',
+            showMessage: false,
+            textStyle: TextStyle(color: color1),
+            iconTheme: IconThemeData(color: color1),
+          ),
+          onRefresh: () async {
+            reescan();
+          },
+          child: filteredDevices.isEmpty
+              ? ListView(
+                  children: const [
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Center(
+                          child: Text(
+                            'Deslice el dedo hacia abajo para buscar nuevos dispositivos cercanos',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: color1,
                             ),
                           ),
                         ),
-                      ],
-                    )
-                  : ListView.builder(
-                      itemCount: filteredDevices.length,
-                      itemBuilder: (context, index) {
-                        try {
-                          final device = filteredDevices[index];
-                          final imagePath = deviceImages[device.platformName];
-                          final isTouched =
-                              _touchedDeviceId == device.remoteId.toString();
-                          final productCode =
-                              DeviceManager.getProductCode(device.platformName);
-                          final serialNumber =
-                              DeviceManager.extractSerialNumber(
-                                  device.platformName);
-                          final rssi =
-                              deviceRssi[device.remoteId.toString()] ?? 0;
+                      ),
+                    ),
+                  ],
+                )
+              : ListView.builder(
+                  itemCount: filteredDevices.length,
+                  itemBuilder: (context, index) {
+                    try {
+                      final device = filteredDevices[index];
+                      final imagePath = deviceImages[device.platformName];
+                      final isTouched =
+                          _touchedDeviceId == device.remoteId.toString();
+                      final productCode =
+                          DeviceManager.getProductCode(device.platformName);
+                      final serialNumber = DeviceManager.extractSerialNumber(
+                          device.platformName);
+                      final rssi = deviceRssi[device.remoteId.toString()] ?? 0;
 
-                          final isLost =
-                              lostDevices.contains(device.remoteId.toString());
+                      final isLost =
+                          lostDevices.contains(device.remoteId.toString());
 
-                          List<dynamic> admins =
-                              globalDATA['$productCode/$serialNumber']
-                                      ?['secondary_admin'] ??
-                                  [];
-                          bool owner = globalDATA['$productCode/$serialNumber']
-                                      ?['owner'] ==
-                                  currentUserEmail ||
-                              admins.contains(currentUserEmail) ||
-                              globalDATA['$productCode/$serialNumber']
-                                      ?['owner'] ==
-                                  '' ||
-                              globalDATA['$productCode/$serialNumber']
-                                      ?['owner'] ==
-                                  null;
-                          bool condicion = productCode != '015773_IOT' &&
-                              owner &&
-                              quickAccess.contains(device.platformName) &&
-                              !isLost;
+                      List<dynamic> admins =
+                          globalDATA['$productCode/$serialNumber']
+                                  ?['secondary_admin'] ??
+                              [];
+                      bool owner = globalDATA['$productCode/$serialNumber']
+                                  ?['owner'] ==
+                              currentUserEmail ||
+                          admins.contains(currentUserEmail) ||
+                          globalDATA['$productCode/$serialNumber']?['owner'] ==
+                              '' ||
+                          globalDATA['$productCode/$serialNumber']?['owner'] ==
+                              null;
+                      bool condicion = productCode != '015773_IOT' &&
+                          owner &&
+                          quickAccess.contains(device.platformName) &&
+                          !isLost;
 
-                          bool estadoWState = (productCode == '020010_IOT' ||
-                                  productCode == '020020_IOT' ||
-                                  (productCode == '027313_IOT' &&
-                                      Versioner.isPosterior(
-                                          globalDATA['$productCode/$serialNumber']
-                                                  ?['HardwareVersion'] ??
-                                              '999999A',
-                                          '241220A')))
-                              ? () {
-                                  try {
-                                    String? jsonString = globalDATA[
-                                            '$productCode/$serialNumber']?[
-                                        'io${int.tryParse(pinQuickAccess[device.platformName] ?? '0') ?? 0}'];
-                                    if (jsonString != null) {
-                                      Map<String, dynamic>? decoded =
-                                          jsonDecode(jsonString);
-                                      return decoded?['w_status'] ?? false;
-                                    }
-                                    return false;
-                                  } catch (e) {
-                                    return false;
+                      bool estadoWState = (productCode == '020010_IOT' ||
+                              productCode == '020020_IOT' ||
+                              (productCode == '027313_IOT' &&
+                                  Versioner.isPosterior(
+                                      globalDATA['$productCode/$serialNumber']
+                                              ?['HardwareVersion'] ??
+                                          '999999A',
+                                      '241220A')))
+                          ? () {
+                              try {
+                                String? jsonString = globalDATA[
+                                        '$productCode/$serialNumber']?[
+                                    'io${int.tryParse(pinQuickAccess[device.platformName] ?? '0') ?? 0}'];
+                                if (jsonString != null) {
+                                  Map<String, dynamic>? decoded =
+                                      jsonDecode(jsonString);
+                                  return decoded?['w_status'] ?? false;
+                                }
+                                return false;
+                              } catch (e) {
+                                return false;
+                              }
+                            }()
+                          : (globalDATA['$productCode/$serialNumber']
+                                  ?['w_status'] ??
+                              false);
+
+                      return FadeTransition(
+                        opacity: _animationController
+                            .drive(CurveTween(curve: Curves.easeOut)),
+                        child: ScaleTransition(
+                          scale: _animationController
+                              .drive(CurveTween(curve: Curves.easeOut)),
+                          child: GestureDetector(
+                            onTapDown: isLost
+                                ? null
+                                : (_) {
+                                    setState(() {
+                                      _touchedDeviceId =
+                                          device.remoteId.toString();
+                                    });
+                                  },
+                            onTap: isLost
+                                ? () {
+                                    showToast(
+                                      'Dispositivo fuera de alcance, no se puede conectar',
+                                    );
                                   }
-                                }()
-                              : (globalDATA['$productCode/$serialNumber']
-                                      ?['w_status'] ??
-                                  false);
+                                : () {
+                                    setState(() {
+                                      _touchedDeviceId =
+                                          device.remoteId.toString();
+                                    });
 
-                          return FadeTransition(
-                            opacity: _animationController
-                                .drive(CurveTween(curve: Curves.easeOut)),
-                            child: ScaleTransition(
-                              scale: _animationController
-                                  .drive(CurveTween(curve: Curves.easeOut)),
-                              child: GestureDetector(
-                                onTapDown: isLost
-                                    ? null
-                                    : (_) {
-                                        setState(() {
-                                          _touchedDeviceId =
-                                              device.remoteId.toString();
-                                        });
-                                      },
-                                onTap: isLost
-                                    ? () {
-                                        showToast(
-                                          'Dispositivo fuera de alcance, no se puede conectar',
-                                        );
-                                      }
-                                    : () {
-                                        setState(() {
-                                          _touchedDeviceId =
-                                              device.remoteId.toString();
-                                        });
+                                    Future.delayed(
+                                        const Duration(milliseconds: 200), () {
+                                      setState(() {
+                                        _touchedDeviceId = null;
+                                      });
+                                    });
 
-                                        Future.delayed(
-                                            const Duration(milliseconds: 200),
-                                            () {
-                                          setState(() {
-                                            _touchedDeviceId = null;
-                                          });
-                                        });
-
-                                        showToast(
-                                            'Intentando conectarse al equipo');
-                                        connectToDevice(device);
-                                      },
-                                onTapUp: isLost
-                                    ? null
-                                    : (_) {
-                                        Future.delayed(
-                                            const Duration(milliseconds: 200),
-                                            () {
-                                          setState(() {
-                                            _touchedDeviceId = null;
-                                          });
-                                        });
-                                      },
-                                onTapCancel: isLost
-                                    ? null
-                                    : () {
-                                        setState(() {
-                                          _touchedDeviceId = null;
-                                        });
-                                      },
-                                child: AnimatedScale(
-                                  scale: isTouched ? 0.95 : 1.0,
-                                  duration: const Duration(milliseconds: 200),
-                                  curve: Curves.easeOut,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(10),
-                                    child: AspectRatio(
-                                      aspectRatio: 1.5,
-                                      child: Opacity(
-                                        opacity: isLost ? 0.4 : 1.0,
-                                        child: Card(
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(15.0),
-                                            side: BorderSide(
-                                              color:
-                                                  isLost ? Colors.grey : color4,
-                                              width: 2.0,
-                                            ),
-                                          ),
-                                          elevation: isLost ? 2 : 8,
-                                          child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(15.0),
-                                            child: Stack(
-                                              children: [
-                                                Positioned.fill(
-                                                  child: imagePath != null
-                                                      ? Image.file(
-                                                          File(imagePath),
-                                                          fit: BoxFit.cover,
-                                                        )
-                                                      : Image.asset(
-                                                          ImageManager
-                                                              .rutaDeImagen(
-                                                            device.platformName,
-                                                          ),
-                                                          fit: BoxFit.cover,
-                                                        ),
-                                                ),
-                                                Positioned.fill(
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      gradient: LinearGradient(
-                                                        colors: [
-                                                          Colors.transparent,
-                                                          Colors.black
-                                                              .withValues(
-                                                                  alpha: 0.7),
-                                                        ],
-                                                        begin:
-                                                            Alignment.topCenter,
-                                                        end: Alignment
-                                                            .bottomCenter,
+                                    showToast(
+                                        'Intentando conectarse al equipo');
+                                    connectToDevice(device);
+                                  },
+                            onTapUp: isLost
+                                ? null
+                                : (_) {
+                                    Future.delayed(
+                                        const Duration(milliseconds: 200), () {
+                                      setState(() {
+                                        _touchedDeviceId = null;
+                                      });
+                                    });
+                                  },
+                            onTapCancel: isLost
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _touchedDeviceId = null;
+                                    });
+                                  },
+                            child: AnimatedScale(
+                              scale: isTouched ? 0.95 : 1.0,
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeOut,
+                              child: Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: AspectRatio(
+                                  aspectRatio: 1.5,
+                                  child: Opacity(
+                                    opacity: isLost ? 0.4 : 1.0,
+                                    child: Card(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(15.0),
+                                        side: BorderSide(
+                                          color: isLost ? Colors.grey : color4,
+                                          width: 2.0,
+                                        ),
+                                      ),
+                                      elevation: isLost ? 2 : 8,
+                                      child: ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(15.0),
+                                        child: Stack(
+                                          children: [
+                                            Positioned.fill(
+                                              child: imagePath != null
+                                                  ? Image.file(
+                                                      File(imagePath),
+                                                      fit: BoxFit.cover,
+                                                    )
+                                                  : Image.asset(
+                                                      ImageManager.rutaDeImagen(
+                                                        device.platformName,
                                                       ),
+                                                      fit: BoxFit.cover,
                                                     ),
+                                            ),
+                                            Positioned.fill(
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    colors: [
+                                                      Colors.transparent,
+                                                      Colors.black.withValues(
+                                                          alpha: 0.7),
+                                                    ],
+                                                    begin: Alignment.topCenter,
+                                                    end: Alignment.bottomCenter,
                                                   ),
                                                 ),
-                                                Positioned(
-                                                  top: 16,
-                                                  left: 16,
-                                                  child: Container(
-                                                    constraints: BoxConstraints(
-                                                        maxWidth: MediaQuery.of(
-                                                                    context)
+                                              ),
+                                            ),
+                                            Positioned(
+                                              top: 16,
+                                              left: 16,
+                                              child: Container(
+                                                constraints: BoxConstraints(
+                                                    maxWidth:
+                                                        MediaQuery.of(context)
                                                                 .size
                                                                 .width *
                                                             0.6),
-                                                    child: Text(
-                                                      nicknames[device
-                                                              .platformName] ??
-                                                          DeviceManager
-                                                              .getComercialName(
-                                                            device.platformName,
-                                                          ),
-                                                      maxLines: 2,
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 22,
-                                                        color: Colors.white,
-                                                        shadows: const [
-                                                          Shadow(
-                                                            offset: Offset(
-                                                                -1.5, -1.5),
-                                                            color: Colors.black,
-                                                          ),
-                                                          Shadow(
-                                                            offset: Offset(
-                                                                1.5, -1.5),
-                                                            color: Colors.black,
-                                                          ),
-                                                          Shadow(
-                                                            offset: Offset(
-                                                                1.5, 1.5),
-                                                            color: Colors.black,
-                                                          ),
-                                                          Shadow(
-                                                            offset: Offset(
-                                                                -1.5, 1.5),
-                                                            color: Colors.black,
-                                                          ),
-                                                        ],
+                                                child: Text(
+                                                  nicknamesMap[device
+                                                          .platformName] ??
+                                                      DeviceManager
+                                                          .getComercialName(
+                                                        device.platformName,
                                                       ),
-                                                    ),
+                                                  maxLines: 2,
+                                                  style: GoogleFonts.poppins(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 22,
+                                                    color: Colors.white,
+                                                    shadows: const [
+                                                      Shadow(
+                                                        offset:
+                                                            Offset(-1.5, -1.5),
+                                                        color: Colors.black,
+                                                      ),
+                                                      Shadow(
+                                                        offset:
+                                                            Offset(1.5, -1.5),
+                                                        color: Colors.black,
+                                                      ),
+                                                      Shadow(
+                                                        offset:
+                                                            Offset(1.5, 1.5),
+                                                        color: Colors.black,
+                                                      ),
+                                                      Shadow(
+                                                        offset:
+                                                            Offset(-1.5, 1.5),
+                                                        color: Colors.black,
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
-                                                Positioned(
-                                                  bottom: 16,
-                                                  left: 16,
-                                                  right: 16,
-                                                  child: Text(
-                                                    device.platformName,
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize: 12,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
+                                              ),
+                                            ),
+                                            Positioned(
+                                              bottom: 16,
+                                              left: 16,
+                                              right: 16,
+                                              child: Text(
+                                                device.platformName,
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 12,
+                                                  color: Colors.white,
                                                 ),
-                                                Positioned(
-                                                  top: 16,
-                                                  right: 16,
-                                                  child: Container(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
+                                              ),
+                                            ),
+                                            Positioned(
+                                              top: 16,
+                                              right: 16,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
                                                         horizontal: 8,
                                                         vertical: 4),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.black
-                                                          .withValues(
-                                                              alpha: 0.6),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              12),
-                                                    ),
-                                                    child: Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        const Icon(
-                                                          HugeIcons
-                                                              .strokeRoundedBluetooth,
-                                                          size: 20,
-                                                          color: Colors.white,
-                                                        ),
-                                                        const SizedBox(
-                                                            width: 10),
-                                                        _signalIcon(rssi,
-                                                            isLost: isLost),
-                                                      ],
-                                                    ),
-                                                  ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black
+                                                      .withValues(alpha: 0.6),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
                                                 ),
-                                                Positioned(
-                                                  bottom: 16,
-                                                  right: 16,
-                                                  child: condicion
-                                                      ? (quickAction
-                                                          ? const CircularProgressIndicator(
-                                                              color: color0)
-                                                          : Transform.scale(
-                                                              scale: 1.33,
-                                                              child: Switch(
-                                                                value:
-                                                                    estadoWState,
-                                                                activeColor:
-                                                                    color0,
-                                                                onChanged: (bool
-                                                                        newValue) =>
-                                                                    _runQuickAction(
-                                                                        device,
-                                                                        newValue),
-                                                              ),
-                                                            ))
-                                                      : const SizedBox(
-                                                          width: 60,
-                                                          height: 36,
-                                                        ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    const Icon(
+                                                      HugeIcons
+                                                          .strokeRoundedBluetooth,
+                                                      size: 20,
+                                                      color: Colors.white,
+                                                    ),
+                                                    const SizedBox(width: 10),
+                                                    _signalIcon(rssi,
+                                                        isLost: isLost),
+                                                  ],
                                                 ),
-                                              ],
+                                              ),
                                             ),
-                                          ),
+                                            Positioned(
+                                              bottom: 16,
+                                              right: 16,
+                                              child: condicion
+                                                  ? (quickAction
+                                                      ? const CircularProgressIndicator(
+                                                          color: color0)
+                                                      : Transform.scale(
+                                                          scale: 1.33,
+                                                          child: Switch(
+                                                            value: estadoWState,
+                                                            activeColor: color0,
+                                                            onChanged: (bool
+                                                                    newValue) =>
+                                                                _runQuickAction(
+                                                                    device,
+                                                                    newValue),
+                                                          ),
+                                                        ))
+                                                  : const SizedBox(
+                                                      width: 60,
+                                                      height: 36,
+                                                    ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -894,30 +870,30 @@ class ScanPageState extends State<ScanPage>
                                 ),
                               ),
                             ),
-                          );
-                        } catch (e, s) {
-                          printLog.e('Error al construir el dispositivo: $e');
-                          printLog.e('Stack trace: $s');
-                          return const SizedBox.shrink();
-                        }
-                      },
-                    ),
-            ),
-          );
-        } catch (e, s) {
-          printLog.e('Error en ScanPage: $e');
-          printLog.e('Stack trace: $s');
-          return const Scaffold(
-            backgroundColor: color0,
-            body: Center(
-              child: Text(
-                'Error al cargar la página de escaneo',
-                style: TextStyle(color: color1, fontSize: 20),
-              ),
-            ),
-          );
-        }
-      }, // Cierre del ValueListenableBuilder
-    );
+                          ),
+                        ),
+                      );
+                    } catch (e, s) {
+                      printLog.e('Error al construir el dispositivo: $e');
+                      printLog.e('Stack trace: $s');
+                      return const SizedBox.shrink();
+                    }
+                  },
+                ),
+        ),
+      );
+    } catch (e, s) {
+      printLog.e('Error en ScanPage: $e');
+      printLog.e('Stack trace: $s');
+      return const Scaffold(
+        backgroundColor: color0,
+        body: Center(
+          child: Text(
+            'Error al cargar la página de escaneo',
+            style: TextStyle(color: color1, fontSize: 20),
+          ),
+        ),
+      );
+    }
   }
 }

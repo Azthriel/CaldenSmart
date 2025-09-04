@@ -150,9 +150,6 @@ List<MapEntry<String, String>> todosLosDispositivos = [];
 //*-Nicknames-*\\
 late String nickname;
 Map<String, String> nicknamesMap = {};
-// Notificador para cambios en nicknames
-ValueNotifier<Map<String, String>> nicknamesNotifier =
-    ValueNotifier<Map<String, String>>({});
 //*-Nicknames-*\\
 
 //*-Notifications-*\\
@@ -165,7 +162,8 @@ int? selectedSoundDetector;
 int? selectedSoundTermometro;
 
 // StreamController para notificar cuando las cadenas terminan
-StreamController<String> cadenaCompletedController = StreamController<String>.broadcast();
+StreamController<String> cadenaCompletedController =
+    StreamController<String>.broadcast();
 //*-Notifications-*\\
 
 //*-Relacionado al Alquiler temporario (Airbnb)-*\\
@@ -241,7 +239,16 @@ Map<String, Duration> deviceDelays = {};
 TextEditingController title = TextEditingController();
 TextEditingController delayController = TextEditingController();
 
-final List<String> weatherConditions = ['Viento', 'Lluvia', 'Nublado'];
+final List<String> weatherConditions = [
+  'Lluvia',
+  'Sol',
+  'Viento fuerte',
+  'Nieve',
+  'Granizo',
+  'Neblina',
+  'Calor extremo',
+  'Frío extremo',
+];
 
 final selectWeekDaysKey = GlobalKey<SelectWeekDaysState>();
 //*-Escenas-*\\
@@ -2103,14 +2110,22 @@ Future<void> handleNotifications(RemoteMessage message) async {
       String displayMessage =
           'A las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
       showNotification(displayTitle, displayMessage, 'noti');
-      
+
       // Remover la flag de ejecución de la cadena
       await removeCadenaExecuting(cadenaName, currentUserEmail);
       printLog.i('Flag de ejecución removida para cadena: $cadenaName');
-      
+
       // Notificar a los listeners que la cadena terminó (para UI en tiempo real)
       cadenaCompletedController.add(cadenaName);
       printLog.i('Evento de cadena completada enviado para: $cadenaName');
+    } else if (caso == 'clima') {
+      String climaDetectado = message.data['clima_detectado'] ?? 'Desconocido';
+      String nombreEvento = message.data['name'] ?? 'Evento Climático';
+      final now = DateTime.now();
+      String displayTitle = '🌤️ Control por Clima Activado';
+      String displayMessage =
+          "Se detectó '$climaDetectado' y se ejecutaron las acciones programadas para el evento '$nombreEvento'.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}";
+      showNotification(displayTitle, displayMessage, 'noti');
     }
   } catch (e, s) {
     printLog.e("Error: $e");
@@ -3202,6 +3217,212 @@ Future<bool> isSpecialUser(String email) async {
   printLog.i('Special users: $specialUsers');
   return specialUsers.contains(email.toLowerCase());
 }
+
+//*- Funciones de parsing para Maps y Duration -*\\
+/// Parsea un string que representa un Map toString() de vuelta a Map<String, dynamic>
+/// Útil para backward compatibility con datos guardados como strings
+Map<String, dynamic> parseMapString(String mapString) {
+  try {
+    // Remover espacios al inicio y final
+    String cleaned = mapString.trim();
+
+    // Si empieza y termina con llaves, es un Map
+    if (cleaned.startsWith('{') && cleaned.endsWith('}')) {
+      cleaned = cleaned.substring(1, cleaned.length - 1);
+
+      Map<String, dynamic> result = {};
+
+      // Parsear manualmente respetando las estructuras anidadas
+      int i = 0;
+      while (i < cleaned.length) {
+        // Buscar el nombre de la clave
+        int keyStart = i;
+        while (i < cleaned.length && cleaned[i] != ':') {
+          i++;
+        }
+        if (i >= cleaned.length) break;
+
+        String key = cleaned.substring(keyStart, i).trim();
+        i++; // saltar ':'
+
+        // Saltar espacios
+        while (i < cleaned.length && cleaned[i] == ' ') {
+          i++;
+        }
+
+        // Parsear el valor
+        dynamic value;
+        if (i < cleaned.length && cleaned[i] == '[') {
+          // Es una lista - encontrar el ] que cierra
+          int listStart = i;
+          int brackets = 0;
+          do {
+            if (cleaned[i] == '[') brackets++;
+            if (cleaned[i] == ']') brackets--;
+            i++;
+          } while (i < cleaned.length && brackets > 0);
+
+          String listStr = cleaned.substring(listStart + 1, i - 1);
+          value = listStr.split(',').map((e) => e.trim()).toList();
+        } else if (i < cleaned.length && cleaned[i] == '{') {
+          // Es un Map anidado - encontrar el } que cierra
+          int mapStart = i;
+          int braces = 0;
+          do {
+            if (cleaned[i] == '{') braces++;
+            if (cleaned[i] == '}') braces--;
+            i++;
+          } while (i < cleaned.length && braces > 0);
+
+          String mapStr = cleaned.substring(mapStart + 1, i - 1);
+          Map<String, dynamic> nestedMap = {};
+
+          // Parsear el map anidado
+          List<String> pairs = [];
+          int pairStart = 0;
+          int depth = 0;
+          for (int j = 0; j < mapStr.length; j++) {
+            if (mapStr[j] == '{') depth++;
+            if (mapStr[j] == '}') depth--;
+            if (mapStr[j] == ',' && depth == 0) {
+              pairs.add(mapStr.substring(pairStart, j).trim());
+              pairStart = j + 1;
+            }
+          }
+          pairs.add(mapStr.substring(pairStart).trim());
+
+          for (String pair in pairs) {
+            if (pair.contains(':')) {
+              int colonIndex = pair.indexOf(':');
+              String nestedKey = pair.substring(0, colonIndex).trim();
+              String nestedValueStr = pair.substring(colonIndex + 1).trim();
+
+              if (nestedValueStr == 'true') {
+                nestedMap[nestedKey] = true;
+              } else if (nestedValueStr == 'false') {
+                nestedMap[nestedKey] = false;
+              } else {
+                nestedMap[nestedKey] = nestedValueStr;
+              }
+            }
+          }
+          value = nestedMap;
+        } else {
+          // Es un valor simple - buscar hasta la próxima coma o final
+          int valueStart = i;
+          int depth = 0;
+          while (i < cleaned.length) {
+            if (cleaned[i] == '{' || cleaned[i] == '[') depth++;
+            if (cleaned[i] == '}' || cleaned[i] == ']') depth--;
+            if (cleaned[i] == ',' && depth == 0) break;
+            i++;
+          }
+
+          String valueStr = cleaned.substring(valueStart, i).trim();
+          if (valueStr.contains(':') && valueStr.contains('.')) {
+            // Es un Duration
+            value = parseDurationString(valueStr);
+          } else {
+            value = valueStr;
+          }
+        }
+
+        result[key] = value;
+
+        // Saltar la coma si existe
+        if (i < cleaned.length && cleaned[i] == ',') i++;
+
+        // Saltar espacios
+        while (i < cleaned.length && cleaned[i] == ' ') {
+          i++;
+        }
+      }
+
+      return result;
+    }
+  } catch (e) {
+    printLog.e('Error parseando map string: $e');
+  }
+
+  return {};
+}
+
+/// Parsea un string de Duration en formato "0:00:30.000000" de vuelta a Duration
+Duration parseDurationString(String durationStr) {
+  try {
+    List<String> parts = durationStr.split(':');
+    if (parts.length >= 3) {
+      int hours = int.parse(parts[0]);
+      int minutes = int.parse(parts[1]);
+      double seconds = double.parse(parts[2]);
+
+      return Duration(
+        hours: hours,
+        minutes: minutes,
+        seconds: seconds.floor(),
+        microseconds: ((seconds - seconds.floor()) * 1000000).round(),
+      );
+    }
+  } catch (e) {
+    printLog.e('Error parseando duration: $e');
+  }
+  return Duration.zero;
+}
+//*- Funciones de parsing para Maps y Duration -*\\
+
+///*-Global Connection Manager-*\\\
+
+/// Inicia el listener global para el estado de conexión del dispositivo
+void setupGlobalConnectionListener() {
+  globalConnectionSubscription?.cancel();
+
+  globalConnectionSubscription = myDevice.device.connectionState.listen(
+    (BluetoothConnectionState state) {
+      printLog.i('Estado de conexión global: $state');
+
+      if (state == BluetoothConnectionState.disconnected) {
+        printLog.e('Dispositivo desconectado - Manejador global');
+
+        printLog.d('¿Es acción rápida? $quickAction');
+
+        // Check if this is not a quick action and show toast
+        if (!quickAction) {
+          showToast('Dispositivo desconectado');
+        }
+
+        // Limpiar variables globales
+        cleanGlobalDeviceVariables();
+
+        // Navigate to menu if not in quick action mode
+        if (!quickAction) {
+          navigatorKey.currentState?.pushReplacementNamed('/menu');
+        }
+      }
+    },
+  );
+}
+
+/// Cancela el listener global de conexión
+void cancelGlobalConnectionListener() {
+  globalConnectionSubscription?.cancel();
+  globalConnectionSubscription = null;
+}
+
+/// Limpia todas las variables globales relacionadas con el dispositivo
+void cleanGlobalDeviceVariables() {
+  nameOfWifi = '';
+  connectionFlag = false;
+  deviceName = '';
+  toolsValues = [];
+  varsValues = [];
+  ioValues = [];
+  infoValues = [];
+  hardwareVersion = '';
+  softwareVersion = '';
+  printLog.i('Variables globales del dispositivo limpiadas');
+}
+
+///*-Global Connection Manager-*\\\
 
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
@@ -5409,7 +5630,6 @@ class ClosingSessionScreenState extends State<ClosingSessionScreen> {
     super.dispose();
   }
 
-//!Visual
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -6426,206 +6646,141 @@ class NumberWheel extends StatelessWidget {
 }
 //*- Selector de horas -*\\
 
-//*- Funciones de parsing para Maps y Duration -*\\
-/// Parsea un string que representa un Map toString() de vuelta a Map<String, dynamic>
-/// Útil para backward compatibility con datos guardados como strings
-Map<String, dynamic> parseMapString(String mapString) {
-  try {
-    // Remover espacios al inicio y final
-    String cleaned = mapString.trim();
+//*- ScrollText -*\\
+class AutoScrollingText extends StatefulWidget {
+  final String text;
+  final TextStyle style;
+  final Duration pauseDuration;
+  final double velocity;
 
-    // Si empieza y termina con llaves, es un Map
-    if (cleaned.startsWith('{') && cleaned.endsWith('}')) {
-      cleaned = cleaned.substring(1, cleaned.length - 1);
+  const AutoScrollingText({
+    super.key,
+    required this.text,
+    required this.style,
+    this.pauseDuration = const Duration(seconds: 1),
+    this.velocity = 50.0,
+  });
 
-      Map<String, dynamic> result = {};
+  @override
+  AutoScrollingTextState createState() => AutoScrollingTextState();
+}
 
-      // Parsear manualmente respetando las estructuras anidadas
-      int i = 0;
-      while (i < cleaned.length) {
-        // Buscar el nombre de la clave
-        int keyStart = i;
-        while (i < cleaned.length && cleaned[i] != ':') {
-          i++;
-        }
-        if (i >= cleaned.length) break;
+class AutoScrollingTextState extends State<AutoScrollingText>
+    with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
+  late ScrollController _scrollController;
+  late AnimationController _animationController;
+  bool _isScrolling = false;
+  bool _needsScroll = false;
+  bool _isMounted = false;
 
-        String key = cleaned.substring(keyStart, i).trim();
-        i++; // saltar ':'
+  @override
+  bool get wantKeepAlive => true;
 
-        // Saltar espacios
-        while (i < cleaned.length && cleaned[i] == ' ') {
-          i++;
-        }
+  @override
+  void initState() {
+    super.initState();
+    _isMounted = true;
+    _scrollController = ScrollController();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
 
-        // Parsear el valor
-        dynamic value;
-        if (i < cleaned.length && cleaned[i] == '[') {
-          // Es una lista - encontrar el ] que cierra
-          int listStart = i;
-          int brackets = 0;
-          do {
-            if (cleaned[i] == '[') brackets++;
-            if (cleaned[i] == ']') brackets--;
-            i++;
-          } while (i < cleaned.length && brackets > 0);
+    _scrollController.addListener(_checkIfNeedsScroll);
 
-          String listStr = cleaned.substring(listStart + 1, i - 1);
-          value = listStr.split(',').map((e) => e.trim()).toList();
-        } else if (i < cleaned.length && cleaned[i] == '{') {
-          // Es un Map anidado - encontrar el } que cierra
-          int mapStart = i;
-          int braces = 0;
-          do {
-            if (cleaned[i] == '{') braces++;
-            if (cleaned[i] == '}') braces--;
-            i++;
-          } while (i < cleaned.length && braces > 0);
-
-          String mapStr = cleaned.substring(mapStart + 1, i - 1);
-          Map<String, dynamic> nestedMap = {};
-
-          // Parsear el map anidado
-          List<String> pairs = [];
-          int pairStart = 0;
-          int depth = 0;
-          for (int j = 0; j < mapStr.length; j++) {
-            if (mapStr[j] == '{') depth++;
-            if (mapStr[j] == '}') depth--;
-            if (mapStr[j] == ',' && depth == 0) {
-              pairs.add(mapStr.substring(pairStart, j).trim());
-              pairStart = j + 1;
-            }
-          }
-          pairs.add(mapStr.substring(pairStart).trim());
-
-          for (String pair in pairs) {
-            if (pair.contains(':')) {
-              int colonIndex = pair.indexOf(':');
-              String nestedKey = pair.substring(0, colonIndex).trim();
-              String nestedValueStr = pair.substring(colonIndex + 1).trim();
-
-              if (nestedValueStr == 'true') {
-                nestedMap[nestedKey] = true;
-              } else if (nestedValueStr == 'false') {
-                nestedMap[nestedKey] = false;
-              } else {
-                nestedMap[nestedKey] = nestedValueStr;
-              }
-            }
-          }
-          value = nestedMap;
-        } else {
-          // Es un valor simple - buscar hasta la próxima coma o final
-          int valueStart = i;
-          int depth = 0;
-          while (i < cleaned.length) {
-            if (cleaned[i] == '{' || cleaned[i] == '[') depth++;
-            if (cleaned[i] == '}' || cleaned[i] == ']') depth--;
-            if (cleaned[i] == ',' && depth == 0) break;
-            i++;
-          }
-
-          String valueStr = cleaned.substring(valueStart, i).trim();
-          if (valueStr.contains(':') && valueStr.contains('.')) {
-            // Es un Duration
-            value = parseDurationString(valueStr);
-          } else {
-            value = valueStr;
-          }
-        }
-
-        result[key] = value;
-
-        // Saltar la coma si existe
-        if (i < cleaned.length && cleaned[i] == ',') i++;
-
-        // Saltar espacios
-        while (i < cleaned.length && cleaned[i] == ' ') {
-          i++;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_isMounted) {
+        _checkIfNeedsScroll();
+        if (_needsScroll) {
+          _startScrollingCycle();
         }
       }
-
-      return result;
-    }
-  } catch (e) {
-    printLog.e('Error parseando map string: $e');
+    });
   }
 
-  return {};
-}
-
-/// Parsea un string de Duration en formato "0:00:30.000000" de vuelta a Duration
-Duration parseDurationString(String durationStr) {
-  try {
-    List<String> parts = durationStr.split(':');
-    if (parts.length >= 3) {
-      int hours = int.parse(parts[0]);
-      int minutes = int.parse(parts[1]);
-      double seconds = double.parse(parts[2]);
-
-      return Duration(
-        hours: hours,
-        minutes: minutes,
-        seconds: seconds.floor(),
-        microseconds: ((seconds - seconds.floor()) * 1000000).round(),
-      );
+  @override
+  void didUpdateWidget(covariant AutoScrollingText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text && _isMounted) {
+      _animationController.reset();
+      _scrollController.jumpTo(0.0);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_isMounted) {
+          _checkIfNeedsScroll();
+          if (_needsScroll) {
+            _startScrollingCycle();
+          }
+        }
+      });
     }
-  } catch (e) {
-    printLog.e('Error parseando duration: $e');
   }
-  return Duration.zero;
-}
 
-///*-Global Connection Manager-*\\\
+  @override
+  void dispose() {
+    _isMounted = false;
+    _animationController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
-/// Inicia el listener global para el estado de conexión del dispositivo
-void setupGlobalConnectionListener() {
-  globalConnectionSubscription?.cancel();
+  void _checkIfNeedsScroll() {
+    if (_scrollController.hasClients && _isMounted) {
+      final maxScrollExtent = _scrollController.position.maxScrollExtent;
+      _needsScroll = maxScrollExtent > 0;
+    }
+  }
 
-  globalConnectionSubscription = myDevice.device.connectionState.listen(
-    (BluetoothConnectionState state) {
-      printLog.i('Estado de conexión global: $state');
+  void _startScrollingCycle() {
+    if (!_needsScroll || _isScrolling || !_isMounted) return;
 
-      if (state == BluetoothConnectionState.disconnected) {
-        printLog.e('Dispositivo desconectado - Manejador global');
+    _isScrolling = true;
 
-        printLog.d('¿Es acción rápida? $quickAction');
+    final maxScrollExtent = _scrollController.position.maxScrollExtent;
+    final calculatedDuration = Duration(
+      milliseconds: (maxScrollExtent / widget.velocity * 1000).toInt(),
+    );
 
-        // Check if this is not a quick action and show toast
-        if (!quickAction) {
-          showToast('Dispositivo desconectado');
+    _animationController.animateTo(1.0, duration: calculatedDuration).then((_) {
+      if (!_isMounted) return;
+      Future.delayed(widget.pauseDuration, () {
+        if (!_isMounted) return;
+        _animationController
+            .animateTo(0.0, duration: calculatedDuration)
+            .then((_) {
+          if (_isMounted) {
+            _isScrolling = false;
+            if (_needsScroll) {
+              Future.delayed(widget.pauseDuration, _startScrollingCycle);
+            }
+          }
+        });
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        if (_scrollController.hasClients && _needsScroll && _isMounted) {
+          final maxScrollExtent = _scrollController.position.maxScrollExtent;
+          final scrollPosition = maxScrollExtent * _animationController.value;
+          _scrollController.jumpTo(scrollPosition);
         }
-
-        // Limpiar variables globales
-        cleanGlobalDeviceVariables();
-
-        // Navigate to menu if not in quick action mode
-        if (!quickAction) {
-          navigatorKey.currentState?.pushReplacementNamed('/menu');
-        }
-      }
-    },
-  );
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          controller: _scrollController,
+          physics: const NeverScrollableScrollPhysics(),
+          child: Text(
+            widget.text,
+            style: widget.style,
+            softWrap: false,
+          ),
+        );
+      },
+    );
+  }
 }
-
-/// Cancela el listener global de conexión
-void cancelGlobalConnectionListener() {
-  globalConnectionSubscription?.cancel();
-  globalConnectionSubscription = null;
-}
-
-/// Limpia todas las variables globales relacionadas con el dispositivo
-void cleanGlobalDeviceVariables() {
-  nameOfWifi = '';
-  connectionFlag = false;
-  deviceName = '';
-  toolsValues = [];
-  varsValues = [];
-  ioValues = [];
-  infoValues = [];
-  hardwareVersion = '';
-  softwareVersion = '';
-  printLog.i('Variables globales del dispositivo limpiadas');
-}
-//*- Funciones de parsing para Maps y Duration -*\\
+//*- ScrollText -*\\
