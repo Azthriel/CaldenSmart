@@ -803,8 +803,11 @@ class EscenasPageState extends State<EscenasPage> {
                       }
                     }
 
-                    final action =
-                        devicesActions != null ? devicesActions[equipo] : null;
+                    final action = devicesActions != null
+                        ? devicesActions[equipo] ??
+                            devicesActions['$equipo:dispositivo'] ??
+                            devicesActions['$equipo:grupo']
+                        : null;
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 8),
@@ -991,7 +994,7 @@ class EscenasPageState extends State<EscenasPage> {
                   actionColor = Colors.orange;
                 } else {
                   // Es un grupo
-                  final action = devicesActions?[equipo] ?? false;
+                  final action = devicesActions?['$equipo:grupo'] ?? false;
                   actionText = 'Se ${action ? "activará" : "desactivará"}';
                   actionIcon = action
                       ? HugeIcons.strokeRoundedPlug01
@@ -1002,8 +1005,10 @@ class EscenasPageState extends State<EscenasPage> {
                 // Manejo para dispositivos individuales
                 switch (evento) {
                   case 'horario':
-                    final delay = devicesDelay?[equipo] ?? Duration.zero;
-                    final action = devicesActions?[equipo] ?? false;
+                    final delay =
+                        devicesDelay?['$equipo:dispositivo'] ?? Duration.zero;
+                    final action =
+                        devicesActions?['$equipo:dispositivo'] ?? false;
                     actionIcon = action
                         ? HugeIcons.strokeRoundedPlug01
                         : HugeIcons.strokeRoundedPlugSocket;

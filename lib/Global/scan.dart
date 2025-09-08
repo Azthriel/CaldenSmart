@@ -48,7 +48,7 @@ class ScanPageState extends State<ScanPage>
     BluetoothWatcher().start();
     List<dynamic> lista = dbData['Keywords'] ?? [];
     keywords = lista.map((item) => item.toString()).toList();
-    // scan();
+    scan();
 
     searchController.addListener(() {
       setState(() {
