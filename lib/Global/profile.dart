@@ -785,7 +785,7 @@ class ProfilePageState extends State<ProfilePage> {
                               ),
                             ),
                             onTap: () {
-                              launchWebURL(linksOfApp(app, 'Instagram'));
+                              launchWebURL(linksOfApp('Instagram'));
                             },
                           ),
                           ListTile(
@@ -799,7 +799,7 @@ class ProfilePageState extends State<ProfilePage> {
                               ),
                             ),
                             onTap: () {
-                              launchWebURL(linksOfApp(app, 'Facebook'));
+                              launchWebURL(linksOfApp('Facebook'));
                             },
                           ),
                           ListTile(
@@ -812,7 +812,7 @@ class ProfilePageState extends State<ProfilePage> {
                               ),
                             ),
                             onTap: () {
-                              launchWebURL(linksOfApp(app, 'Web'));
+                              launchWebURL(linksOfApp('Web'));
                             },
                           ),
                         ],

@@ -244,7 +244,6 @@ final List<String> weatherConditions = [
   'Sol',
   'Viento fuerte',
   'Nieve',
-  'Granizo',
   'Neblina',
   'Calor extremo',
   'Frío extremo',
@@ -965,76 +964,30 @@ Widget contactInfo(int type) {
   }
 }
 
-String linksOfApp(int type, String link) {
+String linksOfApp(String link) {
   switch (link) {
     case 'Privacidad':
-      switch (type) {
-        case 0:
-          return 'https://caldensmart.com/ayuda/privacidad/';
-        default:
-          return 'https://caldensmart.com/ayuda/privacidad/';
-      }
+      return 'https://caldensmart.com/ayuda/privacidad/';
     case 'TerminosDeUso':
-      switch (type) {
-        case 0:
-          return 'https://caldensmart.com/ayuda/terminos-de-uso/';
-        default:
-          return 'https://caldensmart.com/ayuda/terminos-de-uso/';
-      }
+      return 'https://caldensmart.com/ayuda/terminos-de-uso/';
     case 'Borrar Cuenta':
-      switch (type) {
-        default:
-          return 'https://caldensmart.com/ayuda/eliminar-cuenta/';
-      }
+      return 'https://caldensmart.com/ayuda/eliminar-cuenta/';
     case 'Instagram':
-      switch (type) {
-        case 0:
-          return 'https://www.instagram.com/caldensmart/';
-        default:
-          return 'https://www.instagram.com/gonzaa_trillo/';
-      }
+      return 'https://www.instagram.com/caldensmart/';
     case 'Facebook':
-      switch (type) {
-        case 0:
-          return 'https://www.facebook.com/CalefactoresCalden';
-        default:
-          return 'https://www.facebook.com/CalefactoresCalden';
-      }
+      return 'https://www.facebook.com/CalefactoresCalden';
     case 'Web':
-      switch (type) {
-        case 0:
-          return 'https://caldensmart.com';
-        default:
-          return 'https://caldensmart.com';
-      }
+      return 'https://caldensmart.com';
     case 'Alexa':
-      switch (type) {
-        case 0:
-          return 'https://www.amazon.es/dp/B0DK94GBXW/';
-        default:
-          return 'https://www.amazon.es/dp/B0DK94GBXW/';
-      }
+      return 'https://www.amazon.es/dp/B0DK94GBXW/';
     case 'GoogleHome':
-      switch (type) {
-        case 0:
-          return 'https://caldensmart.com';
-        default:
-          return 'https://caldensmart.com';
-      }
+      return 'https://caldensmart.com';
     case 'Siri':
-      switch (type) {
-        case 0:
-          return 'https://caldensmart.com';
-        default:
-          return 'https://caldensmart.com';
-      }
+      return 'https://caldensmart.com';
+    case 'manuales_escenas':
+      return 'https://www.caldensmart.com/docs/Manual_escenas.pdf';
     default:
-      switch (type) {
-        case 0:
-          return 'https://caldensmart.com';
-        default:
-          return 'https://caldensmart.com';
-      }
+      return 'https://caldensmart.com';
   }
 }
 //*-Tipo de Aplicación y parametros-*\\

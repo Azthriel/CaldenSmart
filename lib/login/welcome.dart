@@ -361,11 +361,11 @@ class WelcomePageState extends State<WelcomePage>
 
   ///*- Función para abrir el enlace de términos y condiciones *-\\\
   Future<void> launchTermsURL() async {
-    launchWebURL(linksOfApp(app, 'TerminosDeUso'));
+    launchWebURL(linksOfApp('TerminosDeUso'));
   }
 
   Future<void> launchPrivacyURL() async {
-    launchWebURL(linksOfApp(app, 'Privacidad'));
+    launchWebURL(linksOfApp('Privacidad'));
   }
 
   Future<void> signUpUser(String email, String password) async {

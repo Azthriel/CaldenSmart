@@ -1054,13 +1054,13 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
           admin.contains(currentUserEmail);
     }).toList();
 
-    if (validDevices.length < 2) {
+    if (validDevices.isEmpty) {
       return [
         Center(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(
-              'Se necesitan al menos 2 equipos válidos para crear una cascada.',
+              'Se necesitan al menos 1 equipo válido para crear una cascada.',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 color: Colors.red,

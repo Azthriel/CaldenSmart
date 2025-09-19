@@ -2090,6 +2090,15 @@ class EscenasPageState extends State<EscenasPage> {
             ),
           ),
         ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            launchWebURL(linksOfApp('manuales_escenas'));
+          },
+          backgroundColor: color4,
+          shape: const CircleBorder(),
+          child: const Icon(Icons.help, size: 30, color: color0),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }
