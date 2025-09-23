@@ -8,6 +8,7 @@ import 'package:caldensmart/Devices/millenium.dart';
 import 'package:caldensmart/Devices/modulo.dart';
 import 'package:caldensmart/Devices/relay.dart';
 import 'package:caldensmart/Devices/rele1i1o.dart';
+import 'package:caldensmart/Devices/riego.dart';
 import 'package:caldensmart/Devices/termometro.dart';
 import 'package:caldensmart/Escenas/escenas.dart';
 import 'package:caldensmart/Global/profile.dart';
@@ -178,6 +179,7 @@ class MyAppState extends State<MyApp> {
         '/rele1i1o': (context) => const Rele1i1oPage(),
         '/qr': (context) => const QRScanPage(),
         '/termometro': (context) => const TermometroPage(),
+        '/riego': (context) => const RiegoPage(),
       },
     );
   }

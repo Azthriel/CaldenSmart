@@ -390,36 +390,36 @@ class RelayPageState extends ConsumerState<RelayPage> {
 
   void subscribeToWifiStatus() async {
     printLog.i('Se subscribió a wifi');
-    await myDevice.toolsUuid.setNotifyValue(true);
+    await bluetoothManager.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
-        myDevice.toolsUuid.onValueReceived.listen((List<int> status) {
+        bluetoothManager.toolsUuid.onValueReceived.listen((List<int> status) {
       printLog.i('Llegaron cositas wifi');
       updateWifiValues(status);
     });
 
-    myDevice.device.cancelWhenDisconnected(wifiSub);
+    bluetoothManager.device.cancelWhenDisconnected(wifiSub);
   }
 
   void subscribeTrueStatus() async {
     printLog.i('Me subscribo a vars');
-    await myDevice.varsUuid.setNotifyValue(true);
+    await bluetoothManager.varsUuid.setNotifyValue(true);
 
     final trueStatusSub =
-        myDevice.varsUuid.onValueReceived.listen((List<int> status) {
+        bluetoothManager.varsUuid.onValueReceived.listen((List<int> status) {
       var parts = utf8.decode(status).split(':');
       setState(() {
         turnOn = parts[0] == '1';
       });
     });
 
-    myDevice.device.cancelWhenDisconnected(trueStatusSub);
+    bluetoothManager.device.cancelWhenDisconnected(trueStatusSub);
   }
 
   void turnDeviceOn(bool on) async {
     int fun = on ? 1 : 0;
     String data = '${DeviceManager.getProductCode(deviceName)}[11]($fun)';
-    myDevice.toolsUuid.write(data.codeUnits);
+    bluetoothManager.toolsUuid.write(data.codeUnits);
     globalDATA[
             '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
         'w_status'] = on;
@@ -1555,7 +1555,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
         if (_isTutorialActive) return;
         showDisconnectDialog(context);
         Future.delayed(const Duration(seconds: 2), () async {
-          await myDevice.device.disconnect();
+          await bluetoothManager.device.disconnect();
           if (context.mounted) {
             Navigator.pop(context);
             Navigator.pushReplacementNamed(context, '/menu');
@@ -1627,7 +1627,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                 Expanded(
                   key: keys['rele:titulo']!,
                   child: SizedBox(
-                    height: 24,
+                    height: 30,
                     width: 2,
                     child: AutoScrollingText(
                       text: nickname,
@@ -1649,7 +1649,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
 
               showDisconnectDialog(context);
               Future.delayed(const Duration(seconds: 2), () async {
-                await myDevice.device.disconnect();
+                await bluetoothManager.device.disconnect();
                 if (context.mounted) {
                   Navigator.pop(context);
                   Navigator.pushReplacementNamed(context, '/menu');

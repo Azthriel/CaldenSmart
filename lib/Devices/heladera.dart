@@ -446,7 +446,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
 
   void timeData() async {
     fechaSeleccionada = await cargarFechaGuardada(deviceName);
-    List<int> list = await myDevice.varsUuid.read(timeout: 2);
+    List<int> list = await bluetoothManager.varsUuid.read(timeout: 2);
     List<String> partes = utf8.decode(list).split(':');
 
     if (partes.length > 2) {
@@ -555,23 +555,23 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
 
   void subscribeToWifiStatus() async {
     printLog.i('Se subscribio a wifi');
-    await myDevice.toolsUuid.setNotifyValue(true);
+    await bluetoothManager.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
-        myDevice.toolsUuid.onValueReceived.listen((List<int> status) {
+        bluetoothManager.toolsUuid.onValueReceived.listen((List<int> status) {
       printLog.i('Llegaron cositas wifi');
       updateWifiValues(status);
     });
 
-    myDevice.device.cancelWhenDisconnected(wifiSub);
+    bluetoothManager.device.cancelWhenDisconnected(wifiSub);
   }
 
   void subscribeTrueStatus() async {
     printLog.i('Me subscribo a vars');
-    await myDevice.varsUuid.setNotifyValue(true);
+    await bluetoothManager.varsUuid.setNotifyValue(true);
 
     final trueStatusSub =
-        myDevice.varsUuid.onValueReceived.listen((List<int> status) {
+        bluetoothManager.varsUuid.onValueReceived.listen((List<int> status) {
       var parts = utf8.decode(status).split(':');
       setState(() {
         if (parts[0] == '1') {
@@ -582,18 +582,18 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
       });
     });
 
-    myDevice.device.cancelWhenDisconnected(trueStatusSub);
+    bluetoothManager.device.cancelWhenDisconnected(trueStatusSub);
   }
 
   void sendTemperature(int temp) {
     String data = '${DeviceManager.getProductCode(deviceName)}[7]($temp)';
-    myDevice.toolsUuid.write(data.codeUnits);
+    bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void turnDeviceOn(bool on) async {
     int fun = on ? 1 : 0;
     String data = '${DeviceManager.getProductCode(deviceName)}[11]($fun)';
-    myDevice.toolsUuid.write(data.codeUnits);
+    bluetoothManager.toolsUuid.write(data.codeUnits);
     globalDATA[
             '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
         'w_status'] = on;
@@ -1469,7 +1469,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                           );
                           String data =
                               '${DeviceManager.getProductCode(deviceName)} ';
-                          myDevice.toolsUuid.write(data.codeUnits);
+                          bluetoothManager.toolsUuid.write(data.codeUnits);
                         }
                       : null,
                   child: Text(
@@ -1518,7 +1518,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
         if (_isTutorialActive) return;
         showDisconnectDialog(context);
         Future.delayed(const Duration(seconds: 2), () async {
-          await myDevice.device.disconnect();
+          await bluetoothManager.device.disconnect();
           if (context.mounted) {
             Navigator.pop(context);
             Navigator.pushReplacementNamed(context, '/menu');
@@ -1590,7 +1590,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
               children: [
                 Expanded(
                   child:  SizedBox(
-                    height: 24,
+                    height: 30,
                     width: 2,
                     child: AutoScrollingText(
                       text: nickname,
@@ -1611,7 +1611,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
               if (_isTutorialActive) return;
               showDisconnectDialog(context);
               Future.delayed(const Duration(seconds: 2), () async {
-                await myDevice.device.disconnect();
+                await bluetoothManager.device.disconnect();
                 if (context.mounted) {
                   Navigator.pop(context);
                   Navigator.pushReplacementNamed(context, '/menu');

@@ -175,22 +175,22 @@ class RollerPageState extends ConsumerState<RollerPage> {
 
   void subscribeToWifiStatus() async {
     printLog.i('Se subscribio a wifi');
-    await myDevice.toolsUuid.setNotifyValue(true);
+    await bluetoothManager.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
-        myDevice.toolsUuid.onValueReceived.listen((List<int> status) {
+        bluetoothManager.toolsUuid.onValueReceived.listen((List<int> status) {
       updateWifiValues(status);
     });
 
-    myDevice.device.cancelWhenDisconnected(wifiSub);
+    bluetoothManager.device.cancelWhenDisconnected(wifiSub);
   }
 
   void subToVars() async {
     printLog.i('Me subscribo a vars');
-    await myDevice.varsUuid.setNotifyValue(true);
+    await bluetoothManager.varsUuid.setNotifyValue(true);
 
     final varsSub =
-        myDevice.varsUuid.onValueReceived.listen((List<int> status) {
+        bluetoothManager.varsUuid.onValueReceived.listen((List<int> status) {
       var parts = utf8.decode(status).split(':');
       // printLog.i('Posición nueva: ${parts[0]}');
       if (context.mounted) {
@@ -201,7 +201,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
       }
     });
 
-    myDevice.device.cancelWhenDisconnected(varsSub);
+    bluetoothManager.device.cancelWhenDisconnected(varsSub);
   }
 
   void processValues(List<int> values) {
@@ -229,24 +229,24 @@ class RollerPageState extends ConsumerState<RollerPage> {
   void setDistance(int pc) {
     String data = '${DeviceManager.getProductCode(deviceName)}[7]($pc%)';
     printLog.i(data);
-    myDevice.toolsUuid.write(data.codeUnits);
+    bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setLarge(int grades) {
     String data = '${DeviceManager.getProductCode(deviceName)}[7]($grades)';
     printLog.i(data);
-    myDevice.toolsUuid.write(data.codeUnits);
+    bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setRollerConfig(int type) {
     String data = '${DeviceManager.getProductCode(deviceName)}[8]($type)';
-    myDevice.toolsUuid.write(data.codeUnits);
+    bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setMotorSpeed(String rpm) {
     String data = '${DeviceManager.getProductCode(deviceName)}[10]($rpm)';
     printLog.i(data);
-    myDevice.toolsUuid.write(data.codeUnits);
+    bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
 //! VISUAL
@@ -313,7 +313,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                       onLongPressStart: (LongPressStartDetails a) {
                         String data =
                             '${DeviceManager.getProductCode(deviceName)}[7](0%)';
-                        myDevice.toolsUuid.write(data.codeUnits);
+                        bluetoothManager.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = 0;
                         });
@@ -322,7 +322,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                       onLongPressEnd: (LongPressEndDetails a) {
                         String data =
                             '${DeviceManager.getProductCode(deviceName)}[7]($actualPosition%)';
-                        myDevice.toolsUuid.write(data.codeUnits);
+                        bluetoothManager.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = actualPosition;
                         });
@@ -373,7 +373,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                       onLongPressStart: (LongPressStartDetails a) {
                         String data =
                             '${DeviceManager.getProductCode(deviceName)}[7](100%)';
-                        myDevice.toolsUuid.write(data.codeUnits);
+                        bluetoothManager.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = 100;
                         });
@@ -382,7 +382,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                       onLongPressEnd: (LongPressEndDetails a) {
                         String data =
                             '${DeviceManager.getProductCode(deviceName)}[7]($actualPosition%)';
-                        myDevice.toolsUuid.write(data.codeUnits);
+                        bluetoothManager.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = actualPosition;
                         });
@@ -621,7 +621,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                           ElevatedButton(
                             onPressed: () async {
                               printLog.i("Guardo fin");
-                              List<int> fun = await myDevice.varsUuid.read();
+                              List<int> fun = await bluetoothManager.varsUuid.read();
                               processValues(fun);
                               rollerEnd = actualPositionGrades;
                               endSaved = true;
@@ -656,7 +656,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                           ElevatedButton(
                             onPressed: () async {
                               printLog.i("Guardo inicio");
-                              List<int> fun = await myDevice.varsUuid.read();
+                              List<int> fun = await bluetoothManager.varsUuid.read();
                               processValues(fun);
                               rollerStart = actualPositionGrades;
 
@@ -770,7 +770,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
       onPopInvokedWithResult: (didPop, A) {
         showDisconnectDialog(context);
         Future.delayed(const Duration(seconds: 2), () async {
-          await myDevice.device.disconnect();
+          await bluetoothManager.device.disconnect();
           if (context.mounted) {
             Navigator.pop(context);
             Navigator.pushReplacementNamed(context, '/menu');
@@ -860,7 +860,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
             onPressed: () {
               showDisconnectDialog(context);
               Future.delayed(const Duration(seconds: 2), () async {
-                await myDevice.device.disconnect();
+                await bluetoothManager.device.disconnect();
                 if (context.mounted) {
                   Navigator.pop(context);
                   Navigator.pushReplacementNamed(context, '/menu');

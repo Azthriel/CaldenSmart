@@ -83,9 +83,12 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
       final deviceDATA = globalDATA[deviceKey] ?? {};
       final owner = deviceDATA['owner'] ?? '';
       final admin = deviceDATA['secondary_admin'] ?? [];
-      return owner == '' ||
-          owner == currentUserEmail ||
-          admin.contains(currentUserEmail);
+      final isnotRiego = deviceDATA['riegoActive'] != true;
+
+      return (owner == '' ||
+              owner == currentUserEmail ||
+              admin.contains(currentUserEmail)) &&
+          isnotRiego;
     }).toList();
 
     final eventosGrupoYCadena = eventosCreados.where((evento) {
@@ -936,7 +939,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
         // Es un dispositivo individual, agregar el tipo 'dispositivo'
         finalKey = '$item:dispositivo';
       }
-      
+
       finalDeviceActions[finalKey] = deviceActions[item] ?? false;
     }
 

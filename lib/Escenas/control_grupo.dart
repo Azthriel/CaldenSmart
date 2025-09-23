@@ -76,9 +76,12 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
       final deviceDATA = globalDATA[deviceKey] ?? {};
       final owner = deviceDATA['owner'] ?? '';
       final admin = deviceDATA['secondary_admin'] ?? [];
-      return owner == '' ||
-          owner == currentUserEmail ||
-          admin.contains(currentUserEmail);
+      final isnotRiego = deviceDATA['riegoActive'] != true;
+
+      return (owner == '' ||
+              owner == currentUserEmail ||
+              admin.contains(currentUserEmail)) &&
+          isnotRiego;
     }).toList();
 
     if (validDevices.length < 2) {

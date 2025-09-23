@@ -113,10 +113,12 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
       final deviceDATA = globalDATA[deviceKey] ?? {};
       final owner = deviceDATA['owner'] ?? '';
       final admin = deviceDATA['secondary_admin'] ?? [];
+      final isnotRiego = deviceDATA['riegoActive'] != true;
 
-      if (owner != '' &&
-          owner != currentUserEmail &&
-          !admin.contains(currentUserEmail)) {
+      if ((owner != '' &&
+              owner != currentUserEmail &&
+              !admin.contains(currentUserEmail)) ||
+          !isnotRiego) {
         continue;
       }
       // Verificar si este equipo tiene entradas seleccionadas
@@ -249,9 +251,12 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
       final deviceDATA = globalDATA[deviceKey] ?? {};
       final owner = deviceDATA['owner'] ?? '';
       final admin = deviceDATA['secondary_admin'] ?? [];
-      return owner == '' ||
-          owner == currentUserEmail ||
-          admin.contains(currentUserEmail);
+      final isnotRiego = deviceDATA['riegoActive'] != true;
+
+      return (owner == '' ||
+              owner == currentUserEmail ||
+              admin.contains(currentUserEmail)) &&
+          isnotRiego;
     }).toList();
 
     final eventosGrupoYCadena = eventosCreados.where((evento) {

@@ -205,7 +205,7 @@ class ScanPageState extends State<ScanPage>
 
       printLog.i('Teoricamente estoy conectado');
 
-      MyDevice myDevice = MyDevice();
+      BluetoothManager bluetoothManager = BluetoothManager();
 
       // Setup global connection listener instead of local one
       var conenctionSub =
@@ -220,7 +220,7 @@ class ScanPageState extends State<ScanPage>
                   FlutterBluePlus.isScanningNow
                       ? FlutterBluePlus.stopScan()
                       : null;
-                  myDevice.setup(device).then((valor) {
+                  bluetoothManager.setup(device).then((valor) {
                     printLog.i('RETORNASHE $valor');
                     connectionTry = 0;
                     if (valor) {
@@ -232,7 +232,7 @@ class ScanPageState extends State<ScanPage>
                       connectionFlag = false;
                       printLog.i('Fallo en el setup');
                       showToast('Error en el dispositivo, intente nuevamente');
-                      myDevice.device.disconnect();
+                      bluetoothManager.device.disconnect();
                     }
                   });
                 } else {
@@ -391,8 +391,8 @@ class ScanPageState extends State<ScanPage>
       printLog.i(
         "Arranca por la derecha la maquina del sexo tilin",
       );
-      MyDevice myDevice = MyDevice();
-      myDevice.setup(device).then((valor) async {
+      BluetoothManager bluetoothManager = BluetoothManager();
+      bluetoothManager.setup(device).then((valor) async {
         printLog.i('RETORNASHE $valor');
         connectionTry = 0;
         if (valor) {
@@ -412,7 +412,7 @@ class ScanPageState extends State<ScanPage>
                       '241220A'))) {
             String pinValue = pinQuickAccess[deviceName] ?? '0';
             String fun = '$pinValue#${newValue ? '1' : '0'}';
-            myDevice.ioUuid.write(fun.codeUnits);
+            bluetoothManager.ioUuid.write(fun.codeUnits);
             String topic = 'devices_rx/$productCode/$serialNumber';
             String topic2 = 'devices_tx/$productCode/$serialNumber';
             String message = jsonEncode({
@@ -432,7 +432,7 @@ class ScanPageState extends State<ScanPage>
           } else {
             int fun = newValue ? 1 : 0;
             String data = '$productCode[11]($fun)';
-            myDevice.toolsUuid.write(data.codeUnits);
+            bluetoothManager.toolsUuid.write(data.codeUnits);
             globalDATA['$productCode/$serialNumber']!['w_status'] = newValue;
             saveGlobalData(globalDATA);
             try {
@@ -445,20 +445,20 @@ class ScanPageState extends State<ScanPage>
               printLog.i('Error al enviar valor en cdBLE $e $s');
             }
           }
-          await myDevice.device.disconnect();
+          await bluetoothManager.device.disconnect();
           printLog.i(
             "¿Se me cayo la pichula? ${device.isDisconnected}",
           );
         } else {
           printLog.i('Fallo en el setup');
           showToast("Error con el acceso rápido\nIntente nuevamente");
-          myDevice.device.disconnect();
+          bluetoothManager.device.disconnect();
         }
       }).catchError((e, s) {
         printLog.e('Error en setup del dispositivo: $e');
         printLog.e('Stack trace: $s');
         showToast("Error con el acceso rápido\nIntente nuevamente");
-        myDevice.device.disconnect();
+        bluetoothManager.device.disconnect();
       });
     } else {
       printLog.i(

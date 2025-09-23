@@ -298,21 +298,21 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
 
   void subscribeToWifiStatus() async {
     printLog.i('Se subscribio a wifi');
-    await myDevice.toolsUuid.setNotifyValue(true);
+    await bluetoothManager.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
-        myDevice.toolsUuid.onValueReceived.listen((List<int> status) {
+        bluetoothManager.toolsUuid.onValueReceived.listen((List<int> status) {
       updateWifiValues(status);
     });
 
-    myDevice.device.cancelWhenDisconnected(wifiSub);
+    bluetoothManager.device.cancelWhenDisconnected(wifiSub);
   }
 
   void _subscribeToWorkCharacteristic() async {
-    await myDevice.workUuid.setNotifyValue(true);
+    await bluetoothManager.workUuid.setNotifyValue(true);
     printLog.i('Me suscribí a work');
     final workSub =
-        myDevice.workUuid.onValueReceived.listen((List<int> status) {
+        bluetoothManager.workUuid.onValueReceived.listen((List<int> status) {
       printLog.i('Cositas: $status');
       setState(() {
         alert = status[4] == 1;
@@ -335,7 +335,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
       });
     });
 
-    myDevice.device.cancelWhenDisconnected(workSub);
+    bluetoothManager.device.cancelWhenDisconnected(workSub);
   }
 
   //*-Funciones de deslizamiento entre pantallas-*\\
@@ -383,7 +383,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
   void _sendValueToBle(int value) async {
     try {
       final data = [value];
-      myDevice.lightUuid.write(data, withoutResponse: true);
+      bluetoothManager.lightUuid.write(data, withoutResponse: true);
     } catch (e, stackTrace) {
       printLog.i('Error al mandar el valor del brillo $e $stackTrace');
       // handleManualError(e, stackTrace);
@@ -1435,7 +1435,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
         if (_isTutorialActive) return;
         showDisconnectDialog(context);
         Future.delayed(const Duration(seconds: 2), () async {
-          await myDevice.device.disconnect();
+          await bluetoothManager.device.disconnect();
           if (context.mounted) {
             Navigator.pop(context);
             Navigator.pushReplacementNamed(context, '/menu');
@@ -1507,7 +1507,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                 Expanded(
                   key: keys['detectores:titulo']!,
                   child: SizedBox(
-                    height: 24,
+                    height: 30,
                     width: 2,
                     child: AutoScrollingText(
                       text: nickname,
@@ -1528,7 +1528,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
               if (_isTutorialActive) return;
               showDisconnectDialog(context);
               Future.delayed(const Duration(seconds: 2), () async {
-                await myDevice.device.disconnect();
+                await bluetoothManager.device.disconnect();
                 if (context.mounted) {
                   Navigator.pop(context);
                   Navigator.pushReplacementNamed(context, '/menu');

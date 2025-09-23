@@ -407,9 +407,12 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
       final deviceDATA = globalDATA[deviceKey] ?? {};
       final owner = deviceDATA['owner'] ?? '';
       final admin = deviceDATA['secondary_admin'] ?? [];
-      return owner == '' ||
-          owner == currentUserEmail ||
-          admin.contains(currentUserEmail);
+      final isnotRiego = deviceDATA['riegoActive'] != true;
+
+      return (owner == '' ||
+              owner == currentUserEmail ||
+              admin.contains(currentUserEmail)) &&
+          isnotRiego;
     }).toList();
 
     final eventosGrupoYCadena = eventosCreados.where((evento) {

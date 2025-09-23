@@ -5,6 +5,7 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:caldensmart/firebase_options.dart';
+import 'package:caldensmart/secret.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/gestures.dart';
@@ -106,7 +107,7 @@ bool wifiUnstable = false;
 //*-Relacionado al wifi-*\\
 
 //*-Relacionado al ble-*\\
-MyDevice myDevice = MyDevice();
+BluetoothManager bluetoothManager = BluetoothManager();
 List<int> infoValues = [];
 List<int> toolsValues = [];
 List<int> varsValues = [];
@@ -243,6 +244,7 @@ final List<String> weatherConditions = [
   'Lluvia',
   'Sol',
   'Viento fuerte',
+  'Viento suave',
   'Nieve',
   'Neblina',
   'Calor extremo',
@@ -455,6 +457,11 @@ Map<String, GlobalKey> keys = {
   'termometro:configAlertas': GlobalKey(),
   'termometro:configMax': GlobalKey(),
   'termometro:configMin': GlobalKey(),
+  //Riego
+  'riego:estado': GlobalKey(),
+  'riego:titulo': GlobalKey(),
+  'riego:wifi': GlobalKey(),
+  'riego:servidor': GlobalKey(),
 };
 //*-Guía de usuario -*\\
 
@@ -1111,14 +1118,14 @@ void launchWebURL(String url) async {
 
 //*-Wifi, menú y scanner-*\\
 Future<void> sendWifitoBle(String ssid, String pass) async {
-  MyDevice myDevice = MyDevice();
+  BluetoothManager bluetoothManager = BluetoothManager();
   String value = '$ssid#$pass';
   String deviceCommand = DeviceManager.getProductCode(deviceName);
   // printLog.i(deviceCommand);
   String dataToSend = '$deviceCommand[1]($value)';
   printLog.i(dataToSend);
   try {
-    await myDevice.toolsUuid.write(dataToSend.codeUnits);
+    await bluetoothManager.toolsUuid.write(dataToSend.codeUnits);
     printLog.i('Se mando el wifi ANASHE');
   } catch (e) {
     printLog.i('Error al conectarse a Wifi $e');
@@ -2774,7 +2781,7 @@ Future<void> controlDeviceBLE(String name, bool newState) async {
               .keys
               .contains('io'))) {
     String fun = '${pinQuickAccess[name]!}#${newState ? '1' : '0'}';
-    myDevice.ioUuid.write(fun.codeUnits);
+    bluetoothManager.ioUuid.write(fun.codeUnits);
     String topic =
         'devices_rx/${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}';
     String topic2 =
@@ -2798,7 +2805,7 @@ Future<void> controlDeviceBLE(String name, bool newState) async {
   } else {
     int fun = newState ? 1 : 0;
     String data = '${DeviceManager.getProductCode(name)}[11]($fun)';
-    myDevice.toolsUuid.write(data.codeUnits);
+    bluetoothManager.toolsUuid.write(data.codeUnits);
     globalDATA[
             '${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}']![
         'w_status'] = newState;
@@ -3019,9 +3026,9 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                   onPressed: () async {
                     setState(() => updating = true);
 
-                    await myDevice.otaUuid.setNotifyValue(true);
+                    await bluetoothManager.otaUuid.setNotifyValue(true);
 
-                    final otaSub = myDevice.otaUuid.onValueReceived
+                    final otaSub = bluetoothManager.otaUuid.onValueReceived
                         .listen((List<int> event) {
                       var fun = utf8.decode(event);
                       fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
@@ -3036,7 +3043,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                       }
                     });
 
-                    myDevice.device.cancelWhenDisconnected(otaSub);
+                    bluetoothManager.device.cancelWhenDisconnected(otaSub);
 
                     final fileName = await Versioner.fetchLatestFirmwareFile(
                         DeviceManager.getProductCode(deviceName),
@@ -3052,7 +3059,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                         printLog.i('url: $url');
                         String data =
                             '${DeviceManager.getProductCode(deviceName)}[2]($url)';
-                        await myDevice.toolsUuid.write(data.codeUnits);
+                        await bluetoothManager.toolsUuid.write(data.codeUnits);
                       } else {
                         printLog.i('Arranca por la derecha la OTA BLE');
                         String dir =
@@ -3077,7 +3084,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                         String data =
                             '${DeviceManager.getProductCode(deviceName)}[3](${bytes.length})';
                         printLog.i(data);
-                        await myDevice.toolsUuid.write(data.codeUnits);
+                        await bluetoothManager.toolsUuid.write(data.codeUnits);
                         printLog.i("Arranco OTA");
                         try {
                           int chunk = 255 - 3;
@@ -3088,7 +3095,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                               i,
                               min(i + chunk, firmware.length),
                             );
-                            await myDevice.infoUuid
+                            await bluetoothManager.infoUuid
                                 .write(subvalue, withoutResponse: false);
                             // recordedData.add([i, subvalue]);
                             // setState(() {
@@ -3329,7 +3336,7 @@ Duration parseDurationString(String durationStr) {
 void setupGlobalConnectionListener() {
   globalConnectionSubscription?.cancel();
 
-  globalConnectionSubscription = myDevice.device.connectionState.listen(
+  globalConnectionSubscription = bluetoothManager.device.connectionState.listen(
     (BluetoothConnectionState state) {
       printLog.i('Estado de conexión global: $state');
 
@@ -3474,14 +3481,14 @@ class DeviceManager {
 //*- Funciones relacionadas a los equipos*-\\
 
 //*-BLE, configuraciones del equipo-*\\
-class MyDevice {
-  static final MyDevice _singleton = MyDevice._internal();
+class BluetoothManager {
+  static final BluetoothManager _singleton = BluetoothManager._internal();
 
-  factory MyDevice() {
+  factory BluetoothManager() {
     return _singleton;
   }
 
-  MyDevice._internal();
+  BluetoothManager._internal();
 
   late BluetoothDevice device;
   late BluetoothCharacteristic infoUuid;
@@ -3788,6 +3795,7 @@ class Versioner {
     );
     printLog.i('Fetching OTA_FW/W from: $uri');
     final response = await http.get(uri, headers: {
+      'Authorization': 'Bearer $githubToken',
       'Accept': 'application/vnd.github.v3+json',
     });
     printLog.i('GitHub API status: ${response.statusCode}');
@@ -4860,7 +4868,7 @@ class AccessDeniedScreen extends StatelessWidget {
           },
         );
         Future.delayed(const Duration(seconds: 2), () async {
-          await myDevice.device.disconnect();
+          await bluetoothManager.device.disconnect();
           if (context.mounted) {
             Navigator.pop(context);
             Navigator.pushReplacementNamed(context, '/menu');
@@ -4907,7 +4915,7 @@ class AccessDeniedScreen extends StatelessWidget {
                       },
                     );
                     Future.delayed(const Duration(seconds: 2), () async {
-                      await myDevice.device.disconnect();
+                      await bluetoothManager.device.disconnect();
                       if (context.mounted) {
                         Navigator.pop(context);
                         Navigator.pushReplacementNamed(context, '/menu');
@@ -5043,7 +5051,7 @@ class DeviceInUseScreen extends StatelessWidget {
           },
         );
         Future.delayed(const Duration(seconds: 2), () async {
-          await myDevice.device.disconnect();
+          await bluetoothManager.device.disconnect();
           if (context.mounted) {
             Navigator.pop(context);
             Navigator.pushReplacementNamed(context, '/menu');
@@ -5088,7 +5096,7 @@ class DeviceInUseScreen extends StatelessWidget {
                       },
                     );
                     Future.delayed(const Duration(seconds: 2), () async {
-                      await myDevice.device.disconnect();
+                      await bluetoothManager.device.disconnect();
                       if (context.mounted) {
                         Navigator.pop(context);
                         Navigator.pushReplacementNamed(context, '/menu');
@@ -5186,7 +5194,7 @@ class LabProcessNotFinished extends StatelessWidget {
           },
         );
         Future.delayed(const Duration(seconds: 2), () async {
-          await myDevice.device.disconnect();
+          await bluetoothManager.device.disconnect();
           if (context.mounted) {
             Navigator.pop(context);
             Navigator.pushReplacementNamed(context, '/menu');
@@ -5231,7 +5239,7 @@ class LabProcessNotFinished extends StatelessWidget {
                       },
                     );
                     Future.delayed(const Duration(seconds: 2), () async {
-                      await myDevice.device.disconnect();
+                      await bluetoothManager.device.disconnect();
                       if (context.mounted) {
                         Navigator.pop(context);
                         Navigator.pushReplacementNamed(context, '/menu');

@@ -1049,9 +1049,11 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
       final deviceDATA = globalDATA[deviceKey] ?? {};
       final owner = deviceDATA['owner'] ?? '';
       final admin = deviceDATA['secondary_admin'] ?? [];
-      return owner == '' ||
-          owner == currentUserEmail ||
-          admin.contains(currentUserEmail);
+      final isnotRiego = deviceDATA['riegoActive'] != true;
+      return (owner == '' ||
+              owner == currentUserEmail ||
+              admin.contains(currentUserEmail)) &&
+          isnotRiego;
     }).toList();
 
     if (validDevices.isEmpty) {
@@ -1288,7 +1290,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
               })
           .toList(),
     };
-    
+
     eventosCreados.add(cadenaEvent);
 
     todosLosDispositivos.add(MapEntry(

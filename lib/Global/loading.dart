@@ -15,17 +15,20 @@ class LoadingPage extends StatefulWidget {
 }
 
 class LoadState extends State<LoadingPage> {
-  MyDevice myDevice = MyDevice();
+  BluetoothManager bluetoothManager = BluetoothManager();
   String _dots = '';
   int dot = 0;
   late Timer _dotTimer;
   final pc = DeviceManager.getProductCode(deviceName);
   final sn = DeviceManager.extractSerialNumber(deviceName);
+  bool riego = false;
 
   @override
   void initState() {
     super.initState();
     printLog.i('HOSTIAAAAAAAAAAAAAAAAAAAAAAAA');
+    riego = globalDATA['$pc/$sn']?['riegoActive'] ?? false;
+    printLog.i('Riego activo: $riego', color: 'Naranja');
 
     _dotTimer =
         Timer.periodic(const Duration(milliseconds: 800), (Timer timer) {
@@ -41,6 +44,10 @@ class LoadState extends State<LoadingPage> {
     precharge().then((precharge) {
       if (precharge == true) {
         showToast('Dispositivo conectado exitosamente');
+        if (riego) {
+          navigatorKey.currentState?.pushReplacementNamed('/riego');
+          return;
+        }
 
         switch (pc) {
           case '022000_IOT' || '027000_IOT' || '041220_IOT':
@@ -77,7 +84,7 @@ class LoadState extends State<LoadingPage> {
         }
       } else {
         showToast('Error en el dispositivo, intente nuevamente');
-        myDevice.device.disconnect();
+        bluetoothManager.device.disconnect();
       }
     });
   }
@@ -91,8 +98,8 @@ class LoadState extends State<LoadingPage> {
   Future<bool> precharge() async {
     try {
       printLog.i('Estoy precargando');
-      android ? await myDevice.device.requestMtu(255) : null;
-      toolsValues = await myDevice.toolsUuid.read();
+      android ? await bluetoothManager.device.requestMtu(255) : null;
+      toolsValues = await bluetoothManager.toolsUuid.read();
       printLog.i('Valores tools: $toolsValues');
       printLog.i('Valores info: $infoValues');
 
@@ -155,22 +162,31 @@ class LoadState extends State<LoadingPage> {
       userConnected = users > 1;
 
       quickAccesActivated = quickAccess.contains(deviceName);
+      try {
+        final fileName =
+            await Versioner.fetchLatestFirmwareFile(pc, hardwareVersion);
 
-      final fileName =
-          await Versioner.fetchLatestFirmwareFile(pc, hardwareVersion);
+        lastSV = Versioner.extractSV(fileName, hardwareVersion);
 
-      lastSV = Versioner.extractSV(fileName, hardwareVersion);
+        printLog.i('Ultimo firmware: $lastSV', color: 'Naranja');
 
-      printLog.i('Ultimo firmware: $lastSV', color: 'Naranja');
+        if (lastSV != null) {
+          shouldUpdateDevice =
+              (lastSV != softwareVersion) || softwareVersion.contains('_F');
+        }
+      } catch (e) {
+        printLog.e(
+            'No se pudo verificar la versión de firmware desde GitHub: $e',
+            color: 'Amarillo');
+        printLog.i('Continuando sin verificación de actualizaciones...',
+            color: 'Verde');
 
-      if (lastSV != null) {
-        shouldUpdateDevice =
-            (lastSV != softwareVersion) || softwareVersion.contains('_F');
+        lastSV = null;
+        shouldUpdateDevice = false;
       }
-
       switch (pc) {
         case '022000_IOT' || '027000_IOT' || '041220_IOT':
-          varsValues = await myDevice.varsUuid.read();
+          varsValues = await bluetoothManager.varsUuid.read();
           var parts2 = utf8.decode(varsValues).split(':');
           printLog.i('Valores Vars: $parts2', color: 'Naranja');
 
@@ -243,7 +259,7 @@ class LoadState extends State<LoadingPage> {
           saveGlobalData(globalDATA);
           break;
         case '015773_IOT':
-          workValues = await myDevice.workUuid.read();
+          workValues = await bluetoothManager.workUuid.read();
           printLog.i('Valores work: $workValues');
 
           ppmCO = workValues[5] + (workValues[6] << 8);
@@ -264,9 +280,9 @@ class LoadState extends State<LoadingPage> {
           saveGlobalData(globalDATA);
           break;
         case '020010_IOT':
-          ioValues = await myDevice.ioUuid.read();
+          ioValues = await bluetoothManager.ioUuid.read();
           printLog.i('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
-          varsValues = await myDevice.varsUuid.read();
+          varsValues = await bluetoothManager.varsUuid.read();
           printLog.i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
 
           distanceControlActive =
@@ -310,9 +326,9 @@ class LoadState extends State<LoadingPage> {
 
           break;
         case '020020_IOT':
-          ioValues = await myDevice.ioUuid.read();
+          ioValues = await bluetoothManager.ioUuid.read();
           printLog.i('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
-          varsValues = await myDevice.varsUuid.read();
+          varsValues = await bluetoothManager.varsUuid.read();
           printLog.i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
 
           distanceControlActive =
@@ -359,13 +375,13 @@ class LoadState extends State<LoadingPage> {
           break;
         case '027313_IOT':
           if (Versioner.isPosterior(hardwareVersion, '241220A')) {
-            ioValues = await myDevice.ioUuid.read();
+            ioValues = await bluetoothManager.ioUuid.read();
             printLog.i('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
-            varsValues = await myDevice.varsUuid.read();
+            varsValues = await bluetoothManager.varsUuid.read();
             printLog
                 .i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
           } else {
-            varsValues = await myDevice.varsUuid.read();
+            varsValues = await bluetoothManager.varsUuid.read();
             printLog
                 .i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
             var parts2 = utf8.decode(varsValues).split(':');
@@ -417,7 +433,7 @@ class LoadState extends State<LoadingPage> {
 
           break;
         case '024011_IOT':
-          varsValues = await myDevice.varsUuid.read();
+          varsValues = await bluetoothManager.varsUuid.read();
           printLog.i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
           distanceControlActive =
               globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;
@@ -461,7 +477,7 @@ class LoadState extends State<LoadingPage> {
 
           break;
         case '050217_IOT' || '028000_IOT':
-          varsValues = await myDevice.varsUuid.read();
+          varsValues = await bluetoothManager.varsUuid.read();
           var parts2 = utf8.decode(varsValues).split(':');
           printLog.i('Valores Vars: $parts2');
           distanceControlActive =
@@ -519,7 +535,7 @@ class LoadState extends State<LoadingPage> {
           saveGlobalData(globalDATA);
           break;
         case '023430_IOT':
-          varsValues = await myDevice.varsUuid.read();
+          varsValues = await bluetoothManager.varsUuid.read();
           var partes = utf8.decode(varsValues).split(':');
           printLog.i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
           actualTemp = partes[0];

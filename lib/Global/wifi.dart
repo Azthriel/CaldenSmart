@@ -762,6 +762,12 @@ class WifiPageState extends ConsumerState<WifiPage>
               deviceDATA['owner'] == '' ||
               deviceDATA['owner'] == null;
 
+          if (deviceDATA['riegoActive'] == true) {
+            return SizedBox.shrink(
+              key: ValueKey(deviceName),
+            );
+          }
+
           try {
             switch (productCode) {
               case '015773_IOT':

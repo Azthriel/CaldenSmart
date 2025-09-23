@@ -309,7 +309,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
 
   void controlOut(bool value, int index) {
     String fun = '$index#${value ? '1' : '0'}';
-    myDevice.ioUuid.write(fun.codeUnits);
+    bluetoothManager.ioUuid.write(fun.codeUnits);
     String topic =
         'devices_rx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
     String topic2 =
@@ -393,14 +393,14 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
 
   void subscribeToWifiStatus() async {
     printLog.i('Se subscribio a wifi');
-    await myDevice.toolsUuid.setNotifyValue(true);
+    await bluetoothManager.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
-        myDevice.toolsUuid.onValueReceived.listen((List<int> status) {
+        bluetoothManager.toolsUuid.onValueReceived.listen((List<int> status) {
       updateWifiValues(status);
     });
 
-    myDevice.device.cancelWhenDisconnected(wifiSub);
+    bluetoothManager.device.cancelWhenDisconnected(wifiSub);
   }
 
   void processValues(List<int> values) {
@@ -498,15 +498,15 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
   }
 
   void subToIO() async {
-    await myDevice.ioUuid.setNotifyValue(true);
+    await bluetoothManager.ioUuid.setNotifyValue(true);
     printLog.i('Subscrito a IO');
 
-    var ioSub = myDevice.ioUuid.onValueReceived.listen((event) {
+    var ioSub = bluetoothManager.ioUuid.onValueReceived.listen((event) {
       printLog.i('Cambio en IO');
       processValues(event);
     });
 
-    myDevice.device.cancelWhenDisconnected(ioSub);
+    bluetoothManager.device.cancelWhenDisconnected(ioSub);
   }
 
   bool isValidEmail(String email) {
@@ -1052,7 +1052,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                                                     String data =
                                                         '${DeviceManager.getProductCode(deviceName)}[14]($i#0)';
                                                     printLog.i(data);
-                                                    myDevice.toolsUuid
+                                                    bluetoothManager.toolsUuid
                                                         .write(data.codeUnits);
                                                     common[i] = '0';
                                                   });
@@ -1098,7 +1098,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                                                     String data =
                                                         '${DeviceManager.getProductCode(deviceName)}[14]($i#1)';
                                                     printLog.i(data);
-                                                    myDevice.toolsUuid
+                                                    bluetoothManager.toolsUuid
                                                         .write(data.codeUnits);
                                                     common[i] = '1';
                                                   });
@@ -1172,7 +1172,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                                           String fun =
                                               '${DeviceManager.getProductCode(deviceName)}[13]($i#${tipo[i] == 'Entrada' ? '0' : '1'})';
                                           printLog.i(fun);
-                                          myDevice.toolsUuid
+                                          bluetoothManager.toolsUuid
                                               .write(fun.codeUnits);
                                         },
                                         child: const Text(
@@ -1224,7 +1224,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
         if (_isTutorialActive) return;
         showDisconnectDialog(context);
         Future.delayed(const Duration(seconds: 2), () async {
-          await myDevice.device.disconnect();
+          await bluetoothManager.device.disconnect();
           if (context.mounted) {
             Navigator.pop(context);
             Navigator.pushReplacementNamed(context, '/menu');
@@ -1296,7 +1296,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                 Expanded(
                   key: keys['domotica:titulo']!,
                   child: SizedBox(
-                    height: 24,
+                    height: 30,
                     width: 2,
                     child: AutoScrollingText(
                       text: nickname,
@@ -1323,7 +1323,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
 
               showDisconnectDialog(context);
               Future.delayed(const Duration(seconds: 2), () async {
-                await myDevice.device.disconnect();
+                await bluetoothManager.device.disconnect();
                 if (context.mounted) {
                   Navigator.pop(context);
                   Navigator.pushReplacementNamed(context, '/menu');

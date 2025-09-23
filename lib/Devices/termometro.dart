@@ -258,23 +258,23 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
 
   void subscribeToWifiStatus() async {
     printLog.i('Se subscribio a wifi');
-    await myDevice.toolsUuid.setNotifyValue(true);
+    await bluetoothManager.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
-        myDevice.toolsUuid.onValueReceived.listen((List<int> status) {
+        bluetoothManager.toolsUuid.onValueReceived.listen((List<int> status) {
       // printLog.i('Llegaron cositas wifi');
       updateWifiValues(status);
     });
 
-    myDevice.device.cancelWhenDisconnected(wifiSub);
+    bluetoothManager.device.cancelWhenDisconnected(wifiSub);
   }
 
   void subscribeToVars() async {
     printLog.i('Me subscribo a vars');
-    await myDevice.varsUuid.setNotifyValue(true);
+    await bluetoothManager.varsUuid.setNotifyValue(true);
 
     final trueStatusSub =
-        myDevice.varsUuid.onValueReceived.listen((List<int> status) {
+        bluetoothManager.varsUuid.onValueReceived.listen((List<int> status) {
       var parts = utf8.decode(status).split(':');
 
       if (parts.length == 4) {
@@ -287,7 +287,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
       }
     });
 
-    myDevice.device.cancelWhenDisconnected(trueStatusSub);
+    bluetoothManager.device.cancelWhenDisconnected(trueStatusSub);
   }
 
   void _showAlertDialog(String type) {
@@ -406,13 +406,13 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                 String data =
                     '${DeviceManager.getProductCode(deviceName)}[7]($newValue)';
                 printLog.i('Enviando: $data');
-                myDevice.toolsUuid.write(data.codeUnits);
+                bluetoothManager.toolsUuid.write(data.codeUnits);
               } else {
                 alertMinTemp = newValue;
                 String data =
                     '${DeviceManager.getProductCode(deviceName)}[8]($newValue)';
                 printLog.i('Enviando: $data');
-                myDevice.toolsUuid.write(data.codeUnits);
+                bluetoothManager.toolsUuid.write(data.codeUnits);
               }
             });
             printLog.i(
@@ -891,7 +891,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
         if (_isTutorialActive) return;
         showDisconnectDialog(context);
         Future.delayed(const Duration(seconds: 2), () async {
-          await myDevice.device.disconnect();
+          await bluetoothManager.device.disconnect();
           if (context.mounted) {
             Navigator.pop(context);
             Navigator.pushReplacementNamed(context, '/menu');
@@ -963,7 +963,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                 Expanded(
                   //key: keys['termometros:titulo']!,
                   child: SizedBox(
-                    height: 24,
+                    height: 30,
                     width: 2,
                     child: AutoScrollingText(
                       text: nickname,
@@ -984,7 +984,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
               if (_isTutorialActive) return;
               showDisconnectDialog(context);
               Future.delayed(const Duration(seconds: 2), () async {
-                await myDevice.device.disconnect();
+                await bluetoothManager.device.disconnect();
                 if (context.mounted) {
                   Navigator.pop(context);
                   Navigator.pushReplacementNamed(context, '/menu');

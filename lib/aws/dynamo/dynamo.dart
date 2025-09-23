@@ -170,6 +170,26 @@ Future<void> queryItems(String pc, String sn) async {
                     .putIfAbsent('$pc/$sn', () => {})
                     .addAll({key: value.s ?? ''});
                 break;
+              case 'riegoActive':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.boolValue ?? false});
+                break;
+              case 'riegoExtensions':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.ss ?? []});
+                break;
+              case 'freeBomb':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.boolValue ?? false});
+                break;
+              case 'riegoMaster':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.s ?? ''});
+                break;
             }
           }
           printLog.i("$key: $displayValue");
@@ -1530,3 +1550,54 @@ void deleteEventoControlPorClima(String email, String nombreEvento) async {
   }
 }
 //*- Guarda evento: Control por clima -*\\
+
+//*- Guarda las extensiones de riego -*\\
+Future<void> putRiegoExtensions(String pc, String sn, List<String> data) async {
+  try {
+    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+      'product_code': AttributeValue(s: pc),
+      'device_id': AttributeValue(s: sn),
+    }, attributeUpdates: {
+      'riegoExtensions': AttributeValueUpdate(value: AttributeValue(ss: data)),
+    });
+
+    printLog.i('Item escrito perfectamente $response');
+  } catch (e) {
+    printLog.i('Error inserting item: $e');
+  }
+}
+
+//*- Guarda el estado de freeBomb -*\\
+Future<void> putFreeBomb(String pc, String sn, bool status) async {
+  try {
+    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+      'product_code': AttributeValue(s: pc),
+      'device_id': AttributeValue(s: sn),
+    }, attributeUpdates: {
+      'freeBomb':
+          AttributeValueUpdate(value: AttributeValue(boolValue: status)),
+    });
+
+    printLog.i('Item freeBomb escrito perfectamente $response');
+  } catch (e) {
+    printLog.i('Error insertando freeBomb: $e');
+  }
+}
+
+//*- Guarda el maestro de riego para extensiones -*\\
+Future<void> putRiegoMaster(
+    String pc, String sn, String masterDeviceName) async {
+  try {
+    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+      'product_code': AttributeValue(s: pc),
+      'device_id': AttributeValue(s: sn),
+    }, attributeUpdates: {
+      'riegoMaster':
+          AttributeValueUpdate(value: AttributeValue(s: masterDeviceName)),
+    });
+
+    printLog.i('Item riegoMaster escrito perfectamente $response');
+  } catch (e) {
+    printLog.i('Error insertando riegoMaster: $e');
+  }
+}

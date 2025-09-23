@@ -25,6 +25,18 @@ class ManagerScreenState extends State<ManagerScreen> {
   bool showNotificationOptions = false;
   int selectedNotificationOption = 0;
 
+  // Variables para control de bomba
+  bool showBombaControl = false;
+  final TextEditingController bombaController = TextEditingController();
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    tenantController.dispose();
+    bombaController.dispose();
+    super.dispose();
+  }
+
   Future<void> addSecondaryAdmin(String email) async {
     if (!isValidEmail(email)) {
       showToast('Por favor, introduce un correo electrónico válido.');
@@ -1013,7 +1025,8 @@ class ManagerScreenState extends State<ManagerScreen> {
                 pc != '027131_IOT' &&
                 pc != '024011_IOT' &&
                 pc != '015773_IOT' &&
-                pc != '023430_IOT') ...[
+                pc != '023430_IOT' &&
+                globalDATA['$pc/$sn']?['riegoActive'] != true) ...[
               SizedBox(
                 key: keys['managerScreen:accesoRapido']!,
                 width: double.infinity,
@@ -1328,7 +1341,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                             int fun = nightMode ? 1 : 0;
                             String data = '$pc[9]($fun)';
                             printLog.i(data);
-                            myDevice.toolsUuid.write(data.codeUnits);
+                            bluetoothManager.toolsUuid.write(data.codeUnits);
                           });
                         },
                       ),
@@ -1372,6 +1385,179 @@ class ManagerScreenState extends State<ManagerScreen> {
               ),
             ),
             const SizedBox(height: 10),
+
+            // Control de bomba para dispositivos de riego
+            if (globalDATA['$pc/$sn']?['riegoActive'] == true) ...{
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeInOut,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: color1,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            showBombaControl = !showBombaControl;
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: color0,
+                          backgroundColor: color1,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 11,
+                            horizontal: 20,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          'Control de bomba',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 600),
+                      curve: Curves.easeInOut,
+                      child: showBombaControl
+                          ? Padding(
+                              padding: const EdgeInsets.all(15.0),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'Estado actual de la bomba: ${globalDATA['$pc/$sn']?['freeBomb'] ?? false ? 'Manual' : 'Automático'}',
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.poppins(
+                                      color: color0,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 15),
+                                  const Text(
+                                    'Introduzca el código para cambiar el uso de la bomba a manual o automático:',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: color0),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  TextField(
+                                    controller: bombaController,
+                                    obscureText: true,
+                                    keyboardType: TextInputType.number,
+                                    decoration: InputDecoration(
+                                      hintText:
+                                          'Ingrese código para cambiar el uso de la bomba',
+                                      hintStyle: GoogleFonts.poppins(
+                                        color: Colors.grey[600],
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(15),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 15,
+                                      ),
+                                    ),
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.black,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 15),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          onPressed: () async {
+                                            String codigo =
+                                                bombaController.text;
+                                            // Aquí puedes cambiar el código por el que desees
+                                            if (codigo == '5773') {
+                                              // Código de ejemplo
+                                              try {
+                                                bool currentStatus =
+                                                    globalDATA['$pc/$sn']
+                                                            ?['freeBomb'] ??
+                                                        false;
+                                                bool newStatus = !currentStatus;
+
+                                                // Actualizar en la base de datos
+                                                await putFreeBomb(
+                                                    pc, sn, newStatus);
+
+                                                // Actualizar en globalDATA
+                                                globalDATA.putIfAbsent(
+                                                        '$pc/$sn',
+                                                        () => {})['freeBomb'] =
+                                                    newStatus;
+
+                                                // Guardar los datos localmente
+                                                saveGlobalData(globalDATA);
+
+                                                setState(() {});
+
+                                                showToast(
+                                                    'Bomba ${newStatus ? 'manual' : 'automática'} activada correctamente');
+                                              } catch (e) {
+                                                showToast(
+                                                    'Error al cambiar el estado de la bomba');
+                                              }
+                                            } else {
+                                              showToast('Código incorrecto');
+                                              bombaController.clear();
+                                            }
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            foregroundColor: color1,
+                                            backgroundColor: color0,
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 12),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(15),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            globalDATA['$pc/$sn']
+                                                        ?['freeBomb'] ??
+                                                    false
+                                                ? 'Cambiar a automático'
+                                                : 'Cambiar a manual',
+                                            style: GoogleFonts.poppins(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+            },
 
             if (pc == '050217_IOT') ...[
               SizedBox(
