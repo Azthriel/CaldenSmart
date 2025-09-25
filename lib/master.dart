@@ -165,6 +165,10 @@ int? selectedSoundTermometro;
 // StreamController para notificar cuando las cadenas terminan
 StreamController<String> cadenaCompletedController =
     StreamController<String>.broadcast();
+
+// StreamController para notificar cuando los riegos terminan
+StreamController<String> riegoCompletedController =
+    StreamController<String>.broadcast();
 //*-Notifications-*\\
 
 //*-Relacionado al Alquiler temporario (Airbnb)-*\\
@@ -2086,6 +2090,21 @@ Future<void> handleNotifications(RemoteMessage message) async {
       String displayMessage =
           "Se detectó '$climaDetectado' y se ejecutaron las acciones programadas para el evento '$nombreEvento'.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}";
       showNotification(displayTitle, displayMessage, 'noti');
+    } else if (caso == 'riego') {
+      String riegoName = message.data['name'] ?? 'Rutina de Riego';
+      final now = DateTime.now();
+      String displayTitle = '🌱 Rutina de Riego Completada';
+      String displayMessage =
+          "La rutina de riego '$riegoName' ha sido completada exitosamente.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}";
+      showNotification(displayTitle, displayMessage, 'noti');
+
+      // Remover la flag de ejecución del riego
+      await removeRiegoExecuting(riegoName, currentUserEmail);
+      printLog.i('Flag de ejecución removida para riego: $riegoName');
+
+      // Notificar a los listeners que el riego terminó (para UI en tiempo real)
+      riegoCompletedController.add(riegoName);
+      printLog.i('Evento de riego completado enviado para: $riegoName');
     }
   } catch (e, s) {
     printLog.e("Error: $e");

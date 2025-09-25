@@ -292,3 +292,36 @@ Future<List<String>> getExecutingCadenas(String email) async {
   return executingCadenas;
 }
 //*- Manejar cadenas en ejecución -*\\
+
+//*- Manejar riegos en ejecución -*\\
+Future<void> setRiegoExecuting(String riegoName, String email) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('CSRiegoExecuting_${email}_$riegoName', true);
+}
+
+Future<void> removeRiegoExecuting(String riegoName, String email) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.remove('CSRiegoExecuting_${email}_$riegoName');
+}
+
+Future<bool> isRiegoExecuting(String riegoName, String email) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getBool('CSRiegoExecuting_${email}_$riegoName') ?? false;
+}
+
+Future<List<String>> getExecutingRiegos(String email) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final Set<String> keys = prefs.getKeys();
+  final String prefix = 'CSRiegoExecuting_${email}_';
+  
+  List<String> executingRiegos = [];
+  for (String key in keys) {
+    if (key.startsWith(prefix) && prefs.getBool(key) == true) {
+      String riegoName = key.substring(prefix.length);
+      executingRiegos.add(riegoName);
+    }
+  }
+  
+  return executingRiegos;
+}
+//*- Manejar riegos en ejecución -*\\

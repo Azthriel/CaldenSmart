@@ -176,9 +176,14 @@ Future<void> queryItems(String pc, String sn) async {
                     .addAll({key: value.boolValue ?? false});
                 break;
               case 'riegoExtensions':
-                globalDATA
-                    .putIfAbsent('$pc/$sn', () => {})
-                    .addAll({key: value.ss ?? []});
+                List<String> data = value.ss ?? [];
+                if (data.contains('') && data.length == 1) {
+                  globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({key: []});
+                } else {
+                  globalDATA
+                      .putIfAbsent('$pc/$sn', () => {})
+                      .addAll({key: data});
+                }
                 break;
               case 'freeBomb':
                 globalDATA
@@ -1553,6 +1558,9 @@ void deleteEventoControlPorClima(String email, String nombreEvento) async {
 
 //*- Guarda las extensiones de riego -*\\
 Future<void> putRiegoExtensions(String pc, String sn, List<String> data) async {
+  if (data.isEmpty) {
+    data.add('');
+  }
   try {
     final response = await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
@@ -1599,5 +1607,50 @@ Future<void> putRiegoMaster(
     printLog.i('Item riegoMaster escrito perfectamente $response');
   } catch (e) {
     printLog.i('Error insertando riegoMaster: $e');
+  }
+}
+//*- Guarda el maestro de riego para extensiones -*\\
+
+//*- Guarda evento: Control de riego -*\\
+void putEventoControlDeRiego(String email, String nombreEvento,
+    bool cancelIfRain, String bomba, List<Map<String, dynamic>> pasos) async {
+  try {
+    final response = await service.putItem(
+      tableName: 'Eventos_ControlDeRiego',
+      item: {
+        'email': AttributeValue(s: email),
+        'nombreEvento': AttributeValue(s: nombreEvento),
+        'cancelIfRain': AttributeValue(boolValue: cancelIfRain),
+        'bomba': AttributeValue(s: bomba),
+        'pasos': AttributeValue(
+          l: pasos.map((paso) {
+            return AttributeValue(m: {
+              'device': AttributeValue(s: paso['device']),
+              'duration': AttributeValue(n: paso['duration'].toString()),
+            });
+          }).toList(),
+        ),
+      },
+    );
+
+    printLog.i('Evento de control de riego guardado: $response');
+  } catch (e) {
+    printLog.i('Error guardando evento de control de riego: $e');
+  }
+}
+
+void deleteEventoControlDeRiego(String email, String nombreEvento) async {
+  try {
+    final response = await service.deleteItem(
+      tableName: 'Eventos_ControlDeRiego',
+      key: {
+        'email': AttributeValue(s: email),
+        'nombreEvento': AttributeValue(s: nombreEvento),
+      },
+    );
+
+    printLog.i('Evento de control de riego eliminado: $response');
+  } catch (e) {
+    printLog.i('Error eliminando evento de control de riego: $e');
   }
 }

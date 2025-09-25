@@ -24,7 +24,9 @@ class WifiPageState extends ConsumerState<WifiPage>
   final Map<String, bool> _expandedStates = {};
   final Set<String> _processingGroups = {};
   final Set<String> _processingCadenas = {};
+  final Set<String> _processingRiegos = {};
   StreamSubscription<String>? _cadenaCompletedSubscription;
+  StreamSubscription<String>? _riegoCompletedSubscription;
 
   @override
   void initState() {
@@ -38,14 +40,21 @@ class WifiPageState extends ConsumerState<WifiPage>
     // Verificar el estado de las cadenas al inicializar
     _checkCadenasStatus();
 
+    // Verificar el estado de los riegos al inicializar
+    _checkRiegosStatus();
+
     // Escuchar notificaciones de cadenas completadas
     _setupCadenaCompletedListener();
+
+    // Escuchar notificaciones de riegos completados
+    _setupRiegoCompletedListener();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _cadenaCompletedSubscription?.cancel();
+    _riegoCompletedSubscription?.cancel();
     super.dispose();
   }
 
@@ -70,6 +79,7 @@ class WifiPageState extends ConsumerState<WifiPage>
     if (state == AppLifecycleState.resumed) {
       // Verificar el estado cuando la app vuelve al foreground
       _checkCadenasStatus();
+      _checkRiegosStatus();
     }
   }
 
@@ -81,6 +91,31 @@ class WifiPageState extends ConsumerState<WifiPage>
       _processingCadenas.addAll(executingCadenas);
     });
     printLog.i('Cadenas en ejecución recuperadas: $executingCadenas');
+  }
+
+  // Verificar el estado de los riegos en SharedPreferences
+  Future<void> _checkRiegosStatus() async {
+    List<String> executingRiegos = await getExecutingRiegos(currentUserEmail);
+    setState(() {
+      _processingRiegos.clear();
+      _processingRiegos.addAll(executingRiegos);
+    });
+    printLog.i('Riegos en ejecución recuperados: $executingRiegos');
+  }
+
+  // Configurar listener para riegos completados en tiempo real
+  void _setupRiegoCompletedListener() {
+    _riegoCompletedSubscription =
+        riegoCompletedController.stream.listen((riegoName) {
+      printLog.i(
+          'Recibida notificación de riego completado en WiFi UI: $riegoName');
+      if (mounted) {
+        setState(() {
+          _processingRiegos.remove(riegoName);
+        });
+        showToast('🌱 ¡Rutina de riego "$riegoName" completada exitosamente!');
+      }
+    });
   }
 
   // Construir la lista de dispositivos desde datos ya cargados
@@ -98,9 +133,11 @@ class WifiPageState extends ConsumerState<WifiPage>
         }
       }
 
-      // Agregar eventos (grupos y cadenas)
+      // Agregar eventos (grupos, cadenas y riego)
       for (var evento in eventosCreados) {
-        if (evento['evento'] == 'grupo' || evento['evento'] == 'cadena') {
+        if (evento['evento'] == 'grupo' ||
+            evento['evento'] == 'cadena' ||
+            evento['evento'] == 'riego') {
           MapEntry<String, String> newEntry = MapEntry(
               evento['title'] ?? 'Grupo',
               (evento['deviceGroup'] as List<dynamic>).join(','));
@@ -541,6 +578,80 @@ class WifiPageState extends ConsumerState<WifiPage>
     await saveWifiOrderDevices(orderedDevices, currentUserEmail);
   }
   //*- Guardar orden de equipos -*\\
+
+  void activarRutinaRiego(Map<String, dynamic> eventoRiego) async {
+    String name = eventoRiego['title'] ?? 'Rutina de Riego';
+
+    // Verificar si la rutina ya está siendo procesada usando SharedPreferences
+    bool isAlreadyExecuting = await isRiegoExecuting(name, currentUserEmail);
+    if (isAlreadyExecuting) {
+      showToast(
+          '⏳ La rutina de riego "$name" ya se está ejecutando, aguarde un momento...');
+      return;
+    }
+
+    // Agregar la rutina al Set de procesamiento y actualizar UI
+    setState(() {
+      _processingRiegos.add(name);
+    });
+
+    String bd = jsonEncode({'nombreEvento': name, 'email': currentUserEmail});
+
+    printLog.i('Controlling riego with body: $bd', color: 'rosa');
+
+    try {
+      showToast('🌱 Iniciando rutina de riego "$name"...');
+
+      final response = await http.post(
+        Uri.parse(controlRiegoAPI),
+        body: bd,
+      );
+
+      if (response.statusCode == 200) {
+        printLog.i('Rutina de riego iniciada exitosamente');
+        showToast('✅ Rutina de riego "$name" iniciada exitosamente');
+
+        // Marcar la rutina como en ejecución en SharedPreferences
+        await setRiegoExecuting(name, currentUserEmail);
+
+        // Ya no usamos timer, la rutina se desmarcará cuando llegue la notificación
+        printLog.i(
+            'Rutina de riego "$name" marcada como en ejecución en SharedPreferences');
+      } else if (response.statusCode == 404) {
+        printLog.e('Rutina de riego no encontrada: ${response.statusCode}');
+        showToast(
+            '🔍 No se encontró la rutina de riego "$name". Verifica que existe y tienes permisos.');
+        // Remover inmediatamente si hay error
+        setState(() {
+          _processingRiegos.remove(name);
+        });
+      } else if (response.statusCode == 400) {
+        printLog.e('Error de validación: ${response.statusCode}');
+        showToast(
+            '🚫 Error en los datos de la rutina. Por favor intenta nuevamente.');
+        // Remover inmediatamente si hay error
+        setState(() {
+          _processingRiegos.remove(name);
+        });
+      } else {
+        printLog
+            .e('Error al controlar la rutina de riego: ${response.statusCode}');
+        showToast('⚡ Error del servidor. Intenta nuevamente en unos momentos.');
+        // Remover inmediatamente si hay error
+        setState(() {
+          _processingRiegos.remove(name);
+        });
+      }
+    } catch (e) {
+      printLog.e('Error de conexión al controlar la rutina de riego: $e');
+      showToast(
+          '📶 Sin conexión a internet. Verifica tu red y vuelve a intentar.');
+      // Remover inmediatamente si hay error de conexión
+      setState(() {
+        _processingRiegos.remove(name);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -3020,6 +3131,25 @@ class WifiPageState extends ConsumerState<WifiPage>
                 )
               : null;
 
+          // Detectar si es un evento de riego
+          final eventoRiego = eventosCreados
+                  .where(
+                    (evento) =>
+                        evento['evento'] == 'riego' &&
+                        evento['title'] == grupo &&
+                        (evento['deviceGroup'] as List<dynamic>).join(',') ==
+                            deviceName,
+                  )
+                  .isNotEmpty
+              ? eventosCreados.firstWhere(
+                  (evento) =>
+                      evento['evento'] == 'riego' &&
+                      evento['title'] == grupo &&
+                      (evento['deviceGroup'] as List<dynamic>).join(',') ==
+                          deviceName,
+                )
+              : null;
+
           if (eventoCadena != null) {
             try {
               // Verificar si todos los equipos de la cadena están online
@@ -3397,6 +3527,304 @@ class WifiPageState extends ConsumerState<WifiPage>
                   child: ListTile(
                     title: Text(
                       'Error al cargar la cadena $grupo',
+                      style: GoogleFonts.poppins(
+                        color: color0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Por favor, elimine el evento y vuelva a crearlo.',
+                      style: GoogleFonts.poppins(
+                        color: color0,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+          }
+
+          // Manejar evento de riego
+          if (eventoRiego != null) {
+            try {
+              // Verificar si el equipo creador del evento de riego está online
+              String creatorDevice = eventoRiego['creator'] ?? '';
+              String productCode = DeviceManager.getProductCode(creatorDevice);
+              String serialNumber =
+                  DeviceManager.extractSerialNumber(creatorDevice);
+
+              Map<String, dynamic> deviceDATA =
+                  globalDATA['$productCode/$serialNumber'] ?? {};
+              bool riegoOnline = deviceDATA['cstate'] ?? false;
+
+              return Card(
+                key: ValueKey('riego_$grupo'),
+                color: color1,
+                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                elevation: 2,
+                child: Theme(
+                  data: Theme.of(context)
+                      .copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    iconColor: color4,
+                    collapsedIconColor: color4,
+                    onExpansionChanged: (bool expanded) {
+                      setState(() {
+                        _expandedStates[deviceName] = expanded;
+                      });
+                    },
+                    title: Row(
+                      children: [
+                        const Icon(HugeIcons.strokeRoundedPlant03,
+                            color: color4),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            grupo,
+                            style: GoogleFonts.poppins(
+                              color: color0,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: color0.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'RIEGO',
+                            style: GoogleFonts.poppins(
+                              color: color0,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (!riegoOnline) ...[
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.red.withValues(alpha: 0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.wifi_off,
+                                      color: Colors.red,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'El equipo de riego debe estar conectado para activar la rutina',
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.red,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                            // Botón para activar la rutina de riego
+                            Center(
+                              child: ElevatedButton.icon(
+                                onPressed: (riegoOnline &&
+                                        !_processingRiegos.contains(grupo))
+                                    ? () => activarRutinaRiego(eventoRiego)
+                                    : null,
+                                icon: _processingRiegos.contains(grupo)
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  color0),
+                                        ),
+                                      )
+                                    : Icon(
+                                        HugeIcons.strokeRoundedPlay,
+                                        color:
+                                            riegoOnline ? color0 : Colors.grey,
+                                        size: 20,
+                                      ),
+                                label: Text(
+                                  _processingRiegos.contains(grupo)
+                                      ? 'Ejecutando Rutina...'
+                                      : 'Activar Rutina de Riego',
+                                  style: GoogleFonts.poppins(
+                                    color: (riegoOnline ||
+                                            _processingRiegos.contains(grupo))
+                                        ? color0
+                                        : Colors.grey,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: (riegoOnline ||
+                                          _processingRiegos.contains(grupo))
+                                      ? color4
+                                      : Colors.grey.withValues(alpha: 0.3),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  elevation: (riegoOnline ||
+                                          _processingRiegos.contains(grupo))
+                                      ? 3
+                                      : 0,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Zonas de riego:',
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ...((eventoRiego['pasos'] ?? []) as List<dynamic>)
+                                .asMap()
+                                .entries
+                                .map((entry) {
+                              final paso = entry.value;
+                              final idx = entry.key + 1;
+
+                              // Validar que los campos requeridos existan
+                              if (paso == null ||
+                                  paso['device'] == null ||
+                                  paso['duration'] == null) {
+                                return const SizedBox.shrink();
+                              }
+
+                              final device = paso['device'].toString();
+                              final duration = paso['duration'];
+
+                              // Formatear nombre del dispositivo
+                              String displayName = '';
+                              if (device.contains('_')) {
+                                final parts = device.split('_');
+                                displayName = nicknamesMap[device] ??
+                                    '${nicknamesMap[parts[0]] ?? parts[0]} salida ${parts[1]}';
+                              } else {
+                                displayName = nicknamesMap[device] ?? device;
+                              }
+
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: color0.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: color4.withValues(alpha: 0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 24,
+                                      height: 24,
+                                      decoration: const BoxDecoration(
+                                        color: color4,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '$idx',
+                                          style: GoogleFonts.poppins(
+                                            color: color1,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        displayName,
+                                        style: GoogleFonts.poppins(
+                                          color: color0,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            Colors.blue.withValues(alpha: 0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        '$duration min',
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.blue,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            })
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            } catch (e) {
+              printLog.e('Error al procesar el evento de riego $grupo: $e');
+              return Card(
+                key: ValueKey('riego_error_$grupo'),
+                color: color1,
+                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                elevation: 2,
+                child: Theme(
+                  data: Theme.of(context)
+                      .copyWith(dividerColor: Colors.transparent),
+                  child: ListTile(
+                    title: Text(
+                      'Error al cargar el evento de riego $grupo',
                       style: GoogleFonts.poppins(
                         color: color0,
                         fontWeight: FontWeight.bold,

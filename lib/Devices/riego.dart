@@ -364,6 +364,57 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
     }
   }
 
+  // Función helper para obtener el nombre de una zona a partir de su deviceId
+  String getZoneNameFromDevice(String deviceId) {
+    // Crear el mapeo de zonas dinámicamente
+    Map<String, String> tempZones = {};
+    int zoneCounter = 1;
+
+    // Añadir zonas del dispositivo principal
+    for (int i = 1; i < tipo.length; i++) {
+      if (tipo[i] == 'Salida') {
+        String tempDeviceId = '${deviceName}_$i';
+        String zoneLabel = nicknamesMap[tempDeviceId] ?? 'Zona $zoneCounter';
+
+        tempZones[tempDeviceId] = zoneLabel;
+        zoneCounter++;
+      }
+    }
+
+    // Añadir zonas de extensiones vinculadas
+    for (String extension in extensionesVinculadas) {
+      String key =
+          '${DeviceManager.getProductCode(extension)}/${DeviceManager.extractSerialNumber(extension)}';
+      Map<String, dynamic> extensionData = globalDATA[key] ?? {};
+
+      List<String> extensionOutputs = [];
+      extensionData.forEach((k, v) {
+        if (k.startsWith('io') && v is String) {
+          try {
+            var decoded = jsonDecode(v);
+            if (decoded['pinType'] == '0') {
+              String outputIndex = k.replaceAll('io', '');
+              extensionOutputs.add(outputIndex);
+            }
+          } catch (e) {
+            printLog.e('Error decodificando datos I/O: $e');
+          }
+        }
+      });
+
+      extensionOutputs.sort((a, b) => int.parse(a).compareTo(int.parse(b)));
+      for (String outputIndex in extensionOutputs) {
+        String tempDeviceId = '${extension}_$outputIndex';
+        String zoneLabel = nicknamesMap[tempDeviceId] ?? 'Zona $zoneCounter';
+
+        tempZones[tempDeviceId] = zoneLabel;
+        zoneCounter++;
+      }
+    }
+
+    return tempZones[deviceId] ?? 'Zona desconocida';
+  }
+
   // Función para controlar salidas de extensiones
   void controlExtensionOut(bool value, String extension, int outputIndex,
       {bool skipAutoLogic = false}) {
@@ -542,7 +593,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
     common.clear();
     alertIO.clear();
 
-    if (hardwareVersion == '240422A') {
+    if (hardwareVersion == '240422A' && pc == '020010_IOT') {
       for (int i = 0; i < parts.length; i++) {
         var equipo = parts[i].split(':');
         tipo.add(equipo[0] == '0' ? 'Salida' : 'Entrada');
@@ -563,7 +614,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
             'En la posición $i el modo es ${tipo[i]} y su estado es ${estado[i]}');
       }
       setState(() {});
-    } else {
+    } else if (pc == '020010_IOT') {
       for (int i = 0; i < 4; i++) {
         tipo.add('Salida');
         estado.add(parts[i]);
@@ -599,6 +650,64 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
         printLog.i('¿La entrada $j esta en alerta?: ${alertIO[j]}');
       }
       setState(() {});
+    } else if (pc == '020020_IOT') {
+      for (int i = 0; i < 2; i++) {
+        tipo.add('Salida');
+        estado.add(parts[i]);
+        common.add('0');
+        alertIO.add(false);
+
+        globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({
+          'io$i': jsonEncode({
+            'pinType': tipo[i] == 'Salida' ? '0' : '1',
+            'index': i,
+            'w_status': estado[i] == '1',
+            'r_state': common[i],
+          })
+        });
+      }
+
+      for (int j = 2; j < 4; j++) {
+        var equipo = parts[j].split(':');
+        tipo.add('Entrada');
+        estado.add(equipo[0]);
+        common.add(equipo[1]);
+        alertIO.add(estado[j] != common[j]);
+
+        globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({
+          'io$j': jsonEncode({
+            'pinType': tipo[j] == 'Salida' ? '0' : '1',
+            'index': j,
+            'w_status': estado[j] == '1',
+            'r_state': common[j],
+          })
+        });
+
+        printLog.i('¿La entrada $j esta en alerta?: ${alertIO[j]}');
+      }
+      setState(() {});
+    } else {
+      tipo.add('Salida');
+      estado.add(parts[0]);
+      common.add('0');
+      alertIO.add(false);
+
+      var equipo = parts[1].split(':');
+      tipo.add('Entrada');
+      estado.add(equipo[0]);
+      common.add(equipo[1]);
+      alertIO.add(estado[1] != common[1]);
+
+      for (int i = 0; i < 2; i++) {
+        globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({
+          'io$i': jsonEncode({
+            'pinType': tipo[i] == 'Salida' ? '0' : '1',
+            'index': i,
+            'w_status': estado[i] == '1',
+            'r_state': common[i],
+          })
+        });
+      }
     }
 
     saveGlobalData(globalDATA);
@@ -614,14 +723,6 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
     });
 
     bluetoothManager.device.cancelWhenDisconnected(ioSub);
-  }
-
-  bool isValidEmail(String email) {
-    final RegExp emailRegex = RegExp(
-      r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@"
-      r"[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$",
-    );
-    return emailRegex.hasMatch(email);
   }
 
   // Pantalla que se muestra cuando el dispositivo es una extensión
@@ -1025,8 +1126,10 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                         List<Widget> widgets = [];
                         for (int i = 1; i < tipo.length; i++) {
                           if (tipo[i] == 'Salida') {
-                            String zoneLabel = 'Zona $i';
                             String deviceId = '${deviceName}_$i';
+                            String zoneLabel =
+                                nicknamesMap[deviceId] ?? 'Zona $i';
+
                             if (!zones.containsKey(zoneLabel)) {
                               zones[zoneLabel] = deviceId;
                             }
@@ -1048,22 +1151,124 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Row(children: [
-                                        const Icon(
-                                          HugeIcons.strokeRoundedDroplet,
-                                          color: color1,
-                                          size: 25,
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Text(
-                                          zoneLabel,
-                                          style: const TextStyle(
+                                      Row(
+                                        children: [
+                                          const Icon(
+                                            HugeIcons.strokeRoundedDroplet,
                                             color: color1,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
+                                            size: 25,
                                           ),
-                                        ),
-                                      ]),
+                                          const SizedBox(width: 10),
+                                          GestureDetector(
+                                            onTap: () async {
+                                              TextEditingController
+                                                  nicknameController =
+                                                  TextEditingController(
+                                                text: zoneLabel,
+                                              );
+                                              showAlertDialog(
+                                                context,
+                                                false,
+                                                Text(
+                                                  'Editar Nombre',
+                                                  style: GoogleFonts.poppins(
+                                                      color: color0),
+                                                ),
+                                                TextField(
+                                                  controller:
+                                                      nicknameController,
+                                                  style: const TextStyle(
+                                                      color: color0),
+                                                  cursorColor: color0,
+                                                  decoration: InputDecoration(
+                                                    hintText:
+                                                        "Nuevo nombre para $zoneLabel",
+                                                    hintStyle: TextStyle(
+                                                      color: color0.withValues(
+                                                          alpha: 0.6),
+                                                    ),
+                                                    enabledBorder:
+                                                        UnderlineInputBorder(
+                                                      borderSide: BorderSide(
+                                                        color:
+                                                            color0.withValues(
+                                                                alpha: 0.5),
+                                                      ),
+                                                    ),
+                                                    focusedBorder:
+                                                        const UnderlineInputBorder(
+                                                      borderSide: BorderSide(
+                                                          color: color0),
+                                                    ),
+                                                  ),
+                                                ),
+                                                <Widget>[
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                    },
+                                                    child: const Text(
+                                                      'Cancelar',
+                                                      style: TextStyle(
+                                                          color: color0),
+                                                    ),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        String newName =
+                                                            nicknameController
+                                                                .text;
+                                                        nicknamesMap[deviceId] =
+                                                            newName;
+                                                        putNicknames(
+                                                            currentUserEmail,
+                                                            nicknamesMap);
+                                                      });
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                    },
+                                                    child: const Text(
+                                                      'Guardar',
+                                                      style: TextStyle(
+                                                          color: color0),
+                                                    ),
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                            child: SizedBox(
+                                              width: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  0.35,
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Expanded(
+                                                    child: AutoScrollingText(
+                                                      velocity: 50,
+                                                      text: zoneLabel,
+                                                      style: const TextStyle(
+                                                        color: color1,
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const Icon(
+                                                    Icons.edit,
+                                                    size: 16,
+                                                    color: color1,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                       Switch(
                                         value: estado.isNotEmpty &&
                                             estado[i] == '1',
@@ -1291,45 +1496,88 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                           onPressed: () async {
                                             bool isUsedInRoutine = false;
                                             String routinesUsingExtension = '';
-                                            final rutinasDelEquipo =
+
+                                            // Verificar en rutinas de riego
+                                            final rutinasDeRiego =
                                                 eventosCreados.where((evento) {
                                               return evento['evento'] ==
-                                                      'cadena' &&
+                                                      'riego' &&
                                                   evento['creator'] ==
                                                       deviceName;
                                             }).toList();
-                                            for (var rutina
-                                                in rutinasDelEquipo) {
+
+                                            for (var rutina in rutinasDeRiego) {
                                               final pasos =
                                                   rutina['pasos'] as List? ??
                                                       [];
                                               for (var paso in pasos) {
                                                 if (paso is Map) {
-                                                  final devices =
-                                                      paso['devices']
-                                                              as List? ??
-                                                          [];
-                                                  for (String device
-                                                      in devices) {
-                                                    if (device.startsWith(
-                                                        extension)) {
-                                                      isUsedInRoutine = true;
-                                                      if (routinesUsingExtension
-                                                          .isNotEmpty) {
-                                                        routinesUsingExtension +=
-                                                            ', ';
-                                                      }
+                                                  final device = paso['device']
+                                                          as String? ??
+                                                      '';
+                                                  if (device
+                                                      .startsWith(extension)) {
+                                                    isUsedInRoutine = true;
+                                                    if (routinesUsingExtension
+                                                        .isNotEmpty) {
                                                       routinesUsingExtension +=
-                                                          rutina['title']
-                                                                  as String? ??
-                                                              'Sin nombre';
-                                                      break;
+                                                          ', ';
                                                     }
+                                                    routinesUsingExtension +=
+                                                        rutina['title']
+                                                                as String? ??
+                                                            'Sin nombre';
+                                                    break;
                                                   }
-                                                  if (isUsedInRoutine) break;
                                                 }
                                               }
                                               if (isUsedInRoutine) break;
+                                            }
+
+                                            // También verificar en eventos de cadena (si existen)
+                                            if (!isUsedInRoutine) {
+                                              final rutinasDelEquipo =
+                                                  eventosCreados
+                                                      .where((evento) {
+                                                return evento['evento'] ==
+                                                        'cadena' &&
+                                                    evento['creator'] ==
+                                                        deviceName;
+                                              }).toList();
+
+                                              for (var rutina
+                                                  in rutinasDelEquipo) {
+                                                final pasos =
+                                                    rutina['pasos'] as List? ??
+                                                        [];
+                                                for (var paso in pasos) {
+                                                  if (paso is Map) {
+                                                    final devices =
+                                                        paso['devices']
+                                                                as List? ??
+                                                            [];
+                                                    for (String device
+                                                        in devices) {
+                                                      if (device.startsWith(
+                                                          extension)) {
+                                                        isUsedInRoutine = true;
+                                                        if (routinesUsingExtension
+                                                            .isNotEmpty) {
+                                                          routinesUsingExtension +=
+                                                              ', ';
+                                                        }
+                                                        routinesUsingExtension +=
+                                                            rutina['title']
+                                                                    as String? ??
+                                                                'Sin nombre';
+                                                        break;
+                                                      }
+                                                    }
+                                                    if (isUsedInRoutine) break;
+                                                  }
+                                                }
+                                                if (isUsedInRoutine) break;
+                                              }
                                             }
                                             if (isUsedInRoutine) {
                                               Navigator.of(context).pop();
@@ -1420,8 +1668,10 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                     previousExtensionZones +
                                     outputIndex +
                                     1;
-                                String zoneLabel = 'Zona $zoneNumber';
                                 String deviceId = '${extension}_$outputIndex';
+                                String zoneLabel = nicknamesMap[deviceId] ??
+                                    'Zona $zoneNumber';
+
                                 if (!zones.containsKey(zoneLabel)) {
                                   zones[zoneLabel] = deviceId;
                                 }
@@ -1447,25 +1697,127 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Row(children: [
-                                          Icon(
-                                            HugeIcons.strokeRoundedDroplet,
-                                            color: isExtensionConnected
-                                                ? color1
-                                                : Colors.grey,
-                                            size: 25,
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Text(
-                                            zoneLabel,
-                                            style: TextStyle(
-                                                color: isExtensionConnected
-                                                    ? color1
-                                                    : Colors.grey,
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w500),
-                                          ),
-                                        ]),
+                                        Row(
+                                          children: [
+                                            const Icon(
+                                              HugeIcons.strokeRoundedDroplet,
+                                              color: color1,
+                                              size: 25,
+                                            ),
+                                            const SizedBox(width: 10),
+                                            GestureDetector(
+                                              onTap: () async {
+                                                TextEditingController
+                                                    nicknameController =
+                                                    TextEditingController(
+                                                  text: zoneLabel,
+                                                );
+                                                showAlertDialog(
+                                                  context,
+                                                  false,
+                                                  Text(
+                                                    'Editar Nombre',
+                                                    style: GoogleFonts.poppins(
+                                                        color: color0),
+                                                  ),
+                                                  TextField(
+                                                    controller:
+                                                        nicknameController,
+                                                    style: const TextStyle(
+                                                        color: color0),
+                                                    cursorColor: color0,
+                                                    decoration: InputDecoration(
+                                                      hintText:
+                                                          "Nuevo nombre para $zoneLabel",
+                                                      hintStyle: TextStyle(
+                                                        color:
+                                                            color0.withValues(
+                                                                alpha: 0.6),
+                                                      ),
+                                                      enabledBorder:
+                                                          UnderlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color:
+                                                              color0.withValues(
+                                                                  alpha: 0.5),
+                                                        ),
+                                                      ),
+                                                      focusedBorder:
+                                                          const UnderlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                            color: color0),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  <Widget>[
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        Navigator.of(context)
+                                                            .pop();
+                                                      },
+                                                      child: const Text(
+                                                        'Cancelar',
+                                                        style: TextStyle(
+                                                            color: color0),
+                                                      ),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        setState(() {
+                                                          String newName =
+                                                              nicknameController
+                                                                  .text;
+                                                          nicknamesMap[
+                                                                  deviceId] =
+                                                              newName;
+                                                          putNicknames(
+                                                              currentUserEmail,
+                                                              nicknamesMap);
+                                                        });
+                                                        Navigator.of(context)
+                                                            .pop();
+                                                      },
+                                                      child: const Text(
+                                                        'Guardar',
+                                                        style: TextStyle(
+                                                            color: color0),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                              child: SizedBox(
+                                                width: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.35,
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Expanded(
+                                                      child: AutoScrollingText(
+                                                        velocity: 50,
+                                                        text: zoneLabel,
+                                                        style: const TextStyle(
+                                                          color: color1,
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const Icon(
+                                                      Icons.edit,
+                                                      size: 16,
+                                                      color: color1,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                         Switch(
                                           value: isExtensionConnected
                                               ? isOn
@@ -1682,13 +2034,17 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // const Center(
-            //   child: Text(
-            //     'Riego automático',
-            //     style: TextStyle(
-            //         color: color1, fontSize: 28, fontWeight: FontWeight.bold),
-            //   ),
-            // ),
+            const Center(
+              child: Text(
+                'Configuraciones de riego',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: color1,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
             const SizedBox(height: 20),
             if (isRutina == false && isExtension == false) ...{
               Column(
@@ -1698,110 +2054,10 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Card(
-                        //   color:
-                        //       globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-                        //                   ?['cstate'] ??
-                        //               false
-                        //           ? Colors.black
-                        //           : Colors.grey,
-                        //   elevation: 8,
-                        //   shape: RoundedRectangleBorder(
-                        //     borderRadius: BorderRadius.circular(20),
-                        //   ),
-                        //   child: SizedBox(
-                        //     width: MediaQuery.of(context).size.width * 0.8,
-                        //     child: Padding(
-                        //       padding: const EdgeInsets.all(20),
-                        //       child: GestureDetector(
-                        //         onTap: () {
-                        //           routineNameController.clear();
-                        //           isRain = false;
-                        //           zoneOrder.clear();
-                        //           minutesControllers.clear();
-                        //           zoneEnabled.clear();
-
-                        //           zones.clear();
-
-                        //           int zoneCounter = 1;
-                        //           for (int i = 1; i < tipo.length; i++) {
-                        //             if (tipo[i] == 'Salida') {
-                        //               String zoneLabel = 'Zona $zoneCounter';
-                        //               String deviceId = '${deviceName}_$i';
-                        //               zones[zoneLabel] = deviceId;
-                        //               zoneOrder.add(deviceId);
-                        //               minutesControllers.add(
-                        //                   TextEditingController(text: '5'));
-                        //               zoneEnabled.add(true);
-                        //               zoneCounter++;
-                        //             }
-                        //           }
-
-                        //           for (String extension
-                        //               in extensionesVinculadas) {
-                        //             String key =
-                        //                 '${DeviceManager.getProductCode(extension)}/${DeviceManager.extractSerialNumber(extension)}';
-                        //             Map<String, dynamic> extensionData =
-                        //                 globalDATA[key] ?? {};
-
-                        //             List<String> extensionOutputs = [];
-                        //             extensionData.forEach((k, v) {
-                        //               if (k.startsWith('io') && v is String) {
-                        //                 try {
-                        //                   var decoded = jsonDecode(v);
-                        //                   if (decoded['pinType'] == '0') {
-                        //                     String outputIndex =
-                        //                         k.replaceAll('io', '');
-                        //                     extensionOutputs.add(outputIndex);
-                        //                   }
-                        //                 } catch (e) {
-                        //                   printLog.e(
-                        //                       'Error decodificando datos I/O: $e');
-                        //                 }
-                        //               }
-                        //             });
-
-                        //             extensionOutputs.sort((a, b) =>
-                        //                 int.parse(a).compareTo(int.parse(b)));
-                        //             for (String outputIndex
-                        //                 in extensionOutputs) {
-                        //               String zoneLabel = 'Zona $zoneCounter';
-                        //               String deviceId =
-                        //                   '${extension}_$outputIndex';
-                        //               zones[zoneLabel] = deviceId;
-                        //               zoneOrder.add(deviceId);
-                        //               minutesControllers.add(
-                        //                   TextEditingController(text: '5'));
-                        //               zoneEnabled.add(true);
-                        //               zoneCounter++;
-                        //             }
-                        //           }
-
-                        //           setState(() {
-                        //             isRutina = true;
-                        //           });
-                        //         },
-                        //         child: const Text(
-                        //           'Crear rutina',
-                        //           style: TextStyle(
-                        //             color: Colors.white,
-                        //             fontSize: 18,
-                        //             fontWeight: FontWeight.bold,
-                        //           ),
-                        //           textAlign: TextAlign.center,
-                        //         ),
-                        //       ),
-                        //     ),
-                        //   ),
-                        // ),
-                        const SizedBox(height: 10),
                         Card(
-                          color:
-                              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-                                          ?['cstate'] ??
-                                      false
-                                  ? Colors.black
-                                  : Colors.grey,
+                          color: globalDATA['$pc/$sn']?['cstate'] ?? false
+                              ? Colors.black
+                              : Colors.grey,
                           elevation: 8,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
@@ -1812,10 +2068,120 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                               padding: const EdgeInsets.all(20),
                               child: GestureDetector(
                                 onTap: () {
-                                  searchExtensions();
-                                  setState(() {
-                                    isExtension = true;
-                                  });
+                                  if (globalDATA['$pc/$sn']?['cstate'] ??
+                                      false) {
+                                    routineNameController.clear();
+                                    isRain = false;
+                                    zoneOrder.clear();
+                                    minutesControllers.clear();
+                                    zoneEnabled.clear();
+
+                                    zones.clear();
+
+                                    int zoneCounter = 1;
+                                    for (int i = 1; i < tipo.length; i++) {
+                                      if (tipo[i] == 'Salida') {
+                                        String deviceId = '${deviceName}_$i';
+                                        String zoneLabel =
+                                            nicknamesMap[deviceId] ??
+                                                'Zona $zoneCounter';
+                                        zones[zoneLabel] = deviceId;
+                                        zoneOrder.add(deviceId);
+                                        minutesControllers.add(
+                                            TextEditingController(text: '5'));
+                                        zoneEnabled.add(true);
+                                        zoneCounter++;
+                                      }
+                                    }
+
+                                    for (String extension
+                                        in extensionesVinculadas) {
+                                      String key =
+                                          '${DeviceManager.getProductCode(extension)}/${DeviceManager.extractSerialNumber(extension)}';
+                                      Map<String, dynamic> extensionData =
+                                          globalDATA[key] ?? {};
+
+                                      List<String> extensionOutputs = [];
+                                      extensionData.forEach((k, v) {
+                                        if (k.startsWith('io') && v is String) {
+                                          try {
+                                            var decoded = jsonDecode(v);
+                                            if (decoded['pinType'] == '0') {
+                                              String outputIndex =
+                                                  k.replaceAll('io', '');
+                                              extensionOutputs.add(outputIndex);
+                                            }
+                                          } catch (e) {
+                                            printLog.e(
+                                                'Error decodificando datos I/O: $e');
+                                          }
+                                        }
+                                      });
+
+                                      extensionOutputs.sort((a, b) =>
+                                          int.parse(a).compareTo(int.parse(b)));
+                                      for (String outputIndex
+                                          in extensionOutputs) {
+                                        String deviceId =
+                                            '${extension}_$outputIndex';
+                                        String zoneLabel =
+                                            nicknamesMap[deviceId] ??
+                                                'Zona $zoneCounter';
+                                        zones[zoneLabel] = deviceId;
+                                        zoneOrder.add(deviceId);
+                                        minutesControllers.add(
+                                            TextEditingController(text: '5'));
+                                        zoneEnabled.add(true);
+                                        zoneCounter++;
+                                      }
+                                    }
+
+                                    setState(() {
+                                      isRutina = true;
+                                    });
+                                  } else {
+                                    showToast(
+                                        'El dispositivo está desconectado');
+                                  }
+                                },
+                                child: const Text(
+                                  'Crear rutina',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Card(
+                          color: globalDATA['$pc/$sn']?['cstate'] ?? false
+                              ? Colors.black
+                              : Colors.grey,
+                          elevation: 8,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.8,
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: GestureDetector(
+                                onTap: () {
+                                  if (globalDATA['$pc/$sn']?['cstate'] ??
+                                      false) {
+                                    searchExtensions();
+                                    setState(() {
+                                      isExtension = true;
+                                    });
+                                  } else {
+                                    showToast(
+                                        'El dispositivo está desconectado');
+                                  }
                                 },
                                 child: const Text(
                                   'Añadir extensión',
@@ -1837,10 +2203,10 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
               ),
             },
             // vista de rutinas creadas
-            if (isRutina == false && isExtension == false) ...{
+            if (isRutina == false && isExtension == false) ...[
               () {
                 final rutinasDelEquipo = eventosCreados.where((evento) {
-                  return evento['evento'] == 'cadena' &&
+                  return evento['evento'] == 'riego' &&
                       evento['creator'] == deviceName;
                 }).toList();
                 if (rutinasDelEquipo.isNotEmpty) {
@@ -1863,7 +2229,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                         final title =
                             rutina['title'] as String? ?? 'Sin nombre';
                         final pasos = rutina['pasos'] as List? ?? [];
-                        final isRain = rutina['isRain'] as bool? ?? false;
+                        final isRain =
+                            rutina['cancelWithRain'] as bool? ?? false;
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 16),
@@ -1931,13 +2298,12 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                                                 title &&
                                                             evento['creator'] ==
                                                                 deviceName);
-                                                    //TODO borrar rutinas de la base
-                                                    // putEventos(
-                                                    //     currentUserEmail,
-                                                    //     eventosCreados);
-                                                    // deleteEventoControlPorCadena(
-                                                    //     currentUserEmail,
-                                                    //     title);
+
+                                                    putEventos(currentUserEmail,
+                                                        eventosCreados);
+                                                    deleteEventoControlDeRiego(
+                                                        currentUserEmail,
+                                                        title);
                                                     todosLosDispositivos
                                                         .removeWhere((entry) =>
                                                             entry.key == title);
@@ -2027,21 +2393,12 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                     final index = entry.key;
                                     final paso = entry.value;
 
-                                    String zoneName = 'Zona desconocida';
-                                    int minutes = 5;
-                                    if (paso is Map) {
-                                      final devices = paso['devices'] as List?;
-                                      if (devices != null &&
-                                          devices.isNotEmpty) {
-                                        String deviceId =
-                                            devices.first.toString();
-                                        zoneName = getZoneLabel(deviceId);
-                                      }
-                                      final stepDelay = paso['stepDelay'];
-                                      if (stepDelay is Duration) {
-                                        minutes = stepDelay.inMinutes;
-                                      }
-                                    }
+                                    // Extraer datos del paso
+                                    String deviceId =
+                                        paso['device']?.toString() ?? '';
+                                    int minutes = paso['duration'] as int? ?? 5;
+                                    String zoneName =
+                                        getZoneNameFromDevice(deviceId);
 
                                     return Container(
                                       margin: const EdgeInsets.only(bottom: 6),
@@ -2131,10 +2488,10 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                   return const SizedBox.shrink();
                 }
               }(),
-            },
+            ],
 
             // visual de creación de rutina
-            if (isRutina == true && isExtension == false) ...{
+            if (isRutina == true && isExtension == false) ...[
               Center(
                 child: Card(
                   color: color1,
@@ -2651,57 +3008,43 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                     }
 
                                     final pasos = enabledZones.map((zone) {
-                                      final index = zoneOrder.indexOf(zone);
+                                      final index = enabledZones.indexOf(zone);
                                       final minutes = int.tryParse(
                                               minutesControllers[index].text) ??
                                           5;
                                       return {
-                                        'devices': [zone],
-                                        'actions': {zone: true},
-                                        'stepDelay': Duration(minutes: minutes),
-                                        'stepDelayUnit': 'min',
+                                        'device': zone,
+                                        'duration': minutes,
                                       };
                                     }).toList();
 
                                     final riegoEvent = {
-                                      'evento': 'cadena',
+                                      'evento': 'riego',
                                       'title':
                                           routineNameController.text.trim(),
                                       'creator': deviceName,
                                       'deviceGroup': enabledZones,
                                       'pasos': pasos,
-                                      'isRain': isRain,
+                                      'cancelWithRain': isRain,
                                     };
 
                                     eventosCreados.add(riegoEvent);
+                                    putEventos(
+                                        currentUserEmail, eventosCreados);
+
+                                    putEventoControlDeRiego(
+                                        currentUserEmail,
+                                        routineNameController.text.trim(),
+                                        isRain,
+                                        '${deviceName}_0',
+                                        pasos);
+
                                     todosLosDispositivos.add(MapEntry(
-                                      riegoEvent['title'] as String,
-                                      enabledZones.join(','),
+                                      riegoEvent['title'] as String? ?? 'Riego',
+                                      (riegoEvent['deviceGroup']
+                                              as List<dynamic>)
+                                          .join(','),
                                     ));
-
-                                    //TODO añadir rutina a la base
-                                    // final pasosToDynamo =
-                                    //     enabledZones.map((zone) {
-                                    //   final index = zoneOrder.indexOf(zone);
-                                    //   final minutes = int.tryParse(
-                                    //           minutesControllers[index]
-                                    //               .text) ??
-                                    //       5;
-                                    //   return {
-                                    //     'paso_index':
-                                    //         enabledZones.indexOf(zone),
-                                    //     'ejecutores': {zone: true},
-                                    //     'delay': minutes * 60,
-                                    //   };
-                                    // }).toList();
-
-                                    // putEventoControlPorCadena(
-                                    //   currentUserEmail,
-                                    //   routineNameController.text.trim(),
-                                    //   pasosToDynamo,
-                                    // );
-                                    // putEventos(
-                                    //     currentUserEmail, eventosCreados);
 
                                     printLog.d(eventosCreados, color: 'verde');
                                     setState(() {
@@ -2754,10 +3097,10 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                   ),
                 ),
               ),
-            },
+            ],
 
             //visual de añadir extensiones
-            if (isRutina == false && isExtension == true) ...{
+            if (isRutina == false && isExtension == true) ...[
               Center(
                 child: Card(
                   color: color1,
@@ -2992,7 +3335,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                   ),
                 ),
               ),
-            },
+            ],
             SizedBox(
               height:
                   bottomBarHeight + MediaQuery.of(context).padding.bottom + 100,
@@ -3121,9 +3464,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
           actions: [
             Icon(
               key: keys['riego:servidor']!,
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-                          ?['cstate'] ??
-                      false
+              globalDATA['$pc/$sn']?['cstate'] ?? false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,
