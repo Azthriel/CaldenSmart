@@ -259,12 +259,14 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
           isnotRiego;
     }).toList();
 
-    final eventosGrupoYCadena = eventosCreados.where((evento) {
+    final eventosDisponibles = eventosCreados.where((evento) {
       final eventoType = evento['evento'] as String;
-      return eventoType == 'grupo' || eventoType == 'cadena';
+      return eventoType == 'grupo' ||
+          eventoType == 'cadena' ||
+          eventoType == 'riego';
     }).toList();
 
-    if (validDevices.isEmpty && eventosGrupoYCadena.isEmpty) {
+    if (validDevices.isEmpty && eventosDisponibles.isEmpty) {
       return [
         Center(
           child: Padding(
@@ -285,7 +287,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
 
     List<Widget> widgets = [];
 
-    if (eventosGrupoYCadena.isNotEmpty) {
+    if (eventosDisponibles.isNotEmpty) {
       widgets.add(
         Padding(
           padding: const EdgeInsets.only(bottom: 12.0),
@@ -301,7 +303,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
         ),
       );
 
-      for (final evento in eventosGrupoYCadena) {
+      for (final evento in eventosDisponibles) {
         final eventoType = evento['evento'] as String;
         final eventoTitle = evento['title'] as String;
         final isSelected = ejecutores.contains(eventoTitle);
@@ -321,8 +323,16 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
             ),
             child: ListTile(
               leading: Icon(
-                eventoType == 'grupo' ? Icons.group_work_outlined : Icons.link,
-                color: eventoType == 'grupo' ? color4 : Colors.orange,
+                eventoType == 'grupo'
+                    ? Icons.group_work_outlined
+                    : eventoType == 'riego'
+                        ? Icons.grass
+                        : Icons.link,
+                color: eventoType == 'grupo'
+                    ? color4
+                    : eventoType == 'riego'
+                        ? Colors.green
+                        : Colors.orange,
               ),
               title: Text(
                 eventoTitle,
@@ -558,6 +568,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
               String deviceType = 'Dispositivo';
               IconData iconData = Icons.devices_other;
               bool isCadena = false;
+              bool isRiego = false;
 
               final eventoEncontrado = eventosCreados.firstWhere(
                 (evento) => evento['title'] == device,
@@ -567,11 +578,18 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
               if (eventoEncontrado.isNotEmpty) {
                 final eventoType = eventoEncontrado['evento'] as String;
                 displayName = device;
-                deviceType = eventoType == 'grupo' ? 'Grupo' : 'Cadena';
+                deviceType = eventoType == 'grupo'
+                    ? 'Grupo'
+                    : eventoType == 'riego'
+                        ? 'Riego'
+                        : 'Cadena';
                 iconData = eventoType == 'grupo'
                     ? Icons.group_work_outlined
-                    : Icons.link;
+                    : eventoType == 'riego'
+                        ? Icons.grass
+                        : Icons.link;
                 isCadena = eventoType == 'cadena';
+                isRiego = eventoType == 'riego';
               } else {
                 displayName = nicknamesMap[device] ?? device;
               }
@@ -630,7 +648,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      if (isCadena) ...[
+                      if (isCadena || isRiego) ...[
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(12),

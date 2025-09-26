@@ -778,6 +778,7 @@ class EscenasPageState extends State<EscenasPage> {
                     String displayName = '';
                     String deviceType = 'Dispositivo';
                     bool isCadena = false;
+                    bool isRiego = false;
 
                     // Verificar si es un evento buscando en eventosCreados
                     final eventoEncontrado = eventosCreados.firstWhere(
@@ -789,8 +790,13 @@ class EscenasPageState extends State<EscenasPage> {
                       // Es un evento (grupo o cadena)
                       final eventoType = eventoEncontrado['evento'] as String;
                       displayName = equipo;
-                      deviceType = eventoType == 'grupo' ? 'Grupo' : 'Cadena';
+                      deviceType = eventoType == 'grupo'
+                          ? 'Grupo'
+                          : eventoType == 'riego'
+                              ? 'Riego'
+                              : 'Cadena';
                       isCadena = eventoType == 'cadena';
+                      isRiego = eventoType == 'riego';
                     } else {
                       // Es un dispositivo individual
                       if (equipo.contains('_')) {
@@ -815,13 +821,19 @@ class EscenasPageState extends State<EscenasPage> {
                       decoration: BoxDecoration(
                         color: isCadena
                             ? Colors.orange.withValues(alpha: 0.1)
-                            : (action == true ? Colors.green : color4)
+                            : (isRiego
+                                    ? Colors.blue
+                                    : (action == true ? Colors.green : color4))
                                 .withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isCadena
                               ? Colors.orange.withValues(alpha: 0.3)
-                              : (action == true ? Colors.green : color4)
+                              : (isRiego
+                                      ? Colors.blue
+                                      : (action == true
+                                          ? Colors.green
+                                          : color4))
                                   .withValues(alpha: 0.3),
                           width: 1,
                         ),
@@ -833,20 +845,28 @@ class EscenasPageState extends State<EscenasPage> {
                             decoration: BoxDecoration(
                               color: isCadena
                                   ? Colors.orange.withValues(alpha: 0.2)
-                                  : (action == true ? Colors.green : color4)
-                                      .withValues(alpha: 0.2),
+                                  : isRiego
+                                      ? Colors.blue.withValues(alpha: 0.2)
+                                      : (action == true ? Colors.green : color4)
+                                          .withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
                               isCadena
                                   ? HugeIcons.strokeRoundedPlayCircle
-                                  : (action == true
-                                      ? HugeIcons.strokeRoundedPlug01
-                                      : HugeIcons.strokeRoundedPlugSocket),
+                                  : isRiego
+                                      ? Icons.grass
+                                      : (action == true
+                                          ? HugeIcons.strokeRoundedPlug01
+                                          : HugeIcons.strokeRoundedPlugSocket),
                               size: 16,
                               color: isCadena
                                   ? Colors.orange
-                                  : (action == true ? Colors.green : color4),
+                                  : isRiego
+                                      ? Colors.blue
+                                      : (action == true
+                                          ? Colors.green
+                                          : color4),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -873,8 +893,11 @@ class EscenasPageState extends State<EscenasPage> {
                                         decoration: BoxDecoration(
                                           color: deviceType == 'Grupo'
                                               ? color4.withValues(alpha: 0.2)
-                                              : Colors.orange
-                                                  .withValues(alpha: 0.2),
+                                              : deviceType == 'Riego'
+                                                  ? Colors.blue
+                                                      .withValues(alpha: 0.2)
+                                                  : Colors.orange
+                                                      .withValues(alpha: 0.2),
                                           borderRadius:
                                               BorderRadius.circular(12),
                                         ),
@@ -883,7 +906,9 @@ class EscenasPageState extends State<EscenasPage> {
                                           style: GoogleFonts.poppins(
                                             color: deviceType == 'Grupo'
                                                 ? color4
-                                                : Colors.orange,
+                                                : deviceType == 'Riego'
+                                                    ? Colors.blue
+                                                    : Colors.orange,
                                             fontSize: 10,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -893,7 +918,7 @@ class EscenasPageState extends State<EscenasPage> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  isCadena
+                                  isCadena || isRiego
                                       ? 'Se ejecutará automáticamente'
                                       : 'Se ${action == true ? "encenderá" : "apagará"}',
                                   style: GoogleFonts.poppins(
@@ -956,6 +981,7 @@ class EscenasPageState extends State<EscenasPage> {
               String deviceType = 'Dispositivo';
               bool isEvento = false;
               bool isCadena = false;
+              bool isRiego = false;
 
               // Verificar si es un evento buscando en eventosCreados
               final eventoEncontrado = eventosCreados.firstWhere(
@@ -967,9 +993,14 @@ class EscenasPageState extends State<EscenasPage> {
                 // Es un evento (grupo o cadena)
                 final eventoType = eventoEncontrado['evento'] as String;
                 displayName = equipo;
-                deviceType = eventoType == 'grupo' ? 'Grupo' : 'Cadena';
+                deviceType = eventoType == 'grupo'
+                    ? 'Grupo'
+                    : eventoType == 'riego'
+                        ? 'Riego'
+                        : 'Cadena';
                 isEvento = true;
                 isCadena = eventoType == 'cadena';
+                isRiego = eventoType == 'riego';
               } else {
                 // Es un dispositivo individual
                 if (equipo.contains('_')) {
@@ -992,6 +1023,10 @@ class EscenasPageState extends State<EscenasPage> {
                   actionText = 'Se ejecutará automáticamente';
                   actionIcon = HugeIcons.strokeRoundedPlayCircle;
                   actionColor = Colors.orange;
+                } else if (isRiego) {
+                  actionText = 'Se ejecutará automáticamente';
+                  actionIcon = HugeIcons.strokeRoundedLeaf01;
+                  actionColor = Colors.blue;
                 } else {
                   // Es un grupo
                   final action = devicesActions?['$equipo:grupo'] ?? false;
@@ -1143,7 +1178,10 @@ class EscenasPageState extends State<EscenasPage> {
                                   decoration: BoxDecoration(
                                     color: deviceType == 'Grupo'
                                         ? color4.withValues(alpha: 0.2)
-                                        : Colors.orange.withValues(alpha: 0.2),
+                                        : deviceType == 'Riego'
+                                            ? Colors.blue.withValues(alpha: 0.2)
+                                            : Colors.orange
+                                                .withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
@@ -1151,7 +1189,9 @@ class EscenasPageState extends State<EscenasPage> {
                                     style: GoogleFonts.poppins(
                                       color: deviceType == 'Grupo'
                                           ? color4
-                                          : Colors.orange,
+                                          : deviceType == 'Riego'
+                                              ? Colors.blue
+                                              : Colors.orange,
                                       fontSize: 10,
                                       fontWeight: FontWeight.w500,
                                     ),
