@@ -364,6 +364,7 @@ Map<String, GlobalKey> keys = {
   'managerScreen:desconexionNotificacion': GlobalKey(),
   'managerScreen:led': GlobalKey(),
   'managerScreen:imagen': GlobalKey(),
+  'managerScreen:bomba': GlobalKey(),
   //Calefactores
   'calefactores:estado': GlobalKey(),
   'calefactores:titulo': GlobalKey(),
@@ -466,6 +467,15 @@ Map<String, GlobalKey> keys = {
   'riego:titulo': GlobalKey(),
   'riego:wifi': GlobalKey(),
   'riego:servidor': GlobalKey(),
+  'riego:panelControl': GlobalKey(),
+  'riego:panelBomba': GlobalKey(),
+  'riego:noHayExtensiones': GlobalKey(),
+  'riego:siHayExtensiones': GlobalKey(),
+  'riego:automatico': GlobalKey(),
+  'riego:rutina': GlobalKey(),
+  'riego:rutinaPanel': GlobalKey(),
+  'riego:extensionPanel': GlobalKey(),
+  'riego:extension': GlobalKey(),
 };
 //*-Guía de usuario -*\\
 
@@ -5753,6 +5763,7 @@ class AnimatedIconWidgetState extends State<AnimatedIconWidget>
 /// - contentPosition: si el texto va arriba o abajo.
 /// - focusMargin: separación extra antes de pintar.
 /// - borderRadius: esquinas del halo redondeado.
+/// - onStepReached: función que se ejecuta cuando se llega a este paso del tutorial.
 class TutorialItem {
   final GlobalKey globalKey;
   final Widget child;
@@ -5763,6 +5774,8 @@ class TutorialItem {
   final Radius borderRadius;
   final bool fullBackground;
   final double contentOffsetY;
+  final VoidCallback? onStepReached;
+
 
   TutorialItem({
     required this.globalKey,
@@ -5774,6 +5787,7 @@ class TutorialItem {
     this.borderRadius = const Radius.circular(12.0),
     this.fullBackground = false,
     this.contentOffsetY = 0.0,
+    this.onStepReached,
   });
 }
 
@@ -5961,6 +5975,10 @@ class Tutorial {
       }
       removeLast();
       final item = items[_current];
+      if (item.onStepReached != null) {
+        item.onStepReached!();
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
 
       if (item.pageIndex != null &&
           item.pageIndex != controller.page?.toInt()) {

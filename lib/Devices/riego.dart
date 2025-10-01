@@ -75,9 +75,9 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
         fullBackground: true,
         contentPosition: ContentPosition.below,
         child: const TutorialItemContent(
-          title: 'Entradas y Salidas',
+          title: 'Bienvenido a tu equipo de riego',
           content:
-              'Podrás revisar el estado de las entradas y modificar el estado de las salidas',
+              'Aquí podrás controlar y configurar tu equipo de manera manual o automática',
         ),
       ),
       TutorialItem(
@@ -115,6 +115,217 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
           title: 'Conexión al servidor',
           content:
               'Podrás observar el estado de la conexión del dispositivo con el servidor',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['riego:panelControl']!,
+        shapeFocus: ShapeFocus.roundedSquare,
+        borderRadius: const Radius.circular(10.0),
+        contentPosition: ContentPosition.below,
+        pageIndex: 0,
+        child: const TutorialItemContent(
+          title: 'Panel de control',
+          content:
+              'Podrás ver el estado de la bomba y zonas de riego, además de encenderlas o apagarlas',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['riego:panelBomba']!,
+        shapeFocus: ShapeFocus.roundedSquare,
+        borderRadius: const Radius.circular(10.0),
+        contentPosition: ContentPosition.below,
+        pageIndex: 0,
+        child: const TutorialItemContent(
+          title: 'Funcionamiento de la bomba',
+          content:
+              'Para el accionar de la bomba esta se encendera siempre que haya al menos una zona activada',
+        ),
+      ),
+      if (extensionesVinculadas.isEmpty) ...{
+        TutorialItem(
+          globalKey: keys['riego:noHayExtensiones']!,
+          pageIndex: 0,
+          shapeFocus: ShapeFocus.roundedSquare,
+          borderRadius: const Radius.circular(10.0),
+          contentPosition: ContentPosition.above,
+          child: const TutorialItemContent(
+            title: 'Control de extensiones',
+            content:
+                'En este apartado figuraran tus extensiones vinculadas al equipo las cuáles funcionaran con wifi',
+          ),
+        ),
+      } else ...{
+        TutorialItem(
+          globalKey: keys['riego:siHayExtensiones']!,
+          pageIndex: 0,
+          shapeFocus: ShapeFocus.roundedSquare,
+          borderRadius: const Radius.circular(10.0),
+          contentPosition: ContentPosition.above,
+          child: const TutorialItemContent(
+            title: 'Control de extensiones',
+            content:
+                'Aquí podrás ver y accionar extensiones vinculadas al equipo mediante wifi',
+          ),
+        ),
+      },
+      TutorialItem(
+        globalKey: keys['riego:automatico']!,
+        pageIndex: 1,
+        contentOffsetY: 100,
+        fullBackground: true,
+        contentPosition: ContentPosition.above,
+        child: const TutorialItemContent(
+          title: 'Riego automático',
+          content: 'Aquí podrás añadir extensiones y crear rutinas de riego',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['riego:rutina']!,
+        pageIndex: 1,
+        shapeFocus: ShapeFocus.roundedSquare,
+        borderRadius: const Radius.circular(10.0),
+        contentPosition: ContentPosition.above,
+        child: const TutorialItemContent(
+          title: 'Crear rutinas',
+          content:
+              'Aqui podrás crear rutinas de riego automático para tus zonas',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['riego:rutinaPanel']!,
+        pageIndex: 1,
+        shapeFocus: ShapeFocus.roundedSquare,
+        borderRadius: const Radius.circular(10.0),
+        contentPosition: ContentPosition.above,
+        onStepReached: () {
+          setState(() {
+            isRutina = true;
+          });
+        },
+        child: const TutorialItemContent(
+          title: 'Configuración de rutinas',
+          content:
+              'Para la configuración de las rutinas deberás ingresar un nombre, seleccionar las zonas y el tiempo de riego',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['riego:extension']!,
+        pageIndex: 1,
+        shapeFocus: ShapeFocus.roundedSquare,
+        borderRadius: const Radius.circular(10.0),
+        contentPosition: ContentPosition.above,
+        onStepReached: () {
+          setState(() {
+            isRutina = false;
+          });
+        },
+        child: const TutorialItemContent(
+          title: 'Control de extensiones',
+          content:
+              'Aquí podrás añadir extensiones para contar con mas zonas de riego',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['riego:extensionPanel']!,
+        pageIndex: 1,
+        shapeFocus: ShapeFocus.roundedSquare,
+        borderRadius: const Radius.circular(10.0),
+        contentPosition: ContentPosition.above,
+        onStepReached: () {
+          setState(() {
+            isExtension = true;
+          });
+        },
+        child: const TutorialItemContent(
+          title: 'Control de extensiones',
+          content:
+              'Para añadir extensiones estas deben ser reclamadas por el usuario administrador del equipo',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['managerScreen:titulo']!,
+        borderRadius: const Radius.circular(15),
+        shapeFocus: ShapeFocus.roundedSquare,
+        focusMargin: 15,
+        pageIndex: 2,
+        contentPosition: ContentPosition.below,
+        onStepReached: () {
+          setState(() {
+            isExtension = false;
+          });
+        },
+        child: const TutorialItemContent(
+          title: 'Gestión',
+          content: 'Podrás reclamar el equipo y gestionar sus funciones',
+        ),
+      ),
+      if (!tenant) ...{
+        TutorialItem(
+          globalKey: keys['managerScreen:reclamar']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 2,
+          contentPosition: ContentPosition.below,
+          child: const TutorialItemContent(
+            title: 'Reclamar administrador',
+            content: 'Podras reclamar la administración del equipo',
+          ),
+        ),
+      },
+      if (owner == currentUserEmail) ...{
+        TutorialItem(
+          globalKey: keys['managerScreen:agregarAdmin']!,
+          borderRadius: const Radius.circular(15),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 2,
+          contentPosition: ContentPosition.below,
+          child: const TutorialItemContent(
+            title: 'Añadir administradores secundarios',
+            content: 'Podrás agregar correos secundarios hasta un límite de 3',
+          ),
+        ),
+        TutorialItem(
+          globalKey: keys['managerScreen:verAdmin']!,
+          borderRadius: const Radius.circular(15),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 2,
+          contentPosition: ContentPosition.below,
+          child: const TutorialItemContent(
+            title: 'Ver administradores secundarios',
+            content: 'Podrás ver o quitar los correos adicionales añadidos',
+          ),
+        ),
+        TutorialItem(
+          globalKey: keys['managerScreen:alquiler']!,
+          borderRadius: const Radius.circular(15),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 2,
+          child: const TutorialItemContent(
+            title: 'Alquiler temporario',
+            content:
+                'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
+          ),
+        ),
+      },
+      TutorialItem(
+        globalKey: keys['managerScreen:imagen']!,
+        borderRadius: const Radius.circular(20),
+        shapeFocus: ShapeFocus.roundedSquare,
+        pageIndex: 2,
+        child: const TutorialItemContent(
+          title: 'Imagen del dispositivo',
+          content: 'Podrás ajustar la imagen del equipo en el menú',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['managerScreen:bomba']!,
+        borderRadius: const Radius.circular(20),
+        shapeFocus: ShapeFocus.roundedSquare,
+        pageIndex: 2,
+        child: const TutorialItemContent(
+          title: 'Control de bomba',
+          content:
+              'Podrás introducir el codigo que esta en el manual para la configuración de la bomba',
         ),
       ),
     });
@@ -188,7 +399,9 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
         .where((entry) =>
             (entry.key.startsWith('020020_IOT/') ||
                 entry.key.startsWith('020010_IOT/') ||
-                entry.key.startsWith('027313_IOT/')) &&
+                (entry.key.startsWith('027313_IOT/') &&
+                    Versioner.isPosterior(
+                        entry.value['HardwareVersion'], '241220A'))) &&
             entry.value['owner'] == currentUserEmail &&
             entry.value['riegoActive'] == true &&
             (entry.value['riegoMaster'] == null ||
@@ -998,6 +1211,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
             const SizedBox(height: 20),
             Center(
               child: Card(
+                key: keys['riego:panelControl']!,
                 color: color1,
                 child: SizedBox(
                   width: MediaQuery.of(context).size.width * 0.9,
@@ -1024,6 +1238,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                       const SizedBox(height: 10),
                       Center(
                         child: Container(
+                          key: keys['riego:panelBomba']!,
                           width: MediaQuery.of(context).size.width * 0.8,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16.0, vertical: 8.0),
@@ -1389,10 +1604,11 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
             const Divider(color: color1, thickness: 1),
             const SizedBox(height: 10),
             if (extensionesVinculadas.isNotEmpty) ...{
-              const Center(
+              Center(
                 child: Text(
+                  key: keys['riego:siHayExtensiones']!,
                   'Extensiones Vinculadas',
-                  style: TextStyle(
+                  style: const TextStyle(
                       color: color1, fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -1594,17 +1810,30 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                               await putRiegoMaster(
                                                   extensionPc, extensionSn, '');
 
-                                              setState(() {
-                                                extensionesVinculadas
-                                                    .remove(extension);
-                                              });
+                                              // Actualizar la lista local y en la base de datos
+                                              extensionesVinculadas
+                                                  .remove(extension);
 
                                               // Actualizar la lista de extensiones en el maestro
                                               await putRiegoExtensions(pc, sn,
                                                   extensionesVinculadas);
 
+                                              // Recargar la lista desde globalDATA para asegurar sincronización
+                                              extensionesVinculadas =
+                                                  List<String>.from(globalDATA[
+                                                              '$pc/$sn']?[
+                                                          'riegoExtensions'] ??
+                                                      []);
+
+                                              // Actualizar la lista de extensiones disponibles
+                                              searchExtensions();
+
                                               if (context.mounted) {
                                                 Navigator.of(context).pop();
+                                                // Forzar actualización de la UI después de eliminar la extensión
+                                                setState(() {
+                                                  // Asegurar que la vista se actualice completamente
+                                                });
                                               }
                                               showToast(
                                                   'Extensión eliminada correctamente');
@@ -2019,7 +2248,11 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                 }).toList(),
               ),
             } else ...{
-              const Center(child: Text('No hay extensiones agregadas')),
+              Center(
+                  child: Text(
+                'No hay extensiones agregadas',
+                key: keys['riego:noHayExtensiones']!,
+              )),
             },
             SizedBox(
               height:
@@ -2034,11 +2267,12 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            const Center(
+            Center(
               child: Text(
+                key: keys['riego:automatico']!,
                 'Configuraciones de riego',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: color1,
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -2055,6 +2289,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Card(
+                          key: keys['riego:rutina']!,
                           color: globalDATA['$pc/$sn']?['cstate'] ?? false
                               ? Colors.black
                               : Colors.grey,
@@ -2159,6 +2394,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                         ),
                         const SizedBox(height: 10),
                         Card(
+                          key: keys['riego:extension']!,
                           color: globalDATA['$pc/$sn']?['cstate'] ?? false
                               ? Colors.black
                               : Colors.grey,
@@ -2171,9 +2407,10 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                             child: Padding(
                               padding: const EdgeInsets.all(20),
                               child: GestureDetector(
-                                onTap: () {
+                                onTap: () async {
                                   if (globalDATA['$pc/$sn']?['cstate'] ??
                                       false) {
+                                    await queryItems(pc, sn);
                                     searchExtensions();
                                     setState(() {
                                       isExtension = true;
@@ -2494,6 +2731,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
             if (isRutina == true && isExtension == false) ...[
               Center(
                 child: Card(
+                  key: keys['riego:rutinaPanel']!,
                   color: color1,
                   elevation: 6,
                   shape: RoundedRectangleBorder(
@@ -3103,6 +3341,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
             if (isRutina == false && isExtension == true) ...[
               Center(
                 child: Card(
+                  key: keys['riego:extensionPanel']!,
                   color: color1,
                   elevation: 6,
                   shape: RoundedRectangleBorder(
@@ -3533,56 +3772,58 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
             ],
           ),
         ),
-        // floatingActionButton: Visibility(
-        //   visible: tutorial,
-        //   child: AnimatedSlide(
-        //     offset: _isTutorialActive ? const Offset(1.5, 0) : Offset.zero,
-        //     duration: const Duration(milliseconds: 400),
-        //     curve: Curves.easeInOut,
-        //     child: Padding(
-        //       padding: EdgeInsets.only(bottom: bottomBarHeight + 20),
-        //       child: FloatingActionButton(
-        //         onPressed: () {
-        //           items = [];
-        //           hardwareVersion == '240422A' ? isPinMode = true : null;
-        //           initItems();
-        //           setState(() {
-        //             _isAnimating = true;
-        //             _selectedIndex = 0;
-        //             _isTutorialActive = true;
-        //           });
-        //           _pageController
-        //               .animateToPage(
-        //             0,
-        //             duration: const Duration(milliseconds: 600),
-        //             curve: Curves.easeInOut,
-        //           )
-        //               .then((_) {
-        //             setState(() {
-        //               _isAnimating = false;
-        //             });
-        //             if (context.mounted) {
-        //               Tutorial.showTutorial(
-        //                 context,
-        //                 items,
-        //                 _pageController,
-        //                 onTutorialComplete: () {
-        //                   setState(() {
-        //                     _isTutorialActive = false;
-        //                   });
-        //                   printLog.i('Tutorial is complete!');
-        //                 },
-        //               );
-        //             }
-        //           });
-        //         },
-        //         backgroundColor: color4,
-        //         shape: const CircleBorder(),
-        //         child: const Icon(Icons.help, size: 30, color: color0),
-        //       ),
-        //     ),
-        //   ),
-        // ),
+        floatingActionButton: Visibility(
+          visible: tutorial,
+          child: AnimatedSlide(
+            offset: _isTutorialActive ? const Offset(1.5, 0) : Offset.zero,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: bottomBarHeight + 20),
+              child: FloatingActionButton(
+                onPressed: () {
+                  items = [];
+                  hardwareVersion == '240422A' ? isPinMode = true : null;
+                  initItems();
+                  setState(() {
+                    _isAnimating = true;
+                    _selectedIndex = 0;
+                    _isTutorialActive = true;
+                  });
+                  _pageController
+                      .animateToPage(
+                    0,
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.easeInOut,
+                  )
+                      .then((_) {
+                    setState(() {
+                      _isAnimating = false;
+                    });
+                    if (context.mounted) {
+                      Tutorial.showTutorial(
+                        context,
+                        items,
+                        _pageController,
+                        onTutorialComplete: () {
+                          setState(() {
+                            _isTutorialActive = false;
+                            isRutina = false;
+                            isExtension = false;
+                          });
+                          printLog.i('Tutorial is complete!');
+                        },
+                      );
+                    }
+                  });
+                },
+                backgroundColor: color4,
+                shape: const CircleBorder(),
+                child: const Icon(Icons.help, size: 30, color: color0),
+              ),
+            ),
+          ),
+        ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );

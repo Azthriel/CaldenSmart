@@ -1389,6 +1389,7 @@ class ManagerScreenState extends State<ManagerScreen> {
             // Control de bomba para dispositivos de riego
             if (globalDATA['$pc/$sn']?['riegoActive'] == true) ...{
               AnimatedContainer(
+                key: keys['managerScreen:bomba']!,
                 duration: const Duration(milliseconds: 600),
                 curve: Curves.easeInOut,
                 width: double.infinity,

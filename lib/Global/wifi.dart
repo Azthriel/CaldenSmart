@@ -27,6 +27,10 @@ class WifiPageState extends ConsumerState<WifiPage>
   final Set<String> _processingRiegos = {};
   StreamSubscription<String>? _cadenaCompletedSubscription;
   StreamSubscription<String>? _riegoCompletedSubscription;
+  
+  // Flags para control de riego
+  bool _isPumpShuttingDown = false;
+  bool _isAutoStarting = false;
 
   @override
   void initState() {
@@ -873,7 +877,11 @@ class WifiPageState extends ConsumerState<WifiPage>
               deviceDATA['owner'] == '' ||
               deviceDATA['owner'] == null;
 
-          if (deviceDATA['riegoActive'] == true) {
+          // Ocultar extensiones de riego (solo mostrar el maestro)
+          String? riegoMaster = deviceDATA['riegoMaster'];
+          if (riegoMaster != null &&
+              riegoMaster.isNotEmpty &&
+              riegoMaster != '') {
             return SizedBox.shrink(
               key: ValueKey(deviceName),
             );
@@ -1341,6 +1349,14 @@ class WifiPageState extends ConsumerState<WifiPage>
                   ),
                 );
               case '020010_IOT':
+                // Verificar si es un equipo de riego
+                bool isRiegoActive = deviceDATA['riegoActive'] == true;
+                if (isRiegoActive) {
+                  return _buildRiegoCard(deviceName, productCode, serialNumber,
+                      deviceDATA, online, owner);
+                }
+
+                // Código original para equipos normales
                 return Card(
                   key: ValueKey(deviceName),
                   color: color1,
@@ -1663,6 +1679,14 @@ class WifiPageState extends ConsumerState<WifiPage>
                   ),
                 );
               case '027313_IOT':
+                // Verificar si es un equipo de riego
+                bool isRiegoActive = deviceDATA['riegoActive'] == true;
+                if (isRiegoActive) {
+                  return _buildRiegoCard(deviceName, productCode, serialNumber,
+                      deviceDATA, online, owner);
+                }
+
+                // Código original para equipos normales (cerraduras)
                 bool estado = deviceDATA['w_status'] ?? false;
                 bool hasEntry = deviceDATA['hasEntry'] ?? false;
                 String hardv = deviceDATA['HardwareVersion'] ?? '000000A';
@@ -2298,6 +2322,14 @@ class WifiPageState extends ConsumerState<WifiPage>
                   ),
                 );
               case '020020_IOT':
+                // Verificar si es un equipo de riego
+                bool isRiegoActive = deviceDATA['riegoActive'] == true;
+                if (isRiegoActive) {
+                  return _buildRiegoCard(deviceName, productCode, serialNumber,
+                      deviceDATA, online, owner);
+                }
+
+                // Código original para equipos normales
                 return Card(
                   key: ValueKey(deviceName),
                   color: color1,
@@ -2354,189 +2386,208 @@ class WifiPageState extends ConsumerState<WifiPage>
                       children: <Widget>[
                         online
                             ? Column(
-                                children: (deviceDATA.keys
-                                        .where((key) =>
-                                            key.startsWith('io') &&
-                                            RegExp(r'^io\d+$').hasMatch(key))
-                                        .where((ioKey) =>
-                                            deviceDATA[ioKey] != null)
-                                        .toList()
-                                      ..sort((a, b) {
-                                        int indexA = int.parse(a.substring(2));
-                                        int indexB = int.parse(b.substring(2));
-                                        return indexA.compareTo(indexB);
-                                      }))
-                                    .map((ioKey) {
-                                  // Extraer el índice del ioKey (ejemplo: "io0" -> 0)
-                                  int i = int.parse(ioKey.substring(2));
-                                  Map<String, dynamic> equipo =
-                                      jsonDecode(deviceDATA[ioKey]);
-                                  printLog.i(
-                                    'Voy a realizar el cambio: $equipo',
-                                  );
-                                  String tipoWifi =
-                                      equipo['pinType'].toString() == '0'
-                                          ? 'Salida'
-                                          : 'Entrada';
-                                  bool estadoWifi = equipo['w_status'];
-                                  String comunWifi =
-                                      (equipo['r_state'] ?? '0').toString();
-                                  bool entradaWifi = tipoWifi == 'Entrada';
-                                  return ListTile(
-                                    title: Row(
-                                      children: [
-                                        Text(
-                                          nicknamesMap['${deviceName}_$i'] ??
-                                              '$tipoWifi $i',
-                                          style: GoogleFonts.poppins(
-                                            color: color0,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 5),
-                                      ],
-                                    ),
-                                    subtitle: Align(
-                                      alignment:
-                                          AlignmentDirectional.centerStart,
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
+                                children: [
+                                  ...(deviceDATA.keys
+                                          .where((key) =>
+                                              key.startsWith('io') &&
+                                              RegExp(r'^io\d+$').hasMatch(key))
+                                          .where((ioKey) =>
+                                              deviceDATA[ioKey] != null)
+                                          .toList()
+                                        ..sort((a, b) {
+                                          int indexA =
+                                              int.parse(a.substring(2));
+                                          int indexB =
+                                              int.parse(b.substring(2));
+                                          return indexA.compareTo(indexB);
+                                        }))
+                                      .map((ioKey) {
+                                    // Extraer el índice del ioKey (ejemplo: "io0" -> 0)
+                                    int i = int.parse(ioKey.substring(2));
+                                    Map<String, dynamic> equipo =
+                                        jsonDecode(deviceDATA[ioKey]);
+                                    printLog.i(
+                                      'Voy a realizar el cambio: $equipo',
+                                    );
+                                    String tipoWifi =
+                                        equipo['pinType'].toString() == '0'
+                                            ? 'Salida'
+                                            : 'Entrada';
+                                    bool estadoWifi = equipo['w_status'];
+                                    String comunWifi =
+                                        (equipo['r_state'] ?? '0').toString();
+                                    bool entradaWifi = tipoWifi == 'Entrada';
+                                    return ListTile(
+                                      title: Row(
                                         children: [
-                                          entradaWifi
-                                              ? estadoWifi
-                                                  ? comunWifi == '1'
-                                                      ? Text(
-                                                          'Cerrado',
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                            color: Colors.green,
-                                                            fontSize: 15,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
-                                                        )
-                                                      : Text(
-                                                          'Abierto',
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                            color: color4,
-                                                            fontSize: 15,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
-                                                        )
-                                                  : comunWifi == '1'
-                                                      ? Text(
-                                                          'Abierto',
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                            color: color4,
-                                                            fontSize: 15,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
-                                                        )
-                                                      : Text(
-                                                          'Cerrado',
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                            color: Colors.green,
-                                                            fontSize: 15,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
-                                                        )
-                                              : estadoWifi
-                                                  ? Text(
-                                                      'Encendido',
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                        color: Colors.green,
-                                                        fontSize: 15,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                    )
-                                                  : Text(
-                                                      'Apagado',
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                        color: color4,
-                                                        fontSize: 15,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                    ),
+                                          Text(
+                                            nicknamesMap['${deviceName}_$i'] ??
+                                                '$tipoWifi $i',
+                                            style: GoogleFonts.poppins(
+                                              color: color0,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 5),
                                         ],
                                       ),
-                                    ),
-                                    trailing: owner
-                                        ? entradaWifi
-                                            ? estadoWifi
-                                                ? comunWifi == '1'
-                                                    ? const Icon(
-                                                        Icons.new_releases,
-                                                        color:
-                                                            Color(0xff9b9b9b),
+                                      subtitle: Align(
+                                        alignment:
+                                            AlignmentDirectional.centerStart,
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                          children: [
+                                            entradaWifi
+                                                ? estadoWifi
+                                                    ? comunWifi == '1'
+                                                        ? Text(
+                                                            'Cerrado',
+                                                            style: GoogleFonts
+                                                                .poppins(
+                                                              color:
+                                                                  Colors.green,
+                                                              fontSize: 15,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                            ),
+                                                          )
+                                                        : Text(
+                                                            'Abierto',
+                                                            style: GoogleFonts
+                                                                .poppins(
+                                                              color: color4,
+                                                              fontSize: 15,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                            ),
+                                                          )
+                                                    : comunWifi == '1'
+                                                        ? Text(
+                                                            'Abierto',
+                                                            style: GoogleFonts
+                                                                .poppins(
+                                                              color: color4,
+                                                              fontSize: 15,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                            ),
+                                                          )
+                                                        : Text(
+                                                            'Cerrado',
+                                                            style: GoogleFonts
+                                                                .poppins(
+                                                              color:
+                                                                  Colors.green,
+                                                              fontSize: 15,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                            ),
+                                                          )
+                                                : estadoWifi
+                                                    ? Text(
+                                                        'Encendido',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          color: Colors.green,
+                                                          fontSize: 15,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
                                                       )
-                                                    : const Icon(
-                                                        Icons.new_releases,
-                                                        color: color4,
-                                                      )
-                                                : comunWifi == '1'
-                                                    ? const Icon(
-                                                        Icons.new_releases,
-                                                        color: color4,
-                                                      )
-                                                    : const Icon(
-                                                        Icons.new_releases,
-                                                        color:
-                                                            Color(0xff9b9b9b),
-                                                      )
-                                            : Switch(
-                                                activeColor:
-                                                    const Color(0xFF9C9D98),
-                                                activeTrackColor:
-                                                    const Color(0xFFB2B5AE),
-                                                inactiveThumbColor:
-                                                    const Color(0xFFB2B5AE),
-                                                inactiveTrackColor:
-                                                    const Color(0xFF9C9D98),
-                                                value: estadoWifi,
-                                                onChanged: (value) {
-                                                  String topic =
-                                                      'devices_rx/$productCode/$serialNumber';
-                                                  String topic2 =
-                                                      'devices_tx/$productCode/$serialNumber';
-                                                  String message = jsonEncode({
-                                                    'pinType':
-                                                        tipoWifi == 'Salida'
-                                                            ? 0
-                                                            : 1,
-                                                    'index': i,
-                                                    'w_status': value,
-                                                    'r_state': comunWifi,
-                                                  });
-                                                  sendMessagemqtt(
-                                                      topic, message);
-                                                  sendMessagemqtt(
-                                                      topic2, message);
-                                                  setState(() {
-                                                    estadoWifi = value;
-                                                  });
-                                                  globalDATA
-                                                      .putIfAbsent(
-                                                          '$productCode/$serialNumber',
-                                                          () => {})
-                                                      .addAll(
-                                                          {'io$i': message});
-                                                  saveGlobalData(globalDATA);
-                                                },
-                                              )
-                                        : null,
-                                  );
-                                }).toList(),
+                                                    : Text(
+                                                        'Apagado',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          color: color4,
+                                                          fontSize: 15,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                          ],
+                                        ),
+                                      ),
+                                      trailing: owner
+                                          ? entradaWifi
+                                              ? estadoWifi
+                                                  ? comunWifi == '1'
+                                                      ? const Icon(
+                                                          Icons.new_releases,
+                                                          color: Color(
+                                                            0xff9b9b9b,
+                                                          ),
+                                                        )
+                                                      : const Icon(
+                                                          Icons.new_releases,
+                                                          color: color4,
+                                                        )
+                                                  : comunWifi == '1'
+                                                      ? const Icon(
+                                                          Icons.new_releases,
+                                                          color: color4,
+                                                        )
+                                                      : const Icon(
+                                                          Icons.new_releases,
+                                                          color: Color(
+                                                            0xff9b9b9b,
+                                                          ),
+                                                        )
+                                              : Switch(
+                                                  activeColor: const Color(
+                                                    0xFF9C9D98,
+                                                  ),
+                                                  activeTrackColor: const Color(
+                                                    0xFFB2B5AE,
+                                                  ),
+                                                  inactiveThumbColor:
+                                                      const Color(
+                                                    0xFFB2B5AE,
+                                                  ),
+                                                  inactiveTrackColor:
+                                                      const Color(
+                                                    0xFF9C9D98,
+                                                  ),
+                                                  value: estadoWifi,
+                                                  onChanged: (value) {
+                                                    String topic =
+                                                        'devices_rx/$productCode/$serialNumber';
+                                                    String topic2 =
+                                                        'devices_tx/$productCode/$serialNumber';
+                                                    String message =
+                                                        jsonEncode({
+                                                      'pinType':
+                                                          tipoWifi == 'Salida'
+                                                              ? 0
+                                                              : 1,
+                                                      'index': i,
+                                                      'w_status': value,
+                                                      'r_state': comunWifi,
+                                                    });
+                                                    sendMessagemqtt(
+                                                        topic, message);
+                                                    sendMessagemqtt(
+                                                        topic2, message);
+                                                    setState(() {
+                                                      estadoWifi = value;
+                                                    });
+                                                    globalDATA
+                                                        .putIfAbsent(
+                                                            '$productCode/$serialNumber',
+                                                            () => {})
+                                                        .addAll(
+                                                            {'io$i': message});
+                                                    saveGlobalData(globalDATA);
+                                                  },
+                                                )
+                                          : null,
+                                    );
+                                  }),
+                                ],
                               )
                             : const SizedBox(height: 0),
                         Row(
@@ -2544,7 +2595,8 @@ class WifiPageState extends ConsumerState<WifiPage>
                           children: [
                             Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.only(left: 20.0),
+                                padding: const EdgeInsets.only(
+                                    left: 20.0, bottom: 16.0),
                                 child: !online
                                     ? Text(
                                         'El equipo debe estar\nconectado para su uso',
@@ -3737,7 +3789,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                               if (device.contains('_')) {
                                 final parts = device.split('_');
                                 displayName = nicknamesMap[device] ??
-                                    '${nicknamesMap[parts[0]] ?? parts[0]} salida ${parts[1]}';
+                                    '${nicknamesMap[parts[0]] ?? parts[0]} Zona ${parts[1]}';
                               } else {
                                 displayName = nicknamesMap[device] ?? device;
                               }
@@ -4128,5 +4180,718 @@ class WifiPageState extends ConsumerState<WifiPage>
         );
       },
     );
+  }
+
+  // Función para construir tarjeta de equipo de riego
+  Widget _buildRiegoCard(
+      String deviceName,
+      String productCode,
+      String serialNumber,
+      Map<String, dynamic> deviceDATA,
+      bool online,
+      bool owner) {
+    // Verificar si es un equipo maestro (riegoActive = true) o extensión
+    bool isRiegoActive = deviceDATA['riegoActive'] == true;
+
+    if (!isRiegoActive) {
+      // Es una extensión, no debería mostrarse aquí (ya está filtrado arriba)
+      return SizedBox.shrink(key: ValueKey(deviceName));
+    }
+
+    // Obtener extensiones vinculadas
+    List<String> extensionesVinculadas = [];
+    globalDATA.forEach((key, value) {
+      if (value['riegoMaster'] == deviceName &&
+          (key.startsWith('020020_IOT/') ||
+              key.startsWith('020010_IOT/') ||
+              key.startsWith('027313_IOT/'))) {
+        String pc = key.split('/')[0];
+        String sn = key.split('/')[1];
+        String extensionName = DeviceManager.recoverDeviceName(pc, sn);
+        extensionesVinculadas.add(extensionName);
+      }
+    });
+
+    return Card(
+      key: ValueKey(deviceName),
+      color: color1,
+      margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+      elevation: 2,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+          iconColor: color4,
+          collapsedIconColor: color4,
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.7,
+                    child: Text(
+                      nicknamesMap[deviceName] ?? deviceName,
+                      style: GoogleFonts.poppins(
+                        color: color0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    spacing: 10,
+                    children: [
+                      Text(
+                        online ? '● CONECTADO' : '● DESCONECTADO',
+                        style: GoogleFonts.poppins(
+                          color: online ? Colors.green : color3,
+                          fontSize: 15,
+                        ),
+                      ),
+                      Icon(
+                        online ? Icons.cloud : Icons.cloud_off,
+                        color: online ? Colors.green : color3,
+                        size: 15,
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          'RIEGO',
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFF4CAF50),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          children: <Widget>[
+            if (online) ...[
+              // Mostrar salidas del equipo principal (solo salidas, no entradas)
+              ...((deviceDATA.keys
+                      .where((key) =>
+                          key.startsWith('io') &&
+                          RegExp(r'^io\d+$').hasMatch(key))
+                      .where((ioKey) {
+                        if (deviceDATA[ioKey] == null) return false;
+                        try {
+                          var ioData = jsonDecode(deviceDATA[ioKey]);
+                          return ioData['pinType'] == '0'; // Solo salidas
+                        } catch (e) {
+                          return false;
+                        }
+                      })
+                      .toList()
+                    ..sort((a, b) {
+                      int indexA = int.parse(a.substring(2));
+                      int indexB = int.parse(b.substring(2));
+                      return indexA.compareTo(indexB);
+                    }))
+                  .map((ioKey) => _buildRiegoOutput(deviceName, productCode,
+                      serialNumber, ioKey, deviceDATA, owner))),
+
+              // Mostrar extensiones si las hay
+              if (extensionesVinculadas.isNotEmpty) ...[
+                const Divider(color: color0, thickness: 1),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
+                  child: Text(
+                    'Extensiones Vinculadas',
+                    style: GoogleFonts.poppins(
+                      color: color0,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                ...extensionesVinculadas.map((extension) =>
+                    _buildExtensionCard(extension, deviceName, owner)),
+              ],
+            ] else ...[
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'El equipo debe estar conectado para su uso',
+                  style: GoogleFonts.poppins(
+                    color: color3,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
+
+            // Botón de eliminar
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                child: IconButton(
+                  icon: const Icon(
+                    HugeIcons.strokeRoundedDelete02,
+                    color: color0,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    _confirmDelete(deviceName, productCode);
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Función para construir una salida de riego
+  Widget _buildRiegoOutput(
+      String deviceName,
+      String productCode,
+      String serialNumber,
+      String ioKey,
+      Map<String, dynamic> deviceDATA,
+      bool owner) {
+    int outputIndex = int.parse(ioKey.substring(2));
+    Map<String, dynamic> outputData = jsonDecode(deviceDATA[ioKey]);
+
+    String pinType = outputData['pinType'].toString();
+    bool isOutput = pinType == '0';
+    
+    // En equipos de riego, solo mostrar salidas (ocultar entradas)
+    if (!isOutput) {
+      return const SizedBox.shrink();
+    }
+    
+    bool currentStatus = outputData['w_status'] ?? false;
+    String rState = (outputData['r_state'] ?? '0').toString();
+
+    // Para la bomba (salida 0), usar lógica especial
+    bool isBomb = outputIndex == 0 && isOutput;
+
+    // Para las zonas, verificar lógica de riego
+    String displayName;
+    if (isBomb) {
+      displayName = 'Bomba'; // La bomba siempre se llama "Bomba", sin nickname
+    } else {
+      displayName = nicknamesMap['${deviceName}_$outputIndex'] ?? 'Zona $outputIndex';
+    }
+
+    return ListTile(
+      title: Text(
+        displayName,
+        style: GoogleFonts.poppins(
+          color: color0,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      subtitle: Text(
+        _getRiegoStatusText(currentStatus, isOutput, isBomb, rState),
+        style: GoogleFonts.poppins(
+          color: _getRiegoStatusColor(currentStatus, isOutput, isBomb, rState),
+          fontSize: 15,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      trailing: owner && isOutput
+          ? Switch(
+              activeColor: const Color(0xFF9C9D98),
+              activeTrackColor: const Color(0xFFB2B5AE),
+              inactiveThumbColor: const Color(0xFFB2B5AE),
+              inactiveTrackColor: const Color(0xFF9C9D98),
+              value: currentStatus,
+              onChanged: (value) => _controlRiegoOutput(deviceName, productCode,
+                  serialNumber, outputIndex, value, isBomb),
+            )
+          : isOutput
+              ? null
+              : Icon(
+                  Icons.sensors,
+                  color: _getRiegoStatusColor(
+                      currentStatus, isOutput, isBomb, rState),
+                ),
+    );
+  }
+
+  // Función para construir tarjeta de extensión
+  Widget _buildExtensionCard(
+      String extension, String masterDevice, bool owner) {
+    String extensionPc = DeviceManager.getProductCode(extension);
+    String extensionSn = DeviceManager.extractSerialNumber(extension);
+    String key = '$extensionPc/$extensionSn';
+
+    Map<String, dynamic> extensionData = globalDATA[key] ?? {};
+    bool isExtensionOnline = extensionData['cstate'] ?? false;
+
+    // Obtener solo las salidas de la extensión
+    List<MapEntry<String, dynamic>> outputs = [];
+    extensionData.forEach((k, v) {
+      if (k.startsWith('io') && v is String) {
+        try {
+          var decoded = jsonDecode(v);
+          if (decoded['pinType'] == '0') {
+            outputs.add(MapEntry(k, decoded));
+          }
+        } catch (e) {
+          printLog.e('Error decodificando datos I/O: $e');
+        }
+      }
+    });
+
+    outputs.sort((a, b) {
+      int indexA = int.tryParse(a.key.replaceAll('io', '')) ?? 0;
+      int indexB = int.tryParse(b.key.replaceAll('io', '')) ?? 0;
+      return indexA.compareTo(indexB);
+    });
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+      color: color0.withValues(alpha: 0.1),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isExtensionOnline ? Icons.cloud : Icons.cloud_off,
+                  color: isExtensionOnline ? Colors.green : Colors.red,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    nicknamesMap[extension] ?? extension,
+                    style: GoogleFonts.poppins(
+                      color: color0,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (isExtensionOnline && outputs.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              ...outputs.map((output) {
+                int outputIndex = int.parse(output.key.replaceAll('io', ''));
+                bool isOn = output.value['w_status'] ?? false;
+                String zoneLabel = nicknamesMap['${extension}_$outputIndex'] ??
+                    'Zona ${_getZoneNumber(masterDevice, extension, outputIndex)}';
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          zoneLabel,
+                          style: GoogleFonts.poppins(
+                            color: color0,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        isOn ? 'Encendido' : 'Apagado',
+                        style: GoogleFonts.poppins(
+                          color: isOn ? Colors.green : color4,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      if (owner)
+                        Switch(
+                          activeColor: const Color(0xFF9C9D98),
+                          activeTrackColor: const Color(0xFFB2B5AE),
+                          inactiveThumbColor: const Color(0xFFB2B5AE),
+                          inactiveTrackColor: const Color(0xFF9C9D98),
+                          value: isOn,
+                          onChanged: (value) => _controlExtensionOutput(
+                              extension, outputIndex, value, masterDevice),
+                        ),
+                    ],
+                  ),
+                );
+              }),
+            ] else if (!isExtensionOnline) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Extensión desconectada',
+                style: GoogleFonts.poppins(
+                  color: color3,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Función auxiliar para obtener el número de zona consecutivo
+  int _getZoneNumber(String masterDevice, String extension, int outputIndex) {
+    int zoneCounter = 1;
+
+    // Contar zonas del maestro primero
+    String masterPc = DeviceManager.getProductCode(masterDevice);
+    String masterSn = DeviceManager.extractSerialNumber(masterDevice);
+    Map<String, dynamic> masterData = globalDATA['$masterPc/$masterSn'] ?? {};
+
+    masterData.forEach((key, value) {
+      if (key.startsWith('io') && key != 'io0' && value is String) {
+        try {
+          var decoded = jsonDecode(value);
+          if (decoded['pinType'] == '0') {
+            zoneCounter++;
+          }
+        } catch (e) {
+          // Error handling
+        }
+      }
+    });
+
+    // Luego contar zonas de extensiones anteriores a esta
+    List<String> extensionesVinculadas = [];
+    globalDATA.forEach((key, value) {
+      if (value['riegoMaster'] == masterDevice &&
+          key !=
+              '${DeviceManager.getProductCode(extension)}/${DeviceManager.extractSerialNumber(extension)}') {
+        String pc = key.split('/')[0];
+        String sn = key.split('/')[1];
+        String extensionName = DeviceManager.recoverDeviceName(pc, sn);
+        extensionesVinculadas.add(extensionName);
+      }
+    });
+
+    for (String ext in extensionesVinculadas) {
+      if (ext == extension) break;
+
+      String extPc = DeviceManager.getProductCode(ext);
+      String extSn = DeviceManager.extractSerialNumber(ext);
+      Map<String, dynamic> extData = globalDATA['$extPc/$extSn'] ?? {};
+
+      extData.forEach((key, value) {
+        if (key.startsWith('io') && value is String) {
+          try {
+            var decoded = jsonDecode(value);
+            if (decoded['pinType'] == '0') {
+              zoneCounter++;
+            }
+          } catch (e) {
+            // Error handling
+          }
+        }
+      });
+    }
+
+    // Agregar el índice de salida actual
+    String extPc = DeviceManager.getProductCode(extension);
+    String extSn = DeviceManager.extractSerialNumber(extension);
+    Map<String, dynamic> extData = globalDATA['$extPc/$extSn'] ?? {};
+
+    List<int> outputs = [];
+    extData.forEach((key, value) {
+      if (key.startsWith('io') && value is String) {
+        try {
+          var decoded = jsonDecode(value);
+          if (decoded['pinType'] == '0') {
+            outputs.add(int.parse(key.replaceAll('io', '')));
+          }
+        } catch (e) {
+          // Error handling
+        }
+      }
+    });
+
+    outputs.sort();
+    int indexInExtension = outputs.indexOf(outputIndex);
+
+    return zoneCounter + indexInExtension;
+  }
+
+  // Funciones auxiliares para el estado de riego
+  String _getRiegoStatusText(
+      bool status, bool isOutput, bool isBomb, String rState) {
+    if (isOutput) {
+      if (isBomb) {
+        return status ? 'Encendida' : 'Apagada';
+      } else {
+        return status ? 'Regando' : 'Apagada';
+      }
+    } else {
+      return status
+          ? (rState == '1' ? 'Cerrado' : 'Abierto')
+          : (rState == '1' ? 'Abierto' : 'Cerrado');
+    }
+  }
+
+  Color _getRiegoStatusColor(
+      bool status, bool isOutput, bool isBomb, String rState) {
+    if (isOutput) {
+      return status ? Colors.green : color4;
+    } else {
+      bool isNormalClosed = rState == '1';
+      return status == isNormalClosed ? Colors.green : color4;
+    }
+  }
+
+  // Función para controlar salidas de riego individual
+  void _controlRiegoOutput(String deviceName, String productCode,
+      String serialNumber, int outputIndex, bool value, bool isBomb) {
+    // Verificar si hay procesos en curso
+    if (_isPumpShuttingDown) {
+      showToast('Espere, la bomba se está apagando...');
+      return;
+    }
+    
+    if (_isAutoStarting) {
+      showToast('Espere, se está iniciando automáticamente...');
+      return;
+    }
+    
+    // Aplicar lógica similar a riego.dart
+    Map<String, dynamic> deviceDATA =
+        globalDATA['$productCode/$serialNumber'] ?? {};
+    bool freeBomb = deviceDATA['freeBomb'] ?? false;
+
+    if (!freeBomb && !isBomb) {
+      // Lógica para zonas con bomba automática
+      if (value) {
+        // ENCENDER: zona primero, luego bomba
+        _sendRiegoCommand(productCode, serialNumber, outputIndex, value);
+        
+        // Verificar si la bomba está apagada
+        if (deviceDATA['io0'] != null) {
+          try {
+            var bombData = jsonDecode(deviceDATA['io0']);
+            bool bombStatus = bombData['w_status'] ?? false;
+            
+            if (!bombStatus) {
+              setState(() {
+                _isAutoStarting = true;
+              });
+              
+              // Delay de 1 segundo antes de encender bomba
+              Future.delayed(const Duration(seconds: 1), () {
+                if (mounted) {
+                  _sendRiegoCommand(productCode, serialNumber, 0, true);
+                  setState(() {
+                    _isAutoStarting = false;
+                  });
+                }
+              });
+            }
+          } catch (e) {
+            // Error handling
+          }
+        }
+        return;
+      } else {
+        // APAGAR: verificar si es la última activa (incluyendo extensiones)
+        int activeZones = _countActiveZonesForDevice(productCode, serialNumber);
+        int activeExtensionZones = _countActiveZonesForAllExtensions(deviceName);
+        int totalActiveZones = activeZones + activeExtensionZones;
+        
+        if (totalActiveZones == 1) {
+          setState(() {
+            _isPumpShuttingDown = true;
+          });
+          
+          // Esta es la última zona activa - bomba primero, luego zona
+          _sendRiegoCommand(productCode, serialNumber, 0, false);
+          
+          // Delay de 1 segundo antes de apagar zona
+          Future.delayed(const Duration(seconds: 1), () {
+            if (mounted) {
+              _sendRiegoCommand(productCode, serialNumber, outputIndex, value);
+              setState(() {
+                _isPumpShuttingDown = false;
+              });
+            }
+          });
+          return;
+        }
+      }
+    }
+
+    // Envío normal
+    _sendRiegoCommand(productCode, serialNumber, outputIndex, value);
+  }
+
+  // Función para controlar salidas de extensión
+  void _controlExtensionOutput(
+      String extension, int outputIndex, bool value, String masterDevice) {
+    // Verificar si hay procesos en curso
+    if (_isPumpShuttingDown) {
+      showToast('Espere, la bomba se está apagando...');
+      return;
+    }
+    
+    if (_isAutoStarting) {
+      showToast('Espere, se está iniciando automáticamente...');
+      return;
+    }
+    
+    String extensionPc = DeviceManager.getProductCode(extension);
+    String extensionSn = DeviceManager.extractSerialNumber(extension);
+
+    // Obtener datos del maestro para la lógica de bomba
+    String masterPc = DeviceManager.getProductCode(masterDevice);
+    String masterSn = DeviceManager.extractSerialNumber(masterDevice);
+    Map<String, dynamic> masterData = globalDATA['$masterPc/$masterSn'] ?? {};
+    bool freeBomb = masterData['freeBomb'] ?? false;
+
+    if (!freeBomb) {
+      // Aplicar lógica de bomba automática
+      if (value) {
+        // ENCENDER: extensión primero, luego bomba del maestro
+        _sendRiegoCommand(extensionPc, extensionSn, outputIndex, value);
+        
+        // Verificar si la bomba del maestro está apagada
+        if (masterData['io0'] != null) {
+          try {
+            var bombData = jsonDecode(masterData['io0']);
+            bool bombStatus = bombData['w_status'] ?? false;
+            
+            if (!bombStatus) {
+              setState(() {
+                _isAutoStarting = true;
+              });
+              
+              // Delay de 1 segundo antes de encender bomba
+              Future.delayed(const Duration(seconds: 1), () {
+                if (mounted) {
+                  _sendRiegoCommand(masterPc, masterSn, 0, true);
+                  setState(() {
+                    _isAutoStarting = false;
+                  });
+                }
+              });
+            }
+          } catch (e) {
+            // Error handling
+          }
+        }
+        return;
+      } else {
+        // APAGAR: verificar si es la última zona activa
+        int totalActiveZones = _countActiveZonesForDevice(masterPc, masterSn) +
+            _countActiveZonesForAllExtensions(masterDevice);
+
+        if (totalActiveZones == 1) {
+          setState(() {
+            _isPumpShuttingDown = true;
+          });
+          
+          // Última zona activa - bomba primero, luego extensión
+          _sendRiegoCommand(masterPc, masterSn, 0, false);
+          
+          // Delay de 1 segundo antes de apagar extensión
+          Future.delayed(const Duration(seconds: 1), () {
+            if (mounted) {
+              _sendRiegoCommand(extensionPc, extensionSn, outputIndex, value);
+              setState(() {
+                _isPumpShuttingDown = false;
+              });
+            }
+          });
+          return;
+        }
+      }
+    }
+
+    // Envío normal para extensión
+    _sendRiegoCommand(extensionPc, extensionSn, outputIndex, value);
+  }
+
+  // Función para enviar comando MQTT de riego
+  void _sendRiegoCommand(
+      String productCode, String serialNumber, int outputIndex, bool value) {
+    String message = jsonEncode({
+      'pinType': '0', // Siempre salida para riego
+      'index': outputIndex,
+      'w_status': value,
+      'r_state': '0',
+    });
+
+    String topic = 'devices_rx/$productCode/$serialNumber';
+    String topic2 = 'devices_tx/$productCode/$serialNumber';
+
+    sendMessagemqtt(topic, message);
+    sendMessagemqtt(topic2, message);
+
+    // Actualizar datos locales
+    globalDATA
+        .putIfAbsent('$productCode/$serialNumber', () => {})
+        .addAll({'io$outputIndex': message});
+    saveGlobalData(globalDATA);
+
+    setState(() {});
+  }
+
+  // Función para contar zonas activas de un dispositivo
+  int _countActiveZonesForDevice(String productCode, String serialNumber) {
+    Map<String, dynamic> deviceDATA =
+        globalDATA['$productCode/$serialNumber'] ?? {};
+    int count = 0;
+
+    deviceDATA.forEach((key, value) {
+      if (key.startsWith('io') && key != 'io0' && value is String) {
+        try {
+          var decoded = jsonDecode(value);
+          if (decoded['pinType'] == '0' && decoded['w_status'] == true) {
+            count++;
+          }
+        } catch (e) {
+          // Error handling
+        }
+      }
+    });
+
+    return count;
+  }
+
+  // Función para contar zonas activas de todas las extensiones
+  int _countActiveZonesForAllExtensions(String masterDevice) {
+    int count = 0;
+
+    globalDATA.forEach((key, value) {
+      if (value['riegoMaster'] == masterDevice) {
+        Map<String, dynamic> extensionData = value;
+
+        extensionData.forEach((ioKey, ioValue) {
+          if (ioKey.startsWith('io') && ioValue is String) {
+            try {
+              var decoded = jsonDecode(ioValue);
+              if (decoded['pinType'] == '0' && decoded['w_status'] == true) {
+                count++;
+              }
+            } catch (e) {
+              // Error handling
+            }
+          }
+        });
+      }
+    });
+
+    return count;
   }
 }
