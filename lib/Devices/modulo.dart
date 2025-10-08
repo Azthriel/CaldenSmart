@@ -298,7 +298,13 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
     }
   }
 
-  void controlOut(bool value, int index) {
+  Future<bool> controlOut(bool value, int index) async {
+    // Verificar permisos horarios para administradores secundarios
+    bool hasPermission = await checkAdminTimePermission(deviceName);
+    if (!hasPermission) {
+      return false; // No ejecutar si no tiene permisos
+    }
+
     String fun = '$index#${value ? '1' : '0'}';
     bluetoothManager.ioUuid.write(fun.codeUnits);
     String topic =
@@ -321,6 +327,12 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
         .addAll({'io$index': message});
 
     saveGlobalData(globalDATA);
+
+    // Registrar uso si es administrador secundario
+    String action = value ? 'Encendió salida $index' : 'Apagó salida $index';
+    await registerAdminUsage(deviceName, action);
+
+    return true;
   }
 
   void updateWifiValues(List<int> data) {
@@ -479,6 +491,10 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
     final wifiState = ref.watch(wifiProvider);
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
+
+    if (!canUseDevice) {
+      return const NotAllowedScreen();
+    }
 
     // si hay un usuario conectado al equipo no lo deje ingresar
     if (userConnected && lastUser > 1) {
@@ -709,17 +725,19 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                 size: 40,
                               ),
                               GestureDetector(
-                                onTap: () {
-                                  (_selectedPins[index] && tracking)
-                                      ? null
-                                      : setState(() {
-                                          controlOut(
-                                              !(estado[index] == '1'), index);
-                                          estado[index] =
-                                              !(estado[index] == '1')
-                                                  ? '1'
-                                                  : '0';
-                                        });
+                                onTap: () async {
+                                  if (_selectedPins[index] && tracking) {
+                                    return;
+                                  }
+
+                                  bool success = await controlOut(
+                                      !(estado[index] == '1'), index);
+                                  if (success) {
+                                    setState(() {
+                                      estado[index] =
+                                          !(estado[index] == '1') ? '1' : '0';
+                                    });
+                                  }
                                 },
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 300),
@@ -1443,7 +1461,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
       ),
 
       //*- Página 4: Gestión del Equipo -*\\
-      const ManagerScreen(),
+      ManagerScreen(deviceName: deviceName),
     ];
 
     return PopScope(

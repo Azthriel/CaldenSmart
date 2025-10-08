@@ -417,6 +417,12 @@ class RelayPageState extends ConsumerState<RelayPage> {
   }
 
   void turnDeviceOn(bool on) async {
+    // Verificar permisos horarios para administradores secundarios
+    bool hasPermission = await checkAdminTimePermission(deviceName);
+    if (!hasPermission) {
+      return; // No ejecutar si no tiene permisos
+    }
+
     int fun = on ? 1 : 0;
     String data = '${DeviceManager.getProductCode(deviceName)}[11]($fun)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
@@ -432,6 +438,9 @@ class RelayPageState extends ConsumerState<RelayPage> {
       String message = jsonEncode({'w_status': on});
       sendMessagemqtt(topic, message);
       sendMessagemqtt(topic2, message);
+
+      // Registrar uso si es administrador secundario
+      await registerAdminUsage(deviceName, on ? 'Encendió relé' : 'Apagó relé');
     } catch (e, s) {
       printLog.i('Error al enviar valor a firebase $e $s');
     }
@@ -560,6 +569,10 @@ class RelayPageState extends ConsumerState<RelayPage> {
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
 
+    if (!canUseDevice) {
+      return const NotAllowedScreen();
+    }
+
     // si hay un usuario conectado al equipo no lo deje ingresar
     if (userConnected && lastUser > 1) {
       return const DeviceInUseScreen();
@@ -606,15 +619,20 @@ class RelayPageState extends ConsumerState<RelayPage> {
                           ),
                           const SizedBox(height: 40),
                           GestureDetector(
-                            onTap: () {
+                            onTap: () async {
                               if (deviceOwner ||
                                   secondaryAdmin ||
                                   owner == '' ||
                                   tenant) {
-                                turnDeviceOn(!turnOn);
-                                setState(() {
-                                  turnOn = !turnOn;
-                                });
+                                // Verificar permisos horarios para administradores secundarios
+                                bool hasPermission =
+                                    await checkAdminTimePermission(deviceName);
+                                if (hasPermission) {
+                                  turnDeviceOn(!turnOn);
+                                  setState(() {
+                                    turnOn = !turnOn;
+                                  });
+                                }
                               } else {
                                 showToast(
                                     'No tienes permiso para realizar esta acción');
@@ -1546,7 +1564,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
 
       //*- Página 5: Gestión del Equipo -*\\
 
-      const ManagerScreen(),
+      ManagerScreen(deviceName: deviceName),
     ];
 
     return PopScope(

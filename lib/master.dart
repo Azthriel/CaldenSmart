@@ -510,6 +510,10 @@ String alertMaxTemp = '';
 String alertMinTemp = '';
 //*- Termometro -*\\
 
+//*- Bloqueo admins -*\\
+bool canUseDevice = true;
+//*- Bloqueo admins -*\\
+
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
 //! FUNCIONES !\\
@@ -2264,6 +2268,74 @@ void showPaymentTest(bool adm, int vencimiento, BuildContext context) {
 }
 //*-Admin secundarios y alquiler temporario-*\\
 
+//*- Funciones para administradores secundarios -*\\
+
+/// Registra el uso de un dispositivo por un administrador secundario
+Future<void> registerAdminUsage(String deviceName, String action) async {
+  String pc = DeviceManager.getProductCode(deviceName);
+  String sn = DeviceManager.extractSerialNumber(deviceName);
+  bool isAdmin = globalDATA['$pc/$sn']?['secondary_admin'] ??
+      [].contains(currentUserEmail);
+  bool isOwner = globalDATA['$pc/$sn']?['owner'] == currentUserEmail ||
+      globalDATA['$pc/$sn']?['owner'] == '' ||
+      globalDATA['$pc/$sn']?['owner'] == null;
+  // Solo registrar si el usuario actual es un administrador secundario
+  if (currentUserEmail.isNotEmpty && isAdmin && !isOwner) {
+    try {
+      await putAdminUsageHistory(pc, sn, currentUserEmail, action);
+      printLog.i('Uso registrado: $currentUserEmail - $action');
+    } catch (e) {
+      printLog.e('Error registrando uso de administrador: $e');
+    }
+  }
+}
+
+/// Verifica si el administrador secundario actual puede usar el dispositivo
+Future<bool> checkAdminTimePermission(String deviceName) async {
+  String pc = DeviceManager.getProductCode(deviceName);
+  String sn = DeviceManager.extractSerialNumber(deviceName);
+  bool isOwner = globalDATA['$pc/$sn']?['owner'] == currentUserEmail ||
+      globalDATA['$pc/$sn']?['owner'] == '' ||
+      globalDATA['$pc/$sn']?['owner'] == null;
+  if (isOwner) {
+    return true; // El dueño puede usarlo siempre
+  }
+
+  try {
+    bool isAllowed =
+        await isAdminAllowedAtCurrentTime(pc, sn, currentUserEmail);
+
+    if (!isAllowed) {
+      showToast('No tienes permisos para usar el dispositivo en este momento');
+    }
+
+    return isAllowed;
+  } catch (e) {
+    printLog.e('Error verificando permisos horarios: $e');
+    return true; // En caso de error, permitir acceso
+  }
+}
+
+/// Envía mensaje MQTT con verificación de permisos y registro de uso
+Future<bool> sendMQTTMessageWithPermission(String deviceName, String message,
+    String topic, String topic2, String action) async {
+  // Verificar permisos horarios si es administrador secundario
+  bool hasPermission = await checkAdminTimePermission(deviceName);
+  if (!hasPermission) {
+    return false;
+  }
+
+  // Enviar mensaje
+  sendMessagemqtt(topic, message);
+  sendMessagemqtt(topic2, message);
+
+  // Registrar uso si es administrador secundario
+  await registerAdminUsage(deviceName, action);
+
+  return true;
+}
+//*- Funciones para administradores secundarios -*\\
+
 //*-Cognito user flow-*\\
 void asking() async {
   bool alreadyLog = await isUserSignedIn();
@@ -3408,6 +3480,7 @@ void cleanGlobalDeviceVariables() {
   infoValues = [];
   hardwareVersion = '';
   softwareVersion = '';
+  canUseDevice = true;
   printLog.i('Variables globales del dispositivo limpiadas');
 }
 
@@ -5044,6 +5117,143 @@ class AccessDeniedScreen extends StatelessWidget {
 }
 //*-pantalla para usuario no autorizo a entrar al equipo-*\\
 
+//*-pantalla para usuario no autorizo a entrar al equipo-*\\
+class NotAllowedScreen extends StatelessWidget {
+  const NotAllowedScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, A) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.0),
+                side: const BorderSide(color: color4, width: 2.0),
+              ),
+              backgroundColor: color1,
+              content: Row(
+                children: [
+                  Image.asset('assets/branch/dragon.gif',
+                      width: 100, height: 100),
+                  Container(
+                    margin: const EdgeInsets.only(left: 15),
+                    child: const Text(
+                      "Desconectando...",
+                      style: TextStyle(
+                        color: color0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+        Future.delayed(const Duration(seconds: 2), () async {
+          await bluetoothManager.device.disconnect();
+          if (context.mounted) {
+            Navigator.pop(context);
+            Navigator.pushReplacementNamed(context, '/menu');
+          }
+        });
+        return;
+      },
+      child: Scaffold(
+        backgroundColor: color0,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.topLeft,
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: color1),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) {
+                        return AlertDialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                            side: const BorderSide(color: color4, width: 2.0),
+                          ),
+                          backgroundColor: color1,
+                          content: Row(
+                            children: [
+                              Image.asset('assets/branch/dragon.gif',
+                                  width: 100, height: 100),
+                              Container(
+                                margin: const EdgeInsets.only(left: 15),
+                                child: const Text(
+                                  "Desconectando...",
+                                  style: TextStyle(
+                                    color: color0,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                    Future.delayed(const Duration(seconds: 2), () async {
+                      await bluetoothManager.device.disconnect();
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        Navigator.pushReplacementNamed(context, '/menu');
+                      }
+                    });
+                    return;
+                  },
+                ),
+              ),
+              const Spacer(),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.dangerous,
+                    size: 80,
+                    color: color1,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No puedes controlar el equipo en este momento',
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      color: color1,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: Text(
+                  'El dueño del equipo inhabilito tus funciones por el momento',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: color1,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 //*-si el equipo ya tiene un usuario conectado -*\\
 class DeviceInUseScreen extends StatelessWidget {
   const DeviceInUseScreen({super.key});
@@ -5517,7 +5727,7 @@ class ImageManager {
       case '024011_IOT':
         return 'assets/devices/024011.jpg';
       case '020020_IOT':
-        return 'assets/devices/020020.jpeg';
+        return 'assets/devices/020020.jpg';
       case '023430_IOT':
         return 'assets/devices/023430.jpg';
       default:
@@ -5775,7 +5985,6 @@ class TutorialItem {
   final bool fullBackground;
   final double contentOffsetY;
   final VoidCallback? onStepReached;
-
 
   TutorialItem({
     required this.globalKey,

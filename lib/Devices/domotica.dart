@@ -307,7 +307,13 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
     }
   }
 
-  void controlOut(bool value, int index) {
+  Future<bool> controlOut(bool value, int index) async {
+    // Verificar permisos horarios para administradores secundarios
+    bool hasPermission = await checkAdminTimePermission(deviceName);
+    if (!hasPermission) {
+      return false; // No ejecutar si no tiene permisos
+    }
+
     String fun = '$index#${value ? '1' : '0'}';
     bluetoothManager.ioUuid.write(fun.codeUnits);
     String topic =
@@ -330,6 +336,12 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
         .addAll({'io$index': message});
 
     saveGlobalData(globalDATA);
+
+    // Registrar uso si es administrador secundario
+    String action = value ? 'Encendió salida $index' : 'Apagó salida $index';
+    await registerAdminUsage(deviceName, action);
+
+    return true;
   }
 
   void updateWifiValues(List<int> data) {
@@ -524,6 +536,10 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
     final wifiState = ref.watch(wifiProvider);
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
+
+    if (!canUseDevice) {
+      return const NotAllowedScreen();
+    }
 
     // si hay un usuario conectado al equipo no lo deje ingresar
     if (userConnected && lastUser > 1) {
@@ -808,13 +824,18 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                                   size: 40,
                                 ),
                                 GestureDetector(
-                                  onTap: () {
-                                    isPresenceControlled
-                                        ? null
-                                        : setState(() {
-                                            controlOut(!isOn, index);
-                                            estado[index] = !isOn ? '1' : '0';
-                                          });
+                                  onTap: () async {
+                                    if (isPresenceControlled) {
+                                      return;
+                                    }
+
+                                    bool success =
+                                        await controlOut(!isOn, index);
+                                    if (success) {
+                                      setState(() {
+                                        estado[index] = !isOn ? '1' : '0';
+                                      });
+                                    }
                                   },
                                   child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 300),
@@ -1215,7 +1236,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
       ),
 
       //*- Página 4: Gestión del Equipo -*\\
-      const ManagerScreen(),
+      ManagerScreen(deviceName: deviceName),
     ];
 
     return PopScope(

@@ -195,6 +195,31 @@ Future<void> queryItems(String pc, String sn) async {
                     .putIfAbsent('$pc/$sn', () => {})
                     .addAll({key: value.s ?? ''});
                 break;
+              case 'admin_usage_history':
+                List<String> history = value.ss ?? [];
+                if (history.contains('') && history.length == 1) {
+                  globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({key: []});
+                } else {
+                  globalDATA
+                      .putIfAbsent('$pc/$sn', () => {})
+                      .addAll({key: history});
+                }
+                break;
+              case 'admin_time_restrictions':
+                Map<String, AttributeValue> restrictionsMap = value.m ?? {};
+                Map<String, dynamic> restrictions = {};
+                for (String email in restrictionsMap.keys) {
+                  try {
+                    String configJson = restrictionsMap[email]!.s!;
+                    restrictions[email] = jsonDecode(configJson);
+                  } catch (e) {
+                    printLog.e('Error parsing admin restrictions for $email: $e');
+                  }
+                }
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: restrictions});
+                break;
             }
           }
           printLog.i("$key: $displayValue");
@@ -1652,5 +1677,213 @@ void deleteEventoControlDeRiego(String email, String nombreEvento) async {
     printLog.i('Evento de control de riego eliminado: $response');
   } catch (e) {
     printLog.i('Error eliminando evento de control de riego: $e');
+  }
+}
+
+//*- Funciones para historial de uso de administradores secundarios -*\\
+
+/// Registra el uso de un dispositivo por un administrador secundario
+Future<void> putAdminUsageHistory(String pc, String sn, String adminEmail, String action) async {
+  try {
+    // Obtener el historial actual
+    List<String> currentHistory = await getAdminUsageHistory(pc, sn);
+    
+    // Crear nuevo registro
+    String timestamp = DateTime.now().toIso8601String();
+    String newRecord = jsonEncode({
+      'email': adminEmail,
+      'action': action,
+      'timestamp': timestamp,
+    });
+    
+    // Agregar al historial (mantener solo los últimos 100 registros)
+    currentHistory.add(newRecord);
+    if (currentHistory.length > 100) {
+      currentHistory = currentHistory.sublist(currentHistory.length - 100);
+    }
+    
+    // Guardar en DynamoDB
+    final response = await service.updateItem(
+      tableName: 'sime-domotica',
+      key: {
+        'product_code': AttributeValue(s: pc),
+        'device_id': AttributeValue(s: sn),
+      },
+      attributeUpdates: {
+        'admin_usage_history': AttributeValueUpdate(
+          value: AttributeValue(ss: currentHistory.isEmpty ? [''] : currentHistory),
+        ),
+      },
+    );
+
+    printLog.i('Historial de uso guardado: $response');
+  } catch (e) {
+    printLog.i('Error guardando historial de uso: $e');
+  }
+}
+
+/// Obtiene el historial de uso de administradores secundarios
+Future<List<String>> getAdminUsageHistory(String pc, String sn) async {
+  try {
+    final response = await service.getItem(
+      tableName: 'sime-domotica',
+      key: {
+        'product_code': AttributeValue(s: pc),
+        'device_id': AttributeValue(s: sn),
+      },
+    );
+
+    if (response.item != null) {
+      List<String> history = response.item!['admin_usage_history']?.ss ?? [];
+      if (history.contains('') && history.length == 1) {
+        return [];
+      }
+      return history;
+    }
+    return [];
+  } catch (e) {
+    printLog.i('Error obteniendo historial de uso: $e');
+    return [];
+  }
+}
+
+/// Obtiene el historial de uso parseado como lista de maps
+Future<List<Map<String, dynamic>>> getParsedAdminUsageHistory(String pc, String sn) async {
+  try {
+    List<String> rawHistory = await getAdminUsageHistory(pc, sn);
+    List<Map<String, dynamic>> parsedHistory = [];
+    
+    for (String record in rawHistory) {
+      if (record.isNotEmpty) {
+        try {
+          Map<String, dynamic> parsed = jsonDecode(record);
+          parsedHistory.add(parsed);
+        } catch (e) {
+          printLog.e('Error parseando registro de historial: $e');
+        }
+      }
+    }
+    
+    // Ordenar por timestamp descendente (más recientes primero)
+    parsedHistory.sort((a, b) => DateTime.parse(b['timestamp']).compareTo(DateTime.parse(a['timestamp'])));
+    
+    return parsedHistory;
+  } catch (e) {
+    printLog.i('Error obteniendo historial parseado: $e');
+    return [];
+  }
+}
+
+//*- Funciones para restricciones horarias de administradores secundarios -*\\
+
+/// Guarda las restricciones horarias para un administrador secundario
+Future<void> putAdminTimeRestrictions(String pc, String sn, Map<String, Map<String, dynamic>> restrictions) async {
+  try {
+    // Convertir el map a formato compatible con DynamoDB
+    Map<String, AttributeValue> dynamoMap = {};
+    
+    restrictions.forEach((email, config) {
+      dynamoMap[email] = AttributeValue(
+        s: jsonEncode({
+          'enabled': config['enabled'] ?? false,
+          'startHour': config['startHour'] ?? 0,
+          'startMinute': config['startMinute'] ?? 0,
+          'endHour': config['endHour'] ?? 23,
+          'endMinute': config['endMinute'] ?? 59,
+          'weekdays': config['weekdays'] ?? [1, 2, 3, 4, 5, 6, 7], // 1=Lunes, 7=Domingo
+        }),
+      );
+    });
+    
+    final response = await service.updateItem(
+      tableName: 'sime-domotica',
+      key: {
+        'product_code': AttributeValue(s: pc),
+        'device_id': AttributeValue(s: sn),
+      },
+      attributeUpdates: {
+        'admin_time_restrictions': AttributeValueUpdate(
+          value: AttributeValue(m: dynamoMap),
+        ),
+      },
+    );
+
+    printLog.i('Restricciones horarias guardadas: $response');
+  } catch (e) {
+    printLog.i('Error guardando restricciones horarias: $e');
+  }
+}
+
+/// Obtiene las restricciones horarias de administradores secundarios
+Future<Map<String, Map<String, dynamic>>> getAdminTimeRestrictions(String pc, String sn) async {
+  try {
+    final response = await service.getItem(
+      tableName: 'sime-domotica',
+      key: {
+        'product_code': AttributeValue(s: pc),
+        'device_id': AttributeValue(s: sn),
+      },
+    );
+
+    if (response.item != null && response.item!['admin_time_restrictions'] != null) {
+      Map<String, AttributeValue> dynamoMap = response.item!['admin_time_restrictions']!.m!;
+      Map<String, Map<String, dynamic>> restrictions = {};
+      
+      dynamoMap.forEach((email, value) {
+        try {
+          Map<String, dynamic> config = jsonDecode(value.s!);
+          restrictions[email] = config;
+        } catch (e) {
+          printLog.e('Error parseando restricción para $email: $e');
+        }
+      });
+      
+      return restrictions;
+    }
+    return {};
+  } catch (e) {
+    printLog.i('Error obteniendo restricciones horarias: $e');
+    return {};
+  }
+}
+
+/// Verifica si un administrador secundario puede usar el dispositivo en el horario actual
+Future<bool> isAdminAllowedAtCurrentTime(String pc, String sn, String adminEmail) async {
+  try {
+    Map<String, Map<String, dynamic>> restrictions = await getAdminTimeRestrictions(pc, sn);
+    
+    if (!restrictions.containsKey(adminEmail)) {
+      return true; // Sin restricciones = permitido
+    }
+    
+    Map<String, dynamic> config = restrictions[adminEmail]!;
+    
+    if (!(config['enabled'] ?? false)) {
+      return true; // Restricciones deshabilitadas = permitido
+    }
+    
+    DateTime now = DateTime.now();
+    int currentWeekday = now.weekday; // 1=Lunes, 7=Domingo
+    List<dynamic> allowedWeekdays = config['weekdays'] ?? [1, 2, 3, 4, 5, 6, 7];
+    
+    // Verificar si hoy está permitido
+    if (!allowedWeekdays.contains(currentWeekday)) {
+      return false;
+    }
+    
+    // Verificar horario
+    int startHour = config['startHour'] ?? 0;
+    int startMinute = config['startMinute'] ?? 0;
+    int endHour = config['endHour'] ?? 23;
+    int endMinute = config['endMinute'] ?? 59;
+    
+    int currentMinutes = now.hour * 60 + now.minute;
+    int startMinutes = startHour * 60 + startMinute;
+    int endMinutes = endHour * 60 + endMinute;
+    
+    return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+  } catch (e) {
+    printLog.i('Error verificando permisos horarios: $e');
+    return true; // En caso de error, permitir acceso
   }
 }

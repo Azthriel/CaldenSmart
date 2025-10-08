@@ -143,7 +143,15 @@ class LoadState extends State<LoadingPage> {
           hardwareVersion,
           softwareVersion,
         );
+        globalDATA
+            .putIfAbsent('$pc/$sn', () => {})
+            .addAll({"SoftwareVersion": softwareVersion});
+        globalDATA
+            .putIfAbsent('$pc/$sn', () => {})
+            .addAll({"HardwareVersion": hardwareVersion});
       }
+
+      canUseDevice = await checkAdminTimePermission(deviceName);
 
       specialUser = await isSpecialUser(currentUserEmail);
 

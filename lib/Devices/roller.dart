@@ -257,6 +257,10 @@ class RollerPageState extends ConsumerState<RollerPage> {
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
 
+    if (!canUseDevice) {
+      return const NotAllowedScreen();
+    }
+
     // si hay un usuario conectado al equipo no lo deje ingresar
     if (userConnected && lastUser > 1) {
       return const DeviceInUseScreen();
@@ -621,7 +625,8 @@ class RollerPageState extends ConsumerState<RollerPage> {
                           ElevatedButton(
                             onPressed: () async {
                               printLog.i("Guardo fin");
-                              List<int> fun = await bluetoothManager.varsUuid.read();
+                              List<int> fun =
+                                  await bluetoothManager.varsUuid.read();
                               processValues(fun);
                               rollerEnd = actualPositionGrades;
                               endSaved = true;
@@ -656,7 +661,8 @@ class RollerPageState extends ConsumerState<RollerPage> {
                           ElevatedButton(
                             onPressed: () async {
                               printLog.i("Guardo inicio");
-                              List<int> fun = await bluetoothManager.varsUuid.read();
+                              List<int> fun =
+                                  await bluetoothManager.varsUuid.read();
                               processValues(fun);
                               rollerStart = actualPositionGrades;
 
@@ -762,7 +768,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
       ),
 
       //*- Página 3: Gestión del Equipo -*\\
-      const ManagerScreen(),
+      ManagerScreen(deviceName: deviceName),
     ];
 
     return PopScope(

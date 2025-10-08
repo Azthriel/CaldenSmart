@@ -592,11 +592,13 @@ class ScanPageState extends State<ScanPage>
                             ),
                             const SizedBox(height: 24),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
                               decoration: BoxDecoration(
                                 color: color1.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: color1.withValues(alpha: 0.3)),
+                                border: Border.all(
+                                    color: color1.withValues(alpha: 0.3)),
                               ),
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -623,11 +625,13 @@ class ScanPageState extends State<ScanPage>
                             ),
                             const SizedBox(height: 20),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
                               decoration: BoxDecoration(
                                 color: color1.withValues(alpha: 0.05),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: color1.withValues(alpha: 0.2)),
+                                border: Border.all(
+                                    color: color1.withValues(alpha: 0.2)),
                               ),
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -935,7 +939,8 @@ class ScanPageState extends State<ScanPage>
                                                           scale: 1.33,
                                                           child: Switch(
                                                             value: estadoWState,
-                                                            activeColor: color0,
+                                                            activeThumbColor:
+                                                                color0,
                                                             onChanged: (bool
                                                                     newValue) =>
                                                                 _runQuickAction(

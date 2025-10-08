@@ -430,6 +430,10 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
     final wifiState = ref.watch(wifiProvider);
 
+    if (!canUseDevice) {
+      return const NotAllowedScreen();
+    }
+
     if (userConnected && lastUser > 1) {
       return const DeviceInUseScreen();
     }
@@ -882,7 +886,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
       ),
 
       //*- Página 3: Gestión del Equipo -*\\
-      const ManagerScreen(),
+      ManagerScreen(deviceName: deviceName),
     ];
 
     return PopScope(
@@ -1035,24 +1039,24 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                   ignoring: _isTutorialActive,
                   child: SafeArea(
                     child: CurvedNavigationBar(
-                    index: _selectedIndex,
-                    height: 75.0,
-                    items: const <Widget>[
-                      Icon(Icons.thermostat, size: 30, color: color0),
-                      Icon(Icons.tune, size: 30, color: color0),
-                      Icon(Icons.settings, size: 30, color: color0),
-                    ],
-                    color: color1,
-                    buttonBackgroundColor: color1,
-                    backgroundColor: Colors.transparent,
-                    animationCurve: Curves.easeInOut,
-                    animationDuration: const Duration(milliseconds: 600),
-                    onTap: onItemTapped,
-                    letIndexChange: (index) => true,
+                      index: _selectedIndex,
+                      height: 75.0,
+                      items: const <Widget>[
+                        Icon(Icons.thermostat, size: 30, color: color0),
+                        Icon(Icons.tune, size: 30, color: color0),
+                        Icon(Icons.settings, size: 30, color: color0),
+                      ],
+                      color: color1,
+                      buttonBackgroundColor: color1,
+                      backgroundColor: Colors.transparent,
+                      animationCurve: Curves.easeInOut,
+                      animationDuration: const Duration(milliseconds: 600),
+                      onTap: onItemTapped,
+                      letIndexChange: (index) => true,
+                    ),
                   ),
                 ),
               ),
-               ),
               Positioned(
                 bottom: 0,
                 left: 0,

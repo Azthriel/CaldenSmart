@@ -396,6 +396,10 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
     final TextStyle poppinsStyle = GoogleFonts.poppins();
     final wifiState = ref.watch(wifiProvider);
 
+    if (!canUseDevice) {
+      return const NotAllowedScreen();
+    }
+
     // si hay un usuario conectado al equipo no lo deje ingresar
     if (userConnected && lastUser > 1) {
       return const DeviceInUseScreen();
@@ -1427,7 +1431,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
       ),
 
       //! Página 6
-      const ManagerScreen(),
+      ManagerScreen(deviceName: deviceName),
     ];
     return PopScope(
       canPop: false,
@@ -1579,25 +1583,25 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                   ignoring: _isTutorialActive,
                   child: SafeArea(
                     child: CurvedNavigationBar(
-                    index: _selectedIndex,
-                    height: 75.0,
-                    items: const <Widget>[
-                      Icon(Icons.eco, size: 30, color: color0),
-                      Icon(Icons.local_fire_department,
-                          size: 30, color: color0),
-                      Icon(Icons.area_chart, size: 30, color: color0),
-                      Icon(Icons.bar_chart, size: 30, color: color0),
-                      Icon(Icons.lightbulb, size: 30, color: color0),
-                      Icon(Icons.settings, size: 30, color: color0),
-                    ],
-                    color: color1,
-                    buttonBackgroundColor: color1,
-                    backgroundColor: Colors.transparent,
-                    animationCurve: Curves.easeInOut,
-                    animationDuration: const Duration(milliseconds: 600),
-                    onTap: onItemTapped,
-                    letIndexChange: (index) => true,
-                  ),
+                      index: _selectedIndex,
+                      height: 75.0,
+                      items: const <Widget>[
+                        Icon(Icons.eco, size: 30, color: color0),
+                        Icon(Icons.local_fire_department,
+                            size: 30, color: color0),
+                        Icon(Icons.area_chart, size: 30, color: color0),
+                        Icon(Icons.bar_chart, size: 30, color: color0),
+                        Icon(Icons.lightbulb, size: 30, color: color0),
+                        Icon(Icons.settings, size: 30, color: color0),
+                      ],
+                      color: color1,
+                      buttonBackgroundColor: color1,
+                      backgroundColor: Colors.transparent,
+                      animationCurve: Curves.easeInOut,
+                      animationDuration: const Duration(milliseconds: 600),
+                      onTap: onItemTapped,
+                      letIndexChange: (index) => true,
+                    ),
                   ),
                 ),
               ),

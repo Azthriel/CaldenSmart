@@ -27,7 +27,7 @@ class WifiPageState extends ConsumerState<WifiPage>
   final Set<String> _processingRiegos = {};
   StreamSubscription<String>? _cadenaCompletedSubscription;
   StreamSubscription<String>? _riegoCompletedSubscription;
-  
+
   // Flags para control de riego
   bool _isPumpShuttingDown = false;
   bool _isAutoStarting = false;
@@ -188,15 +188,23 @@ class WifiPageState extends ConsumerState<WifiPage>
   void toggleState(String deviceName, bool newState) async {
     String deviceSerialNumber = DeviceManager.extractSerialNumber(deviceName);
     String productCode = DeviceManager.getProductCode(deviceName);
-    globalDATA[
-            '${DeviceManager.getProductCode(deviceName)}/$deviceSerialNumber']![
-        'w_status'] = newState;
+    globalDATA['$productCode/$deviceSerialNumber']!['w_status'] = newState;
     saveGlobalData(globalDATA);
     String topic = 'devices_rx/$productCode/$deviceSerialNumber';
     String topic2 = 'devices_tx/$productCode/$deviceSerialNumber';
     String message = jsonEncode({"w_status": newState});
-    sendMessagemqtt(topic, message);
-    sendMessagemqtt(topic2, message);
+    bool result = await sendMQTTMessageWithPermission(
+        deviceName,
+        message,
+        topic,
+        topic2,
+        newState
+            ? 'Encendió dispositivo desde WiFi'
+            : 'Apagó dispositivo desde WiFi');
+
+    if (!result) {
+      showToast('No tienes permisos de controlar el equipo');
+    }
   }
   //*-Prender y apagar los equipos-*\\
 
@@ -1136,7 +1144,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           const SizedBox(width: 5),
                                           owner
                                               ? Switch(
-                                                  activeColor:
+                                                  activeThumbColor:
                                                       const Color(0xFF9C9D98),
                                                   activeTrackColor:
                                                       const Color(0xFFB2B5AE),
@@ -1294,7 +1302,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                 ),
                                           const SizedBox(width: 5),
                                           Switch(
-                                              activeColor:
+                                              activeThumbColor:
                                                   const Color(0xFF9C9D98),
                                               activeTrackColor:
                                                   const Color(0xFFB2B5AE),
@@ -1569,7 +1577,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                           ),
                                                         )
                                               : Switch(
-                                                  activeColor: const Color(
+                                                  activeThumbColor: const Color(
                                                     0xFF9C9D98,
                                                   ),
                                                   activeTrackColor: const Color(
@@ -1584,7 +1592,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                     0xFF9C9D98,
                                                   ),
                                                   value: estadoWifi,
-                                                  onChanged: (value) {
+                                                  onChanged: (value) async {
                                                     String topic =
                                                         'devices_rx/$productCode/$serialNumber';
                                                     String topic2 =
@@ -1599,20 +1607,33 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                       'w_status': value,
                                                       'r_state': comunWifi,
                                                     });
-                                                    sendMessagemqtt(
-                                                        topic, message);
-                                                    sendMessagemqtt(
-                                                        topic2, message);
-                                                    setState(() {
-                                                      estadoWifi = value;
-                                                    });
-                                                    globalDATA
-                                                        .putIfAbsent(
-                                                            '$productCode/$serialNumber',
-                                                            () => {})
-                                                        .addAll(
-                                                            {'io$i': message});
-                                                    saveGlobalData(globalDATA);
+                                                    bool result =
+                                                        await sendMQTTMessageWithPermission(
+                                                            deviceName,
+                                                            message,
+                                                            topic,
+                                                            topic2,
+                                                            value
+                                                                ? 'Encendió dispositivo desde WiFi'
+                                                                : 'Apagó dispositivo desde WiFi');
+                                                    if (result) {
+                                                      setState(() {
+                                                        estadoWifi = value;
+                                                      });
+                                                      globalDATA
+                                                          .putIfAbsent(
+                                                              '$productCode/$serialNumber',
+                                                              () => {})
+                                                          .addAll({
+                                                        'io$i': message
+                                                      });
+                                                      saveGlobalData(
+                                                          globalDATA);
+                                                    } else {
+                                                      showToast(
+                                                        'No tienes permisos para realizar esta acción en este momento',
+                                                      );
+                                                    }
                                                   },
                                                 )
                                           : null,
@@ -1783,7 +1804,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                 const SizedBox(width: 5),
                                                 owner
                                                     ? Switch(
-                                                        activeColor:
+                                                        activeThumbColor:
                                                             const Color(
                                                                 0xFF9C9D98),
                                                         activeTrackColor:
@@ -1886,7 +1907,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             ),
                                             trailing: owner
                                                 ? Switch(
-                                                    activeColor:
+                                                    activeThumbColor:
                                                         const Color(0xFF9C9D98),
                                                     activeTrackColor:
                                                         const Color(0xFFB2B5AE),
@@ -1899,7 +1920,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                                     'io0'])[
                                                             'w_status'] ??
                                                         false),
-                                                    onChanged: (value) {
+                                                    onChanged: (value) async {
                                                       final deviceSerialNumber =
                                                           DeviceManager
                                                               .extractSerialNumber(
@@ -1927,19 +1948,32 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                         'w_status': value,
                                                         'r_state': rState,
                                                       });
-                                                      sendMessagemqtt(
-                                                          topicRx, message);
-                                                      sendMessagemqtt(
-                                                          topicTx, message);
-                                                      setState(() {});
-                                                      globalDATA
-                                                          .putIfAbsent(
-                                                              '$productCode/$deviceSerialNumber',
-                                                              () => {})
-                                                          .addAll(
-                                                              {'io0': message});
-                                                      saveGlobalData(
-                                                          globalDATA);
+                                                      bool result =
+                                                          await sendMQTTMessageWithPermission(
+                                                              deviceName,
+                                                              message,
+                                                              topicRx,
+                                                              topicTx,
+                                                              value
+                                                                  ? 'Encendió dispositivo desde WiFi'
+                                                                  : 'Apagó dispositivo desde WiFi');
+
+                                                      if (result) {
+                                                        setState(() {});
+                                                        globalDATA
+                                                            .putIfAbsent(
+                                                                '$productCode/$deviceSerialNumber',
+                                                                () => {})
+                                                            .addAll({
+                                                          'io0': message
+                                                        });
+                                                        saveGlobalData(
+                                                            globalDATA);
+                                                      } else {
+                                                        showToast(
+                                                          'No tienes permisos para realizar esta acción en este momento',
+                                                        );
+                                                      }
                                                     },
                                                   )
                                                 : null,
@@ -1986,7 +2020,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                               width: 5),
                                                           owner
                                                               ? Switch(
-                                                                  activeColor:
+                                                                  activeThumbColor:
                                                                       const Color(
                                                                           0xFF9C9D98),
                                                                   activeTrackColor:
@@ -2003,7 +2037,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                                           'w_status'] ??
                                                                       false),
                                                                   onChanged:
-                                                                      (value) {
+                                                                      (value) async {
                                                                     final topicRx =
                                                                         'devices_rx/$productCode/$serialNumber';
                                                                     final topicTx =
@@ -2029,25 +2063,33 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                                       'r_state':
                                                                           rState,
                                                                     });
-                                                                    sendMessagemqtt(
+                                                                    bool result = await sendMQTTMessageWithPermission(
+                                                                        deviceName,
+                                                                        message,
                                                                         topicRx,
-                                                                        message);
-                                                                    sendMessagemqtt(
                                                                         topicTx,
-                                                                        message);
-                                                                    setState(
-                                                                        () {});
-                                                                    globalDATA
-                                                                        .putIfAbsent(
-                                                                            '$productCode/$serialNumber',
-                                                                            () =>
-                                                                                {})
-                                                                        .addAll({
-                                                                      'io0':
-                                                                          message
-                                                                    });
-                                                                    saveGlobalData(
-                                                                        globalDATA);
+                                                                        value
+                                                                            ? 'Encendió dispositivo desde WiFi'
+                                                                            : 'Apagó dispositivo desde WiFi');
+                                                                    if (result) {
+                                                                      setState(
+                                                                          () {});
+                                                                      globalDATA
+                                                                          .putIfAbsent(
+                                                                              '$productCode/$serialNumber',
+                                                                              () =>
+                                                                                  {})
+                                                                          .addAll({
+                                                                        'io0':
+                                                                            message
+                                                                      });
+                                                                      saveGlobalData(
+                                                                          globalDATA);
+                                                                    } else {
+                                                                      showToast(
+                                                                        'No tienes permisos para realizar esta acción en este momento',
+                                                                      );
+                                                                    }
                                                                   },
                                                                 )
                                                               : const SizedBox(
@@ -2267,7 +2309,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           const SizedBox(width: 5),
                                           owner
                                               ? Switch(
-                                                  activeColor:
+                                                  activeThumbColor:
                                                       const Color(0xFF9C9D98),
                                                   activeTrackColor:
                                                       const Color(0xFFB2B5AE),
@@ -2538,7 +2580,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                           ),
                                                         )
                                               : Switch(
-                                                  activeColor: const Color(
+                                                  activeThumbColor: const Color(
                                                     0xFF9C9D98,
                                                   ),
                                                   activeTrackColor: const Color(
@@ -2553,7 +2595,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                     0xFF9C9D98,
                                                   ),
                                                   value: estadoWifi,
-                                                  onChanged: (value) {
+                                                  onChanged: (value) async {
                                                     String topic =
                                                         'devices_rx/$productCode/$serialNumber';
                                                     String topic2 =
@@ -2568,20 +2610,33 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                       'w_status': value,
                                                       'r_state': comunWifi,
                                                     });
-                                                    sendMessagemqtt(
-                                                        topic, message);
-                                                    sendMessagemqtt(
-                                                        topic2, message);
-                                                    setState(() {
-                                                      estadoWifi = value;
-                                                    });
-                                                    globalDATA
-                                                        .putIfAbsent(
-                                                            '$productCode/$serialNumber',
-                                                            () => {})
-                                                        .addAll(
-                                                            {'io$i': message});
-                                                    saveGlobalData(globalDATA);
+                                                    bool result =
+                                                        await sendMQTTMessageWithPermission(
+                                                            deviceName,
+                                                            message,
+                                                            topic,
+                                                            topic2,
+                                                            value
+                                                                ? 'Encendió dispositivo desde WiFi'
+                                                                : 'Apagó dispositivo desde WiFi');
+                                                    if (result) {
+                                                      setState(() {
+                                                        estadoWifi = value;
+                                                      });
+                                                      globalDATA
+                                                          .putIfAbsent(
+                                                              '$productCode/$serialNumber',
+                                                              () => {})
+                                                          .addAll({
+                                                        'io$i': message
+                                                      });
+                                                      saveGlobalData(
+                                                          globalDATA);
+                                                    } else {
+                                                      showToast(
+                                                        'No tienes permisos para realizar esta acción en este momento',
+                                                      );
+                                                    }
                                                   },
                                                 )
                                           : null,
@@ -2756,7 +2811,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             const SizedBox(width: 5),
                                             owner
                                                 ? Switch(
-                                                    activeColor:
+                                                    activeThumbColor:
                                                         const Color(0xFF9C9D98),
                                                     activeTrackColor:
                                                         const Color(0xFFB2B5AE),
@@ -2915,7 +2970,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             const SizedBox(width: 5),
                                             owner
                                                 ? Switch(
-                                                    activeColor:
+                                                    activeThumbColor:
                                                         const Color(0xFF9C9D98),
                                                     activeTrackColor:
                                                         const Color(0xFFB2B5AE),
@@ -4068,7 +4123,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   ),
                                   if (owner)
                                     Switch(
-                                      activeColor: Colors.green,
+                                      activeThumbColor: Colors.green,
                                       activeTrackColor:
                                           Colors.green.withValues(alpha: 0.3),
                                       inactiveThumbColor: color4,
@@ -4287,15 +4342,14 @@ class WifiPageState extends ConsumerState<WifiPage>
                           key.startsWith('io') &&
                           RegExp(r'^io\d+$').hasMatch(key))
                       .where((ioKey) {
-                        if (deviceDATA[ioKey] == null) return false;
-                        try {
-                          var ioData = jsonDecode(deviceDATA[ioKey]);
-                          return ioData['pinType'] == '0'; // Solo salidas
-                        } catch (e) {
-                          return false;
-                        }
-                      })
-                      .toList()
+                if (deviceDATA[ioKey] == null) return false;
+                try {
+                  var ioData = jsonDecode(deviceDATA[ioKey]);
+                  return ioData['pinType'] == '0'; // Solo salidas
+                } catch (e) {
+                  return false;
+                }
+              }).toList()
                     ..sort((a, b) {
                       int indexA = int.parse(a.substring(2));
                       int indexB = int.parse(b.substring(2));
@@ -4371,12 +4425,12 @@ class WifiPageState extends ConsumerState<WifiPage>
 
     String pinType = outputData['pinType'].toString();
     bool isOutput = pinType == '0';
-    
+
     // En equipos de riego, solo mostrar salidas (ocultar entradas)
     if (!isOutput) {
       return const SizedBox.shrink();
     }
-    
+
     bool currentStatus = outputData['w_status'] ?? false;
     String rState = (outputData['r_state'] ?? '0').toString();
 
@@ -4388,7 +4442,8 @@ class WifiPageState extends ConsumerState<WifiPage>
     if (isBomb) {
       displayName = 'Bomba'; // La bomba siempre se llama "Bomba", sin nickname
     } else {
-      displayName = nicknamesMap['${deviceName}_$outputIndex'] ?? 'Zona $outputIndex';
+      displayName =
+          nicknamesMap['${deviceName}_$outputIndex'] ?? 'Zona $outputIndex';
     }
 
     return ListTile(
@@ -4409,7 +4464,7 @@ class WifiPageState extends ConsumerState<WifiPage>
       ),
       trailing: owner && isOutput
           ? Switch(
-              activeColor: const Color(0xFF9C9D98),
+              activeThumbColor: const Color(0xFF9C9D98),
               activeTrackColor: const Color(0xFFB2B5AE),
               inactiveThumbColor: const Color(0xFFB2B5AE),
               inactiveTrackColor: const Color(0xFF9C9D98),
@@ -4518,7 +4573,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                       const SizedBox(width: 8),
                       if (owner)
                         Switch(
-                          activeColor: const Color(0xFF9C9D98),
+                          activeThumbColor: const Color(0xFF9C9D98),
                           activeTrackColor: const Color(0xFFB2B5AE),
                           inactiveThumbColor: const Color(0xFFB2B5AE),
                           inactiveTrackColor: const Color(0xFF9C9D98),
@@ -4661,12 +4716,12 @@ class WifiPageState extends ConsumerState<WifiPage>
       showToast('Espere, la bomba se está apagando...');
       return;
     }
-    
+
     if (_isAutoStarting) {
       showToast('Espere, se está iniciando automáticamente...');
       return;
     }
-    
+
     // Aplicar lógica similar a riego.dart
     Map<String, dynamic> deviceDATA =
         globalDATA['$productCode/$serialNumber'] ?? {};
@@ -4677,18 +4732,18 @@ class WifiPageState extends ConsumerState<WifiPage>
       if (value) {
         // ENCENDER: zona primero, luego bomba
         _sendRiegoCommand(productCode, serialNumber, outputIndex, value);
-        
+
         // Verificar si la bomba está apagada
         if (deviceDATA['io0'] != null) {
           try {
             var bombData = jsonDecode(deviceDATA['io0']);
             bool bombStatus = bombData['w_status'] ?? false;
-            
+
             if (!bombStatus) {
               setState(() {
                 _isAutoStarting = true;
               });
-              
+
               // Delay de 1 segundo antes de encender bomba
               Future.delayed(const Duration(seconds: 1), () {
                 if (mounted) {
@@ -4707,17 +4762,18 @@ class WifiPageState extends ConsumerState<WifiPage>
       } else {
         // APAGAR: verificar si es la última activa (incluyendo extensiones)
         int activeZones = _countActiveZonesForDevice(productCode, serialNumber);
-        int activeExtensionZones = _countActiveZonesForAllExtensions(deviceName);
+        int activeExtensionZones =
+            _countActiveZonesForAllExtensions(deviceName);
         int totalActiveZones = activeZones + activeExtensionZones;
-        
+
         if (totalActiveZones == 1) {
           setState(() {
             _isPumpShuttingDown = true;
           });
-          
+
           // Esta es la última zona activa - bomba primero, luego zona
           _sendRiegoCommand(productCode, serialNumber, 0, false);
-          
+
           // Delay de 1 segundo antes de apagar zona
           Future.delayed(const Duration(seconds: 1), () {
             if (mounted) {
@@ -4744,12 +4800,12 @@ class WifiPageState extends ConsumerState<WifiPage>
       showToast('Espere, la bomba se está apagando...');
       return;
     }
-    
+
     if (_isAutoStarting) {
       showToast('Espere, se está iniciando automáticamente...');
       return;
     }
-    
+
     String extensionPc = DeviceManager.getProductCode(extension);
     String extensionSn = DeviceManager.extractSerialNumber(extension);
 
@@ -4764,18 +4820,18 @@ class WifiPageState extends ConsumerState<WifiPage>
       if (value) {
         // ENCENDER: extensión primero, luego bomba del maestro
         _sendRiegoCommand(extensionPc, extensionSn, outputIndex, value);
-        
+
         // Verificar si la bomba del maestro está apagada
         if (masterData['io0'] != null) {
           try {
             var bombData = jsonDecode(masterData['io0']);
             bool bombStatus = bombData['w_status'] ?? false;
-            
+
             if (!bombStatus) {
               setState(() {
                 _isAutoStarting = true;
               });
-              
+
               // Delay de 1 segundo antes de encender bomba
               Future.delayed(const Duration(seconds: 1), () {
                 if (mounted) {
@@ -4800,10 +4856,10 @@ class WifiPageState extends ConsumerState<WifiPage>
           setState(() {
             _isPumpShuttingDown = true;
           });
-          
+
           // Última zona activa - bomba primero, luego extensión
           _sendRiegoCommand(masterPc, masterSn, 0, false);
-          
+
           // Delay de 1 segundo antes de apagar extensión
           Future.delayed(const Duration(seconds: 1), () {
             if (mounted) {
@@ -4823,8 +4879,13 @@ class WifiPageState extends ConsumerState<WifiPage>
   }
 
   // Función para enviar comando MQTT de riego
-  void _sendRiegoCommand(
-      String productCode, String serialNumber, int outputIndex, bool value) {
+  void _sendRiegoCommand(String productCode, String serialNumber,
+      int outputIndex, bool value) async {
+    bool hasPermission = await checkAdminTimePermission(deviceName);
+    if (!hasPermission) {
+      showToast('No tiene permiso para controlar el riego ahora.');
+      return;
+    }
     String message = jsonEncode({
       'pinType': '0', // Siempre salida para riego
       'index': outputIndex,

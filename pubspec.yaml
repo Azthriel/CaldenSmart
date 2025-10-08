@@ -1,7 +1,7 @@
 name: caldensmart
 description: "Caldén Smart"
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
-version: 1.0.56+72
+version: 1.0.57+73
 
 environment:
   sdk: ^3.5.1
@@ -26,6 +26,7 @@ dependencies:
   flutter_background_service: ^5.0.10
   flutter_local_notifications: ^17.1.1
   mobile_scanner: ^5.2.1
+  qr_flutter: ^4.1.0
   wifi_scan: ^0.4.1
   google_fonts: ^6.2.1
   hugeicons: ^0.0.7
@@ -88,7 +89,7 @@ flutter:
     # Assets devices
     - assets/devices/015773.jpeg
     - assets/devices/020010.jpg
-    - assets/devices/020020.jpeg
+    - assets/devices/020020.jpg
     - assets/devices/022000.jpg
     - assets/devices/023430.jpg
     - assets/devices/024011.jpg

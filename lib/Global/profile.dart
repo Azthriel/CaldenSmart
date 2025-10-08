@@ -1,5 +1,7 @@
+import 'package:caldensmart/Global/manager_screen.dart';
 import 'package:caldensmart/Global/menu.dart';
 import 'package:caldensmart/Global/stored_data.dart';
+import 'package:caldensmart/Global/qr_scanner_screen.dart';
 import 'package:caldensmart/login/welcome.dart';
 import 'package:flutter/material.dart';
 import 'package:caldensmart/master.dart';
@@ -248,40 +250,114 @@ class ProfilePageState extends State<ProfilePage> {
                     secondChild: Padding(
                       padding: const EdgeInsets.only(left: 16.0),
                       child: Column(
-                        children: previusConnections.isEmpty
-                            ? [
-                                Center(
-                                  child: Text(
-                                    "No hay dispositivos registrados",
-                                    style: GoogleFonts.poppins(
-                                      color: color1,
-                                    ),
-                                  ),
-                                )
-                              ]
-                            : previusConnections
-                                .map((device) => Center(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 8.0),
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: color1,
-                                            borderRadius:
-                                                BorderRadius.circular(8.0),
-                                            border: Border.all(color: color0),
-                                          ),
-                                          padding: const EdgeInsets.all(16.0),
-                                          child: Text(
-                                            device,
-                                            style: GoogleFonts.poppins(
-                                              color: color0,
-                                            ),
-                                          ),
-                                        ),
+                        children: [
+                          // Lista de dispositivos existentes
+                          ...previusConnections.isEmpty
+                              ? [
+                                  Center(
+                                    child: Text(
+                                      "No hay dispositivos registrados",
+                                      style: GoogleFonts.poppins(
+                                        color: color1,
                                       ),
-                                    ))
-                                .toList(),
+                                    ),
+                                  )
+                                ]
+                              : previusConnections
+                                  .map((device) => Center(
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 8.0),
+                                          child: Container(
+                                              decoration: BoxDecoration(
+                                                color: color1,
+                                                borderRadius:
+                                                    BorderRadius.circular(8.0),
+                                                border: Border.all(color: color0),
+                                              ),
+                                              padding: const EdgeInsets.all(16.0),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      nicknamesMap[device] ??
+                                                          device,
+                                                      style: GoogleFonts.poppins(
+                                                        color: color0,
+                                                        fontSize: 15,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  if (globalDATA['${DeviceManager.getProductCode(device)}/${DeviceManager.extractSerialNumber(device)}']
+                                                              ?['owner'] ==
+                                                          currentUserEmail ||
+                                                      globalDATA['${DeviceManager.getProductCode(device)}/${DeviceManager.extractSerialNumber(device)}']
+                                                              ?['owner'] ==
+                                                          '' ||
+                                                      globalDATA['${DeviceManager.getProductCode(device)}/${DeviceManager.extractSerialNumber(device)}']
+                                                              ?['owner'] ==
+                                                          null) ...[
+                                                    IconButton(
+                                                      onPressed: () =>
+                                                          Navigator.of(context)
+                                                              .push(
+                                                        MaterialPageRoute(
+                                                          builder: (context) =>
+                                                              ManagerScreen(
+                                                            deviceName: device,
+                                                            needsAppbar: true,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      icon: const HugeIcon(
+                                                        icon: HugeIcons
+                                                            .strokeRoundedSettings01,
+                                                        color: color0,
+                                                        size: 24,
+                                                      ),
+                                                    )
+                                                  ]
+                                                ],
+                                              )),
+                                        ),
+                                      ))
+                                  .toList(),
+                          // Botón Agregar dispositivo
+                          const SizedBox(height: 16),
+                          Center(
+                            child: ElevatedButton.icon(
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const QRScannerScreen(),
+                                ),
+                              ),
+                              icon: const HugeIcon(
+                                icon: HugeIcons.strokeRoundedAdd01,
+                                color: color0,
+                                size: 20,
+                              ),
+                              label: Text(
+                                'Agregar dispositivo',
+                                style: GoogleFonts.poppins(
+                                  color: color0,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: color1,
+                                side: const BorderSide(color: color0, width: 2),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     crossFadeState: isDevicesOpen
@@ -322,47 +398,53 @@ class ProfilePageState extends State<ProfilePage> {
                     firstChild: const SizedBox.shrink(),
                     secondChild: Padding(
                       padding: const EdgeInsets.only(left: 16.0),
-                      child: Column(
-                        children: List.generate(alarmSounds.length, (index) {
-                          return RadioListTile<int>(
-                            title: Row(
-                              children: [
-                                const Icon(HugeIcons.strokeRoundedVolumeHigh,
-                                    color: color1),
-                                const SizedBox(width: 10),
-                                Text(
-                                  alarmSounds[index],
-                                  style: GoogleFonts.poppins(
-                                    color: color1,
+                      // 1. Se envuelve la Column con el widget RadioGroup.
+                      child: RadioGroup<int>(
+                        // 2. La propiedad 'groupValue' se mueve aquí.
+                        groupValue: selectedSoundDomotica,
+                        // 3. La lógica completa de 'onChanged' se mueve aquí.
+                        onChanged: (int? value) {
+                          setState(() {
+                            if (selectedSoundDomotica == value) {
+                              selectedSoundDomotica = null;
+                            } else {
+                              selectedSoundDomotica = value;
+                              printLog.i('Elegí alarma${value! + 1}');
+                              soundOfNotification['020010_IOT'] =
+                                  'alarm${value + 1}';
+                              soundOfNotification['020020_IOT'] =
+                                  'alarm${value + 1}';
+                              soundOfNotification['027313_IOT'] =
+                                  'alarm${value + 1}';
+                              saveSounds(soundOfNotification);
+                              NativeService().playNativeSound(
+                                  'alarm${value + 1}',
+                                  getAlarmDelay('alarm${value + 1}'));
+                            }
+                          });
+                        },
+                        child: Column(
+                          children: List.generate(alarmSounds.length, (index) {
+                            // 4. El RadioListTile ahora es más simple, sin la lógica de estado.
+                            return RadioListTile<int>(
+                              title: Row(
+                                children: [
+                                  const Icon(HugeIcons.strokeRoundedVolumeHigh,
+                                      color: color1),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    alarmSounds[index],
+                                    style: GoogleFonts.poppins(
+                                      color: color1,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            activeColor: color1,
-                            value: index,
-                            groupValue: selectedSoundDomotica,
-                            onChanged: (int? value) {
-                              setState(() {
-                                if (selectedSoundDomotica == value) {
-                                  selectedSoundDomotica = null;
-                                } else {
-                                  selectedSoundDomotica = value;
-                                  printLog.i('Elegí alarma${value! + 1}');
-                                  soundOfNotification['020010_IOT'] =
-                                      'alarm${value + 1}';
-                                  soundOfNotification['020020_IOT'] =
-                                      'alarm${value + 1}';
-                                  soundOfNotification['027313_IOT'] =
-                                      'alarm${value + 1}';
-                                  saveSounds(soundOfNotification);
-                                  NativeService().playNativeSound(
-                                      'alarm${value + 1}',
-                                      getAlarmDelay('alarm${value + 1}'));
-                                }
-                              });
-                            },
-                          );
-                        }),
+                                ],
+                              ),
+                              activeColor: color1,
+                              value: index,
+                            );
+                          }),
+                        ),
                       ),
                     ),
                     crossFadeState: isDomoticaOpen
@@ -405,43 +487,49 @@ class ProfilePageState extends State<ProfilePage> {
                     firstChild: const SizedBox.shrink(),
                     secondChild: Padding(
                       padding: const EdgeInsets.only(left: 16.0),
-                      child: Column(
-                        children: List.generate(alarmSounds.length, (index) {
-                          return RadioListTile<int>(
-                            title: Row(
-                              children: [
-                                const Icon(HugeIcons.strokeRoundedVolumeHigh,
-                                    color: color1),
-                                const SizedBox(width: 10),
-                                Text(
-                                  alarmSounds[index],
-                                  style: GoogleFonts.poppins(
-                                    color: color1,
+                      // 1. Se envuelve la Column con el widget RadioGroup.
+                      child: RadioGroup<int>(
+                        // 2. La propiedad 'groupValue' se mueve al RadioGroup.
+                        groupValue: selectedSoundDetector,
+                        // 3. La lógica 'onChanged' completa se mueve aquí.
+                        onChanged: (int? value) {
+                          setState(() {
+                            if (selectedSoundDetector == value) {
+                              selectedSoundDetector = null;
+                            } else {
+                              selectedSoundDetector = value;
+                              printLog.i('Elegí alarma${value! + 1}');
+                              soundOfNotification['015773_IOT'] =
+                                  'alarm${value + 1}';
+                              saveSounds(soundOfNotification);
+                              NativeService().playNativeSound(
+                                  'alarm${value + 1}',
+                                  getAlarmDelay('alarm${value + 1}'));
+                            }
+                          });
+                        },
+                        child: Column(
+                          children: List.generate(alarmSounds.length, (index) {
+                            // 4. El RadioListTile queda simplificado, sin la lógica de estado.
+                            return RadioListTile<int>(
+                              title: Row(
+                                children: [
+                                  const Icon(HugeIcons.strokeRoundedVolumeHigh,
+                                      color: color1),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    alarmSounds[index],
+                                    style: GoogleFonts.poppins(
+                                      color: color1,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            activeColor: color1,
-                            value: index,
-                            groupValue: selectedSoundDetector,
-                            onChanged: (int? value) {
-                              setState(() {
-                                if (selectedSoundDetector == value) {
-                                  selectedSoundDetector = null;
-                                } else {
-                                  selectedSoundDetector = value;
-                                  printLog.i('Elegí alarma${value! + 1}');
-                                  soundOfNotification['015773_IOT'] =
-                                      'alarm${value + 1}';
-                                  saveSounds(soundOfNotification);
-                                  NativeService().playNativeSound(
-                                      'alarm${value + 1}',
-                                      getAlarmDelay('alarm${value + 1}'));
-                                }
-                              });
-                            },
-                          );
-                        }),
+                                ],
+                              ),
+                              activeColor: color1,
+                              value: index,
+                            );
+                          }),
+                        ),
                       ),
                     ),
                     crossFadeState: isDetectorOpen
@@ -484,43 +572,49 @@ class ProfilePageState extends State<ProfilePage> {
                     firstChild: const SizedBox.shrink(),
                     secondChild: Padding(
                       padding: const EdgeInsets.only(left: 16.0),
-                      child: Column(
-                        children: List.generate(alarmSounds.length, (index) {
-                          return RadioListTile<int>(
-                            title: Row(
-                              children: [
-                                const Icon(HugeIcons.strokeRoundedVolumeHigh,
-                                    color: color1),
-                                const SizedBox(width: 10),
-                                Text(
-                                  alarmSounds[index],
-                                  style: GoogleFonts.poppins(
-                                    color: color1,
+                      // 1. Se envuelve la Column con el widget RadioGroup.
+                      child: RadioGroup<int>(
+                        // 2. La propiedad 'groupValue' se mueve al RadioGroup.
+                        groupValue: selectedSoundTermometro,
+                        // 3. La lógica 'onChanged' completa se mueve aquí.
+                        onChanged: (int? value) {
+                          setState(() {
+                            if (selectedSoundTermometro == value) {
+                              selectedSoundTermometro = null;
+                            } else {
+                              selectedSoundTermometro = value;
+                              printLog.i('Elegí alarma${value! + 1}');
+                              soundOfNotification['023430_IOT'] =
+                                  'alarm${value + 1}';
+                              saveSounds(soundOfNotification);
+                              NativeService().playNativeSound(
+                                  'alarm${value + 1}',
+                                  getAlarmDelay('alarm${value + 1}'));
+                            }
+                          });
+                        },
+                        child: Column(
+                          children: List.generate(alarmSounds.length, (index) {
+                            // 4. El RadioListTile queda simplificado, sin la lógica de estado.
+                            return RadioListTile<int>(
+                              title: Row(
+                                children: [
+                                  const Icon(HugeIcons.strokeRoundedVolumeHigh,
+                                      color: color1),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    alarmSounds[index],
+                                    style: GoogleFonts.poppins(
+                                      color: color1,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            activeColor: color1,
-                            value: index,
-                            groupValue: selectedSoundTermometro,
-                            onChanged: (int? value) {
-                              setState(() {
-                                if (selectedSoundTermometro == value) {
-                                  selectedSoundTermometro = null;
-                                } else {
-                                  selectedSoundTermometro = value;
-                                  printLog.i('Elegí alarma${value! + 1}');
-                                  soundOfNotification['023430_IOT'] =
-                                      'alarm${value + 1}';
-                                  saveSounds(soundOfNotification);
-                                  NativeService().playNativeSound(
-                                      'alarm${value + 1}',
-                                      getAlarmDelay('alarm${value + 1}'));
-                                }
-                              });
-                            },
-                          );
-                        }),
+                                ],
+                              ),
+                              activeColor: color1,
+                              value: index,
+                            );
+                          }),
+                        ),
                       ),
                     ),
                     crossFadeState: isTermometroOpen
@@ -584,7 +678,7 @@ class ProfilePageState extends State<ProfilePage> {
                             ),
                             Switch(
                               value: tutorial,
-                              activeColor: color0,
+                              activeThumbColor: color0,
                               onChanged: (bool value) {
                                 setState(() {
                                   tutorial = value;
@@ -846,6 +940,8 @@ class ProfilePageState extends State<ProfilePage> {
                     await Future.delayed(const Duration(milliseconds: 500));
 
                     previusConnections.clear();
+                    nicknamesMap.clear();
+                    globalDATA.clear();
                     alexaDevices.clear();
                     currentUserEmail = '';
                     MenuPageState.hasInitialized = false;

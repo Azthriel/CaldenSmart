@@ -566,6 +566,12 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
   }
 
   void turnDeviceOn(bool on) async {
+    // Verificar permisos horarios para administradores secundarios
+    bool hasPermission = await checkAdminTimePermission(deviceName);
+    if (!hasPermission) {
+      return; // No ejecutar si no tiene permisos
+    }
+
     int fun = on ? 1 : 0;
     String data = '${DeviceManager.getProductCode(deviceName)}[11]($fun)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
@@ -581,6 +587,10 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
       String message = jsonEncode({'w_status': on});
       sendMessagemqtt(topic, message);
       sendMessagemqtt(topic2, message);
+
+      // Registrar uso si es administrador secundario
+      await registerAdminUsage(
+          deviceName, on ? 'Encendió Millenium' : 'Apagó Millenium');
     } catch (e, s) {
       printLog.i('Error al enviar valor a firebase $e $s');
     }
@@ -595,6 +605,10 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
     bool isOwner = currentUserEmail == owner;
     bool isSecondaryAdmin = adminDevices.contains(currentUserEmail);
     bool isRegularUser = !isOwner && !isSecondaryAdmin;
+
+    if (!canUseDevice) {
+      return const NotAllowedScreen();
+    }
 
     // si hay un usuario conectado al equipo no lo deje ingresar
     if (userConnected && lastUser > 1) {
@@ -632,12 +646,17 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
                 const SizedBox(height: 40),
                 GestureDetector(
                   key: keys['millenium:boton']!,
-                  onTap: () {
+                  onTap: () async {
                     if (isOwner || isSecondaryAdmin || owner == '') {
-                      turnDeviceOn(!turnOn);
-                      setState(() {
-                        turnOn = !turnOn;
-                      });
+                      // Verificar permisos horarios para administradores secundarios
+                      bool hasPermission =
+                          await checkAdminTimePermission(deviceName);
+                      if (hasPermission) {
+                        turnDeviceOn(!turnOn);
+                        setState(() {
+                          turnOn = !turnOn;
+                        });
+                      }
                     } else {
                       showToast('No tienes permiso para realizar esta acción');
                     }
@@ -1069,7 +1088,7 @@ class MilleniumPageState extends ConsumerState<MilleniumPage> {
       ),
 
       //*- Página 4: Gestión del Equipo -*\\
-      const ManagerScreen(),
+      ManagerScreen(deviceName: deviceName),
     ];
 
     return PopScope(

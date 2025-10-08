@@ -591,6 +591,12 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
   }
 
   void turnDeviceOn(bool on) async {
+    // Verificar permisos horarios para administradores secundarios
+    bool hasPermission = await checkAdminTimePermission(deviceName);
+    if (!hasPermission) {
+      return; // No ejecutar si no tiene permisos
+    }
+
     int fun = on ? 1 : 0;
     String data = '${DeviceManager.getProductCode(deviceName)}[11]($fun)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
@@ -606,6 +612,10 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
       String message = jsonEncode({'w_status': on});
       sendMessagemqtt(topic, message);
       sendMessagemqtt(topic2, message);
+
+      // Registrar uso si es administrador secundario
+      await registerAdminUsage(
+          deviceName, on ? 'Encendió heladera' : 'Apagó heladera');
     } catch (e, s) {
       printLog.i('Error al enviar valor a firebase $e $s');
     }
@@ -736,6 +746,10 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
     bool isSecondaryAdmin = adminDevices.contains(currentUserEmail);
     bool isRegularUser = !isOwner && !isSecondaryAdmin;
 
+    if (!canUseDevice) {
+      return const NotAllowedScreen();
+    }
+
     // si hay un usuario conectado al equipo no lo deje ingresar
     if (userConnected && lastUser > 1) {
       return const DeviceInUseScreen();
@@ -771,12 +785,17 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                 ),
                 const SizedBox(height: 40),
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     if (isOwner || isSecondaryAdmin || owner == '') {
-                      turnDeviceOn(!turnOn);
-                      setState(() {
-                        turnOn = !turnOn;
-                      });
+                      // Verificar permisos horarios para administradores secundarios
+                      bool hasPermission =
+                          await checkAdminTimePermission(deviceName);
+                      if (hasPermission) {
+                        turnDeviceOn(!turnOn);
+                        setState(() {
+                          turnOn = !turnOn;
+                        });
+                      }
                     } else {
                       showToast('No tienes permiso para realizar esta acción');
                     }
@@ -1509,7 +1528,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
       ),
 
       //*- Página 5: Gestión del Equipo -*\\
-      const ManagerScreen(),
+      ManagerScreen(deviceName: deviceName),
     ];
 
     return PopScope(
@@ -1589,7 +1608,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
             child: Row(
               children: [
                 Expanded(
-                  child:  SizedBox(
+                  child: SizedBox(
                     height: 30,
                     width: 2,
                     child: AutoScrollingText(

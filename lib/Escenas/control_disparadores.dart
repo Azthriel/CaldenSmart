@@ -156,55 +156,55 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                   equipo.contains('Modulo') ||
                   equipo.contains('Rele')) ...[
                 ListTile(
-                  title: Text(displayName,
-                      style: GoogleFonts.poppins(color: color0)),
+                  title: Text(
+                    displayName,
+                    style: GoogleFonts.poppins(color: color0),
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: 32.0, bottom: 8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: deviceDATA.keys
-                        .where((k) => k.startsWith('io'))
-                        .map((key) {
-                      final rawData = deviceDATA[key];
-                      final data =
-                          rawData is String ? jsonDecode(rawData) : rawData;
-                      final pinType =
-                          int.tryParse(data['pinType'].toString()) ?? -1;
+                  child: RadioGroup<String>(
+                    groupValue:
+                        activadores.isNotEmpty ? activadores.first : null,
+                    onChanged: (value) {
+                      setState(() {
+                        activadores.clear();
+                        if (value != null) {
+                          activadores.add(value);
+                        }
+                      });
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: deviceDATA.keys
+                          .where((k) => k.startsWith('io'))
+                          .map((key) {
+                        final rawData = deviceDATA[key];
+                        final data =
+                            rawData is String ? jsonDecode(rawData) : rawData;
+                        final pinType =
+                            int.tryParse(data['pinType'].toString()) ?? -1;
 
-                      if (pinType == 0) return const SizedBox.shrink();
+                        if (pinType == 0) return const SizedBox.shrink();
 
-                      final entradaIndex = key.replaceAll('io', '');
-                      final entradaId = '${equipo}_$entradaIndex';
+                        final entradaIndex = key.replaceAll('io', '');
+                        final entradaId = '${equipo}_$entradaIndex';
 
-                      return RadioListTile<String>(
-                        title: Text(
-                          nicknamesMap[entradaId] ?? 'Entrada $entradaIndex',
-                          style: GoogleFonts.poppins(color: color0),
-                        ),
-                        value: entradaId,
-                        groupValue:
-                            activadores.isNotEmpty ? activadores.first : null,
-                        activeColor: color4,
-                        onChanged: (value) {
-                          setState(() {
-                            activadores.clear();
-                            if (value != null) {
-                              activadores.add(value);
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
+                        return RadioListTile<String>(
+                          title: Text(
+                            nicknamesMap[entradaId] ?? 'Entrada $entradaIndex',
+                            style: GoogleFonts.poppins(color: color0),
+                          ),
+                          value: entradaId,
+                          activeColor: color4,
+                        );
+                      }).toList(),
+                    ),
                   ),
-                ),
+                )
               ] else ...[
-                RadioListTile<String>(
-                  title: Text(displayName.isEmpty ? equipo : displayName,
-                      style: GoogleFonts.poppins(color: color0)),
-                  value: equipo,
+                RadioGroup<String>(
                   groupValue: activadores.isNotEmpty ? activadores.first : null,
-                  activeColor: color4,
                   onChanged: (value) {
                     setState(() {
                       activadores.clear();
@@ -213,7 +213,13 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                       }
                     });
                   },
-                ),
+                  child: RadioListTile<String>(
+                    title: Text(displayName.isEmpty ? equipo : displayName,
+                        style: GoogleFonts.poppins(color: color0)),
+                    value: equipo,
+                    activeColor: color4,
+                  ),
+                )
               ],
             ],
           ),

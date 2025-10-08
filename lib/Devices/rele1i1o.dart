@@ -334,7 +334,13 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
     }
   }
 
-  void controlOut(bool value, int index) {
+  Future<bool> controlOut(bool value, int index) async {
+    // Verificar permisos horarios para administradores secundarios
+    bool hasPermission = await checkAdminTimePermission(deviceName);
+    if (!hasPermission) {
+      return false; // No ejecutar si no tiene permisos
+    }
+
     String fun = '$index#${value ? '1' : '0'}';
     bluetoothManager.ioUuid.write(fun.codeUnits);
     String topic =
@@ -357,6 +363,12 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
         .addAll({'io$index': message});
 
     saveGlobalData(globalDATA);
+
+    // Registrar uso si es administrador secundario
+    String action = value ? 'Encendió salida $index' : 'Apagó salida $index';
+    await registerAdminUsage(deviceName, action);
+
+    return true;
   }
 
   void updateWifiValues(List<int> data) {
@@ -522,29 +534,32 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                 ),
               ),
               content: SingleChildScrollView(
-                child: ListBody(
-                  children: List.generate(parts.length, (index) {
-                    return tipo[index] == 'Salida'
-                        ? RadioListTile<int>(
-                            title: Text(
-                              nicknamesMap['${deviceName}_$index'] ??
-                                  'Salida $index',
-                              style: GoogleFonts.poppins(
-                                color: color0,
-                                fontSize: 16,
+                child: RadioGroup<int>(
+                  groupValue: selectedPin,
+                  onChanged: (int? value) {
+                    setState(() {
+                      selectedPin = value;
+                    });
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(parts.length, (index) {
+                      return tipo[index] == 'Salida'
+                          ? RadioListTile<int>(
+                              title: Text(
+                                nicknamesMap['${deviceName}_$index'] ??
+                                    'Salida $index',
+                                style: GoogleFonts.poppins(
+                                  color: color0,
+                                  fontSize: 16,
+                                ),
                               ),
-                            ),
-                            value: index,
-                            groupValue: selectedPin,
-                            activeColor: color4,
-                            onChanged: (int? value) {
-                              setState(() {
-                                selectedPin = value;
-                              });
-                            },
-                          )
-                        : const SizedBox.shrink();
-                  }),
+                              value: index,
+                              activeColor: color4,
+                            )
+                          : const SizedBox.shrink();
+                    }),
+                  ),
                 ),
               ),
               actions: <Widget>[
@@ -687,6 +702,10 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
     final wifiState = ref.watch(wifiProvider);
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
+
+    if (!canUseDevice) {
+      return const NotAllowedScreen();
+    }
 
     // si hay un usuario conectado al equipo no lo deje ingresar
     if (userConnected && lastUser > 1) {
@@ -1010,14 +1029,19 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                             size: 40,
                                           ),
                                           GestureDetector(
-                                            onTap: () {
-                                              isPresenceControlled
-                                                  ? null
-                                                  : setState(() {
-                                                      controlOut(!isOn, index);
-                                                      estado[index] =
-                                                          !isOn ? '1' : '0';
-                                                    });
+                                            onTap: () async {
+                                              if (isPresenceControlled) {
+                                                return;
+                                              }
+
+                                              bool success = await controlOut(
+                                                  !isOn, index);
+                                              if (success) {
+                                                setState(() {
+                                                  estado[index] =
+                                                      !isOn ? '1' : '0';
+                                                });
+                                              }
                                             },
                                             child: AnimatedContainer(
                                               duration: const Duration(
@@ -1123,16 +1147,18 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                             ),
                             const SizedBox(height: 40),
                             GestureDetector(
-                              onTap: () {
+                              onTap: () async {
                                 if (deviceOwner ||
                                     secondaryAdmin ||
                                     owner == '' ||
                                     tenant) {
                                   bool isOn = estado[0] == '1';
-                                  setState(() {
-                                    controlOut(!isOn, 0);
-                                    estado[0] = !isOn ? '1' : '0';
-                                  });
+                                  bool success = await controlOut(!isOn, 0);
+                                  if (success) {
+                                    setState(() {
+                                      estado[0] = !isOn ? '1' : '0';
+                                    });
+                                  }
                                 } else {
                                   showToast(
                                       'No tienes permiso para realizar esta acción');
@@ -1818,7 +1844,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
       ),
 
       //*- Página 5: Gestión del Equipo -*\\
-      const ManagerScreen(),
+      ManagerScreen(deviceName: deviceName),
     ];
 
     return PopScope(

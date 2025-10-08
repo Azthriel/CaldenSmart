@@ -568,9 +568,9 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
   }
 
   // Función para apagar automáticamente la bomba
-  void _turnOffPump() {
+  void _turnOffPump() async {
     if (estado.isNotEmpty && estado[0] == '1') {
-      controlOut(false, 0);
+      await controlOut(false, 0);
       setState(() {
         estado[0] = '0';
       });
@@ -681,7 +681,15 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
     sendMessagemqtt(topic2, message);
   }
 
-  void controlOut(bool value, int index, {bool skipAutoLogic = false}) {
+  Future<bool> controlOut(bool value, int index,
+      {bool skipAutoLogic = false}) async {
+    // Verificar permisos horarios para administradores secundarios
+    bool hasPermission = await checkAdminTimePermission(deviceName);
+    if (!hasPermission) {
+      showToast('No tiene permiso para controlar el riego ahora.');
+      return false; // No ejecutar si no tiene permisos
+    }
+
     // Verificar si freeBomb está en false
     bool freeBomb = globalDATA['$pc/$sn']?['freeBomb'] ?? false;
 
@@ -692,7 +700,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
         // Si se intenta encender la bomba, verificar que haya zonas activas
         if (value && !_hasActiveZones()) {
           // No permitir encender la bomba si no hay zonas activas
-          return;
+          return false;
         }
       }
 
@@ -724,6 +732,19 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
     globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({'io$index': message});
 
     saveGlobalData(globalDATA);
+
+    // Registrar uso si es administrador secundario
+    String action;
+    if (index == 0) {
+      action = value ? 'Encendió bomba de riego' : 'Apagó bomba de riego';
+    } else {
+      action = value
+          ? 'Encendió zona $index de riego'
+          : 'Apagó zona $index de riego';
+    }
+    await registerAdminUsage(deviceName, action);
+
+    return true;
   }
 
   void updateWifiValues(List<int> data) {
@@ -1170,6 +1191,13 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
 
+    final filteredExtensions =
+        extensionesVinculadas.where((e) => e.isNotEmpty).toList();
+
+    if (!canUseDevice) {
+      return const NotAllowedScreen();
+    }
+
     // si hay un usuario conectado al equipo no lo deje ingresar
     if (userConnected && lastUser > 1) {
       return const DeviceInUseScreen();
@@ -1298,12 +1326,14 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                     return;
                                   }
 
-                                  setState(() {
-                                    controlOut(value, 0);
-                                    estado[0] = value ? '1' : '0';
+                                  setState(() async {
+                                    bool success = await controlOut(value, 0);
+                                    if (success) {
+                                      estado[0] = value ? '1' : '0';
+                                    }
                                   });
                                 },
-                                activeColor: Colors.green,
+                                activeThumbColor: Colors.green,
                                 inactiveThumbColor: () {
                                   bool freeBomb = globalDATA['$pc/$sn']
                                           ?['freeBomb'] ??
@@ -1567,8 +1597,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                                 });
                                               } else {
                                                 // Si hay otras zonas activas, apagar inmediatamente
-                                                setState(() {
-                                                  controlOut(value, i,
+                                                setState(() async {
+                                                  await controlOut(value, i,
                                                       skipAutoLogic: true);
                                                   estado[i] = '0';
                                                 });
@@ -1576,13 +1606,16 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                             }
                                           } else {
                                             // freeBomb está activo, funcionamiento normal
-                                            setState(() {
-                                              controlOut(value, i);
-                                              estado[i] = value ? '1' : '0';
+                                            setState(() async {
+                                              bool success =
+                                                  await controlOut(value, i);
+                                              if (success) {
+                                                estado[i] = value ? '1' : '0';
+                                              }
                                             });
                                           }
                                         },
-                                        activeColor: Colors.green,
+                                        activeThumbColor: Colors.green,
                                         inactiveThumbColor: Colors.red,
                                       ),
                                     ],
@@ -1603,7 +1636,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
             const SizedBox(height: 20),
             const Divider(color: color1, thickness: 1),
             const SizedBox(height: 10),
-            if (extensionesVinculadas.isNotEmpty) ...{
+            if (filteredExtensions.isNotEmpty) ...{
               Center(
                 child: Text(
                   key: keys['riego:siHayExtensiones']!,
@@ -1616,7 +1649,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
               ListView(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                children: extensionesVinculadas.map((extension) {
+                children: filteredExtensions.map((extension) {
                   String key =
                       '${DeviceManager.getProductCode(extension)}/${DeviceManager.extractSerialNumber(extension)}';
                   Map<String, dynamic> extensionData = globalDATA[key] ?? {};
@@ -1819,11 +1852,15 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                                   extensionesVinculadas);
 
                                               // Recargar la lista desde globalDATA para asegurar sincronización
-                                              extensionesVinculadas =
-                                                  List<String>.from(globalDATA[
-                                                              '$pc/$sn']?[
-                                                          'riegoExtensions'] ??
-                                                      []);
+                                              globalDATA
+                                                  .putIfAbsent(
+                                                      '$pc/$sn', () => {})
+                                                  .addAll({
+                                                'riegoExtensions':
+                                                    List<String>.from(
+                                                        extensionesVinculadas)
+                                              });
+                                              saveGlobalData(globalDATA);
 
                                               // Actualizar la lista de extensiones disponibles
                                               searchExtensions();
@@ -2214,7 +2251,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                                   }
                                                 }
                                               : null,
-                                          activeColor: Colors.green,
+                                          activeThumbColor: Colors.green,
                                           inactiveThumbColor:
                                               isExtensionConnected
                                                   ? Colors.red
@@ -2851,7 +2888,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                       isRain = value;
                                     });
                                   },
-                                  activeColor: Colors.blue,
+                                  activeThumbColor: Colors.blue,
                                   inactiveThumbColor: Colors.grey,
                                   activeTrackColor:
                                       Colors.blue.withValues(alpha: 0.3),
@@ -3584,7 +3621,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
       ),
 
       //*- Página 3: Gestión del Equipo -*\\
-      const ManagerScreen(),
+      ManagerScreen(deviceName: deviceName),
     ];
 
     return PopScope(

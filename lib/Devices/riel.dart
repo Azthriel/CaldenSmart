@@ -266,6 +266,10 @@ class RollerPageState extends ConsumerState<RollerPage> {
 
     bool isRegularUser = !deviceOwner && !secondaryAdmin;
 
+    if (!canUseDevice) {
+      return const NotAllowedScreen();
+    }
+
     // si hay un usuario conectado al equipo no lo deje ingresar
     if (userConnected && lastUser > 1) {
       return const DeviceInUseScreen();
@@ -821,7 +825,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
       ),
 
       //*- Página 3: Gestión del Equipo -*\\
-      const ManagerScreen(),
+      ManagerScreen(deviceName: deviceName),
     ];
 
     return PopScope(
