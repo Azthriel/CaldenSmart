@@ -141,9 +141,12 @@ class WifiPageState extends ConsumerState<WifiPage>
       for (var evento in eventosCreados) {
         if (evento['evento'] == 'grupo' ||
             evento['evento'] == 'cadena' ||
-            evento['evento'] == 'riego') {
+            evento['evento'] == 'riego' ||
+            evento['evento'] == 'clima' ||
+            evento['evento'] == 'disparador' ||
+            evento['evento'] == 'horario') {
           MapEntry<String, String> newEntry = MapEntry(
-              evento['title'] ?? 'Grupo',
+              evento['title'] ?? 'Evento',
               (evento['deviceGroup'] as List<dynamic>).join(','));
           bool exists = todosLosDispositivos
               .any((e) => e.key == newEntry.key && e.value == newEntry.value);
@@ -688,14 +691,6 @@ class WifiPageState extends ConsumerState<WifiPage>
             style: GoogleFonts.poppins(color: color0),
           ),
           backgroundColor: color1,
-          actions: [
-            IconButton(
-              icon:
-                  const Icon(HugeIcons.strokeRoundedSettings02, color: color0),
-              onPressed: () =>
-                  Navigator.pushReplacementNamed(context, '/escenas'),
-            ),
-          ],
           bottom: TabBar(
             labelColor: color0,
             unselectedLabelColor: color0.withValues(alpha: 0.6),
@@ -762,7 +757,74 @@ class WifiPageState extends ConsumerState<WifiPage>
               // Tab de Equipos Individuales
               _buildDeviceList(dispositiosIndividuales, 'individual'),
               // Tab de Grupos
-              _buildDeviceList(eventos, 'grupos'),
+              Column(
+                children: [
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: _buildDeviceList(eventos, 'grupos'),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [color1, color1.withValues(alpha: 0.8)],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color1.withValues(alpha: 0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () async {
+                          final result =
+                              await Navigator.pushNamed(context, '/escenas');
+
+                          if (result == true && mounted) {
+                            _buildDeviceListFromLoadedData();
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 16),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: color0.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  HugeIcons.strokeRoundedAdd01,
+                                  color: color0,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Configurar evento',
+                                style: GoogleFonts.poppins(
+                                  color: color0,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -852,14 +914,14 @@ class WifiPageState extends ConsumerState<WifiPage>
         final String deviceName = deviceList[index].value;
 
         final bool esGrupo = grupo != 'individual';
-        final topicData = ref.watch(
-          globalDataProvider.select(
-            (map) =>
-                map['${DeviceManager.getProductCode(deviceName)}/'
+
+        // Escuchar cambios en todos los datos globales para detectar cambios en extensiones de riego
+        final allGlobalData = ref.watch(globalDataProvider);
+
+        final topicData =
+            allGlobalData['${DeviceManager.getProductCode(deviceName)}/'
                     '${DeviceManager.extractSerialNumber(deviceName)}'] ??
-                {},
-          ),
-        );
+                {};
 
         if (!esGrupo) {
           String productCode = DeviceManager.getProductCode(deviceName);
@@ -889,9 +951,10 @@ class WifiPageState extends ConsumerState<WifiPage>
           String? riegoMaster = deviceDATA['riegoMaster'];
           if (riegoMaster != null &&
               riegoMaster.isNotEmpty &&
-              riegoMaster != '') {
+              riegoMaster != '' &&
+              riegoMaster.trim().isNotEmpty) {
             return SizedBox.shrink(
-              key: ValueKey(deviceName),
+              key: ValueKey('extension_$deviceName'),
             );
           }
 
@@ -3257,6 +3320,63 @@ class WifiPageState extends ConsumerState<WifiPage>
                 )
               : null;
 
+          // Detectar si es un evento de clima
+          final eventoClima = eventosCreados
+                  .where(
+                    (evento) =>
+                        evento['evento'] == 'clima' &&
+                        evento['title'] == grupo &&
+                        (evento['deviceGroup'] as List<dynamic>).join(',') ==
+                            deviceName,
+                  )
+                  .isNotEmpty
+              ? eventosCreados.firstWhere(
+                  (evento) =>
+                      evento['evento'] == 'clima' &&
+                      evento['title'] == grupo &&
+                      (evento['deviceGroup'] as List<dynamic>).join(',') ==
+                          deviceName,
+                )
+              : null;
+
+          // Detectar si es un evento de disparador
+          final eventoDisparador = eventosCreados
+                  .where(
+                    (evento) =>
+                        evento['evento'] == 'disparador' &&
+                        evento['title'] == grupo &&
+                        (evento['deviceGroup'] as List<dynamic>).join(',') ==
+                            deviceName,
+                  )
+                  .isNotEmpty
+              ? eventosCreados.firstWhere(
+                  (evento) =>
+                      evento['evento'] == 'disparador' &&
+                      evento['title'] == grupo &&
+                      (evento['deviceGroup'] as List<dynamic>).join(',') ==
+                          deviceName,
+                )
+              : null;
+
+          // Detectar si es un evento de horario
+          final eventoHorario = eventosCreados
+                  .where(
+                    (evento) =>
+                        evento['evento'] == 'horario' &&
+                        evento['title'] == grupo &&
+                        (evento['deviceGroup'] as List<dynamic>).join(',') ==
+                            deviceName,
+                  )
+                  .isNotEmpty
+              ? eventosCreados.firstWhere(
+                  (evento) =>
+                      evento['evento'] == 'horario' &&
+                      evento['title'] == grupo &&
+                      (evento['deviceGroup'] as List<dynamic>).join(',') ==
+                          deviceName,
+                )
+              : null;
+
           if (eventoCadena != null) {
             try {
               // Verificar si todos los equipos de la cadena están online
@@ -3613,7 +3733,63 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   ],
                                 ),
                               );
-                            })
+                            }),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: IconButton(
+                                icon: const Icon(
+                                  HugeIcons.strokeRoundedDelete02,
+                                  color: color0,
+                                ),
+                                tooltip: 'Eliminar evento de horario',
+                                onPressed: () {
+                                  showAlertDialog(
+                                    context,
+                                    false,
+                                    const Text(
+                                      '¿Eliminar este evento de horario?',
+                                      style: TextStyle(color: color0),
+                                    ),
+                                    const Text(
+                                      'Esta acción no se puede deshacer.',
+                                      style: TextStyle(color: color0),
+                                    ),
+                                    <Widget>[
+                                      TextButton(
+                                        style: ButtonStyle(
+                                          foregroundColor:
+                                              WidgetStateProperty.all(color0),
+                                        ),
+                                        child: const Text('Cancelar'),
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                      TextButton(
+                                        style: ButtonStyle(
+                                          foregroundColor:
+                                              WidgetStateProperty.all(color0),
+                                        ),
+                                        child: const Text('Confirmar'),
+                                        onPressed: () {
+                                          setState(() {
+                                            eventosCreados.removeAt(index);
+                                            putEventos(currentUserEmail,
+                                                eventosCreados);
+                                            printLog.d(grupo, color: 'naranja');
+                                            deleteEventoControlPorCadena(
+                                                currentUserEmail, grupo);
+                                            todosLosDispositivos.removeWhere(
+                                                (entry) => entry.key == grupo);
+                                          });
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -3950,6 +4126,1328 @@ class WifiPageState extends ConsumerState<WifiPage>
             }
           }
 
+          // Manejar evento de clima
+          if (eventoClima != null) {
+            try {
+              String condition = eventoClima['condition'] ?? '';
+
+              // Obtener las acciones de los dispositivos
+              Map<String, dynamic> devicesActions =
+                  Map<String, dynamic>.from(eventoClima['deviceActions'] ?? {});
+
+              // Crear lista de nombres de dispositivos
+              String devicesInGroup = deviceName;
+              List<String> deviceList = devicesInGroup
+                  .replaceAll('[', '')
+                  .replaceAll(']', '')
+                  .split(',');
+              List<String> climaNicksList = [];
+              for (String equipo in deviceList) {
+                String displayName = '';
+                if (equipo.contains('_')) {
+                  final parts = equipo.split('_');
+                  displayName = nicknamesMap[equipo.trim()] ??
+                      '${parts[0]} salida ${parts[1]}';
+                } else {
+                  displayName = nicknamesMap[equipo.trim()] ?? equipo.trim();
+                }
+                climaNicksList.add(displayName);
+              }
+
+              // Determinar icono según la condición
+              IconData climaIcon;
+              switch (condition) {
+                case 'Lluvia':
+                  climaIcon = HugeIcons.strokeRoundedCloudAngledRain;
+                  break;
+                case 'Nublado':
+                  climaIcon = HugeIcons.strokeRoundedSunCloud02;
+                  break;
+                case 'Viento Fuerte':
+                  climaIcon = HugeIcons.strokeRoundedFastWind;
+                  break;
+                case 'Soleado':
+                  climaIcon = HugeIcons.strokeRoundedSun03;
+                  break;
+                default:
+                  climaIcon = HugeIcons.strokeRoundedCloudSnow;
+              }
+
+              return Card(
+                key: ValueKey('clima_$grupo'),
+                color: color1,
+                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                elevation: 2,
+                child: Theme(
+                  data: Theme.of(context)
+                      .copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    iconColor: color4,
+                    collapsedIconColor: color4,
+                    onExpansionChanged: (bool expanded) {
+                      setState(() {
+                        _expandedStates[deviceName] = expanded;
+                      });
+                    },
+                    title: Row(
+                      children: [
+                        const Icon(HugeIcons.strokeRoundedCloudAngledRainZap,
+                            color: color4),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            grupo,
+                            style: GoogleFonts.poppins(
+                              color: color0,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: color0.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'CLIMA',
+                            style: GoogleFonts.poppins(
+                              color: color0,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Información de condición climática (simplificado)
+                            Row(
+                              children: [
+                                Icon(climaIcon, color: color4, size: 20),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Condición',
+                                        style: GoogleFonts.poppins(
+                                          color: color0.withValues(alpha: 0.7),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      Text(
+                                        condition,
+                                        style: GoogleFonts.poppins(
+                                          color: color0,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            // Dispositivos afectados
+                            Text(
+                              'Dispositivos afectados:',
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ...climaNicksList.asMap().entries.map((entry) {
+                              final idx = entry.key + 1;
+                              String deviceNick = entry.value;
+                              final equipo = deviceList[entry.key].trim();
+
+                              // Verificar si es un evento buscando en eventosCreados
+                              bool isEvento = false;
+                              bool isCadena = false;
+                              bool isRiego = false;
+                              bool isGrupo = false;
+
+                              final eventoEncontrado =
+                                  eventosCreados.firstWhere(
+                                (evento) => evento['title'] == equipo,
+                                orElse: () => <String, dynamic>{},
+                              );
+
+                              if (eventoEncontrado.isNotEmpty) {
+                                // Es un evento (grupo, cadena o riego)
+                                final eventoType =
+                                    eventoEncontrado['evento'] as String;
+                                deviceNick = equipo;
+                                isEvento = true;
+                                isCadena = eventoType == 'cadena';
+                                isRiego = eventoType == 'riego';
+                                isGrupo = eventoType == 'grupo';
+                              }
+
+                              // Definir acción, ícono y color según el tipo
+                              String actionText = '';
+                              IconData actionIcon =
+                                  HugeIcons.strokeRoundedSettings02;
+                              Color actionColor = color0;
+
+                              if (isEvento) {
+                                // Manejo especial para eventos
+                                if (isCadena) {
+                                  actionText = 'Se ejecutará';
+                                  actionIcon =
+                                      HugeIcons.strokeRoundedPlayCircle;
+                                  actionColor = Colors.orange;
+                                } else if (isRiego) {
+                                  actionText = 'Se ejecutará';
+                                  actionIcon = HugeIcons.strokeRoundedLeaf01;
+                                  actionColor = Colors.blue;
+                                } else if (isGrupo) {
+                                  // Es un grupo
+                                  final action =
+                                      devicesActions['$equipo:grupo'] ?? false;
+                                  actionText = action ? "Encenderá" : "Apagará";
+                                  actionIcon = action
+                                      ? HugeIcons.strokeRoundedPlug01
+                                      : HugeIcons.strokeRoundedPlugSocket;
+                                  actionColor =
+                                      action ? Colors.green : Colors.red;
+                                } else {
+                                  // Evento desconocido
+                                  actionText = 'Se ejecutará';
+                                  actionIcon =
+                                      HugeIcons.strokeRoundedSettings02;
+                                  actionColor = color4;
+                                }
+                              } else {
+                                // Es un dispositivo individual
+                                final action = devicesActions[equipo] ?? false;
+                                actionText = action ? "Encenderá" : "Apagará";
+                                actionIcon = action
+                                    ? HugeIcons.strokeRoundedPlug01
+                                    : HugeIcons.strokeRoundedPlugSocket;
+                                actionColor =
+                                    action ? Colors.green : Colors.red;
+                              }
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 24,
+                                      height: 24,
+                                      decoration: const BoxDecoration(
+                                        color: color4,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '$idx',
+                                          style: GoogleFonts.poppins(
+                                            color: color1,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        deviceNick,
+                                        style: GoogleFonts.poppins(
+                                          color: color0,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      actionIcon,
+                                      color: actionColor,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      actionText,
+                                      style: GoogleFonts.poppins(
+                                        color: actionColor,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: IconButton(
+                                icon: const Icon(
+                                  HugeIcons.strokeRoundedDelete02,
+                                  color: color0,
+                                ),
+                                tooltip: 'Eliminar evento de horario',
+                                onPressed: () {
+                                  showAlertDialog(
+                                    context,
+                                    false,
+                                    const Text(
+                                      '¿Eliminar este evento de horario?',
+                                      style: TextStyle(color: color0),
+                                    ),
+                                    const Text(
+                                      'Esta acción no se puede deshacer.',
+                                      style: TextStyle(color: color0),
+                                    ),
+                                    <Widget>[
+                                      TextButton(
+                                        style: ButtonStyle(
+                                          foregroundColor:
+                                              WidgetStateProperty.all(color0),
+                                        ),
+                                        child: const Text('Cancelar'),
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                      TextButton(
+                                        style: ButtonStyle(
+                                          foregroundColor:
+                                              WidgetStateProperty.all(color0),
+                                        ),
+                                        child: const Text('Confirmar'),
+                                        onPressed: () {
+                                          setState(() {
+                                            eventosCreados.removeAt(index);
+                                            putEventos(currentUserEmail,
+                                                eventosCreados);
+                                            printLog.d(grupo, color: 'naranja');
+                                            deleteEventoControlPorGrupos(
+                                                currentUserEmail, grupo);
+                                            todosLosDispositivos.removeWhere(
+                                                (entry) => entry.key == grupo);
+                                          });
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            } catch (e) {
+              printLog.e('Error al procesar el evento de clima $grupo: $e');
+              return Card(
+                key: ValueKey('clima_error_$grupo'),
+                color: color1,
+                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                elevation: 2,
+                child: Theme(
+                  data: Theme.of(context)
+                      .copyWith(dividerColor: Colors.transparent),
+                  child: ListTile(
+                    title: Text(
+                      'Error al cargar el evento de clima $grupo',
+                      style: GoogleFonts.poppins(
+                        color: color0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Por favor, elimine el evento y vuelva a crearlo.',
+                      style: GoogleFonts.poppins(
+                        color: color0,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+          }
+
+          // Manejar evento de disparador
+          if (eventoDisparador != null) {
+            try {
+              List<dynamic> deviceGroup = eventoDisparador['deviceGroup'] ?? [];
+
+              // Obtener las acciones de los dispositivos ejecutores
+              Map<String, dynamic> devicesActions = Map<String, dynamic>.from(
+                  eventoDisparador['deviceActions'] ?? {});
+
+              // Crear lista de nombres de dispositivos
+              String devicesInGroup = deviceName;
+              List<String> deviceList = devicesInGroup
+                  .replaceAll('[', '')
+                  .replaceAll(']', '')
+                  .split(',');
+              List<String> disparadorNicksList = [];
+              for (String equipo in deviceList) {
+                String displayName = '';
+                if (equipo.contains('_')) {
+                  final parts = equipo.split('_');
+                  displayName = nicknamesMap[equipo.trim()] ??
+                      '${parts[0]} salida ${parts[1]}';
+                } else {
+                  displayName = nicknamesMap[equipo.trim()] ?? equipo.trim();
+                }
+                disparadorNicksList.add(displayName);
+              }
+
+              // El primer dispositivo es el activador, el resto son ejecutores
+              String activador = disparadorNicksList.isNotEmpty
+                  ? disparadorNicksList.first
+                  : '';
+              List<String> ejecutores = disparadorNicksList.length > 1
+                  ? disparadorNicksList.sublist(1)
+                  : [];
+
+              // Verificar si el activador es un termómetro
+              bool isTermometro = deviceGroup.isNotEmpty &&
+                  deviceGroup.first.toString().contains('Termometro');
+
+              // Obtener estado de alerta y termómetro
+              String? estadoAlerta =
+                  eventoDisparador['estadoAlerta']?.toString();
+              String? estadoTermometro =
+                  eventoDisparador['estadoTermometro']?.toString();
+
+              return Card(
+                key: ValueKey('disparador_$grupo'),
+                color: color1,
+                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                elevation: 2,
+                child: Theme(
+                  data: Theme.of(context)
+                      .copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    iconColor: color4,
+                    collapsedIconColor: color4,
+                    onExpansionChanged: (bool expanded) {
+                      setState(() {
+                        _expandedStates[deviceName] = expanded;
+                      });
+                    },
+                    title: Row(
+                      children: [
+                        const Icon(HugeIcons.strokeRoundedPlayCircle,
+                            color: color4),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            grupo,
+                            style: GoogleFonts.poppins(
+                              color: color0,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: color0.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'DISPARADOR',
+                            style: GoogleFonts.poppins(
+                              color: color0,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Sección Activador
+                            Row(
+                              children: [
+                                const Icon(
+                                    HugeIcons.strokeRoundedTouchInteraction02,
+                                    color: color4,
+                                    size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'ACTIVADOR',
+                                  style: GoogleFonts.poppins(
+                                    color: color4,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            if (activador.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      isTermometro
+                                          ? HugeIcons.strokeRoundedThermometer
+                                          : HugeIcons.strokeRoundedAlert01,
+                                      color: color4,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        activador,
+                                        style: GoogleFonts.poppins(
+                                          color: color0,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            const SizedBox(height: 12),
+                            // Condiciones del disparador
+                            if (estadoAlerta != null)
+                              Card(
+                                color: Colors.transparent,
+                                elevation: 0,
+                                margin: const EdgeInsets.only(bottom: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  side: BorderSide(
+                                    color: (estadoAlerta == "1"
+                                            ? Colors.orange
+                                            : Colors.blueGrey)
+                                        .withValues(alpha: 0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(
+                                        estadoAlerta == "1"
+                                            ? HugeIcons.strokeRoundedAlert02
+                                            : HugeIcons
+                                                .strokeRoundedCheckmarkCircle02,
+                                        color: estadoAlerta == "1"
+                                            ? Colors.orange
+                                            : Colors.blueGrey,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text.rich(
+                                          TextSpan(
+                                            children: [
+                                              const TextSpan(
+                                                  text:
+                                                      "El evento se accionará cuando el activador esté en "),
+                                              TextSpan(
+                                                text: estadoAlerta == "1"
+                                                    ? "ALERTA"
+                                                    : "REPOSO",
+                                                style: GoogleFonts.poppins(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: estadoAlerta == "1"
+                                                      ? Colors.orange
+                                                      : Colors.blueGrey,
+                                                  letterSpacing: 0.5,
+                                                ),
+                                              ),
+                                              const TextSpan(text: "."),
+                                            ],
+                                          ),
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 13,
+                                            color:
+                                                color0.withValues(alpha: 0.85),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            if (isTermometro && estadoTermometro != null)
+                              Card(
+                                color: Colors.transparent,
+                                elevation: 0,
+                                margin: const EdgeInsets.only(bottom: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  side: BorderSide(
+                                    color: (estadoTermometro == "1"
+                                            ? Colors.red
+                                            : Colors.lightBlue)
+                                        .withValues(alpha: 0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(
+                                        Icons.thermostat,
+                                        color: estadoTermometro == "1"
+                                            ? Colors.red
+                                            : Colors.lightBlue,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text.rich(
+                                          TextSpan(
+                                            children: [
+                                              const TextSpan(
+                                                  text:
+                                                      "Condición usada: Temperatura "),
+                                              TextSpan(
+                                                text: estadoTermometro == "1"
+                                                    ? "MÁXIMA"
+                                                    : "MÍNIMA",
+                                                style: GoogleFonts.poppins(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: estadoTermometro == "1"
+                                                      ? Colors.red
+                                                      : Colors.lightBlue,
+                                                  letterSpacing: 0.5,
+                                                ),
+                                              ),
+                                              const TextSpan(
+                                                  text: " del termómetro."),
+                                            ],
+                                          ),
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 13,
+                                            color:
+                                                color0.withValues(alpha: 0.85),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 16),
+                            // Sección Ejecutores
+                            if (ejecutores.isNotEmpty) ...[
+                              Row(
+                                children: [
+                                  const Icon(HugeIcons.strokeRoundedSettings02,
+                                      color: color4, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'EJECUTORES',
+                                    style: GoogleFonts.poppins(
+                                      color: color4,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              ...ejecutores.asMap().entries.map((entry) {
+                                final idx = entry.key + 1;
+                                String ejecutorName = entry.value;
+                                // +1 porque el índice 0 es el activador
+                                final equipoOriginal =
+                                    deviceList[entry.key + 1].trim();
+
+                                // Verificar si es un evento buscando en eventosCreados
+                                bool isEvento = false;
+                                bool isCadena = false;
+                                bool isRiego = false;
+                                bool isGrupo = false;
+
+                                final eventoEncontrado =
+                                    eventosCreados.firstWhere(
+                                  (evento) => evento['title'] == equipoOriginal,
+                                  orElse: () => <String, dynamic>{},
+                                );
+
+                                if (eventoEncontrado.isNotEmpty) {
+                                  // Es un evento (grupo, cadena o riego)
+                                  final eventoType =
+                                      eventoEncontrado['evento'] as String;
+                                  ejecutorName = equipoOriginal;
+                                  isEvento = true;
+                                  isCadena = eventoType == 'cadena';
+                                  isRiego = eventoType == 'riego';
+                                  isGrupo = eventoType == 'grupo';
+                                }
+
+                                // Definir acción, ícono y color según el tipo
+                                String actionText = '';
+                                IconData actionIcon =
+                                    HugeIcons.strokeRoundedSettings02;
+                                Color actionColor = color0;
+                                String fullActionText = '';
+
+                                if (isEvento) {
+                                  // Manejo especial para eventos
+                                  if (isCadena) {
+                                    actionText = 'ejecutará';
+                                    fullActionText = 'Se ejecutará';
+                                    actionIcon =
+                                        HugeIcons.strokeRoundedPlayCircle;
+                                    actionColor = Colors.orange;
+                                  } else if (isRiego) {
+                                    actionText = 'ejecutará';
+                                    fullActionText = 'Se ejecutará';
+                                    actionIcon = HugeIcons.strokeRoundedLeaf01;
+                                    actionColor = Colors.blue;
+                                  } else if (isGrupo) {
+                                    // Es un grupo
+                                    final action = devicesActions[
+                                            '$equipoOriginal:grupo'] ??
+                                        false;
+                                    actionText =
+                                        action ? "Encenderá" : "Apagará";
+                                    fullActionText = 'Se $actionText';
+                                    actionIcon = action
+                                        ? HugeIcons.strokeRoundedPlug01
+                                        : HugeIcons.strokeRoundedPlugSocket;
+                                    actionColor =
+                                        action ? Colors.green : Colors.red;
+                                  } else {
+                                    // Evento desconocido
+                                    actionText = 'ejecutará';
+                                    fullActionText = 'Se ejecutará';
+                                    actionIcon =
+                                        HugeIcons.strokeRoundedSettings02;
+                                    actionColor = color4;
+                                  }
+                                } else {
+                                  // Es un dispositivo individual
+                                  final action =
+                                      devicesActions[equipoOriginal] ?? false;
+                                  actionText = action ? "Encenderá" : "Apagará";
+                                  fullActionText = 'Se $actionText';
+                                  actionIcon = action
+                                      ? HugeIcons.strokeRoundedPlug01
+                                      : HugeIcons.strokeRoundedPlugSocket;
+                                  actionColor = action ? Colors.green : color4;
+                                }
+
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: actionColor.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: actionColor.withValues(alpha: 0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 24,
+                                        height: 24,
+                                        decoration: const BoxDecoration(
+                                          color: color4,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            '$idx',
+                                            style: GoogleFonts.poppins(
+                                              color: color1,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              ejecutorName,
+                                              style: GoogleFonts.poppins(
+                                                color: color0,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  actionIcon,
+                                                  color: actionColor,
+                                                  size: 14,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  fullActionText,
+                                                  style: GoogleFonts.poppins(
+                                                    color: actionColor,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Icon(
+                                        actionIcon,
+                                        color: actionColor,
+                                        size: 20,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                              const SizedBox(height: 10),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    HugeIcons.strokeRoundedDelete02,
+                                    color: color0,
+                                  ),
+                                  tooltip: 'Eliminar evento de horario',
+                                  onPressed: () {
+                                    showAlertDialog(
+                                      context,
+                                      false,
+                                      const Text(
+                                        '¿Eliminar este evento de horario?',
+                                        style: TextStyle(color: color0),
+                                      ),
+                                      const Text(
+                                        'Esta acción no se puede deshacer.',
+                                        style: TextStyle(color: color0),
+                                      ),
+                                      <Widget>[
+                                        TextButton(
+                                          style: ButtonStyle(
+                                            foregroundColor:
+                                                WidgetStateProperty.all(color0),
+                                          ),
+                                          child: const Text('Cancelar'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                        TextButton(
+                                          style: ButtonStyle(
+                                            foregroundColor:
+                                                WidgetStateProperty.all(color0),
+                                          ),
+                                          child: const Text('Confirmar'),
+                                          onPressed: () {
+                                            setState(() {
+                                              eventosCreados.removeAt(index);
+                                              putEventos(currentUserEmail,
+                                                  eventosCreados);
+                                              printLog.d(grupo,
+                                                  color: 'naranja');
+
+                                              String sortKey =
+                                                  '$currentUserEmail:$grupo';
+
+                                              removeEjecutoresFromDisparador(
+                                                  activador, sortKey);
+                                              todosLosDispositivos.removeWhere(
+                                                  (entry) =>
+                                                      entry.key == grupo);
+                                            });
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            } catch (e) {
+              printLog
+                  .e('Error al procesar el evento de disparador $grupo: $e');
+              return Card(
+                key: ValueKey('disparador_error_$grupo'),
+                color: color1,
+                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                elevation: 2,
+                child: Theme(
+                  data: Theme.of(context)
+                      .copyWith(dividerColor: Colors.transparent),
+                  child: ListTile(
+                    title: Text(
+                      'Error al cargar el evento de disparador $grupo',
+                      style: GoogleFonts.poppins(
+                        color: color0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Por favor, elimine el evento y vuelva a crearlo.',
+                      style: GoogleFonts.poppins(
+                        color: color0,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+          }
+
+          // Manejar evento de horario
+          if (eventoHorario != null) {
+            try {
+              List<String> selectedDays =
+                  List<String>.from(eventoHorario['selectedDays'] ?? []);
+              String selectedTime = eventoHorario['selectedTime'] ?? '';
+
+              // Obtener las acciones de los dispositivos
+              Map<String, dynamic> devicesActions = Map<String, dynamic>.from(
+                  eventoHorario['deviceActions'] ?? {});
+              // Crear lista de nombres de dispositivos
+              String devicesInGroup = deviceName;
+              List<String> deviceList = devicesInGroup
+                  .replaceAll('[', '')
+                  .replaceAll(']', '')
+                  .split(',');
+              List<String> horarioNicksList = [];
+              for (String equipo in deviceList) {
+                String displayName = '';
+                if (equipo.contains('_')) {
+                  final parts = equipo.split('_');
+                  displayName = nicknamesMap[equipo.trim()] ??
+                      '${parts[0]} salida ${parts[1]}';
+                } else {
+                  displayName = nicknamesMap[equipo.trim()] ?? equipo.trim();
+                }
+                horarioNicksList.add(displayName);
+              }
+
+              // Formatear días
+              String formatDays(List<String> days) {
+                if (days.isEmpty) return 'No hay días seleccionados';
+                if (days.length == 1) return days.first;
+                final primeros = days.sublist(0, days.length - 1);
+                return '${primeros.join(', ')} y ${days.last}';
+              }
+
+              return Card(
+                key: ValueKey('horario_$grupo'),
+                color: color1,
+                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                elevation: 2,
+                child: Theme(
+                  data: Theme.of(context)
+                      .copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    iconColor: color4,
+                    collapsedIconColor: color4,
+                    onExpansionChanged: (bool expanded) {
+                      setState(() {
+                        _expandedStates[deviceName] = expanded;
+                      });
+                    },
+                    title: Row(
+                      children: [
+                        const Icon(HugeIcons.strokeRoundedClock01,
+                            color: color4),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            grupo,
+                            style: GoogleFonts.poppins(
+                              color: color0,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: color0.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'HORARIO',
+                            style: GoogleFonts.poppins(
+                              color: color0,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Información de días y hora (simplificado)
+                            Row(
+                              children: [
+                                const Icon(
+                                  HugeIcons.strokeRoundedCalendar01,
+                                  color: color4,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Días',
+                                        style: GoogleFonts.poppins(
+                                          color: color0.withValues(alpha: 0.7),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      Text(
+                                        formatDays(selectedDays),
+                                        style: GoogleFonts.poppins(
+                                          color: color0,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                const Icon(
+                                  HugeIcons.strokeRoundedTime01,
+                                  color: color4,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Hora',
+                                        style: GoogleFonts.poppins(
+                                          color: color0.withValues(alpha: 0.7),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      Text(
+                                        selectedTime.isNotEmpty
+                                            ? selectedTime
+                                            : 'No especificada',
+                                        style: GoogleFonts.poppins(
+                                          color: color0,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            // Dispositivos afectados
+                            Text(
+                              'Dispositivos afectados:',
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ...horarioNicksList.asMap().entries.map((entry) {
+                              final idx = entry.key + 1;
+                              String deviceNick = entry.value;
+                              final equipo = deviceList[entry.key].trim();
+
+                              // Verificar si es un evento buscando en eventosCreados
+                              bool isEvento = false;
+                              bool isCadena = false;
+                              bool isRiego = false;
+                              bool isGrupo = false;
+
+                              final eventoEncontrado =
+                                  eventosCreados.firstWhere(
+                                (evento) => evento['title'] == equipo,
+                                orElse: () => <String, dynamic>{},
+                              );
+
+                              if (eventoEncontrado.isNotEmpty) {
+                                // Es un evento (grupo, cadena o riego)
+                                final eventoType =
+                                    eventoEncontrado['evento'] as String;
+                                deviceNick = equipo;
+                                isEvento = true;
+                                isCadena = eventoType == 'cadena';
+                                isRiego = eventoType == 'riego';
+                                isGrupo = eventoType == 'grupo';
+                              }
+
+                              // Definir acción, ícono y color según el tipo
+                              String actionText = '';
+                              IconData actionIcon =
+                                  HugeIcons.strokeRoundedSettings02;
+                              Color actionColor = color0;
+
+                              if (isEvento) {
+                                // Manejo especial para eventos
+                                if (isCadena) {
+                                  actionText = 'Se ejecutará';
+                                  actionIcon =
+                                      HugeIcons.strokeRoundedPlayCircle;
+                                  actionColor = Colors.orange;
+                                } else if (isRiego) {
+                                  actionText = 'Se ejecutará';
+                                  actionIcon = HugeIcons.strokeRoundedLeaf01;
+                                  actionColor = Colors.blue;
+                                } else if (isGrupo) {
+                                  // Es un grupo
+                                  final action =
+                                      devicesActions['$equipo:grupo'] ?? false;
+                                  actionText = action ? "Encenderá" : "Apagará";
+                                  actionIcon = action
+                                      ? HugeIcons.strokeRoundedPlug01
+                                      : HugeIcons.strokeRoundedPlugSocket;
+                                  actionColor =
+                                      action ? Colors.green : Colors.red;
+                                } else {
+                                  // Evento desconocido
+                                  actionText = 'Se ejecutará';
+                                  actionIcon =
+                                      HugeIcons.strokeRoundedSettings02;
+                                  actionColor = color4;
+                                }
+                              } else {
+                                // Es un dispositivo individual
+                                final action =
+                                    devicesActions['$equipo:dispositivo'] ??
+                                        false;
+                                actionText = action ? "Encenderá" : "Apagará";
+                                actionIcon = action
+                                    ? HugeIcons.strokeRoundedPlug01
+                                    : HugeIcons.strokeRoundedPlugSocket;
+                                actionColor =
+                                    action ? Colors.green : Colors.red;
+                              }
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 24,
+                                      height: 24,
+                                      decoration: const BoxDecoration(
+                                        color: color4,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '$idx',
+                                          style: GoogleFonts.poppins(
+                                            color: color1,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        deviceNick,
+                                        style: GoogleFonts.poppins(
+                                          color: color0,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      actionIcon,
+                                      color: actionColor,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      actionText,
+                                      style: GoogleFonts.poppins(
+                                        color: actionColor,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: IconButton(
+                                icon: const Icon(
+                                  HugeIcons.strokeRoundedDelete02,
+                                  color: color0,
+                                ),
+                                tooltip: 'Eliminar evento de horario',
+                                onPressed: () {
+                                  showAlertDialog(
+                                    context,
+                                    false,
+                                    const Text(
+                                      '¿Eliminar este evento de horario?',
+                                      style: TextStyle(color: color0),
+                                    ),
+                                    const Text(
+                                      'Esta acción no se puede deshacer.',
+                                      style: TextStyle(color: color0),
+                                    ),
+                                    <Widget>[
+                                      TextButton(
+                                        style: ButtonStyle(
+                                          foregroundColor:
+                                              WidgetStateProperty.all(color0),
+                                        ),
+                                        child: const Text('Cancelar'),
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                      TextButton(
+                                        style: ButtonStyle(
+                                          foregroundColor:
+                                              WidgetStateProperty.all(color0),
+                                        ),
+                                        child: const Text('Confirmar'),
+                                        onPressed: () {
+                                          setState(() {
+                                            eventosCreados.removeAt(index);
+                                            putEventos(currentUserEmail,
+                                                eventosCreados);
+                                            deleteEventoControlPorHorarios(
+                                                selectedTime,
+                                                currentUserEmail,
+                                                grupo);
+                                            todosLosDispositivos.removeWhere(
+                                                (entry) => entry.key == grupo);
+                                          });
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            } catch (e) {
+              printLog.e('Error al procesar el evento de horario $grupo: $e');
+              return Card(
+                key: ValueKey('horario_error_$grupo'),
+                color: color1,
+                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                elevation: 2,
+                child: Theme(
+                  data: Theme.of(context)
+                      .copyWith(dividerColor: Colors.transparent),
+                  child: ListTile(
+                    title: Text(
+                      'Error al cargar el evento de horario $grupo',
+                      style: GoogleFonts.poppins(
+                        color: color0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Por favor, elimine el evento y vuelva a crearlo.',
+                      style: GoogleFonts.poppins(
+                        color: color0,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+          }
+
           String devicesInGroup = deviceName;
           List<String> deviceList =
               devicesInGroup.replaceAll('[', '').replaceAll(']', '').split(',');
@@ -4189,7 +5687,64 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 ],
                               ),
                             );
-                          })
+                          }),
+                          const SizedBox(height: 10),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: IconButton(
+                              icon: const Icon(
+                                HugeIcons.strokeRoundedDelete02,
+                                color: color0,
+                              ),
+                              tooltip: 'Eliminar evento de horario',
+                              onPressed: () {
+                                showAlertDialog(
+                                  context,
+                                  false,
+                                  const Text(
+                                    '¿Eliminar este evento de horario?',
+                                    style: TextStyle(color: color0),
+                                  ),
+                                  const Text(
+                                    'Esta acción no se puede deshacer.',
+                                    style: TextStyle(color: color0),
+                                  ),
+                                  <Widget>[
+                                    TextButton(
+                                      style: ButtonStyle(
+                                        foregroundColor:
+                                            WidgetStateProperty.all(color0),
+                                      ),
+                                      child: const Text('Cancelar'),
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                    ),
+                                    TextButton(
+                                      style: ButtonStyle(
+                                        foregroundColor:
+                                            WidgetStateProperty.all(color0),
+                                      ),
+                                      child: const Text('Confirmar'),
+                                      onPressed: () {
+                                        setState(() {
+                                          eventosCreados.removeAt(index);
+                                          putEventos(
+                                              currentUserEmail, eventosCreados);
+                                          printLog.d(grupo, color: 'naranja');
+                                          deleteEventoControlPorGrupos(
+                                              currentUserEmail, grupo);
+                                          todosLosDispositivos.removeWhere(
+                                              (entry) => entry.key == grupo);
+                                        });
+                                        Navigator.of(context).pop();
+                                      },
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -4342,10 +5897,10 @@ class WifiPageState extends ConsumerState<WifiPage>
                           key.startsWith('io') &&
                           RegExp(r'^io\d+$').hasMatch(key))
                       .where((ioKey) {
-                if (deviceDATA[ioKey] == null) return false;
+                 if (deviceDATA[ioKey] == null) return false;
                 try {
                   var ioData = jsonDecode(deviceDATA[ioKey]);
-                  return ioData['pinType'] == '0'; // Solo salidas
+                  return ioData['pinType'] == '0';
                 } catch (e) {
                   return false;
                 }
@@ -4726,6 +6281,25 @@ class WifiPageState extends ConsumerState<WifiPage>
     Map<String, dynamic> deviceDATA =
         globalDATA['$productCode/$serialNumber'] ?? {};
     bool freeBomb = deviceDATA['freeBomb'] ?? false;
+
+    // Validación especial para control directo de bomba
+    if (isBomb && !freeBomb) {
+      if (value) {
+        // Intentando ENCENDER la bomba - verificar si hay zonas activas
+        int activeZones = _countActiveZonesForDevice(productCode, serialNumber);
+        int activeExtensionZones =
+            _countActiveZonesForAllExtensions(deviceName);
+        int totalActiveZones = activeZones + activeExtensionZones;
+
+        if (totalActiveZones == 0) {
+          showToast('No se puede encender la bomba sin zonas activas.');
+          return;
+        }
+      }
+      // Si llegamos aquí, permitir el control directo de la bomba
+      _sendRiegoCommand(productCode, serialNumber, outputIndex, value);
+      return;
+    }
 
     if (!freeBomb && !isBomb) {
       // Lógica para zonas con bomba automática

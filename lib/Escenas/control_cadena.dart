@@ -1274,7 +1274,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
       });
     }
 
-    printLog.d("A dynamo se envia: $stepsToDynamo");
+    printLog.i("A dynamo se envia: $stepsToDynamo");
 
     // Crear el evento y agregarlo a eventosCreados
     final cadenaEvent = {
@@ -1310,6 +1310,8 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
     if (widget.onBackToMain != null) {
       widget.onBackToMain!();
     }
+
+    Navigator.pop(context, true);
 
     printLog.i(eventosCreados);
   }

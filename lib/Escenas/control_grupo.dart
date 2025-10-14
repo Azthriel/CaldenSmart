@@ -509,16 +509,13 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
           currentUserEmail, title.text.trim(), deviceGroup);
 
       deviceGroup.clear();
-      showCard = false;
       showToast("Grupo confirmado");
 
       _initializeData();
       title.clear();
     });
 
-    if (widget.onBackToMain != null) {
-      widget.onBackToMain!();
-    }
+    Navigator.pop(context, true);
 
     printLog.i(eventosCreados);
   }

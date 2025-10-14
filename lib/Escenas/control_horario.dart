@@ -93,7 +93,9 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
 
     final eventosDisponibles = eventosCreados.where((evento) {
       final eventoType = evento['evento'] as String;
-      return eventoType == 'grupo' || eventoType == 'cadena' || eventoType == 'riego';
+      return eventoType == 'grupo' ||
+          eventoType == 'cadena' ||
+          eventoType == 'riego';
     }).toList();
 
     if (validDevices.isEmpty && eventosDisponibles.isEmpty) {
@@ -153,8 +155,16 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
             ),
             child: ListTile(
               leading: Icon(
-                eventoType == 'grupo' ? Icons.group_work_outlined : eventoType == 'riego' ? Icons.grass : Icons.link,
-                color: eventoType == 'grupo' ? color4 : eventoType == 'riego' ? Colors.green : Colors.orange,
+                eventoType == 'grupo'
+                    ? Icons.group_work_outlined
+                    : eventoType == 'riego'
+                        ? Icons.grass
+                        : Icons.link,
+                color: eventoType == 'grupo'
+                    ? color4
+                    : eventoType == 'riego'
+                        ? Colors.green
+                        : Colors.orange,
               ),
               title: Text(
                 eventoTitle,
@@ -471,10 +481,16 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
               if (eventoEncontrado.isNotEmpty) {
                 final eventoType = eventoEncontrado['evento'] as String;
                 displayName = device;
-                deviceType = eventoType == 'grupo' ? 'Grupo' : eventoType == 'riego' ? 'Riego' : 'Cadena';
+                deviceType = eventoType == 'grupo'
+                    ? 'Grupo'
+                    : eventoType == 'riego'
+                        ? 'Riego'
+                        : 'Cadena';
                 iconData = eventoType == 'grupo'
                     ? Icons.group_work_outlined
-                    : eventoType == 'riego' ? Icons.grass : Icons.link;
+                    : eventoType == 'riego'
+                        ? Icons.grass
+                        : Icons.link;
                 isCadena = eventoType == 'cadena';
                 isRiego = eventoType == 'riego';
               } else {
@@ -981,9 +997,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
       title.clear();
     });
 
-    if (widget.onBackToMain != null) {
-      widget.onBackToMain!();
-    }
+    Navigator.pop(context, true);
   }
 
   @override

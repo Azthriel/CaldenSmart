@@ -1843,6 +1843,12 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                               await putRiegoMaster(
                                                   extensionPc, extensionSn, '');
 
+                                              // Actualizar globalDATA de la extensión
+                                              globalDATA
+                                                  .putIfAbsent(
+                                                      '$extensionPc/$extensionSn', () => {})
+                                                  .remove('riegoMaster');
+
                                               // Actualizar la lista local y en la base de datos
                                               extensionesVinculadas
                                                   .remove(extension);
@@ -3565,12 +3571,27 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                                   extension);
                                           await putRiegoMaster(extensionPc,
                                               extensionSn, deviceName);
+
+                                          // Actualizar globalDATA de la extensión
+                                          globalDATA
+                                              .putIfAbsent(
+                                                  '$extensionPc/$extensionSn', () => {})
+                                              .addAll({'riegoMaster': deviceName});
                                         }
                                       }
 
                                       // Actualizar la lista de extensiones en el dispositivo maestro
                                       await putRiegoExtensions(
                                           pc, sn, extensionesVinculadas);
+
+                                      // Actualizar globalDATA del maestro
+                                      globalDATA
+                                          .putIfAbsent('$pc/$sn', () => {})
+                                          .addAll({
+                                        'riegoExtensions':
+                                            List<String>.from(extensionesVinculadas)
+                                      });
+                                      saveGlobalData(globalDATA);
 
                                       setState(() {
                                         isExtension = false;

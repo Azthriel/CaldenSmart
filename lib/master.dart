@@ -241,8 +241,6 @@ List<String> selectedDays = [];
 List<String> deviceGroup = [];
 List<String> filterDevices = [];
 Map<String, Duration> deviceDelays = {};
-TextEditingController title = TextEditingController();
-TextEditingController delayController = TextEditingController();
 
 final List<String> weatherConditions = [
   'Lluvia',

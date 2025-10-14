@@ -1255,9 +1255,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
       title.clear();
     });
 
-    if (widget.onBackToMain != null) {
-      widget.onBackToMain!();
-    }
+    Navigator.pop(context, true);
   }
 
   @override

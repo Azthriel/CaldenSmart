@@ -482,12 +482,11 @@ class ManagerScreenState extends State<ManagerScreen> {
       await putSecondaryAdmins(DeviceManager.getProductCode(widget.deviceName),
           DeviceManager.extractSerialNumber(widget.deviceName), updatedAdmins);
 
-      globalDATA[
-              '${DeviceManager.getProductCode(widget.deviceName)}/${DeviceManager.extractSerialNumber(widget.deviceName)}']
-          ?['secondary_admin'] = updatedAdmins;
-
       setState(() {
         adminDevices = updatedAdmins;
+        globalDATA[
+                '${DeviceManager.getProductCode(widget.deviceName)}/${DeviceManager.extractSerialNumber(widget.deviceName)}']
+            ?['secondary_admin'] = adminDevices;
         emailController.clear();
       });
 
@@ -742,7 +741,9 @@ class ManagerScreenState extends State<ManagerScreen> {
                                 setState(() {
                                   owner = '';
                                   deviceOwner = false;
+                                  globalDATA['$pc/$sn']?['owner'] = '';
                                 });
+                                saveGlobalData(globalDATA);
                               } catch (e, s) {
                                 printLog
                                     .i('Error al borrar owner $e Trace: $s');
@@ -761,9 +762,11 @@ class ManagerScreenState extends State<ManagerScreen> {
                         );
                         setState(() {
                           owner = currentUserEmail;
+                          globalDATA['$pc/$sn']?['owner'] = currentUserEmail;
                           deviceOwner = true;
                         });
                         showToast('Ahora eres el propietario del equipo');
+                        saveGlobalData(globalDATA);
                       } catch (e, s) {
                         printLog.i('Error al agregar owner $e Trace: $s');
                         showToast('Error al agregar el administrador.');

@@ -1003,16 +1003,13 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
         selectedWeatherCondition, ejecutores);
 
     showToast("Control climático creado exitosamente");
-    printLog.d("$eventosCreados", color: 'verde');
 
     setState(() {
       _initializeData();
       title.clear();
     });
 
-    if (widget.onBackToMain != null) {
-      widget.onBackToMain!();
-    }
+    Navigator.pop(context, true);
 
     printLog.i(eventosCreados);
   }

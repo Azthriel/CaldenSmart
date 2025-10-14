@@ -5,6 +5,7 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'package:flutter/material.dart';
 
 var printLog = Logger(
   printer: PrefixPrinter(
@@ -267,7 +268,7 @@ class LogEvent {
   final Object? error;
   final StackTrace? stackTrace;
   final DateTime time;
-  String? customColor; // <-- Nuevo campo
+  dynamic customColor;
 
   LogEvent(
     this.level,
@@ -409,12 +410,13 @@ class Logger {
   /// Log a message at level [Level.trace].
   ///
   /// [color] puede ser: 'rojo', 'verde', 'azul', 'amarillo', 'naranja', 'violeta', 'cyan', 'gris', 'blanco', 'negro', 'rosa', 'lima', 'marron'
+  /// También acepta colores de Flutter como Colors.red, Colors.blue, etc.
   void t(
     dynamic message, {
     DateTime? time,
     Object? error,
     StackTrace? stackTrace,
-    String? color,
+    dynamic color,
   }) {
     log(Level.trace, message,
         time: time, error: error, stackTrace: stackTrace, color: color);
@@ -423,12 +425,13 @@ class Logger {
   /// Log a message at level [Level.debug].
   ///
   /// [color] puede ser: 'rojo', 'verde', 'azul', 'amarillo', 'naranja', 'violeta', 'cyan', 'gris', 'blanco', 'negro', 'rosa', 'lima', 'marron'
+  /// También acepta colores de Flutter como Colors.red, Colors.blue, etc.
   void d(
     dynamic message, {
     DateTime? time,
     Object? error,
     StackTrace? stackTrace,
-    String? color,
+    dynamic color,
   }) {
     log(Level.debug, message,
         time: time, error: error, stackTrace: stackTrace, color: color);
@@ -437,12 +440,13 @@ class Logger {
   /// Log a message at level [Level.info].
   ///
   /// [color] puede ser: 'rojo', 'verde', 'azul', 'amarillo', 'naranja', 'violeta', 'cyan', 'gris', 'blanco', 'negro', 'rosa', 'lima', 'marron'
+  /// También acepta colores de Flutter como Colors.red, Colors.blue, etc.
   void i(
     dynamic message, {
     DateTime? time,
     Object? error,
     StackTrace? stackTrace,
-    String? color,
+    dynamic color,
   }) {
     log(Level.info, message,
         time: time, error: error, stackTrace: stackTrace, color: color);
@@ -451,12 +455,13 @@ class Logger {
   /// Log a message at level [Level.error].
   ///
   /// [color] puede ser: 'rojo', 'verde', 'azul', 'amarillo', 'naranja', 'violeta', 'cyan', 'gris', 'blanco', 'negro', 'rosa', 'lima', 'marron'
+  /// También acepta colores de Flutter como Colors.red, Colors.blue, etc.
   void e(
     dynamic message, {
     DateTime? time,
     Object? error,
     StackTrace? stackTrace,
-    String? color,
+    dynamic color,
   }) {
     log(Level.error, message,
         time: time, error: error, stackTrace: stackTrace, color: color);
@@ -469,7 +474,7 @@ class Logger {
     DateTime? time,
     Object? error,
     StackTrace? stackTrace,
-    String? color,
+    dynamic color,
   }) {
     if (!_active) {
       throw ArgumentError('Logger has already been closed.');
@@ -1120,35 +1125,68 @@ class PrettyPrinter extends LogPrinter {
     }
   }
 
-  AnsiColor _getLevelColor(Level level, [String? customColor]) {
+  AnsiColor _colorToAnsiColor(Color color) {
+    // Extraer los valores RGB del color
+    int r = (color.r * 255.0).round() & 0xff;
+    int g = (color.g * 255.0).round() & 0xff;
+    int b = (color.b * 255.0).round() & 0xff;
+
+    // Convertir RGB a código ANSI 256-color más cercano
+    // Usando la fórmula estándar para terminales
+    if (r == g && g == b) {
+      // Color en escala de grises
+      if (r < 8) {
+        return const AnsiColor.fg(16);
+      } else if (r > 248) {
+        return const AnsiColor.fg(231);
+      } else {
+        return AnsiColor.fg(232 + ((r - 8) * 23 ~/ 240));
+      }
+    } else {
+      // Color RGB
+      int ansiR = (r * 5 ~/ 255);
+      int ansiG = (g * 5 ~/ 255);
+      int ansiB = (b * 5 ~/ 255);
+      return AnsiColor.fg(16 + (36 * ansiR) + (6 * ansiG) + ansiB);
+    }
+  }
+
+  AnsiColor _getLevelColor(Level level, [dynamic customColor]) {
     if (customColor != null) {
-      switch (customColor.toLowerCase()) {
-        case 'rojo':
-          return const AnsiColor.fg(196);
-        case 'verde':
-          return const AnsiColor.fg(46);
-        case 'azul':
-          return const AnsiColor.fg(21);
-        case 'amarillo':
-          return const AnsiColor.fg(226);
-        case 'naranja':
-          return const AnsiColor.fg(208);
-        case 'violeta':
-          return const AnsiColor.fg(93);
-        case 'cyan':
-          return const AnsiColor.fg(51);
-        case 'gris':
-          return const AnsiColor.fg(244);
-        case 'blanco':
-          return const AnsiColor.fg(15);
-        case 'negro':
-          return const AnsiColor.fg(0);
-        case 'rosa':
-          return const AnsiColor.fg(205);
-        case 'lima':
-          return const AnsiColor.fg(118);
-        case 'marron':
-          return const AnsiColor.fg(94);
+      // Si es un Color de Flutter
+      if (customColor is Color) {
+        return _colorToAnsiColor(customColor);
+      }
+      // Si es un string
+      else if (customColor is String) {
+        switch (customColor.toLowerCase()) {
+          case 'rojo':
+            return const AnsiColor.fg(196);
+          case 'verde':
+            return const AnsiColor.fg(46);
+          case 'azul':
+            return const AnsiColor.fg(21);
+          case 'amarillo':
+            return const AnsiColor.fg(226);
+          case 'naranja':
+            return const AnsiColor.fg(208);
+          case 'violeta':
+            return const AnsiColor.fg(93);
+          case 'cyan':
+            return const AnsiColor.fg(51);
+          case 'gris':
+            return const AnsiColor.fg(244);
+          case 'blanco':
+            return const AnsiColor.fg(15);
+          case 'negro':
+            return const AnsiColor.fg(0);
+          case 'rosa':
+            return const AnsiColor.fg(205);
+          case 'lima':
+            return const AnsiColor.fg(118);
+          case 'marron':
+            return const AnsiColor.fg(94);
+        }
       }
     }
 
