@@ -3243,6 +3243,168 @@ class WifiPageState extends ConsumerState<WifiPage>
                     ),
                   ),
                 );
+              case '027345_IOT':
+                bool estado = deviceDATA['w_status'] ?? false;
+                bool heaterOn = deviceDATA['f_status'] ?? false;
+                return Card(
+                  key: ValueKey(deviceName),
+                  color: color1,
+                  margin:
+                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                  elevation: 2,
+                  child: Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      iconColor: color4,
+                      collapsedIconColor: color4,
+                      title: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: MediaQuery.of(context).size.width * 0.7,
+                                child: Text(
+                                  nicknamesMap[deviceName] ?? deviceName,
+                                  style: GoogleFonts.poppins(
+                                    color: color0,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                spacing: 10,
+                                children: [
+                                  Text(
+                                    online ? '● CONECTADO' : '● DESCONECTADO',
+                                    style: GoogleFonts.poppins(
+                                      color: online ? Colors.green : color3,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  Icon(
+                                    online ? Icons.cloud : Icons.cloud_off,
+                                    color: online ? Colors.green : color3,
+                                    size: 15,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      children: <Widget>[
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0, vertical: 5.0),
+                                child: online
+                                    ? Row(
+                                        children: [
+                                          estado
+                                              ? Row(
+                                                  children: [
+                                                    if (heaterOn) ...[
+                                                      Text(
+                                                        'Calentando',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          color:
+                                                              Colors.amber[800],
+                                                          fontSize: 15,
+                                                        ),
+                                                      ),
+                                                      Icon(
+                                                        Icons.water_drop,
+                                                        size: 15,
+                                                        color:
+                                                            Colors.amber[800],
+                                                      ),
+                                                    ] else ...[
+                                                      Text(
+                                                        'Encendido',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          color: Colors.green,
+                                                          fontSize: 15,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ],
+                                                )
+                                              : Text(
+                                                  'Apagado',
+                                                  style: GoogleFonts.poppins(
+                                                      color: color4,
+                                                      fontSize: 15),
+                                                ),
+                                          const SizedBox(width: 5),
+                                          owner
+                                              ? Switch(
+                                                  activeThumbColor:
+                                                      const Color(0xFF9C9D98),
+                                                  activeTrackColor:
+                                                      const Color(0xFFB2B5AE),
+                                                  inactiveThumbColor:
+                                                      const Color(0xFFB2B5AE),
+                                                  inactiveTrackColor:
+                                                      const Color(0xFF9C9D98),
+                                                  value: estado,
+                                                  onChanged: (newValue) {
+                                                    toggleState(
+                                                        deviceName, newValue);
+                                                    setState(() {
+                                                      estado = newValue;
+                                                    });
+                                                  },
+                                                )
+                                              : const SizedBox(
+                                                  height: 0, width: 0),
+                                        ],
+                                      )
+                                    : Padding(
+                                        padding: const EdgeInsets.only(
+                                            left: 8.0, bottom: 8.0),
+                                        child: Text(
+                                          'El equipo debe estar\nconectado para su uso',
+                                          style: GoogleFonts.poppins(
+                                            color: color3,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                  right: 8.0, bottom: 8.0),
+                              child: IconButton(
+                                icon: const Icon(
+                                  HugeIcons.strokeRoundedDelete02,
+                                  color: color0,
+                                  size: 20,
+                                ),
+                                onPressed: () {
+                                  _confirmDelete(deviceName, productCode);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+
               default:
                 return Container(
                   key: ValueKey(deviceName),
@@ -3741,13 +3903,13 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   HugeIcons.strokeRoundedDelete02,
                                   color: color0,
                                 ),
-                                tooltip: 'Eliminar evento de horario',
+                                tooltip: 'Eliminar evento de cadena',
                                 onPressed: () {
                                   showAlertDialog(
                                     context,
                                     false,
                                     const Text(
-                                      '¿Eliminar este evento de horario?',
+                                      '¿Eliminar este evento de cadena?',
                                       style: TextStyle(color: color0),
                                     ),
                                     const Text(
@@ -4403,13 +4565,13 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   HugeIcons.strokeRoundedDelete02,
                                   color: color0,
                                 ),
-                                tooltip: 'Eliminar evento de horario',
+                                tooltip: 'Eliminar evento de clima',
                                 onPressed: () {
                                   showAlertDialog(
                                     context,
                                     false,
                                     const Text(
-                                      '¿Eliminar este evento de horario?',
+                                      '¿Eliminar este evento clima?',
                                       style: TextStyle(color: color0),
                                     ),
                                     const Text(
@@ -4955,13 +5117,13 @@ class WifiPageState extends ConsumerState<WifiPage>
                                     HugeIcons.strokeRoundedDelete02,
                                     color: color0,
                                   ),
-                                  tooltip: 'Eliminar evento de horario',
+                                  tooltip: 'Eliminar evento de disparadores',
                                   onPressed: () {
                                     showAlertDialog(
                                       context,
                                       false,
                                       const Text(
-                                        '¿Eliminar este evento de horario?',
+                                        '¿Eliminar este evento de control por disparador?',
                                         style: TextStyle(color: color0),
                                       ),
                                       const Text(
@@ -5366,7 +5528,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                     context,
                                     false,
                                     const Text(
-                                      '¿Eliminar este evento de horario?',
+                                      '¿Eliminar este evento de control por horario?',
                                       style: TextStyle(color: color0),
                                     ),
                                     const Text(
@@ -5488,7 +5650,7 @@ class WifiPageState extends ConsumerState<WifiPage>
 
           try {
             return Card(
-              key: ValueKey(deviceName),
+              key: ValueKey('grupo_$grupo'),
               color: color1,
               margin: const EdgeInsets.symmetric(
                 vertical: 5,
@@ -5696,13 +5858,13 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 HugeIcons.strokeRoundedDelete02,
                                 color: color0,
                               ),
-                              tooltip: 'Eliminar evento de horario',
+                              tooltip: 'Eliminar evento de grupos',
                               onPressed: () {
                                 showAlertDialog(
                                   context,
                                   false,
                                   const Text(
-                                    '¿Eliminar este evento de horario?',
+                                    '¿Eliminar este evento de control por grupos?',
                                     style: TextStyle(color: color0),
                                   ),
                                   const Text(
@@ -5897,7 +6059,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                           key.startsWith('io') &&
                           RegExp(r'^io\d+$').hasMatch(key))
                       .where((ioKey) {
-                 if (deviceDATA[ioKey] == null) return false;
+                if (deviceDATA[ioKey] == null) return false;
                 try {
                   var ioData = jsonDecode(deviceDATA[ioKey]);
                   return ioData['pinType'] == '0';

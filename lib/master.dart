@@ -474,6 +474,19 @@ Map<String, GlobalKey> keys = {
   'riego:rutinaPanel': GlobalKey(),
   'riego:extensionPanel': GlobalKey(),
   'riego:extension': GlobalKey(),
+  //Termotanque
+  'termotanque:estado': GlobalKey(),
+  'termotanque:titulo': GlobalKey(),
+  'termotanque:wifi': GlobalKey(),
+  'termotanque:servidor': GlobalKey(),
+  'termotanque:boton': GlobalKey(),
+  'termotanque:temperatura': GlobalKey(),
+  'termotanque:corte': GlobalKey(),
+  'termotanque:consumo': GlobalKey(),
+  'termotanque:valor': GlobalKey(),
+  'termotanque:consumoManual': GlobalKey(),
+  'termotanque:calcular': GlobalKey(),
+  'termotanque:mes': GlobalKey(),
 };
 //*-Guía de usuario -*\\
 
@@ -3647,7 +3660,8 @@ class BluetoothManager {
               '041220_IOT' ||
               '050217_IOT' ||
               '028000_IOT' ||
-              '023430_IOT':
+              '023430_IOT' ||
+              '027345_IOT':
           BluetoothService espService = services.firstWhere(
               (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
 

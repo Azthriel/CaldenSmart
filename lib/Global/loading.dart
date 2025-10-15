@@ -81,6 +81,9 @@ class LoadState extends State<LoadingPage> {
           case '023430_IOT':
             navigatorKey.currentState?.pushReplacementNamed('/termometro');
             break;
+          case '027345_IOT':
+            navigatorKey.currentState?.pushReplacementNamed('/termotanque');
+            break;
         }
       } else {
         showToast('Error en el dispositivo, intente nuevamente');
@@ -193,7 +196,7 @@ class LoadState extends State<LoadingPage> {
         shouldUpdateDevice = false;
       }
       switch (pc) {
-        case '022000_IOT' || '027000_IOT' || '041220_IOT':
+        case '022000_IOT' || '027000_IOT' || '041220_IOT' || '027345_IOT':
           varsValues = await bluetoothManager.varsUuid.read();
           var parts2 = utf8.decode(varsValues).split(':');
           printLog.i('Valores Vars: $parts2', color: 'Naranja');
