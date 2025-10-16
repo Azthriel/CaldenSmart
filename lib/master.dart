@@ -2316,10 +2316,6 @@ Future<bool> checkAdminTimePermission(String deviceName) async {
     bool isAllowed =
         await isAdminAllowedAtCurrentTime(pc, sn, currentUserEmail);
 
-    if (!isAllowed) {
-      showToast('No tienes permisos para usar el dispositivo en este momento');
-    }
-
     return isAllowed;
   } catch (e) {
     printLog.e('Error verificando permisos horarios: $e');
@@ -2344,6 +2340,27 @@ Future<bool> sendMQTTMessageWithPermission(String deviceName, String message,
   await registerAdminUsage(deviceName, action);
 
   return true;
+}
+
+/// Verifica si el administrador secundario actual puede usar el WiFi
+Future<bool> checkAdminWifiPermission(String deviceName) async {
+  String pc = DeviceManager.getProductCode(deviceName);
+  String sn = DeviceManager.extractSerialNumber(deviceName);
+  bool isOwner = globalDATA['$pc/$sn']?['owner'] == currentUserEmail ||
+      globalDATA['$pc/$sn']?['owner'] == '' ||
+      globalDATA['$pc/$sn']?['owner'] == null;
+  if (isOwner) {
+    return true; // El dueño puede usarlo siempre
+  }
+
+  try {
+    bool isAllowed = await isAdminAllowedToUseWifi(pc, sn, currentUserEmail);
+
+    return isAllowed;
+  } catch (e) {
+    printLog.e('Error verificando permisos de WiFi: $e');
+    return true; // En caso de error, permitir acceso
+  }
 }
 //*- Funciones para administradores secundarios -*\\
 

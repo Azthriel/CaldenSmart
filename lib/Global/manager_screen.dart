@@ -40,8 +40,10 @@ class ManagerScreenState extends State<ManagerScreen> {
   // Variables para historial de uso y restricciones horarias
   bool showUsageHistory = false;
   bool showTimeRestrictions = false;
+  bool showWifiRestrictions = false;
   List<Map<String, dynamic>> usageHistory = [];
   Map<String, Map<String, dynamic>> timeRestrictions = {};
+  Map<String, Map<String, dynamic>> wifiRestrictions = {};
   String selectedAdminForRestrictions = '';
 
   @override
@@ -57,6 +59,7 @@ class ManagerScreenState extends State<ManagerScreen> {
     super.initState();
     _loadUsageHistory();
     _loadTimeRestrictions();
+    _loadWifiRestrictions();
     _makeQueryIfNeeded();
   }
 
@@ -454,6 +457,142 @@ class ManagerScreenState extends State<ManagerScreen> {
   String _getDayName(int day) {
     const days = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
     return days[day - 1];
+  }
+
+  // Métodos para restricciones de WiFi
+  Future<void> _loadWifiRestrictions() async {
+    try {
+      String pc = DeviceManager.getProductCode(widget.deviceName);
+      String sn = DeviceManager.extractSerialNumber(widget.deviceName);
+
+      Map<String, Map<String, dynamic>> restrictions =
+          await getAdminWifiRestrictions(pc, sn);
+      setState(() {
+        wifiRestrictions = restrictions;
+      });
+    } catch (e) {
+      printLog.e('Error cargando restricciones de WiFi: $e');
+    }
+  }
+
+  Future<void> _saveWifiRestrictions() async {
+    try {
+      String pc = DeviceManager.getProductCode(widget.deviceName);
+      String sn = DeviceManager.extractSerialNumber(widget.deviceName);
+
+      // Guardar cada restricción individualmente
+      for (String adminEmail in wifiRestrictions.keys) {
+        await saveAdminWifiRestrictions(pc, sn, adminEmail, wifiRestrictions[adminEmail]!);
+      }
+      showToast('Restricciones de WiFi guardadas correctamente');
+    } catch (e) {
+      printLog.e('Error guardando restricciones de WiFi: $e');
+      showToast('Error al guardar las restricciones de WiFi');
+    }
+  }
+
+  void _showWifiRestrictionDialog(String adminEmail) {
+    Map<String, dynamic> currentRestriction = wifiRestrictions[adminEmail] ??
+        {
+          'enabled': false,
+        };
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.0),
+                side: const BorderSide(color: color4, width: 2.0),
+              ),
+              backgroundColor: color1,
+              title: Text(
+                'Restricciones de WiFi para $adminEmail',
+                style: GoogleFonts.poppins(
+                  color: color0,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Switch para habilitar/deshabilitar restricciones
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Restringir uso por WiFi:',
+                          style: GoogleFonts.poppins(
+                              color: color0, fontWeight: FontWeight.bold),
+                        ),
+                        Switch(
+                          value: currentRestriction['enabled'] ?? false,
+                          onChanged: (bool value) {
+                            setDialogState(() {
+                              currentRestriction['enabled'] = value;
+                            });
+                          },
+                          activeColor: color3,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
+                    if (currentRestriction['enabled'] ?? false) ...[
+                      Text(
+                        'El administrador no podrá acceder al panel de WiFi cuando esta restricción esté habilitada.',
+                        style: GoogleFonts.poppins(
+                          color: color0.withValues(alpha: 0.8),
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ] else ...[
+                      Text(
+                        'El administrador tiene acceso completo al panel de WiFi.',
+                        style: GoogleFonts.poppins(
+                          color: color0.withValues(alpha: 0.8),
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    'Cancelar',
+                    style: GoogleFonts.poppins(color: color0),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      wifiRestrictions[adminEmail] = Map.from(currentRestriction);
+                    });
+                    _saveWifiRestrictions();
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: color3),
+                  child: Text(
+                    'Guardar',
+                    style: GoogleFonts.poppins(color: color0),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   String _formatDateTime(String isoString) {
@@ -1854,6 +1993,183 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                         ] else
                                                           Text(
                                                             'Sin restricciones',
+                                                            style: GoogleFonts
+                                                                .poppins(
+                                                              color: color0
+                                                                  .withValues(
+                                                                      alpha:
+                                                                          0.7),
+                                                              fontSize: 12,
+                                                              fontStyle:
+                                                                  FontStyle
+                                                                      .italic,
+                                                            ),
+                                                          ),
+                                                      ],
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : const SizedBox(),
+                                ),
+                                const SizedBox(height: 10),
+                                //! Opción 7 - Restricciones de WiFi para administradores secundarios
+                                InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      showWifiRestrictions =
+                                          !showWifiRestrictions;
+                                    });
+                                    if (showWifiRestrictions) {
+                                      _loadWifiRestrictions();
+                                    }
+                                  },
+                                  borderRadius: BorderRadius.circular(15),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(15),
+                                    decoration: BoxDecoration(
+                                      color: color1,
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Restringir uso por WiFi\nadministradores',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 15,
+                                            color: color0,
+                                          ),
+                                        ),
+                                        Icon(
+                                          showWifiRestrictions
+                                              ? Icons.arrow_drop_up
+                                              : Icons.arrow_drop_down,
+                                          color: color0,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                AnimatedSize(
+                                  duration: const Duration(milliseconds: 600),
+                                  curve: Curves.easeInOut,
+                                  child: showWifiRestrictions
+                                      ? Container(
+                                          padding: const EdgeInsets.all(20),
+                                          decoration: BoxDecoration(
+                                            color: color1,
+                                            borderRadius:
+                                                BorderRadius.circular(15),
+                                            boxShadow: const [
+                                              BoxShadow(
+                                                color: Colors.black12,
+                                                blurRadius: 4,
+                                                offset: Offset(2, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Configurar restricciones de WiFi:',
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 16,
+                                                  color: color0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 15),
+                                              ...adminDevices.map(
+                                                (email) {
+                                                  Map<String, dynamic>
+                                                      restriction =
+                                                      wifiRestrictions[email] ??
+                                                          {};
+                                                  bool isRestricted =
+                                                      restriction['enabled'] ??
+                                                          false;
+
+                                                  return Container(
+                                                    margin:
+                                                        const EdgeInsets.only(
+                                                            bottom: 15),
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            15),
+                                                    decoration: BoxDecoration(
+                                                      color: color0.withValues(
+                                                          alpha: 0.1),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              10),
+                                                      border: Border.all(
+                                                        color: isRestricted
+                                                            ? Colors.red
+                                                            : color0.withValues(
+                                                                alpha: 0.3),
+                                                        width: 2,
+                                                      ),
+                                                    ),
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Row(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .spaceBetween,
+                                                          children: [
+                                                            Expanded(
+                                                              child: Text(
+                                                                email,
+                                                                style:
+                                                                    GoogleFonts
+                                                                        .poppins(
+                                                                  color: color0,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  fontSize: 14,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            IconButton(
+                                                                onPressed: () {
+                                                                  _showWifiRestrictionDialog(
+                                                                      email);
+                                                                },
+                                                                icon:
+                                                                    const HugeIcon(
+                                                                  icon: HugeIcons
+                                                                      .strokeRoundedSettings01,
+                                                                  color: color4,
+                                                                ))
+                                                          ],
+                                                        ),
+                                                        if (isRestricted) ...[
+                                                          const SizedBox(
+                                                              height: 10),
+                                                          Text(
+                                                            'No puede acceder al WiFi',
+                                                            style: GoogleFonts
+                                                                .poppins(
+                                                              color: Colors.red,
+                                                              fontSize: 12,
+                                                              fontWeight: FontWeight.bold,
+                                                            ),
+                                                          ),
+                                                        ] else
+                                                          Text(
+                                                            'Acceso completo al WiFi',
                                                             style: GoogleFonts
                                                                 .poppins(
                                                               color: color0

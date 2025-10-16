@@ -213,7 +213,8 @@ Future<void> queryItems(String pc, String sn) async {
                     String configJson = restrictionsMap[email]!.s!;
                     restrictions[email] = jsonDecode(configJson);
                   } catch (e) {
-                    printLog.e('Error parsing admin restrictions for $email: $e');
+                    printLog
+                        .e('Error parsing admin restrictions for $email: $e');
                   }
                 }
                 globalDATA
@@ -1683,11 +1684,12 @@ void deleteEventoControlDeRiego(String email, String nombreEvento) async {
 //*- Funciones para historial de uso de administradores secundarios -*\\
 
 /// Registra el uso de un dispositivo por un administrador secundario
-Future<void> putAdminUsageHistory(String pc, String sn, String adminEmail, String action) async {
+Future<void> putAdminUsageHistory(
+    String pc, String sn, String adminEmail, String action) async {
   try {
     // Obtener el historial actual
     List<String> currentHistory = await getAdminUsageHistory(pc, sn);
-    
+
     // Crear nuevo registro
     String timestamp = DateTime.now().toIso8601String();
     String newRecord = jsonEncode({
@@ -1695,13 +1697,13 @@ Future<void> putAdminUsageHistory(String pc, String sn, String adminEmail, Strin
       'action': action,
       'timestamp': timestamp,
     });
-    
+
     // Agregar al historial (mantener solo los últimos 100 registros)
     currentHistory.add(newRecord);
     if (currentHistory.length > 100) {
       currentHistory = currentHistory.sublist(currentHistory.length - 100);
     }
-    
+
     // Guardar en DynamoDB
     final response = await service.updateItem(
       tableName: 'sime-domotica',
@@ -1711,7 +1713,8 @@ Future<void> putAdminUsageHistory(String pc, String sn, String adminEmail, Strin
       },
       attributeUpdates: {
         'admin_usage_history': AttributeValueUpdate(
-          value: AttributeValue(ss: currentHistory.isEmpty ? [''] : currentHistory),
+          value: AttributeValue(
+              ss: currentHistory.isEmpty ? [''] : currentHistory),
         ),
       },
     );
@@ -1748,11 +1751,12 @@ Future<List<String>> getAdminUsageHistory(String pc, String sn) async {
 }
 
 /// Obtiene el historial de uso parseado como lista de maps
-Future<List<Map<String, dynamic>>> getParsedAdminUsageHistory(String pc, String sn) async {
+Future<List<Map<String, dynamic>>> getParsedAdminUsageHistory(
+    String pc, String sn) async {
   try {
     List<String> rawHistory = await getAdminUsageHistory(pc, sn);
     List<Map<String, dynamic>> parsedHistory = [];
-    
+
     for (String record in rawHistory) {
       if (record.isNotEmpty) {
         try {
@@ -1763,10 +1767,11 @@ Future<List<Map<String, dynamic>>> getParsedAdminUsageHistory(String pc, String 
         }
       }
     }
-    
+
     // Ordenar por timestamp descendente (más recientes primero)
-    parsedHistory.sort((a, b) => DateTime.parse(b['timestamp']).compareTo(DateTime.parse(a['timestamp'])));
-    
+    parsedHistory.sort((a, b) => DateTime.parse(b['timestamp'])
+        .compareTo(DateTime.parse(a['timestamp'])));
+
     return parsedHistory;
   } catch (e) {
     printLog.i('Error obteniendo historial parseado: $e');
@@ -1777,11 +1782,12 @@ Future<List<Map<String, dynamic>>> getParsedAdminUsageHistory(String pc, String 
 //*- Funciones para restricciones horarias de administradores secundarios -*\\
 
 /// Guarda las restricciones horarias para un administrador secundario
-Future<void> putAdminTimeRestrictions(String pc, String sn, Map<String, Map<String, dynamic>> restrictions) async {
+Future<void> putAdminTimeRestrictions(String pc, String sn,
+    Map<String, Map<String, dynamic>> restrictions) async {
   try {
     // Convertir el map a formato compatible con DynamoDB
     Map<String, AttributeValue> dynamoMap = {};
-    
+
     restrictions.forEach((email, config) {
       dynamoMap[email] = AttributeValue(
         s: jsonEncode({
@@ -1790,11 +1796,12 @@ Future<void> putAdminTimeRestrictions(String pc, String sn, Map<String, Map<Stri
           'startMinute': config['startMinute'] ?? 0,
           'endHour': config['endHour'] ?? 23,
           'endMinute': config['endMinute'] ?? 59,
-          'weekdays': config['weekdays'] ?? [1, 2, 3, 4, 5, 6, 7], // 1=Lunes, 7=Domingo
+          'weekdays':
+              config['weekdays'] ?? [1, 2, 3, 4, 5, 6, 7], // 1=Lunes, 7=Domingo
         }),
       );
     });
-    
+
     final response = await service.updateItem(
       tableName: 'sime-domotica',
       key: {
@@ -1815,7 +1822,8 @@ Future<void> putAdminTimeRestrictions(String pc, String sn, Map<String, Map<Stri
 }
 
 /// Obtiene las restricciones horarias de administradores secundarios
-Future<Map<String, Map<String, dynamic>>> getAdminTimeRestrictions(String pc, String sn) async {
+Future<Map<String, Map<String, dynamic>>> getAdminTimeRestrictions(
+    String pc, String sn) async {
   try {
     final response = await service.getItem(
       tableName: 'sime-domotica',
@@ -1825,10 +1833,12 @@ Future<Map<String, Map<String, dynamic>>> getAdminTimeRestrictions(String pc, St
       },
     );
 
-    if (response.item != null && response.item!['admin_time_restrictions'] != null) {
-      Map<String, AttributeValue> dynamoMap = response.item!['admin_time_restrictions']!.m!;
+    if (response.item != null &&
+        response.item!['admin_time_restrictions'] != null) {
+      Map<String, AttributeValue> dynamoMap =
+          response.item!['admin_time_restrictions']!.m!;
       Map<String, Map<String, dynamic>> restrictions = {};
-      
+
       dynamoMap.forEach((email, value) {
         try {
           Map<String, dynamic> config = jsonDecode(value.s!);
@@ -1837,7 +1847,7 @@ Future<Map<String, Map<String, dynamic>>> getAdminTimeRestrictions(String pc, St
           printLog.e('Error parseando restricción para $email: $e');
         }
       });
-      
+
       return restrictions;
     }
     return {};
@@ -1848,42 +1858,143 @@ Future<Map<String, Map<String, dynamic>>> getAdminTimeRestrictions(String pc, St
 }
 
 /// Verifica si un administrador secundario puede usar el dispositivo en el horario actual
-Future<bool> isAdminAllowedAtCurrentTime(String pc, String sn, String adminEmail) async {
+Future<bool> isAdminAllowedAtCurrentTime(
+    String pc, String sn, String adminEmail) async {
   try {
-    Map<String, Map<String, dynamic>> restrictions = await getAdminTimeRestrictions(pc, sn);
-    
+    Map<String, Map<String, dynamic>> restrictions =
+        await getAdminTimeRestrictions(pc, sn);
+
     if (!restrictions.containsKey(adminEmail)) {
       return true; // Sin restricciones = permitido
     }
-    
+
     Map<String, dynamic> config = restrictions[adminEmail]!;
-    
+
     if (!(config['enabled'] ?? false)) {
       return true; // Restricciones deshabilitadas = permitido
     }
-    
+
     DateTime now = DateTime.now();
     int currentWeekday = now.weekday; // 1=Lunes, 7=Domingo
     List<dynamic> allowedWeekdays = config['weekdays'] ?? [1, 2, 3, 4, 5, 6, 7];
-    
+
     // Verificar si hoy está permitido
     if (!allowedWeekdays.contains(currentWeekday)) {
       return false;
     }
-    
+
     // Verificar horario
     int startHour = config['startHour'] ?? 0;
     int startMinute = config['startMinute'] ?? 0;
     int endHour = config['endHour'] ?? 23;
     int endMinute = config['endMinute'] ?? 59;
-    
+
     int currentMinutes = now.hour * 60 + now.minute;
     int startMinutes = startHour * 60 + startMinute;
     int endMinutes = endHour * 60 + endMinute;
-    
+
     return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
   } catch (e) {
     printLog.i('Error verificando permisos horarios: $e');
+    return true; // En caso de error, permitir acceso
+  }
+}
+
+//*- Funciones para restricciones de WiFi de administradores secundarios -*\\
+
+/// Guarda las restricciones de WiFi para un administrador secundario
+Future<void> saveAdminWifiRestrictions(String pc, String sn, String adminEmail,
+    Map<String, dynamic> config) async {
+  try {
+    // Obtener restricciones existentes
+    Map<String, Map<String, dynamic>> currentRestrictions =
+        await getAdminWifiRestrictions(pc, sn);
+
+    // Actualizar o agregar la configuración del administrador
+    currentRestrictions[adminEmail] = config;
+
+    // Convertir a formato DynamoDB
+    Map<String, AttributeValue> restrictionsMap = {};
+    currentRestrictions.forEach((email, cfg) {
+      restrictionsMap[email] = AttributeValue(s: jsonEncode(cfg));
+    });
+
+    await service.updateItem(
+      tableName: 'sime-domotica',
+      key: {
+        'product_code': AttributeValue(s: pc),
+        'device_id': AttributeValue(s: sn),
+      },
+      updateExpression: 'SET admin_wifi_restrictions = :restrictions',
+      expressionAttributeValues: {
+        ':restrictions': AttributeValue(m: restrictionsMap),
+      },
+    );
+
+    printLog.i('Restricciones de WiFi guardadas para $adminEmail');
+  } catch (e) {
+    printLog.e('Error guardando restricciones de WiFi: $e');
+    rethrow;
+  }
+}
+
+/// Obtiene las restricciones de WiFi de administradores secundarios
+Future<Map<String, Map<String, dynamic>>> getAdminWifiRestrictions(
+    String pc, String sn) async {
+  try {
+    final response = await service.getItem(
+      tableName: 'sime-domotica',
+      key: {
+        'product_code': AttributeValue(s: pc),
+        'device_id': AttributeValue(s: sn),
+      },
+    );
+
+    if (response.item != null &&
+        response.item!['admin_wifi_restrictions'] != null) {
+      Map<String, AttributeValue> dynamoMap =
+          response.item!['admin_wifi_restrictions']!.m!;
+      Map<String, Map<String, dynamic>> restrictions = {};
+
+      dynamoMap.forEach((email, value) {
+        try {
+          Map<String, dynamic> config = jsonDecode(value.s!);
+          restrictions[email] = config;
+        } catch (e) {
+          printLog.e('Error parseando restricción de WiFi para $email: $e');
+        }
+      });
+
+      return restrictions;
+    }
+    return {};
+  } catch (e) {
+    printLog.i('Error obteniendo restricciones de WiFi: $e');
+    return {};
+  }
+}
+
+/// Verifica si un administrador secundario puede usar el WiFi
+Future<bool> isAdminAllowedToUseWifi(
+    String pc, String sn, String adminEmail) async {
+  try {
+    Map<String, Map<String, dynamic>> restrictions =
+        await getAdminWifiRestrictions(pc, sn);
+
+    if (!restrictions.containsKey(adminEmail)) {
+      return true; // Sin restricciones = permitido
+    }
+
+    Map<String, dynamic> config = restrictions[adminEmail]!;
+
+    // Si las restricciones de WiFi están habilitadas, no permitir acceso
+    if (config['enabled'] ?? false) {
+      return false;
+    }
+
+    return true; // Restricciones deshabilitadas = permitido
+  } catch (e) {
+    printLog.i('Error verificando permisos de WiFi: $e');
     return true; // En caso de error, permitir acceso
   }
 }
