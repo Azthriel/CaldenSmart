@@ -39,6 +39,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
     kotlinOptions {
         jvmTarget = "17"
     }
@@ -68,6 +74,12 @@ android {
         targetSdk = 35
         versionCode = flutterVersionCode.toInt()
         versionName = flutterVersionName
+
+        externalNativeBuild {
+            cmake {
+                arguments("-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON")
+            }
+        }
     }
 
     signingConfigs {

@@ -7,6 +7,7 @@ import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class TermometroPage extends ConsumerStatefulWidget {
   const TermometroPage({super.key});
@@ -422,6 +423,88 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
           },
         ),
       ],
+    );
+  }
+
+  Widget _buildHistorialPage() {
+    final String pc = DeviceManager.getProductCode(deviceName);
+    final String sn = DeviceManager.extractSerialNumber(deviceName);
+    
+    printLog.i('Building historial page for $pc/$sn');
+    printLog.i('GlobalDATA keys: ${globalDATA.keys}');
+    printLog.i('Device data: ${globalDATA['$pc/$sn']}');
+    
+    // Obtener datos desde globalDATA
+    Map<String, dynamic> historicTemp = globalDATA['$pc/$sn']?['historicTemp'] ?? {};
+    bool historicTempPremium = globalDATA['$pc/$sn']?['historicTempPremium'] ?? false;
+
+    printLog.i('HistoricTemp: $historicTemp');
+    printLog.i('HistoricTempPremium: $historicTempPremium');
+
+    // Convertir el mapa a lista de puntos ordenados por timestamp
+    List<MapEntry<DateTime, double>> dataPoints = [];
+    
+    historicTemp.forEach((key, value) {
+      try {
+        // Intentar parsear la fecha en formato "2025-10-27 00:00:51" (UTC)
+        // Convertir a hora de Argentina (UTC-3)
+        DateTime timestampUTC = DateTime.parse(key);
+        DateTime timestamp = timestampUTC.subtract(const Duration(hours: 3));
+        
+        // Convertir temperatura a double
+        double temp = 0.0;
+        if (value is num) {
+          temp = value.toDouble();
+        } else if (value is String) {
+          temp = double.tryParse(value) ?? 0.0;
+        }
+        
+        dataPoints.add(MapEntry(timestamp, temp));
+        printLog.i('Parsed point: $timestamp -> $temp°C');
+      } catch (e) {
+        printLog.e('Error parsing timestamp "$key": $e');
+      }
+    });
+    
+    // Ordenar por timestamp
+    dataPoints.sort((a, b) => a.key.compareTo(b.key));
+
+    printLog.i('DataPoints count: ${dataPoints.length}');
+
+    if (dataPoints.isEmpty) {
+      return Container(
+        color: color0,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.info_outline, size: 80, color: color1.withValues(alpha: 0.5)),
+              const SizedBox(height: 20),
+              Text(
+                'No hay datos de historial disponibles',
+                style: TextStyle(
+                  color: color1.withValues(alpha: 0.8),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Dispositivo: $pc/$sn',
+                style: TextStyle(
+                  color: color1.withValues(alpha: 0.6),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return _HistorialChart(
+      dataPoints: dataPoints,
+      isPremium: historicTempPremium,
     );
   }
 
@@ -885,7 +968,10 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
         ),
       ),
 
-      //*- Página 3: Gestión del Equipo -*\\
+      //*- Página 3: Historial de Temperatura -*\\
+      _buildHistorialPage(),
+
+      //*- Página 4: Gestión del Equipo -*\\
       ManagerScreen(deviceName: deviceName),
     ];
 
@@ -1044,6 +1130,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                       items: const <Widget>[
                         Icon(Icons.thermostat, size: 30, color: color0),
                         Icon(Icons.tune, size: 30, color: color0),
+                        Icon(Icons.show_chart, size: 30, color: color0),
                         Icon(Icons.settings, size: 30, color: color0),
                       ],
                       color: color1,
@@ -1121,5 +1208,383 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
+  }
+}
+
+// Widget para mostrar el gráfico de historial de temperatura
+class _HistorialChart extends StatefulWidget {
+  final List<MapEntry<DateTime, double>> dataPoints;
+  final bool isPremium;
+
+  const _HistorialChart({
+    required this.dataPoints,
+    required this.isPremium,
+  });
+
+  @override
+  State<_HistorialChart> createState() => _HistorialChartState();
+}
+
+class _HistorialChartState extends State<_HistorialChart> {
+  String selectedPeriod = '24h'; // '24h', 'semanal', 'mensual'
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: color0,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            // Título
+            const Text(
+              'Historial de Temperatura',
+              style: TextStyle(
+                color: color1,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // Selector de período (solo si es premium)
+            if (widget.isPremium)
+              _buildPeriodSelector(),
+            
+            if (widget.isPremium)
+              const SizedBox(height: 20),
+            
+            // Gráfico
+            Expanded(
+              child: _buildChart(),
+            ),
+            
+            const SizedBox(height: 100),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPeriodSelector() {
+    return Container(
+      decoration: BoxDecoration(
+        color: color1,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color4, width: 2),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildPeriodButton('24h', '24 Horas'),
+          _buildPeriodButton('semanal', 'Semanal'),
+          _buildPeriodButton('mensual', 'Mensual'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeriodButton(String period, String label) {
+    final bool isSelected = selectedPeriod == period;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            selectedPeriod = period;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? color4 : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSelected ? color1 : color0,
+              fontSize: 14,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChart() {
+    // Filtrar datos según el período seleccionado
+    List<MapEntry<DateTime, double>> filteredData = _filterDataByPeriod();
+
+    if (filteredData.isEmpty) {
+      return Center(
+        child: Text(
+          'No hay datos para el período seleccionado',
+          style: TextStyle(
+            color: color1.withValues(alpha: 0.8),
+            fontSize: 16,
+          ),
+        ),
+      );
+    }
+
+    // Calcular promedios si es semanal o mensual
+    List<FlSpot> spots = [];
+    List<MapEntry<DateTime, double>> dataForChart = [];
+    
+    if (widget.isPremium && (selectedPeriod == 'semanal' || selectedPeriod == 'mensual')) {
+      dataForChart = _calculateDailyAverages(filteredData);
+      spots = dataForChart
+          .asMap()
+          .entries
+          .map((entry) => FlSpot(entry.key.toDouble(), entry.value.value))
+          .toList();
+    } else {
+      dataForChart = filteredData;
+      spots = filteredData
+          .asMap()
+          .entries
+          .map((entry) => FlSpot(entry.key.toDouble(), entry.value.value))
+          .toList();
+    }
+
+    if (spots.isEmpty) {
+      return Center(
+        child: Text(
+          'No hay suficientes datos',
+          style: TextStyle(
+            color: color1.withValues(alpha: 0.8),
+            fontSize: 16,
+          ),
+        ),
+      );
+    }
+
+    // Calcular rango Y (temperatura)
+    double minTemp = spots.map((e) => e.y).reduce((a, b) => a < b ? a : b);
+    double maxTemp = spots.map((e) => e.y).reduce((a, b) => a > b ? a : b);
+    
+    // Redondear hacia abajo para minY y hacia arriba para maxY
+    double minY = (minTemp - 2).floorToDouble();
+    double maxY = (maxTemp + 2).ceilToDouble();
+    
+    // Calcular intervalo para tener valores redondos
+    double range = maxY - minY;
+    double interval = (range / 5).ceilToDouble();
+    if (interval < 1) interval = 1.0;
+
+    return Card(
+      color: color1,
+      elevation: 6,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+        side: const BorderSide(color: color4, width: 2),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: LineChart(
+          LineChartData(
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: true,
+              horizontalInterval: interval,
+              getDrawingHorizontalLine: (value) {
+                return FlLine(
+                  color: color0.withValues(alpha: 0.2),
+                  strokeWidth: 1,
+                );
+              },
+              getDrawingVerticalLine: (value) {
+                return FlLine(
+                  color: color0.withValues(alpha: 0.2),
+                  strokeWidth: 1,
+                );
+              },
+            ),
+            titlesData: FlTitlesData(
+              show: true,
+              rightTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 30,
+                  interval: (spots.length / 4).ceilToDouble(),
+                  getTitlesWidget: (value, meta) {
+                    if (value.toInt() >= 0 && value.toInt() < dataForChart.length) {
+                      final date = dataForChart[value.toInt()].key;
+                      String label = '';
+                      
+                      if (selectedPeriod == '24h') {
+                        label = '${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+                      } else if (selectedPeriod == 'semanal') {
+                        label = '${date.day}/${date.month}';
+                      } else {
+                        label = '${date.day}/${date.month}';
+                      }
+                      
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            color: color0.withValues(alpha: 0.7),
+                            fontSize: 10,
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  interval: interval,
+                  reservedSize: 42,
+                  getTitlesWidget: (value, meta) {
+                    return Text(
+                      '${value.toInt()}°C',
+                      style: TextStyle(
+                        color: color0.withValues(alpha: 0.7),
+                        fontSize: 10,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            borderData: FlBorderData(
+              show: true,
+              border: Border.all(color: color0.withValues(alpha: 0.3)),
+            ),
+            minX: 0,
+            maxX: spots.length.toDouble() - 1,
+            minY: minY,
+            maxY: maxY,
+            lineBarsData: [
+              LineChartBarData(
+                spots: spots,
+                isCurved: true,
+                gradient: const LinearGradient(
+                  colors: [color4, color3],
+                ),
+                barWidth: 3,
+                isStrokeCapRound: true,
+                dotData: FlDotData(
+                  show: spots.length < 50,
+                  getDotPainter: (spot, percent, barData, index) {
+                    return FlDotCirclePainter(
+                      radius: 3,
+                      color: color4,
+                      strokeWidth: 1,
+                      strokeColor: color0,
+                    );
+                  },
+                ),
+                belowBarData: BarAreaData(
+                  show: true,
+                  gradient: LinearGradient(
+                    colors: [
+                      color4.withValues(alpha: 0.3),
+                      color3.withValues(alpha: 0.1),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ],
+            lineTouchData: LineTouchData(
+              enabled: true,
+              touchTooltipData: LineTouchTooltipData(
+                getTooltipColor: (touchedSpot) => color1,
+                getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                  return touchedSpots.map((LineBarSpot touchedSpot) {
+                    final index = touchedSpot.x.toInt();
+                    if (index >= 0 && index < dataForChart.length) {
+                      final date = dataForChart[index].key;
+                      final temp = touchedSpot.y;
+                      
+                      String dateText;
+                      if (selectedPeriod == '24h') {
+                        dateText = '${date.day}/${date.month} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+                      } else {
+                        dateText = '${date.day}/${date.month}/${date.year}';
+                      }
+                      
+                      return LineTooltipItem(
+                        '$dateText\n${temp.toStringAsFixed(1)}°C',
+                        const TextStyle(
+                          color: color0,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      );
+                    }
+                    return null;
+                  }).toList();
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<MapEntry<DateTime, double>> _filterDataByPeriod() {
+    final now = DateTime.now();
+    DateTime cutoffTimestamp;
+
+    switch (selectedPeriod) {
+      case '24h':
+        cutoffTimestamp = now.subtract(const Duration(hours: 24));
+        break;
+      case 'semanal':
+        cutoffTimestamp = now.subtract(const Duration(days: 7));
+        break;
+      case 'mensual':
+        cutoffTimestamp = now.subtract(const Duration(days: 30));
+        break;
+      default:
+        cutoffTimestamp = now.subtract(const Duration(hours: 24));
+    }
+
+    return widget.dataPoints
+        .where((entry) => entry.key.isAfter(cutoffTimestamp))
+        .toList();
+  }
+
+  List<MapEntry<DateTime, double>> _calculateDailyAverages(List<MapEntry<DateTime, double>> data) {
+    if (data.isEmpty) return [];
+
+    // Tanto semanal como mensual usan promedios diarios
+    Map<DateTime, List<double>> buckets = {};
+    
+    for (var entry in data) {
+      // Agrupar por día (promedios diarios)
+      DateTime bucketKey = DateTime(
+        entry.key.year,
+        entry.key.month,
+        entry.key.day,
+      );
+      buckets.putIfAbsent(bucketKey, () => []).add(entry.value);
+    }
+
+    List<MapEntry<DateTime, double>> averages = buckets.entries.map((entry) {
+      double avg = entry.value.reduce((a, b) => a + b) / entry.value.length;
+      return MapEntry(entry.key, avg);
+    }).toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
+    return averages;
   }
 }

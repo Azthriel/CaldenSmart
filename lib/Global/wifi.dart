@@ -202,7 +202,13 @@ class WifiPageState extends ConsumerState<WifiPage>
       if (savedOrder.isNotEmpty) {
         List<MapEntry<String, String>> orderedList = [];
         for (var item in savedOrder) {
-          orderedList.add(MapEntry(item['key']!, item['value']!));
+          MapEntry<String, String> entry =
+              MapEntry(item['key']!, item['value']!);
+          // Filtrar: solo agregar si existe en la lista actual
+          if (todosLosDispositivos
+              .any((e) => e.key == entry.key && e.value == entry.value)) {
+            orderedList.add(entry);
+          }
         }
         // Agrega los dispositivos nuevos que no estaban en el orden guardado
         for (var entry in todosLosDispositivos) {
@@ -795,76 +801,17 @@ class WifiPageState extends ConsumerState<WifiPage>
           child: TabBarView(
             physics: const NeverScrollableScrollPhysics(),
             children: [
-              // Tab de Equipos Individuales
-              _buildDeviceList(dispositiosIndividuales, 'individual'),
-              // Tab de Grupos
-              Column(
-                children: [
-                  const SizedBox(height: 10),
-                  Expanded(
-                    child: _buildDeviceList(eventos, 'grupos'),
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [color1, color1.withValues(alpha: 0.8)],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: color1.withValues(alpha: 0.3),
-                          blurRadius: 15,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () async {
-                          final result =
-                              await Navigator.pushNamed(context, '/escenas');
-
-                          if (result == true && mounted) {
-                            _buildDeviceListFromLoadedData();
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(20),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 16),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: color0.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(
-                                  HugeIcons.strokeRoundedAdd01,
-                                  color: color0,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Configurar evento',
-                                style: GoogleFonts.poppins(
-                                  color: color0,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              _buildDeviceList(dispositiosIndividuales, 'individual',
+                  shrinkWrap: false),
+              SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    _buildDeviceList(eventos, 'grupos', shrinkWrap: true),
+                    const SizedBox(height: 10),
+                    _buildConfigButton(),
+                  ],
+                ),
               ),
             ],
           ),
@@ -873,8 +820,70 @@ class WifiPageState extends ConsumerState<WifiPage>
     );
   }
 
+  Widget _buildConfigButton() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color1, color1.withValues(alpha: 0.8)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: color1.withValues(alpha: 0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () async {
+            final result = await Navigator.pushNamed(context, '/escenas');
+            if (result == true && mounted) {
+              _buildDeviceListFromLoadedData();
+            }
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color0.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    HugeIcons.strokeRoundedAdd01,
+                    color: color0,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Configurar evento',
+                  style: GoogleFonts.poppins(
+                    color: color0,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDeviceList(
-      List<MapEntry<String, String>> deviceList, String tipo) {
+      List<MapEntry<String, String>> deviceList, String tipo, {bool shrinkWrap = false}) {
     if (deviceList.where((e) => e.value.trim().isNotEmpty).isEmpty) {
       return Center(
         child: Padding(
@@ -919,8 +928,9 @@ class WifiPageState extends ConsumerState<WifiPage>
     }
 
     return ReorderableListView.builder(
+            shrinkWrap: shrinkWrap,
       itemCount: deviceList.length,
-      footer: const SizedBox(height: 120),
+      footer: SizedBox(height: shrinkWrap ? 10 : 120),
       onReorder: (int oldIndex, int newIndex) async {
         if (newIndex > oldIndex) newIndex -= 1;
 
@@ -4595,7 +4605,82 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   ],
                                 ),
                               );
-                            })
+                            }),
+                             Align(
+                              alignment: Alignment.centerRight,
+                              child: IconButton(
+                                icon: const Icon(
+                                  HugeIcons.strokeRoundedDelete02,
+                                  color: color0,
+                                ),
+                                tooltip: 'Eliminar rutina de riego',
+                                onPressed: () {
+                                  printLog.d('sexoooooooo $grupo');
+                                  showAlertDialog(
+                                    context,
+                                    false,
+                                    const Text(
+                                      '¿Eliminar esta rutina de riego?',
+                                      style: TextStyle(color: color0),
+                                    ),
+                                    const Text(
+                                      'Esta acción no se puede deshacer.',
+                                      style: TextStyle(color: color0),
+                                    ),
+                                    <Widget>[
+                                      TextButton(
+                                        style: ButtonStyle(
+                                          foregroundColor:
+                                              WidgetStateProperty.all(color0),
+                                        ),
+                                        child: const Text('Cancelar'),
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                      TextButton(
+                                        style: ButtonStyle(
+                                          foregroundColor:
+                                              WidgetStateProperty.all(color0),
+                                        ),
+                                        child: const Text('Confirmar'),
+                                        onPressed: () {
+                                          setState(() {
+                                            printLog.d(
+                                                'se viene $eventosCreados',
+                                                color: 'naranja');
+                                            printLog.d(
+                                                'se viene $todosLosDispositivos',
+                                                color: 'naranja');
+                                            eventosCreados.removeWhere(
+                                                (evento) =>
+                                                    evento['title'] == grupo &&
+                                                    evento['evento'] ==
+                                                        'riego');
+                                            putEventos(currentUserEmail,
+                                                eventosCreados);
+                                            deleteEventoControlDeRiego(
+                                                currentUserEmail, grupo);
+                                            todosLosDispositivos.removeWhere(
+                                                (entry) => entry.key == grupo);
+                                            printLog.d(
+                                                'se viene $eventosCreados',
+                                                color: 'rosa');
+                                            printLog.d(
+                                                'se viene $todosLosDispositivos',
+                                                color: 'rosa');
+                                          });
+                                          _saveOrder();
+                                          Navigator.of(context).pop();
+                                          showToast('Rutina eliminada');
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                          
                           ],
                         ),
                       ),

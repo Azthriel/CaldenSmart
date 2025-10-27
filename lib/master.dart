@@ -2285,8 +2285,8 @@ void showPaymentTest(bool adm, int vencimiento, BuildContext context) {
 Future<void> registerAdminUsage(String deviceName, String action) async {
   String pc = DeviceManager.getProductCode(deviceName);
   String sn = DeviceManager.extractSerialNumber(deviceName);
-  bool isAdmin = globalDATA['$pc/$sn']?['secondary_admin'] ??
-      [].contains(currentUserEmail);
+  bool isAdmin = (globalDATA['$pc/$sn']?['secondary_admin'] ?? [])
+      .contains(currentUserEmail);
   bool isOwner = globalDATA['$pc/$sn']?['owner'] == currentUserEmail ||
       globalDATA['$pc/$sn']?['owner'] == '' ||
       globalDATA['$pc/$sn']?['owner'] == null;
@@ -2589,7 +2589,9 @@ Future<bool> backFunctionDS() async {
       // showNotification('Ubicación guardada', '$storedLocation');
 
       Position currentPosition1 = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
+          locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+      ));
       printLog.i('$currentPosition1');
 
       double distance1 = Geolocator.distanceBetween(
@@ -2607,10 +2609,10 @@ Future<bool> backFunctionDS() async {
 
         // showNotification('Esperando 30 segundos', '${DateTime.now()}');
 
-        await Future.delayed(const Duration(seconds: 30));
-
         Position currentPosition2 = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high);
+            locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ));
         printLog.i('$currentPosition2');
 
         double distance2 = Geolocator.distanceBetween(

@@ -221,6 +221,22 @@ Future<void> queryItems(String pc, String sn) async {
                     .putIfAbsent('$pc/$sn', () => {})
                     .addAll({key: restrictions});
                 break;
+              case 'historicTemp':
+                Map<String, AttributeValue> tempMap = value.m ?? {};
+                Map<String, dynamic> tempHistory = {};
+                for (String timestamp in tempMap.keys) {
+                  AttributeValue tempValue = tempMap[timestamp]!;
+                  tempHistory[timestamp] = double.tryParse(tempValue.n ?? '0') ?? 0.0;
+                }
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: tempHistory});
+                break;
+              case 'historicTempPremium':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.boolValue ?? false});
+                break;
             }
           }
           printLog.i("$key: $displayValue");
