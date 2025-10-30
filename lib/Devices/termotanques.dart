@@ -740,14 +740,30 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.thermostat_rounded,
-                      size: MediaQuery.of(context).size.width * 0.5,
-                      color: Color.lerp(
-                        Colors.blueAccent,
-                        Colors.redAccent,
-                        (tempValue - 15) / 55,
-                      ),
+                    Column(
+                      children: [
+                        Icon(
+                          Icons.thermostat_rounded,
+                          size: MediaQuery.of(context).size.width * 0.5,
+                          color: Color.lerp(
+                            Colors.blueAccent,
+                            Colors.redAccent,
+                            (tempValue - 15) / 55,
+                          ),
+                        ),
+                        if (specialUser) ...[
+                          Text(
+                            'Temperatura actual:\n$actualTemp °C',
+                            style: GoogleFonts.poppins(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: color1,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      ],
                     ),
                     const SizedBox(width: 20),
                     Column(

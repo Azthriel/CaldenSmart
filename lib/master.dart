@@ -1208,6 +1208,10 @@ void wifiText(BuildContext context) {
   String manualSSID = '';
   String manualPassword = '';
   bool obscureText = true;
+  bool redInestable = isWifiNetworkUnstable(
+    DeviceManager.getProductCode(deviceName),
+    DeviceManager.extractSerialNumber(deviceName),
+  );
 
   showDialog(
     barrierDismissible: true,
@@ -1312,6 +1316,42 @@ void wifiText(BuildContext context) {
                               color: color0,
                             ),
                           ),
+                          if (isWifiConnected && redInestable) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.orange,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.warning_amber_rounded,
+                                    color: Colors.orange,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Red Inestable',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.orange,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                       if (isWifiConnected) ...[
@@ -1918,6 +1958,63 @@ String getWifiErrorSintax(int errorCode) {
 }
 //*-Wifi, menú y scanner-*\\
 
+//*-Verifica si hay red inestable basado en discTime-*\\
+/// Verifica si hay 3 o más desconexiones en la misma hora
+/// [pc] código del producto
+/// [sn] número de serie
+/// Retorna true si hay red inestable, false en caso contrario
+bool isWifiNetworkUnstable(String pc, String sn) {
+  try {
+    // Obtener la lista de timestamps de desconexión
+    List<dynamic>? discTimeList = globalDATA['$pc/$sn']?['discTime'];
+
+    printLog.d("Verificando estabilidad de red para $pc/$sn");
+    printLog.d("Lista de discTime: $discTimeList");
+
+    if (discTimeList == null || discTimeList.isEmpty) {
+      return false;
+    }
+
+    // Convertir a lista de strings
+    List<String> timestamps = discTimeList.map((e) => e.toString()).toList();
+
+    // Mapa para contar desconexiones por hora
+    Map<String, int> disconnectionsByHour = {};
+
+    for (String timestamp in timestamps) {
+      try {
+        // Parsear el timestamp (asumiendo formato de milisegundos desde epoch)
+        int milliseconds = int.parse(timestamp);
+        DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(milliseconds);
+
+        // Crear una clave con año, mes, día y hora
+        String hourKey =
+            '${dateTime.year}-${dateTime.month}-${dateTime.day}-${dateTime.hour}';
+
+        // Incrementar el contador para esa hora
+        disconnectionsByHour[hourKey] =
+            (disconnectionsByHour[hourKey] ?? 0) + 1;
+
+        // Si encontramos 3 o más desconexiones en la misma hora, retornar true
+        if (disconnectionsByHour[hourKey]! >= 3) {
+          printLog.d(
+              'Red inestable detectada: ${disconnectionsByHour[hourKey]} desconexiones en $hourKey');
+          return true;
+        }
+      } catch (e) {
+        printLog.e('Error parseando timestamp $timestamp: $e');
+        continue;
+      }
+    }
+
+    return false;
+  } catch (e) {
+    printLog.e('Error verificando estabilidad de red: $e');
+    return false;
+  }
+}
+//*-Verifica si hay red inestable basado en discTime-*\\
+
 //*-Qr scanner-*\\
 Future<void> openQRScanner(BuildContext context) async {
   try {
@@ -2077,7 +2174,9 @@ Future<void> handleNotifications(RemoteMessage message) async {
         await queryItems(product, number);
         bool cstate = globalDATA['$product/$number']?['cstate'] ?? false;
         printLog.i('El cstate después de la espera es $cstate');
-        if (!cstate) {
+        bool redUnstable = isWifiNetworkUnstable(product, number);
+        printLog.i('Red inestable: $redUnstable');
+        if (!cstate && !redUnstable) {
           String displayTitle =
               '¡El equipo ${nicknamesMap[device] ?? device} se desconecto!';
           String displayMessage =

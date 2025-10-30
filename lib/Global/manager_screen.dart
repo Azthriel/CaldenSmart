@@ -116,9 +116,6 @@ class ManagerScreenState extends State<ManagerScreen> {
     }
   }
 
-
-
-
   void _showTimeRestrictionDialog(String adminEmail) {
     Map<String, dynamic> currentRestriction = timeRestrictions[adminEmail] ??
         {
@@ -485,7 +482,8 @@ class ManagerScreenState extends State<ManagerScreen> {
 
       // Guardar cada restricción individualmente
       for (String adminEmail in wifiRestrictions.keys) {
-        await saveAdminWifiRestrictions(pc, sn, adminEmail, wifiRestrictions[adminEmail]!);
+        await saveAdminWifiRestrictions(
+            pc, sn, adminEmail, wifiRestrictions[adminEmail]!);
       }
       showToast('Restricciones de WiFi guardadas correctamente');
     } catch (e) {
@@ -579,7 +577,8 @@ class ManagerScreenState extends State<ManagerScreen> {
                 ElevatedButton(
                   onPressed: () {
                     setState(() {
-                      wifiRestrictions[adminEmail] = Map.from(currentRestriction);
+                      wifiRestrictions[adminEmail] =
+                          Map.from(currentRestriction);
                     });
                     _saveWifiRestrictions();
                     Navigator.of(context).pop();
@@ -2167,7 +2166,9 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                                 .poppins(
                                                               color: Colors.red,
                                                               fontSize: 12,
-                                                              fontWeight: FontWeight.bold,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
                                                             ),
                                                           ),
                                                         ] else
@@ -2283,89 +2284,124 @@ class ManagerScreenState extends State<ManagerScreen> {
               ],
 
               //! activar notificación de desconexión
-              // if (owner == '' || owner == currentUserEmail || secondaryAdmin) ...{
-              //   ElevatedButton(
-              //     key: keys['managerScreen:desconexionNotificacion']!,
-              //     onPressed: () async {
-              //       if (discNotfActivated) {
-              //         showAlertDialog(
-              //           context,
-              //           true,
-              //           Text(
-              //             'Confirmar Desactivación',
-              //             style: GoogleFonts.poppins(color: color0),
-              //           ),
-              //           Text(
-              //             '¿Estás seguro de que deseas desactivar la notificación de desconexión?',
-              //             style: GoogleFonts.poppins(color: color0),
-              //           ),
-              //           [
-              //             TextButton(
-              //               onPressed: () {
-              //                 Navigator.of(context).pop();
-              //               },
-              //               child: Text(
-              //                 'Cancelar',
-              //                 style: GoogleFonts.poppins(color: color0),
-              //               ),
-              //             ),
-              //             TextButton(
-              //               onPressed: () async {
-              //                 // Actualizar el estado para desactivar la notificación
-              //                 setState(() {
-              //                   discNotfActivated = false;
-              //                   showNotificationOptions = false;
-              //                 });
+              if (owner == '' ||
+                  owner == currentUserEmail ||
+                  secondaryAdmin) ...{
+                ElevatedButton(
+                  key: keys['managerScreen:desconexionNotificacion']!,
+                  onPressed: () async {
+                    if (discNotfActivated) {
+                      showAlertDialog(
+                        context,
+                        true,
+                        Text(
+                          'Confirmar Desactivación',
+                          style: GoogleFonts.poppins(color: color0),
+                          textAlign: TextAlign.center,
+                        ),
+                        Text(
+                          '¿Estás seguro de que deseas desactivar la notificación de desconexión?',
+                          style: GoogleFonts.poppins(color: color0),
+                          textAlign: TextAlign.center,
+                        ),
+                        [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            child: Text(
+                              'Cancelar',
+                              style: GoogleFonts.poppins(color: color0),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              // Actualizar el estado para desactivar la notificación
+                              setState(() {
+                                discNotfActivated = false;
+                                showNotificationOptions = false;
+                              });
 
-              //                 // Eliminar la configuración de notificación para el dispositivo actual
-              //                 configNotiDsc
-              //                     .removeWhere((key, value) => key == deviceName);
-              //                 await saveconfigNotiDsc(configNotiDsc);
+                              // Eliminar la configuración de notificación para el dispositivo actual
+                              configNotiDsc.removeWhere(
+                                  (key, value) => key == widget.deviceName);
+                              await saveconfigNotiDsc(configNotiDsc);
 
-              //                 if (context.mounted) {
-              //                   Navigator.of(context).pop();
-              //                 }
-              //               },
-              //               child: Text(
-              //                 'Aceptar',
-              //                 style: GoogleFonts.poppins(color: color0),
-              //               ),
-              //             ),
-              //           ],
-              //         );
-              //       } else {
-              //         setState(() {
-              //           showNotificationOptions = !showNotificationOptions;
-              //         });
-              //       }
-              //     },
-              //     style: ElevatedButton.styleFrom(
-              //       foregroundColor: color0,
-              //       backgroundColor: color1,
-              //       padding:
-              //           const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
-              //       shape: RoundedRectangleBorder(
-              //         borderRadius: BorderRadius.circular(20),
-              //       ),
-              //     ),
-              //     child: Row(
-              //       mainAxisAlignment: MainAxisAlignment.center,
-              //       children: [
-              //         Text(
-              //           discNotfActivated
-              //               ? 'Desactivar notificación\nde desconexión'
-              //               : 'Activar notificación\nde desconexión',
-              //           style: GoogleFonts.poppins(
-              //             fontSize: 18,
-              //             color: color0,
-              //             fontWeight: FontWeight.bold,
-              //           ),
-              //           textAlign: TextAlign.center,
-              //         ),
-              //       ],
-              //     ),
-              //   ),
-              // },
+                              if (context.mounted) {
+                                Navigator.of(context).pop();
+                              }
+                            },
+                            child: Text(
+                              'Aceptar',
+                              style: GoogleFonts.poppins(color: color0),
+                            ),
+                          ),
+                        ],
+                      );
+                    } else {
+                      // Verificar si la red es inestable antes de permitir activar la notificación
+                      bool networkIsUnstable = isWifiNetworkUnstable(pc, sn);
+
+                      if (networkIsUnstable) {
+                        showAlertDialog(
+                          context,
+                          true,
+                          Text(
+                            'Red inestable detectada',
+                            style: GoogleFonts.poppins(color: color0),
+                            textAlign: TextAlign.center,
+                          ),
+                          Text(
+                            'No se puede activar la notificación de desconexión porque tu red WiFi está experimentando desconexiones frecuentes (3 o más por hora).\nPor favor, verifica tu conexión a internet antes de continuar.',
+                            style: GoogleFonts.poppins(color: color0),
+                            textAlign: TextAlign.start,
+                          ),
+                          [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: Text(
+                                'Entendido',
+                                style: GoogleFonts.poppins(color: color0),
+                              ),
+                            ),
+                          ],
+                        );
+                      } else {
+                        setState(() {
+                          showNotificationOptions = !showNotificationOptions;
+                        });
+                      }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: color0,
+                    backgroundColor: color1,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        discNotfActivated
+                            ? 'Desactivar notificación\nde desconexión'
+                            : 'Activar notificación\nde desconexión',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          color: color0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              },
 
               // Tarjeta de opciones de notificación
               AnimatedSize(

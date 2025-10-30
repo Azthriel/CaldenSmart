@@ -165,19 +165,17 @@ class WifiPageState extends ConsumerState<WifiPage>
   // Construir la lista de dispositivos desde datos ya cargados
   void _buildDeviceListFromLoadedData() {
     try {
-      todosLosDispositivos.clear();
+      List<MapEntry<String, String>> nuevosDispositivos = [];
 
-      // Agregar individuales
       for (String device in previusConnections) {
         MapEntry<String, String> newEntry = MapEntry('individual', device);
         bool exists = todosLosDispositivos
             .any((e) => e.key == newEntry.key && e.value == newEntry.value);
         if (!exists) {
-          todosLosDispositivos.add(newEntry);
+          nuevosDispositivos.add(newEntry);
         }
       }
 
-      // Agregar eventos (grupos, cadenas y riego)
       for (var evento in eventosCreados) {
         if (evento['evento'] == 'grupo' ||
             evento['evento'] == 'cadena' ||
@@ -191,39 +189,56 @@ class WifiPageState extends ConsumerState<WifiPage>
           bool exists = todosLosDispositivos
               .any((e) => e.key == newEntry.key && e.value == newEntry.value);
           if (!exists) {
-            todosLosDispositivos.add(newEntry);
+            nuevosDispositivos.add(newEntry);
           }
         }
       }
 
-      printLog.i(
-          'Lista de dispositivos construida: ${todosLosDispositivos.length} elementos');
+      printLog
+          .i('Nuevos dispositivos encontrados: ${nuevosDispositivos.length}');
 
       if (savedOrder.isNotEmpty) {
-        List<MapEntry<String, String>> orderedList = [];
+        List<MapEntry<String, String>> listaOrdenada = [];
+
         for (var item in savedOrder) {
           MapEntry<String, String> entry =
               MapEntry(item['key']!, item['value']!);
-          // Filtrar: solo agregar si existe en la lista actual
-          if (todosLosDispositivos
-              .any((e) => e.key == entry.key && e.value == entry.value)) {
-            orderedList.add(entry);
+
+          bool existeEnConexiones = false;
+
+          if (entry.key == 'individual') {
+            existeEnConexiones = previusConnections.contains(entry.value);
+          } else {
+            existeEnConexiones = eventosCreados.any((evento) =>
+                evento['title'] == entry.key &&
+                (evento['deviceGroup'] as List<dynamic>).join(',') ==
+                    entry.value);
+          }
+
+          if (existeEnConexiones) {
+            listaOrdenada.add(entry);
           }
         }
-        // Agrega los dispositivos nuevos que no estaban en el orden guardado
-        for (var entry in todosLosDispositivos) {
-          bool exists = orderedList
-              .any((e) => e.key == entry.key && e.value == entry.value);
-          if (!exists) {
-            orderedList.add(entry);
+
+        for (var nuevoDispositivo in nuevosDispositivos) {
+          bool yaEstaEnLista = listaOrdenada.any((e) =>
+              e.key == nuevoDispositivo.key &&
+              e.value == nuevoDispositivo.value);
+
+          if (!yaEstaEnLista) {
+            listaOrdenada.add(nuevoDispositivo);
           }
         }
+
         todosLosDispositivos
           ..clear()
-          ..addAll(orderedList);
+          ..addAll(listaOrdenada);
+      } else {
+        todosLosDispositivos.addAll(nuevosDispositivos);
       }
 
-      printLog.i('Lista de dispositivos: $todosLosDispositivos');
+      printLog.i(
+          'Lista final de dispositivos: ${todosLosDispositivos.length} elementos');
 
       if (mounted) {
         setState(() {});
@@ -883,7 +898,8 @@ class WifiPageState extends ConsumerState<WifiPage>
   }
 
   Widget _buildDeviceList(
-      List<MapEntry<String, String>> deviceList, String tipo, {bool shrinkWrap = false}) {
+      List<MapEntry<String, String>> deviceList, String tipo,
+      {bool shrinkWrap = false}) {
     if (deviceList.where((e) => e.value.trim().isNotEmpty).isEmpty) {
       return Center(
         child: Padding(
@@ -928,7 +944,7 @@ class WifiPageState extends ConsumerState<WifiPage>
     }
 
     return ReorderableListView.builder(
-            shrinkWrap: shrinkWrap,
+      shrinkWrap: shrinkWrap,
       itemCount: deviceList.length,
       footer: SizedBox(height: shrinkWrap ? 10 : 120),
       onReorder: (int oldIndex, int newIndex) async {
@@ -1005,6 +1021,10 @@ class WifiPageState extends ConsumerState<WifiPage>
               deviceDATA['owner'] != currentUserEmail &&
               !canUseWifi;
 
+          // Verificar si la red es inestable
+          bool networkUnstable =
+              isWifiNetworkUnstable(productCode, serialNumber);
+
           // Ocultar extensiones de riego (solo mostrar el maestro)
           String? riegoMaster = deviceDATA['riegoMaster'];
           if (riegoMaster != null &&
@@ -1071,6 +1091,33 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   ),
                                 ],
                               ),
+                              if (online && networkUnstable) ...[
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Red inestable',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.orange,
+                                        fontSize: 15,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                  ],
+                                )
+                              ],
                             ],
                           ),
                         ],
@@ -1209,6 +1256,33 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   ),
                                 ],
                               ),
+                              if (online && networkUnstable) ...[
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Red inestable',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.orange,
+                                        fontSize: 15,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                  ],
+                                )
+                              ],
                             ],
                           ),
                         ],
@@ -1392,6 +1466,33 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   ),
                                 ],
                               ),
+                              if (online && networkUnstable) ...[
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Red inestable',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.orange,
+                                        fontSize: 15,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                  ],
+                                )
+                              ],
                             ],
                           ),
                         ],
@@ -1588,6 +1689,33 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   ),
                                 ],
                               ),
+                              if (online && networkUnstable) ...[
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Red inestable',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.orange,
+                                        fontSize: 15,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                  ],
+                                )
+                              ],
                             ],
                           ),
                         ],
@@ -1972,6 +2100,33 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   ),
                                 ],
                               ),
+                              if (online && networkUnstable) ...[
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Red inestable',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.orange,
+                                        fontSize: 15,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                  ],
+                                )
+                              ],
                             ],
                           ),
                         ],
@@ -2509,6 +2664,33 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   ),
                                 ],
                               ),
+                              if (online && networkUnstable) ...[
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Red inestable',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.orange,
+                                        fontSize: 15,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                  ],
+                                )
+                              ],
                             ],
                           ),
                         ],
@@ -2701,6 +2883,33 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   ),
                                 ],
                               ),
+                              if (online && networkUnstable) ...[
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Red inestable',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.orange,
+                                        fontSize: 15,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                  ],
+                                )
+                              ],
                             ],
                           ),
                         ],
@@ -3070,6 +3279,33 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   ),
                                 ],
                               ),
+                              if (online && networkUnstable) ...[
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Red inestable',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.orange,
+                                        fontSize: 15,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                  ],
+                                )
+                              ],
                             ],
                           ),
                         ],
@@ -3256,6 +3492,33 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   ),
                                 ],
                               ),
+                              if (online && networkUnstable) ...[
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Red inestable',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.orange,
+                                        fontSize: 15,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                  ],
+                                )
+                              ],
                             ],
                           ),
                         ],
@@ -3444,6 +3707,33 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   ),
                                 ],
                               ),
+                              if (online && networkUnstable) ...[
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Red inestable',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.orange,
+                                        fontSize: 15,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                  ],
+                                )
+                              ],
                             ],
                           ),
                         ],
@@ -3626,6 +3916,33 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   ),
                                 ],
                               ),
+                              if (online && networkUnstable) ...[
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Red inestable',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.orange,
+                                        fontSize: 15,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.orange,
+                                      size: 18,
+                                    ),
+                                  ],
+                                )
+                              ],
                             ],
                           ),
                         ],
@@ -4606,7 +4923,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 ),
                               );
                             }),
-                             Align(
+                            Align(
                               alignment: Alignment.centerRight,
                               child: IconButton(
                                 icon: const Icon(
@@ -4680,7 +4997,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 },
                               ),
                             ),
-                          
                           ],
                         ),
                       ),

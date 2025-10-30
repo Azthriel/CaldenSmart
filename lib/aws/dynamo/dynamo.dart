@@ -226,7 +226,8 @@ Future<void> queryItems(String pc, String sn) async {
                 Map<String, dynamic> tempHistory = {};
                 for (String timestamp in tempMap.keys) {
                   AttributeValue tempValue = tempMap[timestamp]!;
-                  tempHistory[timestamp] = double.tryParse(tempValue.n ?? '0') ?? 0.0;
+                  tempHistory[timestamp] =
+                      double.tryParse(tempValue.n ?? '0') ?? 0.0;
                 }
                 globalDATA
                     .putIfAbsent('$pc/$sn', () => {})
@@ -236,6 +237,18 @@ Future<void> queryItems(String pc, String sn) async {
                 globalDATA
                     .putIfAbsent('$pc/$sn', () => {})
                     .addAll({key: value.boolValue ?? false});
+                break;
+              case 'discTime':
+                List<AttributeValue> discTimeList = value.l ?? [];
+                List<String> discTimes = [];
+                for (AttributeValue timeValue in discTimeList) {
+                  if (timeValue.n != null) {
+                    discTimes.add(timeValue.n!);
+                  }
+                }
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: discTimes});
                 break;
             }
           }
