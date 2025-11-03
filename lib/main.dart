@@ -4,7 +4,6 @@ import 'dart:ui';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:caldensmart/Devices/heladera.dart';
-import 'package:caldensmart/Devices/millenium.dart';
 import 'package:caldensmart/Devices/modulo.dart';
 import 'package:caldensmart/Devices/relay.dart';
 import 'package:caldensmart/Devices/rele1i1o.dart';
@@ -174,7 +173,6 @@ class MyAppState extends State<MyApp> {
         '/escenas': (context) => const EscenasPage(),
         '/rele': (context) => const RelayPage(),
         '/roller': (context) => const RollerPage(),
-        '/millenium': (context) => const MilleniumPage(),
         '/modulo': (context) => const ModuloPage(),
         '/heladera': (context) => const HeladeraPage(),
         '/rele1i1o': (context) => const Rele1i1oPage(),

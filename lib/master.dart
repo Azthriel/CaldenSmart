@@ -3775,8 +3775,6 @@ class BluetoothManager {
       switch (DeviceManager.getProductCode(device.platformName)) {
         case '022000_IOT' ||
               '027000_IOT' ||
-              '041220_IOT' ||
-              '050217_IOT' ||
               '028000_IOT' ||
               '023430_IOT' ||
               '027345_IOT':

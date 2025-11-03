@@ -50,7 +50,7 @@ class LoadState extends State<LoadingPage> {
         }
 
         switch (pc) {
-          case '022000_IOT' || '027000_IOT' || '041220_IOT':
+          case '022000_IOT' || '027000_IOT':
             navigatorKey.currentState?.pushReplacementNamed('/calefactor');
             break;
           case '015773_IOT':
@@ -72,9 +72,7 @@ class LoadState extends State<LoadingPage> {
               navigatorKey.currentState?.pushReplacementNamed('/rele');
             }
             break;
-          case '050217_IOT':
-            navigatorKey.currentState?.pushReplacementNamed('/millenium');
-            break;
+
           case '028000_IOT':
             navigatorKey.currentState?.pushReplacementNamed('/heladera');
             break;
@@ -196,7 +194,7 @@ class LoadState extends State<LoadingPage> {
         shouldUpdateDevice = false;
       }
       switch (pc) {
-        case '022000_IOT' || '027000_IOT' || '041220_IOT' || '027345_IOT':
+        case '022000_IOT' || '027000_IOT' || '027345_IOT':
           varsValues = await bluetoothManager.varsUuid.read();
           var parts2 = utf8.decode(varsValues).split(':');
           printLog.i('Valores Vars: $parts2', color: 'Naranja');
@@ -487,7 +485,7 @@ class LoadState extends State<LoadingPage> {
           rollerSavedLength = globalDATA['$pc/$sn']!['rollerSavedLength'] ?? '';
 
           break;
-        case '050217_IOT' || '028000_IOT':
+        case '028000_IOT':
           varsValues = await bluetoothManager.varsUuid.read();
           var parts2 = utf8.decode(varsValues).split(':');
           printLog.i('Valores Vars: $parts2');

@@ -97,17 +97,11 @@ flutter:
     - assets/devices/027000.webp
     - assets/devices/027313.jpg
     - assets/devices/028000.png
-    - assets/devices/041220.jpg
-    - assets/devices/050217.png
     
     # Assets misc
     - assets/misc/Alexa.png
-    - assets/misc/Colors.jpg
-    - assets/misc/fondo.png
     - assets/misc/google.png
     - assets/misc/GoogleHome.png
-    - assets/misc/millenium.gif
-    - assets/misc/millenium.png
     - assets/misc/parteSuperior.png
     - assets/misc/persiana.jpg
     - assets/misc/Siri.webp

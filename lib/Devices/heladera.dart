@@ -880,14 +880,30 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Icon(
-                      HugeIcons.strokeRoundedThermometerCold,
-                      size: MediaQuery.of(context).size.width * 0.5,
-                      color: Color.lerp(
-                        Colors.blueAccent,
-                        Colors.lightBlueAccent,
-                        (tempValue + 30) / 60,
-                      ),
+                    Column(
+                      children: [
+                        Icon(
+                          HugeIcons.strokeRoundedThermometerCold,
+                          size: MediaQuery.of(context).size.width * 0.5,
+                          color: Color.lerp(
+                            Colors.blueAccent,
+                            Colors.lightBlueAccent,
+                            (tempValue + 30) / 60,
+                          ),
+                        ),
+                        if (specialUser) ...[
+                          Text(
+                            'Temperatura actual:\n$actualTemp °C',
+                            style: GoogleFonts.poppins(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: color1,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      ],
                     ),
                     const SizedBox(width: 20),
                     Column(

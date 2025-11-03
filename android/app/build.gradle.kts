@@ -123,6 +123,7 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-messaging")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:1.2.2")
+    implementation("eu.simonbinder:sqlite3-native-library:3.50.1")
     // implementation("com.google.android.gms:play-services-auth:21.3.0")
 }
 
