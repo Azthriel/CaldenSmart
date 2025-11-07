@@ -21,6 +21,8 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
   bool _isAnimating = false;
   bool alert = false;
   bool _isTutorialActive = false;
+  final String pc = DeviceManager.getProductCode(deviceName);
+  final String sn = DeviceManager.extractSerialNumber(deviceName);
 
   String _textToShow = 'AIRE PURO';
 
@@ -81,6 +83,39 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
           title: 'Conexión al servidor',
           content:
               'Podrás observar el estado de la conexión del dispositivo con el servidor',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['detectores:airePuro']!,
+        shapeFocus: ShapeFocus.roundedSquare,
+        borderRadius: const Radius.circular(15.0),
+        pageIndex: 0,
+        contentPosition: ContentPosition.below,
+        child: const TutorialItemContent(
+          title: 'Aire puro',
+          content:
+              'Se puede visualizar el estado del aire y en caso de alerta se enviara una notificación como la siguiente...',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['detectores:ejemploNoti']!,
+        borderRadius: const Radius.circular(20),
+        shapeFocus: ShapeFocus.roundedSquare,
+        contentPosition: ContentPosition.below,
+        pageIndex: 0,
+        fullBackground: true,
+        onStepReached: () {
+          setState(() {
+            showNotification(
+                '¡ALERTA EN ${nicknamesMap[deviceName] ?? deviceName}!',
+                'El detector disparó una alarma.\nA las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                soundOfNotification[DeviceManager.getProductCode(deviceName)] ??
+                    'alarm2');
+          });
+        },
+        child: const TutorialItemContent(
+          title: 'Ejemplo de notificación',
+          content: '',
         ),
       ),
       TutorialItem(
@@ -183,6 +218,36 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
         ),
       ),
       TutorialItem(
+        globalKey: keys['managerScreen:desconexionNotificacion']!,
+        borderRadius: const Radius.circular(20),
+        shapeFocus: ShapeFocus.roundedSquare,
+        pageIndex: 5,
+        child: const TutorialItemContent(
+          title: 'Notificación de desconexión',
+          content:
+              'Puedes establecer una alerta si el equipo se desconecta, en el siguiente paso verás un ejemplo de la misma',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['managerScreen:ejemploNoti']!,
+        borderRadius: const Radius.circular(20),
+        shapeFocus: ShapeFocus.roundedSquare,
+        pageIndex: 5,
+        fullBackground: true,
+        onStepReached: () {
+          setState(() {
+            showNotification(
+                '¡El equipo ${nicknamesMap[deviceName] ?? deviceName} se desconecto!',
+                'Se detecto una desconexión a las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                'noti');
+          });
+        },
+        child: const TutorialItemContent(
+          title: 'Ejemplo de notificación',
+          content: '',
+        ),
+      ),
+      TutorialItem(
         globalKey: keys['managerScreen:imagen']!,
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(30.0),
@@ -193,18 +258,6 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
           content: 'Podrás ajustar la imagen del equipo en el menú',
         ),
       ),
-      // TutorialItem(
-      //   globalKey: keys['detectores:desconexion']!,
-      //
-      //   shapeFocus: ShapeFocus.roundedSquare,
-      //   borderRadius: const Radius.circular(30.0),
-      //   pageIndex: 5,
-      //   contentPosition: ContentPosition.below,
-      //   child: const TutorialItemContent(
-      //     title: 'Notificación de desconexión',
-      //     content: 'Puedes establecer una alerta si el equipo se desconecta',
-      //   ),
-      // ),
     });
   }
 
@@ -218,10 +271,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
     _subscribeToWorkCharacteristic();
     subscribeToWifiStatus();
 
-    onlineInCloud = globalDATA[
-                '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-            'cstate'] ??
-        false;
+    onlineInCloud = globalDATA['$pc/$sn']?['cstate'] ?? false;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       updateWifiValues(toolsValues);
@@ -431,6 +481,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                   child: SizedBox(
                     height: cardHeight,
                     child: Card(
+                      key: keys['detectores:airePuro']!,
                       color: color1,
                       elevation: 6,
                       shape: RoundedRectangleBorder(
@@ -464,7 +515,9 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                                 size: 50,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(
+                                width: 12,
+                                key: keys['detectores:ejemploNoti']!),
                             Expanded(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1544,9 +1597,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
           actions: [
             Icon(
               key: keys['detectores:servidor']!,
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-                          ?['cstate'] ??
-                      false
+              globalDATA['$pc/$sn']?['cstate'] ?? false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,

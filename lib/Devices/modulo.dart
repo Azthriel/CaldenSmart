@@ -20,6 +20,9 @@ class ModuloPage extends ConsumerStatefulWidget {
 class ModuloPageState extends ConsumerState<ModuloPage> {
   var parts = utf8.decode(ioValues).split('/');
 
+  final String pc = DeviceManager.getProductCode(deviceName);
+  final String sn = DeviceManager.extractSerialNumber(deviceName);
+
   bool isChangeModeVisible = false;
   bool showOptions = false;
   bool showSecondaryAdminFields = false;
@@ -97,6 +100,43 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
         ),
       ),
       TutorialItem(
+        globalKey: keys['modulo:activarNoti']!,
+        borderRadius: const Radius.circular(30),
+        shapeFocus: ShapeFocus.roundedSquare,
+        contentPosition: ContentPosition.below,
+        focusMargin: 15.0,
+        pageIndex: 0,
+        contentOffsetY: -500,
+        fullBackground: true,
+        child: const TutorialItemContent(
+          title: 'Notificación de alarma',
+          content:
+              'En la entrada podrás activar una notificación para cuando cambie su estado como la siguiente...',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['modulo:ejemploAlerta']!,
+        borderRadius: const Radius.circular(20),
+        shapeFocus: ShapeFocus.roundedSquare,
+        contentPosition: ContentPosition.below,
+        contentOffsetY: -500,
+        pageIndex: 0,
+        fullBackground: true,
+        onStepReached: () {
+          setState(() {
+            showNotification(
+                '¡ALERTA EN ${nicknamesMap[deviceName] ?? deviceName}!',
+                'La Entrada 2 disparó una alarma.\nA las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                soundOfNotification[DeviceManager.getProductCode(deviceName)] ??
+                    'alarm2');
+          });
+        },
+        child: const TutorialItemContent(
+          title: 'Ejemplo de notificación',
+          content: '',
+        ),
+      ),
+      TutorialItem(
         globalKey: keys['modulo:modoPines']!,
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(30),
@@ -147,9 +187,30 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 2,
           contentPosition: ContentPosition.below,
+          buttonAction: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 17),
+            ),
+            onPressed: () {
+              launchEmail(
+                'comercial@caldensmart.com',
+                'Habilitación Administradores secundarios extras en $appName',
+                '¡Hola! Me comunico porque busco habilitar la opción de "Administradores secundarios extras" en mi equipo ${DeviceManager.getComercialName(deviceName)}\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner',
+              );
+            },
+            child: const Text(
+              'Enviar mail',
+              style: TextStyle(color: color1),
+            ),
+          ),
           child: const TutorialItemContent(
             title: 'Añadir administradores secundarios',
-            content: 'Podrás agregar correos secundarios hasta un límite de 3',
+            content:
+                'Podrás agregar correos secundarios hasta un límite de tres, en caso de querer extenderlo debes contactarte con comercial@caldensmart.com',
           ),
         ),
         TutorialItem(
@@ -174,6 +235,41 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                 'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
           ),
         ),
+        if (adminDevices.isNotEmpty) ...{
+          TutorialItem(
+            globalKey: keys['managerScreen:historialAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Historial de administradores secundarios',
+              content:
+                  'Se veran las acciones ejecutadas por cada uno con su respectiva flecha',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:horariosAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Horarios de administradores secundarios',
+              content:
+                  'Configura el rango de horarios y dias que podra accionar el equipo',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:wifiAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Wifi de administradores secundarios',
+              content:
+                  'Podras restringirle a los administradores secundarios el uso del menu wifi',
+            ),
+          ),
+        },
       },
       if (!tenant) ...{
         TutorialItem(
@@ -186,17 +282,36 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
             content: 'Podrás encender y apagar el dispositivo desde el menú',
           ),
         ),
-        // TutorialItem(
-        //   globalKey: keys['managerScreen:desconexionNotificacion']!,
-        //
-        //   borderRadius: const Radius.circular(20),
-        //   shapeFocus: ShapeFocus.roundedSquare,
-        //   pageIndex: 2,
-        //   child: const TutorialItemContent(
-        //     title: 'Notificación de desconexión',
-        //     content: 'Puedes establecer una alerta si el equipo se desconecta',
-        //   ),
-        // ),
+        TutorialItem(
+          globalKey: keys['managerScreen:desconexionNotificacion']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 2,
+          child: const TutorialItemContent(
+            title: 'Notificación de desconexión',
+            content:
+                'Puedes establecer una alerta si el equipo se desconecta, en el siguiente paso verás un ejemplo de la misma',
+          ),
+        ),
+        TutorialItem(
+          globalKey: keys['managerScreen:ejemploNoti']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 2,
+          fullBackground: true,
+          onStepReached: () {
+            setState(() {
+              showNotification(
+                  '¡El equipo ${nicknamesMap[deviceName] ?? deviceName} se desconecto!',
+                  'Se detecto una desconexión a las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                  'noti');
+            });
+          },
+          child: const TutorialItemContent(
+            title: 'Ejemplo de notificación',
+            content: '',
+          ),
+        ),
       },
       TutorialItem(
         globalKey: keys['managerScreen:imagen']!,
@@ -225,11 +340,11 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
 
     if (deviceOwner) {
       if (vencimientoAdmSec < 10 && vencimientoAdmSec > 0) {
-        showPaymentTest(true, vencimientoAdmSec, navigatorKey.currentContext!);
+        showPaymentText(true, vencimientoAdmSec, navigatorKey.currentContext!);
       }
 
       if (vencimientoAT < 10 && vencimientoAT > 0) {
-        showPaymentTest(false, vencimientoAT, navigatorKey.currentContext!);
+        showPaymentText(false, vencimientoAT, navigatorKey.currentContext!);
       }
     }
 
@@ -243,9 +358,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
     subscribeToWifiStatus();
     subToIO();
     processValues(ioValues);
-    notificationMap.putIfAbsent(
-        '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
-        () => List<bool>.filled(4, false));
+    notificationMap.putIfAbsent('$pc/$sn', () => List<bool>.filled(4, false));
   }
 
   @override
@@ -307,10 +420,8 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
 
     String fun = '$index#${value ? '1' : '0'}';
     bluetoothManager.ioUuid.write(fun.codeUnits);
-    String topic =
-        'devices_rx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
-    String topic2 =
-        'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
+    String topic = 'devices_rx/$pc/$sn';
+    String topic2 = 'devices_tx/$pc/$sn';
     String message = jsonEncode({
       'pinType': tipo[index] == 'Salida' ? '0' : '1',
       'index': index,
@@ -320,11 +431,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
     sendMessagemqtt(topic, message);
     sendMessagemqtt(topic2, message);
 
-    globalDATA
-        .putIfAbsent(
-            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
-            () => {})
-        .addAll({'io$index': message});
+    globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({'io$index': message});
 
     saveGlobalData(globalDATA);
 
@@ -421,11 +528,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
       common.add('0');
       alertIO.add(false);
 
-      globalDATA
-          .putIfAbsent(
-              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
-              () => {})
-          .addAll({
+      globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({
         'io$i': jsonEncode({
           'pinType': '0',
           'index': i,
@@ -442,11 +545,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
       common.add(equipo[1]);
       alertIO.add(estado[j] != common[j]);
 
-      globalDATA
-          .putIfAbsent(
-              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
-              () => {})
-          .addAll({
+      globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({
         'io$j': jsonEncode({
           'pinType': '1',
           'index': j,
@@ -461,10 +560,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
     for (int i = 0; i < parts.length; i++) {
       if (tipo[i] == 'Salida') {
         String dv = '${deviceName}_$i';
-        if (!alexaDevices.contains(dv)) {
-          alexaDevices.add(dv);
-          putDevicesForAlexa(currentUserEmail, alexaDevices);
-        }
+        addDeviceToCore(dv);
       }
     }
 
@@ -513,8 +609,10 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
       //*- Página 1 entradas/salidas -*\\
       SingleChildScrollView(
         child: SizedBox(
+          key: keys['modulo:activarNoti']!,
           height: MediaQuery.of(context).size.height * 0.8,
           child: Padding(
+            key: keys['modulo:ejemploAlerta']!,
             padding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: SingleChildScrollView(
@@ -938,9 +1036,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      notificationMap[
-                                                  '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                                              index]
+                                      notificationMap['$pc/$sn']![index]
                                           ? '¿Desactivar notificaciones?'
                                           : '¿Activar notificaciones?',
                                       style: const TextStyle(
@@ -951,20 +1047,16 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                     ),
                                     IconButton(
                                       onPressed: () {
-                                        bool activated = notificationMap[
-                                                '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                                            index];
+                                        bool activated =
+                                            notificationMap['$pc/$sn']![index];
                                         setState(() {
                                           activated = !activated;
-                                          notificationMap[
-                                                  '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                                              index] = activated;
+                                          notificationMap['$pc/$sn']![index] =
+                                              activated;
                                         });
                                         saveNotificationMap(notificationMap);
                                       },
-                                      icon: notificationMap[
-                                                  '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-                                              index]
+                                      icon: notificationMap['$pc/$sn']![index]
                                           ? const Icon(
                                               Icons.notifications_off,
                                               color: color4,
@@ -990,186 +1082,8 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
           ),
         ),
       ),
-      //*- Página 2 trackeo -*\\
 
-      // Stack(
-      //   children: [
-      //     Center(
-      //       child: Column(
-      //         mainAxisAlignment: MainAxisAlignment.center,
-      //         crossAxisAlignment: CrossAxisAlignment.center,
-      //         children: [
-      //           Text(
-      //             tracking
-      //                 ? 'Control por presencia iniciado'
-      //                 : 'Control por presencia desactivado',
-      //             style: GoogleFonts.poppins(
-      //               fontSize: 28,
-      //               fontWeight: FontWeight.bold,
-      //               color: color1,
-      //             ),
-      //             textAlign: TextAlign.center,
-      //           ),
-      //           const SizedBox(height: 40),
-      //           GestureDetector(
-      //             onTap: isAgreeChecked
-      //                 ? () {
-      //                     if (tracking) {
-      //                       showAlertDialog(
-      //                         context,
-      //                         false,
-      //                         const Text(
-      //                             '¿Seguro que quiere cancelar el control por presencia?'),
-      //                         const Text(
-      //                             'Deshabilitar hará que puedas controlarlo manualmente.\nSi quieres volver a utilizar control por presencia deberás habilitarlo nuevamente'),
-      //                         [
-      //                           TextButton(
-      //                             onPressed: () {
-      //                               Navigator.pop(context);
-      //                             },
-      //                             child: const Text('Cancelar'),
-      //                           ),
-      //                           TextButton(
-      //                             onPressed: () async {
-      //                               setState(() {
-      //                                 tracking = false;
-      //                               });
-      //                               devicesToTrack.remove(deviceName);
-      //                               saveDeviceListToTrack(devicesToTrack);
-      //                               List<String> jijeo = [];
-      //                               savePinToTrack(jijeo, deviceName);
-      //                               context.mounted
-      //                                   ? Navigator.of(context).pop()
-      //                                   : printLog.i("Contextn't");
-      //                             },
-      //                             child: const Text('Aceptar'),
-      //                           ),
-      //                         ],
-      //                       );
-      //                     } else {
-      //                       openTrackingDialog();
-      //                       setState(() {
-      //                         tracking = true;
-      //                       });
-      //                     }
-      //                   }
-      //                 : null,
-      //             child: AnimatedContainer(
-      //               duration: const Duration(milliseconds: 500),
-      //               padding: const EdgeInsets.all(20),
-      //               decoration: BoxDecoration(
-      //                 color: tracking ? Colors.greenAccent : Colors.redAccent,
-      //                 shape: BoxShape.circle,
-      //                 boxShadow: const [
-      //                   BoxShadow(
-      //                     color: Colors.black26,
-      //                     blurRadius: 10,
-      //                     offset: Offset(0, 5),
-      //                   ),
-      //                 ],
-      //               ),
-      //               child: const Icon(
-      //                 Icons.directions_walk,
-      //                 size: 80,
-      //                 color: Colors.white,
-      //               ),
-      //             ),
-      //           ),
-      //           const SizedBox(height: 60),
-      //           Card(
-      //             shape: RoundedRectangleBorder(
-      //               borderRadius: BorderRadius.circular(20),
-      //             ),
-      //             elevation: 5,
-      //             color: color1,
-      //             child: Padding(
-      //               padding: const EdgeInsets.all(20.0),
-      //               child: Column(
-      //                 crossAxisAlignment: CrossAxisAlignment.start,
-      //                 children: [
-      //                   Text(
-      //                     'Habilitar esta función hará que la aplicación use más recursos de lo común. Si decides utilizarla, es bajo tu responsabilidad.',
-      //                     style: GoogleFonts.poppins(
-      //                       fontSize: 16,
-      //                       color: color0,
-      //                     ),
-      //                   ),
-      //                   const SizedBox(height: 10),
-      //                   CheckboxListTile(
-      //                     title: Text(
-      //                       'Sí, estoy de acuerdo',
-      //                       style: GoogleFonts.poppins(
-      //                         fontSize: 16,
-      //                         color: color0,
-      //                       ),
-      //                     ),
-      //                     value: isAgreeChecked,
-      //                     activeColor: color0,
-      //                     onChanged: (bool? value) {
-      //                       if (value == false && tracking) {
-      //                         // Mostrar el diálogo de confirmación si el usuario intenta desmarcar mientras el trackeo está activado
-      //                         showAlertDialog(
-      //                           context,
-      //                           false,
-      //                           const Text(
-      //                             '¿Seguro que quiere cancelar el control por presencia?',
-      //                           ),
-      //                           const Text(
-      //                             'Deshabilitar hará que puedas controlarlo manualmente.\nSi quieres volver a utilizar control por presencia deberás habilitarlo nuevamente',
-      //                           ),
-      //                           [
-      //                             TextButton(
-      //                               onPressed: () {
-      //                                 // Cerrar el diálogo sin cambiar el estado del checkbox
-      //                                 Navigator.pop(context);
-      //                               },
-      //                               child: const Text('Cancelar'),
-      //                             ),
-      //                             TextButton(
-      //                               onPressed: () {
-      //                                 // Confirmación: desmarcar checkbox y detener el trackeo
-      //                                 setState(() {
-      //                                   isAgreeChecked = false;
-      //                                   tracking = false;
-      //                                 });
-      //                                 devicesToTrack.remove(deviceName);
-      //                                 saveDeviceListToTrack(devicesToTrack);
-      //                                 Navigator.pop(context);
-      //                               },
-      //                               child: const Text('Aceptar'),
-      //                             ),
-      //                           ],
-      //                         );
-      //                       } else {
-      //                         // Permitir el cambio si el checkbox se está marcando o si el trackeo está desactivado
-      //                         setState(() {
-      //                           isAgreeChecked = value ?? false;
-      //                         });
-      //                       }
-      //                     },
-      //                     controlAffinity: ListTileControlAffinity.leading,
-      //                   ),
-      //                 ],
-      //               ),
-      //             ),
-      //           ),
-      //         ],
-      //       ),
-      //     ),
-      //     if (!deviceOwner && owner != '')
-      //       Container(
-      //         color: Colors.black.withValues(alpha: 0.7),
-      //         child: const Center(
-      //           child: Text(
-      //             'No tienes acceso a esta función',
-      //             style: TextStyle(color: Colors.white, fontSize: 18),
-      //           ),
-      //         ),
-      //       ),
-      //   ],
-      // ),
-
-      //*- Página 3: Cambiar pines -*\\
+      //*- Página 2: Cambiar pines -*\\
 
       Stack(
         children: [
@@ -1341,7 +1255,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                                 onTap: () {
                                                   setState(() {
                                                     String data =
-                                                        '${DeviceManager.getProductCode(deviceName)}[14]($i#0)';
+                                                        '$pc[14]($i#0)';
                                                     printLog.i(data);
                                                     bluetoothManager.toolsUuid
                                                         .write(data.codeUnits);
@@ -1387,7 +1301,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                                 onTap: () {
                                                   setState(() {
                                                     String data =
-                                                        '${DeviceManager.getProductCode(deviceName)}[14]($i#1)';
+                                                        '$pc[14]($i#1)';
                                                     printLog.i(data);
                                                     bluetoothManager.toolsUuid
                                                         .write(data.codeUnits);
@@ -1460,7 +1374,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
         ],
       ),
 
-      //*- Página 4: Gestión del Equipo -*\\
+      //*- Página 3: Gestión del Equipo -*\\
       ManagerScreen(deviceName: deviceName),
     ];
 
@@ -1577,9 +1491,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
           actions: [
             Icon(
               key: keys['modulo:servidor']!,
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-                          ?['cstate'] ??
-                      false
+              globalDATA['$pc/$sn']?['cstate'] ?? false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,

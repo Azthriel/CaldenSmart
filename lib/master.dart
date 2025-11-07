@@ -359,7 +359,11 @@ Map<String, GlobalKey> keys = {
   'managerScreen:verAdmin': GlobalKey(),
   'managerScreen:alquiler': GlobalKey(),
   'managerScreen:accesoRapido': GlobalKey(),
+  'managerScreen:historialAdmin': GlobalKey(),
+  'managerScreen:horariosAdmin': GlobalKey(),
+  'managerScreen:wifiAdmin': GlobalKey(),
   'managerScreen:desconexionNotificacion': GlobalKey(),
+  'managerScreen:ejemploNoti': GlobalKey(),
   'managerScreen:led': GlobalKey(),
   'managerScreen:imagen': GlobalKey(),
   'managerScreen:bomba': GlobalKey(),
@@ -384,6 +388,8 @@ Map<String, GlobalKey> keys = {
   'detectores:titulo': GlobalKey(),
   'detectores:wifi': GlobalKey(),
   'detectores:servidor': GlobalKey(),
+  'detectores:airePuro': GlobalKey(),
+  'detectores:ejemploNoti': GlobalKey(),
   'detectores:gas1': GlobalKey(),
   'detectores:co1': GlobalKey(),
   'detectores:gas2': GlobalKey(),
@@ -397,6 +403,8 @@ Map<String, GlobalKey> keys = {
   'detectores:desconexion': GlobalKey(),
   //Domotica
   'domotica:estado': GlobalKey(),
+  'domotica:activarNoti': GlobalKey(),
+  'domotica:ejemploAlerta': GlobalKey(),
   'domotica:titulo': GlobalKey(),
   'domotica:wifi': GlobalKey(),
   'domotica:modoPines': GlobalKey(),
@@ -431,6 +439,8 @@ Map<String, GlobalKey> keys = {
   'millenium:mes': GlobalKey(),
   //Modulo
   'modulo:estado': GlobalKey(),
+  'modulo:activarNoti': GlobalKey(),
+  'modulo:ejemploAlerta': GlobalKey(),
   'modulo:titulo': GlobalKey(),
   'modulo:wifi': GlobalKey(),
   'modulo:modoPines': GlobalKey(),
@@ -446,6 +456,8 @@ Map<String, GlobalKey> keys = {
   'rele:modoPines': GlobalKey(),
   //Rele1i1o
   'rele1i1o:estado': GlobalKey(),
+  'rele1i1o:activarNoti': GlobalKey(),
+  'rele1i1o:ejemploAlerta': GlobalKey(),
   'rele1i1o:titulo': GlobalKey(),
   'rele1i1o:wifi': GlobalKey(),
   'rele1i1o:servidor': GlobalKey(),
@@ -460,6 +472,10 @@ Map<String, GlobalKey> keys = {
   'termometro:configAlertas': GlobalKey(),
   'termometro:configMax': GlobalKey(),
   'termometro:configMin': GlobalKey(),
+  'termometro:ejemploAlerta': GlobalKey(),
+  'termometro:historialTemperatura': GlobalKey(),
+  'termometro:graficoTemperatura': GlobalKey(),
+  'termometro:ofrecerPremium': GlobalKey(),
   //Riego
   'riego:estado': GlobalKey(),
   'riego:titulo': GlobalKey(),
@@ -488,6 +504,7 @@ Map<String, GlobalKey> keys = {
   'termotanque:calcular': GlobalKey(),
   'termotanque:mes': GlobalKey(),
 };
+
 //*-Guía de usuario -*\\
 
 //*- Toast -*\\
@@ -531,473 +548,237 @@ bool canUseDevice = true;
 
 //*-Tipo de Aplicación y parametros-*\\
 String nameOfApp(int type) {
-  switch (type) {
-    case 0:
-      return 'Caldén Smart';
-    default:
-      return 'Caldén Smart';
-  }
+  return 'Caldén Smart';
 }
 
 Widget contactInfo(int type) {
-  switch (type) {
-    case 0:
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Contacto comercial
-          Container(
-            decoration: BoxDecoration(
-              color: color1,
-              borderRadius: BorderRadius.circular(8.0),
-              border: Border.all(color: color0),
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // Contacto comercial
+      Container(
+        decoration: BoxDecoration(
+          color: color1,
+          borderRadius: BorderRadius.circular(8.0),
+          border: Border.all(color: color0),
+        ),
+        padding: const EdgeInsets.all(16.0),
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Contacto comercial:',
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: color0,
+              ),
             ),
-            padding: const EdgeInsets.all(16.0),
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Contacto comercial:',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+            GestureDetector(
+              onTap: () {
+                sendWhatsAppMessage(
+                  '5491162234181',
+                  '¡Hola! Tengo una duda comercial sobre los productos $appName: \n',
+                );
+              },
+              child: Row(
+                children: [
+                  const Icon(
+                    HugeIcons.strokeRoundedWhatsapp,
+                    size: 20,
                     color: color0,
                   ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    sendWhatsAppMessage(
-                      '5491162234181',
-                      '¡Hola! Tengo una duda comercial sobre los productos $appName: \n',
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      const Icon(
-                        HugeIcons.strokeRoundedWhatsapp,
-                        size: 20,
-                        color: color0,
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Text(
-                        '+54 9 11 6223-4181',
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  Text(
+                    '+54 9 11 6223-4181',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      color: color0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                launchEmail(
+                  'comercial@caldensmart.com',
+                  'Consulta comercial acerca de la línea $appName',
+                  '¡Hola! Tengo la siguiente duda sobre la línea IoT:\n',
+                );
+              },
+              child: Row(
+                children: [
+                  const Icon(
+                    HugeIcons.strokeRoundedMail01,
+                    size: 20,
+                    color: color0,
+                  ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Text(
+                        'comercial@caldensmart.com',
                         style: GoogleFonts.poppins(
                           fontSize: 20,
                           color: color0,
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    launchEmail(
-                      'comercial@caldensmart.com',
-                      'Consulta comercial acerca de la línea $appName',
-                      '¡Hola! Tengo la siguiente duda sobre la línea IoT:\n',
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      const Icon(
-                        HugeIcons.strokeRoundedMail01,
-                        size: 20,
-                        color: color0,
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Text(
-                            'comercial@caldensmart.com',
-                            style: GoogleFonts.poppins(
-                              fontSize: 20,
-                              color: color0,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          // Contacto técnico
-          Container(
-            decoration: BoxDecoration(
-              color: color1,
-              borderRadius: BorderRadius.circular(8.0),
-              border: Border.all(color: color0),
+          ],
+        ),
+      ),
+      // Contacto técnico
+      Container(
+        decoration: BoxDecoration(
+          color: color1,
+          borderRadius: BorderRadius.circular(8.0),
+          border: Border.all(color: color0),
+        ),
+        padding: const EdgeInsets.all(16.0),
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Consulta técnica:',
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: color0,
+              ),
             ),
-            padding: const EdgeInsets.all(16.0),
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Consulta técnica:',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+            GestureDetector(
+              onTap: () {
+                launchEmail(
+                  'serviciotecnico@caldensmart.com',
+                  'Consulta ref. $appName',
+                  '¡Hola! Tengo una consulta referida al área de ingeniería sobre mis equipos.\n',
+                );
+              },
+              child: Row(
+                children: [
+                  const Icon(
+                    HugeIcons.strokeRoundedMail01,
+                    size: 20,
                     color: color0,
                   ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    launchEmail(
-                      'serviciotecnico@caldensmart.com',
-                      'Consulta ref. $appName',
-                      '¡Hola! Tengo una consulta referida al área de ingeniería sobre mis equipos.\n',
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      const Icon(
-                        HugeIcons.strokeRoundedMail01,
-                        size: 20,
-                        color: color0,
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Text(
-                            'serviciotecnico@caldensmart.com',
-                            style: GoogleFonts.poppins(
-                              fontSize: 20,
-                              color: color0,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  const SizedBox(
+                    width: 10,
                   ),
-                ),
-              ],
-            ),
-          ),
-          // Customer service
-          Container(
-            decoration: BoxDecoration(
-              color: color1,
-              borderRadius: BorderRadius.circular(8.0),
-              border: Border.all(color: color0),
-            ),
-            padding: const EdgeInsets.all(16.0),
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Customer service:',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: color0,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    sendWhatsAppMessage(
-                      '5491162232619',
-                      '¡Hola! Me comunico en relación a uno de mis equipos: \n',
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      const Icon(
-                        HugeIcons.strokeRoundedWhatsapp,
-                        size: 20,
-                        color: color0,
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Text(
-                        '+54 9 11 6223-2619',
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Text(
+                        'serviciotecnico@caldensmart.com',
                         style: GoogleFonts.poppins(
                           fontSize: 20,
                           color: color0,
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    launchEmail(
-                      'service@caldensmart.com',
-                      'Consulta sobre línea Smart',
-                      '¡Hola! Me comunico en relación a uno de mis equipos: \n',
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      const Icon(
-                        HugeIcons.strokeRoundedMail01,
-                        size: 20,
-                        color: color0,
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Text(
-                            'service@caldensmart.com',
-                            style: GoogleFonts.poppins(
-                              fontSize: 20,
-                              color: color0,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
-      );
-    default:
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Contacto comercial
-          Container(
-            decoration: BoxDecoration(
-              color: color1,
-              borderRadius: BorderRadius.circular(8.0),
-              border: Border.all(color: color0),
+          ],
+        ),
+      ),
+      // Customer service
+      Container(
+        decoration: BoxDecoration(
+          color: color1,
+          borderRadius: BorderRadius.circular(8.0),
+          border: Border.all(color: color0),
+        ),
+        padding: const EdgeInsets.all(16.0),
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Customer service:',
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: color0,
+              ),
             ),
-            padding: const EdgeInsets.all(16.0),
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Contacto comercial:',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+            GestureDetector(
+              onTap: () {
+                sendWhatsAppMessage(
+                  '5491162232619',
+                  '¡Hola! Me comunico en relación a uno de mis equipos: \n',
+                );
+              },
+              child: Row(
+                children: [
+                  const Icon(
+                    HugeIcons.strokeRoundedWhatsapp,
+                    size: 20,
                     color: color0,
                   ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    sendWhatsAppMessage(
-                      '5491162234181',
-                      '¡Hola! Tengo una duda comercial sobre los productos $appName: \n',
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      const Icon(
-                        HugeIcons.strokeRoundedWhatsapp,
-                        size: 20,
-                        color: color0,
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Text(
-                        '+54 9 11 6223-4181',
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  Text(
+                    '+54 9 11 6223-2619',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      color: color0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                launchEmail(
+                  'service@caldensmart.com',
+                  'Consulta sobre línea Smart',
+                  '¡Hola! Me comunico en relación a uno de mis equipos: \n',
+                );
+              },
+              child: Row(
+                children: [
+                  const Icon(
+                    HugeIcons.strokeRoundedMail01,
+                    size: 20,
+                    color: color0,
+                  ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Text(
+                        'service@caldensmart.com',
                         style: GoogleFonts.poppins(
                           fontSize: 20,
                           color: color0,
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    launchEmail(
-                      'comercial@caldensmart.com',
-                      'Consulta comercial acerca de la línea $appName',
-                      '¡Hola! Tengo la siguiente duda sobre la línea IoT:\n',
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      const Icon(
-                        HugeIcons.strokeRoundedMail01,
-                        size: 20,
-                        color: color0,
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Text(
-                            'comercial@caldensmart.com',
-                            style: GoogleFonts.poppins(
-                              fontSize: 20,
-                              color: color0,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          // Contacto técnico
-          Container(
-            decoration: BoxDecoration(
-              color: color1,
-              borderRadius: BorderRadius.circular(8.0),
-              border: Border.all(color: color0),
-            ),
-            padding: const EdgeInsets.all(16.0),
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Consulta técnica:',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: color0,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    launchEmail(
-                      'serviciotecnico@caldensmart.com',
-                      'Consulta ref. $appName',
-                      '¡Hola! Tengo una consulta referida al área de ingeniería sobre mis equipos.\n',
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      const Icon(
-                        HugeIcons.strokeRoundedMail01,
-                        size: 20,
-                        color: color0,
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Text(
-                            'serviciotecnico@caldensmart.com',
-                            style: GoogleFonts.poppins(
-                              fontSize: 20,
-                              color: color0,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Customer service
-          Container(
-            decoration: BoxDecoration(
-              color: color1,
-              borderRadius: BorderRadius.circular(8.0),
-              border: Border.all(color: color0),
-            ),
-            padding: const EdgeInsets.all(16.0),
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Customer service:',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: color0,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    sendWhatsAppMessage(
-                      '5491162232619',
-                      '¡Hola! Me comunico en relación a uno de mis equipos: \n',
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      const Icon(
-                        HugeIcons.strokeRoundedWhatsapp,
-                        size: 20,
-                        color: color0,
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Text(
-                        '+54 9 11 6223-2619',
-                        style: GoogleFonts.poppins(
-                          fontSize: 20,
-                          color: color0,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    launchEmail(
-                      'service@caldensmart.com',
-                      'Consulta sobre línea Smart',
-                      '¡Hola! Me comunico en relación a uno de mis equipos: \n',
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      const Icon(
-                        HugeIcons.strokeRoundedMail01,
-                        size: 20,
-                        color: color0,
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Text(
-                            'service@caldensmart.com',
-                            style: GoogleFonts.poppins(
-                              fontSize: 20,
-                              color: color0,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-  }
+          ],
+        ),
+      ),
+    ],
+  );
 }
 
 String linksOfApp(String link) {
@@ -1145,6 +926,40 @@ void launchWebURL(String url) async {
 }
 //*-Funciones diversas-*\\
 
+//*- Agrega y elimina equipos a Alexa y GoogleHome -*\\
+void addDeviceToCore(String deviceName) {
+  if (deviceName.contains("Termometro") ||
+      deviceName.contains("Detector") ||
+      ((deviceName.contains("Domotica") || deviceName.contains("Modulo")) &&
+          !deviceName.contains("_"))) {
+    return;
+  }
+  final String pc = DeviceManager.getProductCode(
+      deviceName.contains('_') ? deviceName.split('_')[0] : deviceName);
+  final String sn = DeviceManager.extractSerialNumber(
+      deviceName.contains('_') ? deviceName.split('_')[0] : deviceName);
+  List<String> admins = globalDATA['$pc/$sn']?['secondary_admin'] ?? [];
+  String ownerEmail = globalDATA['$pc/$sn']?['owner'] ?? '';
+  bool canControl = ownerEmail == currentUserEmail ||
+      admins.contains(currentUserEmail) ||
+      ownerEmail == '';
+  if (!alexaDevices.contains(deviceName) && canControl) {
+    alexaDevices.add(deviceName);
+    putDevicesForAlexa(currentUserEmail, alexaDevices);
+  }
+}
+
+void removeDeviceFromCore(String deviceName) {
+  for (String device in alexaDevices) {
+    if (device == deviceName ||
+        (device.startsWith(deviceName) && device.contains('_'))) {
+      alexaDevices.remove(device);
+    }
+  }
+  putDevicesForAlexa(currentUserEmail, alexaDevices);
+}
+//*- Agrega y elimina equipos a Alexa y GoogleHome -*\\
+
 //*-Wifi, menú y scanner-*\\
 Future<void> sendWifitoBle(String ssid, String pass) async {
   BluetoothManager bluetoothManager = BluetoothManager();
@@ -1208,9 +1023,11 @@ void wifiText(BuildContext context) {
   String manualSSID = '';
   String manualPassword = '';
   bool obscureText = true;
+  final String pc = DeviceManager.getProductCode(deviceName);
+  final String sn = DeviceManager.extractSerialNumber(deviceName);
   bool redInestable = isWifiNetworkUnstable(
-    DeviceManager.getProductCode(deviceName),
-    DeviceManager.extractSerialNumber(deviceName),
+    pc,
+    sn,
   );
 
   showDialog(
@@ -2312,7 +2129,7 @@ Future<void> analizePayment(
   printLog.i('--------------Alquiler Temporario--------------');
 }
 
-void showPaymentTest(bool adm, int vencimiento, BuildContext context) {
+void showPaymentText(bool adm, int vencimiento, BuildContext context) {
   try {
     showAlertDialog(
       context,
@@ -6102,6 +5919,8 @@ class AnimatedIconWidgetState extends State<AnimatedIconWidget>
 /// - focusMargin: separación extra antes de pintar.
 /// - borderRadius: esquinas del halo redondeado.
 /// - onStepReached: función que se ejecuta cuando se llega a este paso del tutorial.
+/// - ButtonAction: Función que agrega un boton a al paso, se le debe agrega una acción.
+
 class TutorialItem {
   final GlobalKey globalKey;
   final Widget child;
@@ -6113,6 +5932,8 @@ class TutorialItem {
   final bool fullBackground;
   final double contentOffsetY;
   final VoidCallback? onStepReached;
+    final ElevatedButton? buttonAction;
+
 
   TutorialItem({
     required this.globalKey,
@@ -6125,6 +5946,8 @@ class TutorialItem {
     this.fullBackground = false,
     this.contentOffsetY = 0.0,
     this.onStepReached,
+        this.buttonAction,
+
   });
 }
 
@@ -6377,6 +6200,12 @@ class Tutorial {
                   targetOffset: offset,
                   targetSize: sizeW,
                 ),
+                if (item.buttonAction != null)
+                  Positioned(
+                    bottom: 32,
+                    left: 32,
+                    child: item.buttonAction!,
+                  ),
                 Positioned(
                   bottom: 32,
                   right: 32,

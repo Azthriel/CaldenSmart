@@ -15,6 +15,8 @@ class RollerPage extends ConsumerStatefulWidget {
 
 class RollerPageState extends ConsumerState<RollerPage> {
   int _selectedIndex = 0;
+  final String pc = DeviceManager.getProductCode(deviceName);
+  final String sn = DeviceManager.extractSerialNumber(deviceName);
 
   final TextEditingController tenantController = TextEditingController();
   final PageController _pageController = PageController(initialPage: 0);
@@ -198,62 +200,60 @@ class RollerPageState extends ConsumerState<RollerPage> {
   }
 
   void setRange(int mm) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[7]($mm)';
+    String data = '$pc[7]($mm)';
     printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setDistance(int pc) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[7]($pc%)';
+    String data = '$pc[7]($pc%)';
     printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setRollerConfig(int type) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[8]($type)';
+    String data = '$pc[8]($type)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setMotorSpeed(String rpm) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[10]($rpm)';
+    String data = '$pc[10]($rpm)';
     printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setMicroStep(String uStep) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[11]($uStep)';
+    String data = '$pc[11]($uStep)';
     printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setMotorCurrent(bool run, String value) {
-    String data =
-        '${DeviceManager.getProductCode(deviceName)}[12](${run ? '1' : '0'}#$value)';
+    String data = '$pc[12](${run ? '1' : '0'}#$value)';
     printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setFreeWheeling(bool active) {
-    String data =
-        '${DeviceManager.getProductCode(deviceName)}[14](${active ? '1' : '0'})';
+    String data = '$pc[14](${active ? '1' : '0'})';
     printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setTPWMTHRS(String value) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[15]($value)';
+    String data = '$pc[15]($value)';
     printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setTCOOLTHRS(String value) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[16]($value)';
+    String data = '$pc[16]($value)';
     printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setSGTHRS(String value) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[17]($value)';
+    String data = '$pc[17]($value)';
     printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
@@ -301,7 +301,6 @@ class RollerPageState extends ConsumerState<RollerPage> {
                 ),
               ),
               const SizedBox(height: 20),
-
               CurtainAnimationRielCenter(
                 position: actualPosition,
                 onTapDown: (details) {
@@ -325,56 +324,6 @@ class RollerPageState extends ConsumerState<RollerPage> {
                   });
                 },
               ),
-
-              // CurtainAnimationRielLeft(
-              //   position: actualPosition,
-              //   onTapDown: (details) {
-              //     RenderBox box = context.findRenderObject() as RenderBox;
-              //     Offset localPosition =
-              //         box.globalToLocal(details.globalPosition);
-              //     double relativeWidth = (localPosition.dx - 50) /
-              //         (MediaQuery.of(context).size.width * 0.8);
-              //     int newPosition = (relativeWidth * 100).clamp(0, 100).round();
-
-              //     setState(() {
-              //       workingPosition = newPosition;
-              //       setDistance(newPosition);
-              //     });
-              //   },
-              // ),
-
-              //       CurtainAnimationRielRight(
-              //   position: actualPosition,
-              //   onTapDown: (details) {
-              //     RenderBox box = context.findRenderObject() as RenderBox;
-              //     Offset localPosition = box.globalToLocal(details.globalPosition);
-              //     double relativeWidth = 1.0 - ((localPosition.dx - 50) / (MediaQuery.of(context).size.width * 0.8));
-              //     int newPosition = (relativeWidth * 100).clamp(0, 100).round();
-
-              //     setState(() {
-              //       workingPosition = newPosition;
-              //       setDistance(newPosition);
-              //     });
-              //   },
-              // ),
-
-              // CurtainAnimation(
-              //   position: actualPosition,
-              //   onTapDown: (details) {
-              //     RenderBox box = context.findRenderObject() as RenderBox;
-              //     Offset localPosition =
-              //         box.globalToLocal(details.globalPosition);
-              //     double relativeHeight = (localPosition.dy - 200) / 250;
-              //     int newPosition =
-              //         (relativeHeight * 100).clamp(0, 100).round();
-
-              //     setState(() {
-              //       workingPosition = newPosition;
-              //       setDistance(newPosition);
-              //     });
-              //   },
-              // ),
-
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -382,8 +331,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                   Expanded(
                     child: GestureDetector(
                       onLongPressStart: (LongPressStartDetails a) {
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[7](0%)';
+                        String data = '$pc[7](0%)';
                         bluetoothManager.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = 0;
@@ -391,8 +339,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                         printLog.i(data);
                       },
                       onLongPressEnd: (LongPressEndDetails a) {
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[7]($actualPosition%)';
+                        String data = '$pc[7]($actualPosition%)';
                         bluetoothManager.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = actualPosition;
@@ -442,8 +389,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                   Expanded(
                     child: GestureDetector(
                       onLongPressStart: (LongPressStartDetails a) {
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[7](100%)';
+                        String data = '$pc[7](100%)';
                         bluetoothManager.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = 100;
@@ -451,8 +397,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                         printLog.i(data);
                       },
                       onLongPressEnd: (LongPressEndDetails a) {
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[7]($actualPosition%)';
+                        String data = '$pc[7]($actualPosition%)';
                         bluetoothManager.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = actualPosition;
@@ -935,9 +880,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
           ),
           actions: [
             Icon(
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-                          ?['cstate'] ??
-                      false
+              globalDATA['$pc/$sn']?['cstate'] ?? false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,

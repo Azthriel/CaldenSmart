@@ -22,6 +22,8 @@ class RelayPage extends ConsumerStatefulWidget {
 }
 
 class RelayPageState extends ConsumerState<RelayPage> {
+  final String pc = DeviceManager.getProductCode(deviceName);
+  final String sn = DeviceManager.extractSerialNumber(deviceName);
   bool showSecondaryAdminFields = false;
   bool showAddAdminField = false;
   bool showSecondaryAdminList = false;
@@ -46,7 +48,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
 
-  void initItems() {
+   void initItems() {
     items.addAll({
       TutorialItem(
         globalKey: keys['rele:estado']!,
@@ -187,9 +189,30 @@ class RelayPageState extends ConsumerState<RelayPage> {
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 3,
           contentPosition: ContentPosition.below,
+          buttonAction: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 17),
+            ),
+            onPressed: () {
+              launchEmail(
+                'comercial@caldensmart.com',
+                'Habilitación Administradores secundarios extras en $appName',
+                '¡Hola! Me comunico porque busco habilitar la opción de "Administradores secundarios extras" en mi equipo ${DeviceManager.getComercialName(deviceName)}\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner',
+              );
+            },
+            child: const Text(
+              'Enviar mail',
+              style: TextStyle(color: color1),
+            ),
+          ),
           child: const TutorialItemContent(
             title: 'Añadir administradores secundarios',
-            content: 'Podrás agregar correos secundarios hasta un límite de 3',
+            content:
+                'Podrás agregar correos secundarios hasta un límite de tres, en caso de querer extenderlo debes contactarte con comercial@caldensmart.com',
           ),
         ),
         TutorialItem(
@@ -214,6 +237,41 @@ class RelayPageState extends ConsumerState<RelayPage> {
                 'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
           ),
         ),
+        if (adminDevices.isNotEmpty) ...{
+          TutorialItem(
+            globalKey: keys['managerScreen:historialAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Historial de administradores secundarios',
+              content:
+                  'Se veran las acciones ejecutadas por cada uno con su respectiva flecha',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:horariosAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Horarios de administradores secundarios',
+              content:
+                  'Configura el rango de horarios y dias que podra accionar el equipo',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:wifiAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Wifi de administradores secundarios',
+              content:
+                  'Podras restringirle a los administradores secundarios el uso del menu wifi',
+            ),
+          ),
+        },
       },
       if (!tenant) ...{
         TutorialItem(
@@ -226,17 +284,36 @@ class RelayPageState extends ConsumerState<RelayPage> {
             content: 'Podrás encender y apagar el dispositivo desde el menú',
           ),
         ),
-        // TutorialItem(
-        //   globalKey: keys['managerScreen:desconexionNotificacion']!,
-        //
-        //   borderRadius: const Radius.circular(20),
-        //   shapeFocus: ShapeFocus.roundedSquare,
-        //   pageIndex: 3,
-        //   child: const TutorialItemContent(
-        //     title: 'Notificación de desconexión',
-        //     content: 'Puedes establecer una alerta si el equipo se desconecta',
-        //   ),
-        // ),
+        TutorialItem(
+          globalKey: keys['managerScreen:desconexionNotificacion']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 3,
+          child: const TutorialItemContent(
+            title: 'Notificación de desconexión',
+            content:
+                'Puedes establecer una alerta si el equipo se desconecta, en el siguiente paso verás un ejemplo de la misma',
+          ),
+        ),
+        TutorialItem(
+          globalKey: keys['managerScreen:ejemploNoti']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 3,
+          fullBackground: true,
+          onStepReached: () {
+            setState(() {
+              showNotification(
+                  '¡El equipo ${nicknamesMap[deviceName] ?? deviceName} se desconecto!',
+                  'Se detecto una desconexión a las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                  'noti');
+            });
+          },
+          child: const TutorialItemContent(
+            title: 'Ejemplo de notificación',
+            content: '',
+          ),
+        ),
       },
       TutorialItem(
         globalKey: keys['managerScreen:imagen']!,
@@ -250,6 +327,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
       ),
     });
   }
+
 
   ///*- Elementos para tutoriales -*\\\
 
@@ -274,10 +352,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
     subscribeToWifiStatus();
     subscribeTrueStatus();
 
-    if (!alexaDevices.contains(deviceName)) {
-      alexaDevices.add(deviceName);
-      putDevicesForAlexa(currentUserEmail, alexaDevices);
-    }
+    addDeviceToCore(deviceName);
   }
 
   @override
@@ -424,17 +499,13 @@ class RelayPageState extends ConsumerState<RelayPage> {
     }
 
     int fun = on ? 1 : 0;
-    String data = '${DeviceManager.getProductCode(deviceName)}[11]($fun)';
+    String data = '$pc[11]($fun)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
-    globalDATA[
-            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-        'w_status'] = on;
+    globalDATA['$pc/$sn']!['w_status'] = on;
     saveGlobalData(globalDATA);
     try {
-      String topic =
-          'devices_rx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
-      String topic2 =
-          'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
+      String topic = 'devices_rx/$pc/$sn';
+      String topic2 = 'devices_tx/$pc/$sn';
       String message = jsonEncode({'w_status': on});
       sendMessagemqtt(topic, message);
       sendMessagemqtt(topic2, message);
@@ -451,8 +522,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
       // Programar la tarea.
       try {
         showToast('Recuerda tener la ubicación encendida.');
-        putDistanceControl(DeviceManager.getProductCode(deviceName),
-            DeviceManager.extractSerialNumber(deviceName), true);
+        putDistanceControl(pc, sn, true);
         List<String> deviceControl =
             await getDevicesInDistanceControl(currentUserEmail);
         deviceControl.add(deviceName);
@@ -474,8 +544,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
     } else {
       // Cancelar la tarea.
       showToast('Se cancelo el control por distancia');
-      putDistanceControl(DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName), false);
+      putDistanceControl(pc, sn, false);
       List<String> deviceControl =
           await getDevicesInDistanceControl(currentUserEmail);
       deviceControl.remove(deviceName);
@@ -848,159 +917,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
         ),
       ),
 
-      //*- Página 2: Trackeo Bluetooth -*\\
-      // Stack(
-      //   children: [
-      //     SingleChildScrollView(
-      //       child: Padding(
-      //         padding:
-      //             const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
-      //         child: Column(
-      //           crossAxisAlignment: CrossAxisAlignment.center,
-      //           children: [
-      //             Text(
-      //               'Control por presencia',
-      //               style: GoogleFonts.poppins(
-      //                 fontSize: 28,
-      //                 fontWeight: FontWeight.bold,
-      //                 color: color1,
-      //               ),
-      //               textAlign: TextAlign.center,
-      //             ),
-      //             const SizedBox(height: 40),
-      //             GestureDetector(
-      //               onTap: () {
-      //                 if (deviceOwner || owner == '') {
-      //                   if (isAgreeChecked) {
-      //                     verifyPermission().then((accepted) async {
-      //                       if (accepted) {
-      //                         setState(() {
-      //                           tracking = !tracking;
-      //                         });
-      //                         if (tracking) {
-      //                           devicesToTrack.add(deviceName);
-      //                           saveDeviceListToTrack(devicesToTrack);
-      //                           SharedPreferences prefs =
-      //                               await SharedPreferences.getInstance();
-      //                           bool hasInitService =
-      //                               prefs.getBool('hasInitService') ?? false;
-      //                           if (!hasInitService) {
-      //                             await initializeService();
-      //                             await prefs.setBool('hasInitService', true);
-      //                           }
-      //                           await Future.delayed(
-      //                               const Duration(seconds: 30));
-      //                           printLog.i("Achi");
-      //                           final backService = FlutterBackgroundService();
-      //                           backService.invoke('presenceControl');
-      //                         } else {
-      //                           devicesToTrack.remove(deviceName);
-      //                           saveDeviceListToTrack(devicesToTrack);
-      //                           if (devicesToTrack.isEmpty) {
-      //                             final backService =
-      //                                 FlutterBackgroundService();
-      //                             backService.invoke('CancelpresenceControl');
-      //                           }
-      //                         }
-      //                       } else {
-      //                         showToast(
-      //                             'Debes habilitar la ubicación constante\npara el uso del\ncontrol por presencia');
-      //                       }
-      //                     });
-      //                   } else {
-      //                     showToast(
-      //                         'Debes aceptar el uso de control por presencia');
-      //                   }
-      //                 } else {
-      //                   showToast(
-      //                       'No tienes permiso para realizar esta acción');
-      //                 }
-      //               },
-      //               child: AnimatedContainer(
-      //                 duration: const Duration(milliseconds: 500),
-      //                 padding: const EdgeInsets.all(20),
-      //                 decoration: BoxDecoration(
-      //                   color: tracking ? Colors.greenAccent : Colors.redAccent,
-      //                   shape: BoxShape.circle,
-      //                   boxShadow: const [
-      //                     BoxShadow(
-      //                       color: Colors.black26,
-      //                       blurRadius: 10,
-      //                       offset: Offset(0, 5),
-      //                     ),
-      //                   ],
-      //                 ),
-      //                 child: Icon(
-      //                   Icons.directions_walk,
-      //                   size: 80,
-      //                   color: tracking ? Colors.white : Colors.grey[300],
-      //                 ),
-      //               ),
-      //             ),
-      //             const SizedBox(height: 70),
-      //             Card(
-      //               shape: RoundedRectangleBorder(
-      //                 borderRadius: BorderRadius.circular(20),
-      //               ),
-      //               elevation: 5,
-      //               color: color1,
-      //               child: Padding(
-      //                 padding: const EdgeInsets.all(20.0),
-      //                 child: Column(
-      //                   crossAxisAlignment: CrossAxisAlignment.start,
-      //                   children: [
-      //                     Text(
-      //                       'Habilitar esta función hará que la aplicación use más recursos de lo común, si a pesar de esto decides utilizarlo es bajo tu responsabilidad.',
-      //                       style: GoogleFonts.poppins(
-      //                         fontSize: 16,
-      //                         color: color0,
-      //                       ),
-      //                     ),
-      //                     const SizedBox(height: 10),
-      //                     CheckboxListTile(
-      //                       title: Text(
-      //                         'Sí, estoy de acuerdo',
-      //                         style: GoogleFonts.poppins(
-      //                           fontSize: 16,
-      //                           color: color0,
-      //                         ),
-      //                       ),
-      //                       value: isAgreeChecked,
-      //                       activeColor: color0,
-      //                       onChanged: (bool? value) {
-      //                         setState(() {
-      //                           isAgreeChecked = value ?? false;
-      //                           if (!isAgreeChecked && tracking) {
-      //                             tracking = false;
-      //                             devicesToTrack.remove(deviceName);
-      //                             saveDeviceListToTrack(devicesToTrack);
-      //                           }
-      //                         });
-      //                       },
-      //                       controlAffinity: ListTileControlAffinity.leading,
-      //                     ),
-      //                   ],
-      //                 ),
-      //               ),
-      //             ),
-      //           ],
-      //         ),
-      //       ),
-      //     ),
-      //     if (!deviceOwner && owner != '')
-      //       Container(
-      //         color: Colors.black.withValues(alpha: 0.7),
-      //         child: const Center(
-      //           child: Text(
-      //             'No tienes acceso a esta función',
-      //             style: TextStyle(color: Colors.white, fontSize: 18),
-      //           ),
-      //         ),
-      //       ),
-      //   ],
-      // ),
-
-      //*- Página 3 - Control por distancia -*\\
+      //*- Página 2 - Control por distancia -*\\
 
       Stack(
         children: [
@@ -1167,11 +1084,8 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                                 printLog.i(
                                                     'Valor enviado: ${value.round()}');
                                                 putDistanceOff(
-                                                  DeviceManager.getProductCode(
-                                                      deviceName),
-                                                  DeviceManager
-                                                      .extractSerialNumber(
-                                                          deviceName),
+                                                  pc,
+                                                  sn,
                                                   value.toString(),
                                                 );
                                               },
@@ -1264,11 +1178,8 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                                 printLog.i(
                                                     'Valor enviado: ${value.round()}');
                                                 putDistanceOn(
-                                                  DeviceManager.getProductCode(
-                                                      deviceName),
-                                                  DeviceManager
-                                                      .extractSerialNumber(
-                                                          deviceName),
+                                                  pc,
+                                                  sn,
                                                   value.toString(),
                                                 );
                                               },
@@ -1460,10 +1371,8 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                             isNC = false;
                                           });
                                           saveNC(
-                                            DeviceManager.getProductCode(
-                                                deviceName),
-                                            DeviceManager.extractSerialNumber(
-                                                deviceName),
+                                            pc,
+                                            sn,
                                             false,
                                           );
                                         },
@@ -1502,10 +1411,8 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                             isNC = true;
                                           });
                                           saveNC(
-                                            DeviceManager.getProductCode(
-                                                deviceName),
-                                            DeviceManager.extractSerialNumber(
-                                                deviceName),
+                                            pc,
+                                            sn,
                                             true,
                                           );
                                         },
@@ -1679,9 +1586,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
           actions: [
             Icon(
               key: keys['rele:servidor']!,
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-                          ?['cstate'] ??
-                      false
+              globalDATA['$pc/$sn']?['cstate'] ?? false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,

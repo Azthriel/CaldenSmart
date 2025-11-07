@@ -25,6 +25,8 @@ class CalefactorPage extends ConsumerStatefulWidget {
 class CalefactorPageState extends ConsumerState<CalefactorPage>
     with TickerProviderStateMixin {
   var parts2 = utf8.decode(varsValues).split(':');
+  final String pc = DeviceManager.getProductCode(deviceName);
+  final String sn = DeviceManager.extractSerialNumber(deviceName);
 
   int _selectedIndex = 0;
   double result = 0.0;
@@ -45,17 +47,9 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
   late AnimationController _sparkAnimationController;
   late Animation<double> _sparkPulseAnimation;
 
-  String measure = DeviceManager.getProductCode(deviceName) == '022000_IOT'
-      ? 'KW/h'
-      : 'M³/h';
-  IconData powerIconOn =
-      DeviceManager.getProductCode(deviceName) == '022000_IOT'
-          ? Icons.flash_on_rounded
-          : HugeIcons.strokeRoundedFire;
-  IconData powerIconOff =
-      DeviceManager.getProductCode(deviceName) == '022000_IOT'
-          ? Icons.flash_off_rounded
-          : HugeIcons.strokeRoundedFire;
+  late String measure;
+  late IconData powerIconOn;
+  late IconData powerIconOff;
 
   TextEditingController emailController = TextEditingController();
   final TextEditingController costController = TextEditingController();
@@ -65,10 +59,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
 
   DateTime? fechaSeleccionada;
 
-  final bool hasSpark = globalDATA[
-              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-          'hasSpark'] ??
-      false;
+  late bool hasSpark;
 
   String tiempo = '';
 
@@ -307,10 +298,31 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 4,
-          contentPosition: ContentPosition.above,
+          contentPosition: ContentPosition.below,
+          buttonAction: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 17),
+            ),
+            onPressed: () {
+              launchEmail(
+                'comercial@caldensmart.com',
+                'Habilitación Administradores secundarios extras en $appName',
+                '¡Hola! Me comunico porque busco habilitar la opción de "Administradores secundarios extras" en mi equipo ${DeviceManager.getComercialName(deviceName)}\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner',
+              );
+            },
+            child: const Text(
+              'Enviar mail',
+              style: TextStyle(color: color1),
+            ),
+          ),
           child: const TutorialItemContent(
             title: 'Añadir administradores secundarios',
-            content: 'Podrás agregar correos secundarios hasta un límite de 3',
+            content:
+                'Podrás agregar correos secundarios hasta un límite de tres, en caso de querer extenderlo debes contactarte con comercial@caldensmart.com',
           ),
         ),
         TutorialItem(
@@ -335,6 +347,41 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                 'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
           ),
         ),
+        if (adminDevices.isNotEmpty) ...{
+          TutorialItem(
+            globalKey: keys['managerScreen:historialAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Historial de administradores secundarios',
+              content:
+                  'Se veran las acciones ejecutadas por cada uno con su respectiva flecha',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:horariosAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Horarios de administradores secundarios',
+              content:
+                  'Configura el rango de horarios y dias que podra accionar el equipo',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:wifiAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Wifi de administradores secundarios',
+              content:
+                  'Podras restringirle a los administradores secundarios el uso del menu wifi',
+            ),
+          ),
+        },
       },
       if (!tenant) ...{
         TutorialItem(
@@ -347,17 +394,36 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
             content: 'Podrás encender y apagar el dispositivo desde el menú',
           ),
         ),
-        // TutorialItem(
-        //   globalKey: keys['managerScreen:desconexionNotificacion']!,
-        //
-        //   borderRadius: const Radius.circular(20),
-        //   shapeFocus: ShapeFocus.roundedSquare,
-        //   pageIndex: 4,
-        //   child: const TutorialItemContent(
-        //     title: 'Notificación de desconexión',
-        //     content: 'Puedes establecer una alerta si el equipo se desconecta',
-        //   ),
-        // ),
+        TutorialItem(
+          globalKey: keys['managerScreen:desconexionNotificacion']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 4,
+          child: const TutorialItemContent(
+            title: 'Notificación de desconexión',
+            content:
+                'Puedes establecer una alerta si el equipo se desconecta, en el siguiente paso verás un ejemplo de la misma',
+          ),
+        ),
+        TutorialItem(
+          globalKey: keys['managerScreen:ejemploNoti']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 4,
+          fullBackground: true,
+          onStepReached: () {
+            setState(() {
+              showNotification(
+                  '¡El equipo ${nicknamesMap[deviceName] ?? deviceName} se desconecto!',
+                  'Se detecto una desconexión a las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                  'noti');
+            });
+          },
+          child: const TutorialItemContent(
+            title: 'Ejemplo de notificación',
+            content: '',
+          ),
+        )
       },
       TutorialItem(
         globalKey: keys['managerScreen:led']!,
@@ -389,6 +455,15 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
     super.initState();
     timeData();
 
+    measure = pc == '022000_IOT' ? 'KW/h' : 'M³/h';
+    powerIconOn = pc == '022000_IOT'
+        ? Icons.flash_on_rounded
+        : HugeIcons.strokeRoundedFire;
+    powerIconOff = pc == '022000_IOT'
+        ? Icons.flash_off_rounded
+        : HugeIcons.strokeRoundedFire;
+    hasSpark = globalDATA['$pc/$sn']?['hasSpark'] ?? false;
+
     _sparkAnimationController = AnimationController(
       duration: const Duration(milliseconds: 150),
       vsync: this,
@@ -404,11 +479,11 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
 
     if (deviceOwner) {
       if (vencimientoAdmSec < 10 && vencimientoAdmSec > 0) {
-        showPaymentTest(true, vencimientoAdmSec, navigatorKey.currentContext!);
+        showPaymentText(true, vencimientoAdmSec, navigatorKey.currentContext!);
       }
 
       if (vencimientoAT < 10 && vencimientoAT > 0) {
-        showPaymentTest(false, vencimientoAT, navigatorKey.currentContext!);
+        showPaymentText(false, vencimientoAT, navigatorKey.currentContext!);
       }
     }
 
@@ -416,8 +491,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
 
     nickname = nicknamesMap[deviceName] ?? deviceName;
 
-    valueConsuption =
-        equipmentConsumption(DeviceManager.getProductCode(deviceName));
+    valueConsuption = equipmentConsumption(pc);
 
     printLog.i('Valor temp: $tempValue');
     printLog.i('¿Encendido? $turnOn');
@@ -432,10 +506,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
     subscribeToWifiStatus();
     subscribeTrueStatus();
 
-    if (!alexaDevices.contains(deviceName)) {
-      alexaDevices.add(deviceName);
-      putDevicesForAlexa(currentUserEmail, alexaDevices);
-    }
+    addDeviceToCore(deviceName);
   }
 
   @override
@@ -639,7 +710,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
   }
 
   void sendTemperature(int temp) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[7]($temp)';
+    String data = '$pc[7]($temp)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
@@ -651,17 +722,13 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
     }
 
     int fun = on ? 1 : 0;
-    String data = '${DeviceManager.getProductCode(deviceName)}[11]($fun)';
+    String data = '$pc[11]($fun)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
-    globalDATA[
-            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-        'w_status'] = on;
+    globalDATA['$pc/$sn']!['w_status'] = on;
     saveGlobalData(globalDATA);
     try {
-      String topic =
-          'devices_rx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
-      String topic2 =
-          'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
+      String topic = 'devices_rx/$pc/$sn';
+      String topic2 = 'devices_tx/$pc/$sn';
       String message = jsonEncode({'w_status': on});
       sendMessagemqtt(topic, message);
       sendMessagemqtt(topic2, message);
@@ -679,8 +746,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
       // Programar la tarea.
       try {
         showToast('Recuerda tener la ubicación encendida.');
-        putDistanceControl(DeviceManager.getProductCode(deviceName),
-            DeviceManager.extractSerialNumber(deviceName), true);
+        putDistanceControl(pc, sn, true);
         List<String> deviceControl =
             await getDevicesInDistanceControl(currentUserEmail);
         deviceControl.add(deviceName);
@@ -702,8 +768,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
     } else {
       // Cancelar la tarea.
       showToast('Se cancelo el control por distancia');
-      putDistanceControl(DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName), false);
+      putDistanceControl(pc, sn, false);
       List<String> deviceControl =
           await getDevicesInDistanceControl(currentUserEmail);
       deviceControl.remove(deviceName);
@@ -904,8 +969,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                     ),
                   ],
                 ),
-                if (DeviceManager.getProductCode(deviceName) == '027000_IOT' &&
-                    hasSpark) ...{
+                if (pc == '027000_IOT' && hasSpark) ...{
                   const SizedBox(
                     height: 30,
                   ),
@@ -1354,12 +1418,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                                                   printLog.i(
                                                       'Valor enviado: ${value.round()}');
                                                   putDistanceOff(
-                                                    DeviceManager
-                                                        .getProductCode(
-                                                            deviceName),
-                                                    DeviceManager
-                                                        .extractSerialNumber(
-                                                            deviceName),
+                                                    pc,
+                                                    sn,
                                                     value.toString(),
                                                   );
                                                 },
@@ -1452,12 +1512,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                                                   printLog.i(
                                                       'Valor enviado: ${value.round()}');
                                                   putDistanceOn(
-                                                    DeviceManager
-                                                        .getProductCode(
-                                                            deviceName),
-                                                    DeviceManager
-                                                        .extractSerialNumber(
-                                                            deviceName),
+                                                    pc,
+                                                    sn,
                                                     value.toString(),
                                                   );
                                                 },
@@ -1680,8 +1736,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                                 fechaSeleccionada = DateTime.now();
                               }),
                             );
-                            String data =
-                                '${DeviceManager.getProductCode(deviceName)} ';
+
+                            String data = '$pc[10](0)';
                             bluetoothManager.toolsUuid.write(data.codeUnits);
                           }
                         : null,
@@ -1697,7 +1753,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                   const SizedBox(height: 25),
                   if (fechaSeleccionada != null)
                     Text(
-                      'Último reinicio: ${fechaSeleccionada!.day}/${fechaSeleccionada!.month}/${fechaSeleccionada!.year}',
+                      'Último reinicio: ${fechaSeleccionada?.day ?? 5}/${fechaSeleccionada?.month ?? 11}/${fechaSeleccionada?.year ?? 2004}',
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         color: color1,
@@ -1842,9 +1898,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
           actions: [
             Icon(
               key: keys['calefactores:servidor']!,
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-                          ?['cstate'] ??
-                      false
+              globalDATA['$pc/$sn']?['cstate'] ?? false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,

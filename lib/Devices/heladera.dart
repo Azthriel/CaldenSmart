@@ -24,6 +24,9 @@ class HeladeraPage extends ConsumerStatefulWidget {
 class HeladeraPageState extends ConsumerState<HeladeraPage> {
   var parts2 = utf8.decode(varsValues).split(':');
 
+  final String pc = DeviceManager.getProductCode(deviceName);
+  final String sn = DeviceManager.extractSerialNumber(deviceName);
+
   late double tempValue;
   int _selectedIndex = 0;
   double result = 0.0;
@@ -59,7 +62,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
 
-  void initItems() {
+    void initItems() {
     items.addAll({
       TutorialItem(
         globalKey: keys['heladera:estado']!,
@@ -282,10 +285,31 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 4,
-          contentPosition: ContentPosition.above,
+          contentPosition: ContentPosition.below,
+          buttonAction: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 17),
+            ),
+            onPressed: () {
+              launchEmail(
+                'comercial@caldensmart.com',
+                'Habilitación Administradores secundarios extras en $appName',
+                '¡Hola! Me comunico porque busco habilitar la opción de "Administradores secundarios extras" en mi equipo ${DeviceManager.getComercialName(deviceName)}\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner',
+              );
+            },
+            child: const Text(
+              'Enviar mail',
+              style: TextStyle(color: color1),
+            ),
+          ),
           child: const TutorialItemContent(
             title: 'Añadir administradores secundarios',
-            content: 'Podrás agregar correos secundarios hasta un límite de 3',
+            content:
+                'Podrás agregar correos secundarios hasta un límite de tres, en caso de querer extenderlo debes contactarte con comercial@caldensmart.com',
           ),
         ),
         TutorialItem(
@@ -310,6 +334,41 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                 'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
           ),
         ),
+        if (adminDevices.isNotEmpty) ...{
+          TutorialItem(
+            globalKey: keys['managerScreen:historialAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Historial de administradores secundarios',
+              content:
+                  'Se veran las acciones ejecutadas por cada uno con su respectiva flecha',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:horariosAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Horarios de administradores secundarios',
+              content:
+                  'Configura el rango de horarios y dias que podra accionar el equipo',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:wifiAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Wifi de administradores secundarios',
+              content:
+                  'Podras restringirle a los administradores secundarios el uso del menu wifi',
+            ),
+          ),
+        },
       },
       if (!tenant) ...{
         TutorialItem(
@@ -324,17 +383,36 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
         ),
       },
       if (!tenant) ...{
-        // TutorialItem(
-        //   globalKey: keys['managerScreen:desconexionNotificacion']!,
-        //
-        //   borderRadius: const Radius.circular(20),
-        //   shapeFocus: ShapeFocus.roundedSquare,
-        //   pageIndex: 4,
-        //   child: const TutorialItemContent(
-        //     title: 'Notificación de desconexión',
-        //     content: 'Puedes establecer una alerta si el equipo se desconecta',
-        //   ),
-        // ),
+        TutorialItem(
+          globalKey: keys['managerScreen:desconexionNotificacion']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 4,
+          child: const TutorialItemContent(
+            title: 'Notificación de desconexión',
+            content:
+                'Puedes establecer una alerta si el equipo se desconecta, en el siguiente paso verás un ejemplo de la misma',
+          ),
+        ),
+        TutorialItem(
+          globalKey: keys['managerScreen:ejemploNoti']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 4,
+          fullBackground: true,
+          onStepReached: () {
+            setState(() {
+              showNotification(
+                  '¡El equipo ${nicknamesMap[deviceName] ?? deviceName} se desconecto!',
+                  'Se detecto una desconexión a las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                  'noti');
+            });
+          },
+          child: const TutorialItemContent(
+            title: 'Ejemplo de notificación',
+            content: '',
+          ),
+        ),
       },
       TutorialItem(
         globalKey: keys['managerScreen:imagen']!,
@@ -349,6 +427,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
     });
   }
 
+
   ///*- Elementos para tutoriales -*\\\
 
   @override
@@ -358,11 +437,11 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
 
     if (deviceOwner) {
       if (vencimientoAdmSec < 10 && vencimientoAdmSec > 0) {
-        showPaymentTest(true, vencimientoAdmSec, navigatorKey.currentContext!);
+        showPaymentText(true, vencimientoAdmSec, navigatorKey.currentContext!);
       }
 
       if (vencimientoAT < 10 && vencimientoAT > 0) {
-        showPaymentTest(false, vencimientoAT, navigatorKey.currentContext!);
+        showPaymentText(false, vencimientoAT, navigatorKey.currentContext!);
       }
     }
 
@@ -371,8 +450,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
     nickname = nicknamesMap[deviceName] ?? deviceName;
     tempValue = double.parse(parts2[1]);
 
-    valueConsuption =
-        equipmentConsumption(DeviceManager.getProductCode(deviceName));
+    valueConsuption = equipmentConsumption(pc);
 
     printLog.i('Valor temp: $tempValue');
     printLog.i('¿Encendido? $turnOn');
@@ -387,10 +465,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
     subscribeToWifiStatus();
     subscribeTrueStatus();
 
-    if (!alexaDevices.contains(deviceName)) {
-      alexaDevices.add(deviceName);
-      putDevicesForAlexa(currentUserEmail, alexaDevices);
-    }
+    addDeviceToCore(deviceName);
   }
 
   @override
@@ -586,7 +661,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
   }
 
   void sendTemperature(int temp) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[7]($temp)';
+    String data = '$pc[7]($temp)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
@@ -598,17 +673,13 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
     }
 
     int fun = on ? 1 : 0;
-    String data = '${DeviceManager.getProductCode(deviceName)}[11]($fun)';
+    String data = '$pc[11]($fun)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
-    globalDATA[
-            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']![
-        'w_status'] = on;
+    globalDATA['$pc/$sn']!['w_status'] = on;
     saveGlobalData(globalDATA);
     try {
-      String topic =
-          'devices_rx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
-      String topic2 =
-          'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
+      String topic = 'devices_rx/$pc/$sn';
+      String topic2 = 'devices_tx/$pc/$sn';
       String message = jsonEncode({'w_status': on});
       sendMessagemqtt(topic, message);
       sendMessagemqtt(topic2, message);
@@ -626,8 +697,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
       // Programar la tarea.
       try {
         showToast('Recuerda tener la ubicación encendida.');
-        putDistanceControl(DeviceManager.getProductCode(deviceName),
-            DeviceManager.extractSerialNumber(deviceName), true);
+        putDistanceControl(pc, sn, true);
         List<String> deviceControl =
             await getDevicesInDistanceControl(currentUserEmail);
         deviceControl.add(deviceName);
@@ -649,8 +719,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
     } else {
       // Cancelar la tarea.
       showToast('Se cancelo el control por distancia');
-      putDistanceControl(DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName), false);
+      putDistanceControl(pc, sn, false);
       List<String> deviceControl =
           await getDevicesInDistanceControl(currentUserEmail);
       deviceControl.remove(deviceName);
@@ -1180,11 +1249,8 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                                                 printLog.i(
                                                     'Valor enviado: ${value.round()}');
                                                 putDistanceOff(
-                                                  DeviceManager.getProductCode(
-                                                      deviceName),
-                                                  DeviceManager
-                                                      .extractSerialNumber(
-                                                          deviceName),
+                                                  pc,
+                                                  sn,
                                                   value.toString(),
                                                 );
                                               },
@@ -1275,11 +1341,8 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                                                 printLog.i(
                                                     'Valor enviado: ${value.round()}');
                                                 putDistanceOn(
-                                                  DeviceManager.getProductCode(
-                                                      deviceName),
-                                                  DeviceManager
-                                                      .extractSerialNumber(
-                                                          deviceName),
+                                                  pc,
+                                                  sn,
                                                   value.toString(),
                                                 );
                                               },
@@ -1502,8 +1565,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                               fechaSeleccionada = DateTime.now();
                             }),
                           );
-                          String data =
-                              '${DeviceManager.getProductCode(deviceName)} ';
+                          String data = '$pc[10](0)';
                           bluetoothManager.toolsUuid.write(data.codeUnits);
                         }
                       : null,
@@ -1519,7 +1581,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                 const SizedBox(height: 25),
                 if (fechaSeleccionada != null)
                   Text(
-                    'Último reinicio: ${fechaSeleccionada!.day}/${fechaSeleccionada!.month}/${fechaSeleccionada!.year}',
+                    'Último reinicio: ${fechaSeleccionada?.day ?? 5}/${fechaSeleccionada?.month ?? 11}/${fechaSeleccionada?.year ?? 2004}',
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       color: color1,
@@ -1658,9 +1720,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
           actions: [
             Icon(
               key: keys['heladera:servidor']!,
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-                          ?['cstate'] ??
-                      false
+              globalDATA['$pc/$sn']?['cstate'] ?? false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,

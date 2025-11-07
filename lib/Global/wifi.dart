@@ -336,7 +336,7 @@ class WifiPageState extends ConsumerState<WifiPage>
     bool isListEmpty = previusConnections.isEmpty;
     await putPreviusConnections(currentUserEmail, previusConnections,
         isIntentionalClear: isListEmpty);
-    await putDevicesForAlexa(currentUserEmail, previusConnections);
+    removeDeviceFromCore(deviceName);
     await removeFromActiveUsers(equipo, sn, currentUserEmail);
 
     final topic = 'devices_tx/$equipo/$sn';

@@ -23,6 +23,8 @@ class Rele1i1oPage extends ConsumerStatefulWidget {
 
 class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
   var parts = utf8.decode(ioValues).split('/');
+  final String pc = DeviceManager.getProductCode(deviceName);
+  final String sn = DeviceManager.extractSerialNumber(deviceName);
   bool isChangeModeVisible = false;
   bool showOptions = false;
   bool showSecondaryAdminFields = false;
@@ -44,10 +46,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
   final PageController _pageController = PageController(initialPage: 0);
   final TextEditingController tenantController = TextEditingController();
   int _selectedIndex = 0;
-  final bool hasEntry = globalDATA[
-              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-          ?['hasEntry'] ??
-      false;
+  late bool hasEntry;
 
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
@@ -65,7 +64,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
         child: const TutorialItemContent(
           title: 'Estado del equipo',
           content:
-              'En esta pantalla podrás verificar si tu equipo está Apagado o encendido',
+              'En esta pantalla podrás verificar el estado de la entrada y salida del dispositivo',
         ),
       ),
       TutorialItem(
@@ -105,6 +104,43 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
           title: 'Conexión al servidor',
           content:
               'Podrás observar el estado de la conexión del dispositivo con el servidor',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['rele1i1o:activarNoti']!,
+        borderRadius: const Radius.circular(30),
+        shapeFocus: ShapeFocus.roundedSquare,
+        contentPosition: ContentPosition.below,
+        focusMargin: 15.0,
+        pageIndex: 0,
+        contentOffsetY: -500,
+        fullBackground: true,
+        child: const TutorialItemContent(
+          title: 'Notificación de alarma',
+          content:
+              'En la entrada podrás activar una notificación para cuando cambie su estado como la siguiente...',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['rele1i1o:ejemploAlerta']!,
+        borderRadius: const Radius.circular(20),
+        shapeFocus: ShapeFocus.roundedSquare,
+        contentPosition: ContentPosition.below,
+        contentOffsetY: -500,
+        pageIndex: 0,
+        fullBackground: true,
+        onStepReached: () {
+          setState(() {
+            showNotification(
+                '¡ALERTA EN ${nicknamesMap[deviceName] ?? deviceName}!',
+                'La Entrada 1 disparó una alarma.\nA las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                soundOfNotification[DeviceManager.getProductCode(deviceName)] ??
+                    'alarm2');
+          });
+        },
+        child: const TutorialItemContent(
+          title: 'Ejemplo de notificación',
+          content: '',
         ),
       ),
       TutorialItem(
@@ -182,9 +218,30 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 3,
           contentPosition: ContentPosition.below,
+          buttonAction: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 17),
+            ),
+            onPressed: () {
+              launchEmail(
+                'comercial@caldensmart.com',
+                'Habilitación Administradores secundarios extras en $appName',
+                '¡Hola! Me comunico porque busco habilitar la opción de "Administradores secundarios extras" en mi equipo ${DeviceManager.getComercialName(deviceName)}\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner',
+              );
+            },
+            child: const Text(
+              'Enviar mail',
+              style: TextStyle(color: color1),
+            ),
+          ),
           child: const TutorialItemContent(
             title: 'Añadir administradores secundarios',
-            content: 'Podrás agregar correos secundarios hasta un límite de 3',
+            content:
+                'Podrás agregar correos secundarios hasta un límite de tres, en caso de querer extenderlo debes contactarte con comercial@caldensmart.com',
           ),
         ),
         TutorialItem(
@@ -209,6 +266,41 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                 'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
           ),
         ),
+        if (adminDevices.isNotEmpty) ...{
+          TutorialItem(
+            globalKey: keys['managerScreen:historialAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Historial de administradores secundarios',
+              content:
+                  'Se veran las acciones ejecutadas por cada uno con su respectiva flecha',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:horariosAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Horarios de administradores secundarios',
+              content:
+                  'Configura el rango de horarios y dias que podra accionar el equipo',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:wifiAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Wifi de administradores secundarios',
+              content:
+                  'Podras restringirle a los administradores secundarios el uso del menu wifi',
+            ),
+          ),
+        },
       },
       if (!tenant) ...{
         TutorialItem(
@@ -221,17 +313,36 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
             content: 'Podrás encender y apagar el dispositivo desde el menú',
           ),
         ),
-        // TutorialItem(
-        // keys['managerScreen:led']!
-        //
-        //   borderRadius: const Radius.circular(20),
-        //   shapeFocus: ShapeFocus.roundedSquare,
-        //   pageIndex: 3,
-        //   child: const TutorialItemContent(
-        //     title: 'Notificación de desconexión',
-        //     content: 'Puedes establecer una alerta si el equipo se desconecta',
-        //   ),
-        // ),
+        TutorialItem(
+          globalKey: keys['managerScreen:desconexionNotificacion']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 3,
+          child: const TutorialItemContent(
+            title: 'Notificación de desconexión',
+            content:
+                'Puedes establecer una alerta si el equipo se desconecta, en el siguiente paso verás un ejemplo de la misma',
+          ),
+        ),
+        TutorialItem(
+          globalKey: keys['managerScreen:ejemploNoti']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 3,
+          fullBackground: true,
+          onStepReached: () {
+            setState(() {
+              showNotification(
+                  '¡El equipo ${nicknamesMap[deviceName] ?? deviceName} se desconecto!',
+                  'Se detecto una desconexión a las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                  'noti');
+            });
+          },
+          child: const TutorialItemContent(
+            title: 'Ejemplo de notificación',
+            content: '',
+          ),
+        ),
       },
       TutorialItem(
         globalKey: keys['managerScreen:imagen']!,
@@ -252,9 +363,9 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
   void initState() {
     super.initState();
     _selectedPins = List<bool>.filled(parts.length, false);
-    _notis = notificationMap[
-            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}'] ??
-        List<bool>.filled(parts.length, false);
+    hasEntry = globalDATA['$pc/$sn']?['hasEntry'] ?? false;
+    _notis =
+        notificationMap['$pc/$sn'] ?? List<bool>.filled(parts.length, false);
 
     printLog.i(_notis);
 
@@ -264,11 +375,11 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
 
     if (deviceOwner) {
       if (vencimientoAdmSec < 10 && vencimientoAdmSec > 0) {
-        showPaymentTest(true, vencimientoAdmSec, navigatorKey.currentContext!);
+        showPaymentText(true, vencimientoAdmSec, navigatorKey.currentContext!);
       }
 
       if (vencimientoAT < 10 && vencimientoAT > 0) {
-        showPaymentTest(false, vencimientoAT, navigatorKey.currentContext!);
+        showPaymentText(false, vencimientoAT, navigatorKey.currentContext!);
       }
     }
 
@@ -343,10 +454,8 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
 
     String fun = '$index#${value ? '1' : '0'}';
     bluetoothManager.ioUuid.write(fun.codeUnits);
-    String topic =
-        'devices_rx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
-    String topic2 =
-        'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
+    String topic = 'devices_rx/$pc/$sn';
+    String topic2 = 'devices_tx/$pc/$sn';
     String message = jsonEncode({
       'pinType': tipo[index] == 'Salida' ? '0' : '1',
       'index': index,
@@ -356,11 +465,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
     sendMessagemqtt(topic, message);
     sendMessagemqtt(topic2, message);
 
-    globalDATA
-        .putIfAbsent(
-            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
-            () => {})
-        .addAll({'io$index': message});
+    globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({'io$index': message});
 
     saveGlobalData(globalDATA);
 
@@ -464,11 +569,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
     alertIO.add(estado[1] != common[1]);
 
     for (int i = 0; i < 2; i++) {
-      globalDATA
-          .putIfAbsent(
-              '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
-              () => {})
-          .addAll({
+      globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({
         'io$i': jsonEncode({
           'pinType': tipo[i] == 'Salida' ? '0' : '1',
           'index': i,
@@ -483,10 +584,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
     for (int i = 0; i < parts.length; i++) {
       if (tipo[i] == 'Salida') {
         String dv = '${deviceName}_$i';
-        if (!alexaDevices.contains(dv)) {
-          alexaDevices.add(dv);
-          putDevicesForAlexa(currentUserEmail, alexaDevices);
-        }
+        addDeviceToCore(dv);
       }
     }
 
@@ -585,8 +683,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
       // Programar la tarea.
       try {
         showToast('Recuerda tener la ubicación encendida.');
-        putDistanceControl(DeviceManager.getProductCode(deviceName),
-            DeviceManager.extractSerialNumber(deviceName), true);
+        putDistanceControl(pc, sn, true);
         List<String> deviceControl =
             await getDevicesInDistanceControl(currentUserEmail);
         deviceControl.add(deviceName);
@@ -608,8 +705,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
     } else {
       // Cancelar la tarea.
       showToast('Se cancelo el control por distancia');
-      putDistanceControl(DeviceManager.getProductCode(deviceName),
-          DeviceManager.extractSerialNumber(deviceName), false);
+      putDistanceControl(pc, sn, false);
       List<String> deviceControl =
           await getDevicesInDistanceControl(currentUserEmail);
       deviceControl.remove(deviceName);
@@ -726,9 +822,11 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
       if (hasEntry) ...[
         SingleChildScrollView(
           child: SizedBox(
+            key: keys['rele1i1o:activarNoti']!,
             height: MediaQuery.of(context).size.height * 0.8,
             child: Center(
               child: Padding(
+                key: keys['rele1i1o:ejemploAlerta']!,
                 padding: const EdgeInsets.symmetric(
                     horizontal: 20.0, vertical: 30.0),
                 child: Column(
@@ -993,8 +1091,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                     activated = !activated;
                                                     _notis[index] = activated;
                                                   });
-                                                  notificationMap[
-                                                          '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}'] =
+                                                  notificationMap['$pc/$sn'] =
                                                       _notis;
                                                   saveNotificationMap(
                                                       notificationMap);
@@ -1413,12 +1510,8 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                   printLog.i(
                                                       'Valor enviado: ${value.round()}');
                                                   putDistanceOff(
-                                                    DeviceManager
-                                                        .getProductCode(
-                                                            deviceName),
-                                                    DeviceManager
-                                                        .extractSerialNumber(
-                                                            deviceName),
+                                                    pc,
+                                                    sn,
                                                     value.toString(),
                                                   );
                                                 },
@@ -1511,12 +1604,8 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                   printLog.i(
                                                       'Valor enviado: ${value.round()}');
                                                   putDistanceOn(
-                                                    DeviceManager
-                                                        .getProductCode(
-                                                            deviceName),
-                                                    DeviceManager
-                                                        .extractSerialNumber(
-                                                            deviceName),
+                                                    pc,
+                                                    sn,
                                                     value.toString(),
                                                   );
                                                 },
@@ -1724,7 +1813,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                 onTap: () {
                                                   setState(() {
                                                     String data =
-                                                        '${DeviceManager.getProductCode(deviceName)}[14]($i#0)';
+                                                        '$pc[14]($i#0)';
                                                     printLog.i(data);
                                                     bluetoothManager.toolsUuid
                                                         .write(data.codeUnits);
@@ -1770,7 +1859,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                 onTap: () {
                                                   setState(() {
                                                     String data =
-                                                        '${DeviceManager.getProductCode(deviceName)}[14]($i#1)';
+                                                        '$pc[14]($i#1)';
                                                     printLog.i(data);
                                                     bluetoothManager.toolsUuid
                                                         .write(data.codeUnits);
@@ -1959,9 +2048,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
           actions: [
             Icon(
               key: keys['rele1i1o:servidor']!,
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-                          ?['cstate'] ??
-                      false
+              globalDATA['$pc/$sn']?['cstate'] ?? false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,

@@ -16,6 +16,9 @@ class RollerPage extends ConsumerStatefulWidget {
 class RollerPageState extends ConsumerState<RollerPage> {
   int _selectedIndex = 0;
 
+  final String pc = DeviceManager.getProductCode(deviceName);
+  final String sn = DeviceManager.extractSerialNumber(deviceName);
+
   final TextEditingController tenantController = TextEditingController();
   final PageController _pageController = PageController(initialPage: 0);
 
@@ -227,24 +230,24 @@ class RollerPageState extends ConsumerState<RollerPage> {
   }
 
   void setDistance(int pc) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[7]($pc%)';
+    String data = '$pc[7]($pc%)';
     printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setLarge(int grades) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[7]($grades)';
+    String data = '$pc[7]($grades)';
     printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setRollerConfig(int type) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[8]($type)';
+    String data = '$pc[8]($type)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setMotorSpeed(String rpm) {
-    String data = '${DeviceManager.getProductCode(deviceName)}[10]($rpm)';
+    String data = '$pc[10]($rpm)';
     printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
@@ -315,8 +318,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                   Expanded(
                     child: GestureDetector(
                       onLongPressStart: (LongPressStartDetails a) {
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[7](0%)';
+                        String data = '$pc[7](0%)';
                         bluetoothManager.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = 0;
@@ -324,8 +326,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                         printLog.i(data);
                       },
                       onLongPressEnd: (LongPressEndDetails a) {
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[7]($actualPosition%)';
+                        String data = '$pc[7]($actualPosition%)';
                         bluetoothManager.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = actualPosition;
@@ -375,8 +376,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                   Expanded(
                     child: GestureDetector(
                       onLongPressStart: (LongPressStartDetails a) {
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[7](100%)';
+                        String data = '$pc[7](100%)';
                         bluetoothManager.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = 100;
@@ -384,8 +384,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                         printLog.i(data);
                       },
                       onLongPressEnd: (LongPressEndDetails a) {
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[7]($actualPosition%)';
+                        String data = '$pc[7]($actualPosition%)';
                         bluetoothManager.toolsUuid.write(data.codeUnits);
                         setState(() {
                           workingPosition = actualPosition;
@@ -699,10 +698,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                               printLog.i("Envio largo");
                               int largo = rollerEnd! - rollerStart!;
                               printLog.i("Largo: $largo");
-                              putRollerLength(
-                                  DeviceManager.getProductCode(deviceName),
-                                  DeviceManager.extractSerialNumber(deviceName),
-                                  largo.toString());
+                              putRollerLength(pc, sn, largo.toString());
 
                               setLarge(largo);
                             },
@@ -877,9 +873,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
           ),
           actions: [
             Icon(
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-                          ?['cstate'] ??
-                      false
+              globalDATA['$pc/$sn']?['cstate'] ?? false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,

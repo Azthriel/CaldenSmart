@@ -279,9 +279,30 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 2,
           contentPosition: ContentPosition.below,
+          buttonAction: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 17),
+            ),
+            onPressed: () {
+              launchEmail(
+                'comercial@caldensmart.com',
+                'Habilitación Administradores secundarios extras en $appName',
+                '¡Hola! Me comunico porque busco habilitar la opción de "Administradores secundarios extras" en mi equipo ${DeviceManager.getComercialName(deviceName)}\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner',
+              );
+            },
+            child: const Text(
+              'Enviar mail',
+              style: TextStyle(color: color1),
+            ),
+          ),
           child: const TutorialItemContent(
             title: 'Añadir administradores secundarios',
-            content: 'Podrás agregar correos secundarios hasta un límite de 3',
+            content:
+                'Podrás agregar correos secundarios hasta un límite de tres, en caso de querer extenderlo debes contactarte con comercial@caldensmart.com',
           ),
         ),
         TutorialItem(
@@ -306,7 +327,72 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                 'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
           ),
         ),
+        if (adminDevices.isNotEmpty) ...{
+          TutorialItem(
+            globalKey: keys['managerScreen:historialAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Historial de administradores secundarios',
+              content:
+                  'Se veran las acciones ejecutadas por cada uno con su respectiva flecha',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:horariosAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Horarios de administradores secundarios',
+              content:
+                  'Configura el rango de horarios y dias que podra accionar el equipo',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:wifiAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Wifi de administradores secundarios',
+              content:
+                  'Podras restringirle a los administradores secundarios el uso del menu wifi',
+            ),
+          ),
+        },
       },
+      TutorialItem(
+        globalKey: keys['managerScreen:desconexionNotificacion']!,
+        borderRadius: const Radius.circular(20),
+        shapeFocus: ShapeFocus.roundedSquare,
+        pageIndex: 2,
+        child: const TutorialItemContent(
+          title: 'Notificación de desconexión',
+          content:
+              'Puedes establecer una alerta si el equipo se desconecta, en el siguiente paso verás un ejemplo de la misma',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['managerScreen:ejemploNoti']!,
+        borderRadius: const Radius.circular(20),
+        shapeFocus: ShapeFocus.roundedSquare,
+        pageIndex: 2,
+        fullBackground: true,
+        onStepReached: () {
+          setState(() {
+            showNotification(
+                '¡El equipo ${nicknamesMap[deviceName] ?? deviceName} se desconecto!',
+                'Se detecto una desconexión a las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                'noti');
+          });
+        },
+        child: const TutorialItemContent(
+          title: 'Ejemplo de notificación',
+          content: '',
+        ),
+      ),
       TutorialItem(
         globalKey: keys['managerScreen:imagen']!,
         borderRadius: const Radius.circular(20),
@@ -355,11 +441,11 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
 
     if (deviceOwner) {
       if (vencimientoAdmSec < 10 && vencimientoAdmSec > 0) {
-        showPaymentTest(true, vencimientoAdmSec, navigatorKey.currentContext!);
+        showPaymentText(true, vencimientoAdmSec, navigatorKey.currentContext!);
       }
 
       if (vencimientoAT < 10 && vencimientoAT > 0) {
-        showPaymentTest(false, vencimientoAT, navigatorKey.currentContext!);
+        showPaymentText(false, vencimientoAT, navigatorKey.currentContext!);
       }
     }
 
@@ -373,15 +459,6 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
     subscribeToWifiStatus();
     subToIO();
     processValues(ioValues);
-    // notificationMap.putIfAbsent(
-    //     '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
-    //     () => List<bool>.filled(parts.length, false));
-
-    // WidgetsBinding.instance.addPostFrameCallback((_) async {
-    //   if (shouldUpdateDevice) {
-    //     await showUpdateDialog(context);
-    //   }
-    // });
   }
 
   @override
@@ -945,6 +1022,13 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
     }
 
     saveGlobalData(globalDATA);
+
+    for (int i = 0; i < parts.length; i++) {
+      if (tipo[i] == 'Salida') {
+        String dv = '${deviceName}_$i';
+        addDeviceToCore(dv);
+      }
+    }
   }
 
   void subToIO() async {
@@ -1846,7 +1930,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                               // Actualizar globalDATA de la extensión
                                               globalDATA
                                                   .putIfAbsent(
-                                                      '$extensionPc/$extensionSn', () => {})
+                                                      '$extensionPc/$extensionSn',
+                                                      () => {})
                                                   .remove('riegoMaster');
 
                                               // Actualizar la lista local y en la base de datos
@@ -3575,8 +3660,10 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                           // Actualizar globalDATA de la extensión
                                           globalDATA
                                               .putIfAbsent(
-                                                  '$extensionPc/$extensionSn', () => {})
-                                              .addAll({'riegoMaster': deviceName});
+                                                  '$extensionPc/$extensionSn',
+                                                  () => {})
+                                              .addAll(
+                                                  {'riegoMaster': deviceName});
                                         }
                                       }
 
@@ -3588,8 +3675,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                       globalDATA
                                           .putIfAbsent('$pc/$sn', () => {})
                                           .addAll({
-                                        'riegoExtensions':
-                                            List<String>.from(extensionesVinculadas)
+                                        'riegoExtensions': List<String>.from(
+                                            extensionesVinculadas)
                                       });
                                       saveGlobalData(globalDATA);
 

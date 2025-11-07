@@ -1675,6 +1675,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                               //! Opción 5 - Historial de uso de administradores secundarios
                               if (adminDevices.isNotEmpty) ...[
                                 InkWell(
+                                  key: keys['managerScreen:historialAdmin']!,
                                   onTap: () {
                                     setState(() {
                                       showUsageHistory = !showUsageHistory;
@@ -1836,6 +1837,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                 const SizedBox(height: 10),
                                 //! Opción 6 - Restricciones horarias de administradores secundarios
                                 InkWell(
+                                  key: keys['managerScreen:horariosAdmin']!,
                                   onTap: () {
                                     setState(() {
                                       showTimeRestrictions =
@@ -2020,6 +2022,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                 const SizedBox(height: 10),
                                 //! Opción 7 - Restricciones de WiFi para administradores secundarios
                                 InkWell(
+                                  key: keys['managerScreen:wifiAdmin']!,
                                   onTap: () {
                                     setState(() {
                                       showWifiRestrictions =
@@ -2282,6 +2285,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                 ),
                 const SizedBox(height: 10),
               ],
+              SizedBox(height: 0, key: keys['managerScreen:ejemploNoti']!),
 
               //! activar notificación de desconexión
               if (owner == '' ||

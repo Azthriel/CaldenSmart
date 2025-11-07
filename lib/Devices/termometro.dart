@@ -17,6 +17,8 @@ class TermometroPage extends ConsumerStatefulWidget {
 
 class TermometroPageState extends ConsumerState<TermometroPage> {
   final PageController _pageController = PageController();
+  final String pc = DeviceManager.getProductCode(deviceName);
+  final String sn = DeviceManager.extractSerialNumber(deviceName);
   int _selectedIndex = 0;
   bool _isAnimating = false;
   bool _isTutorialActive = false;
@@ -62,7 +64,29 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
         child: const TutorialItemContent(
           title: 'Alertas',
           content:
-              'El termómetro en caso de estar por encima o por debajo de los valores establecidos, te enviará una alerta',
+              'El termómetro en caso de estar por encima o por debajo de los valores establecidos, te enviará una alerta como la siguiente...',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['termometro:ejemploAlerta']!,
+        borderRadius: const Radius.circular(30),
+        shapeFocus: ShapeFocus.roundedSquare,
+        contentPosition: ContentPosition.below,
+        focusMargin: 15.0,
+        pageIndex: 0,
+        fullBackground: true,
+        onStepReached: () {
+          setState(() {
+            showNotification(
+                '¡ALERTA DE TEMPERATURA EN ${nicknamesMap[deviceName] ?? deviceName}!',
+                'Se detectó temperatura MÍNIMA alcanzada.\nA las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                soundOfNotification[DeviceManager.getProductCode(deviceName)] ??
+                    'alarm2');
+          });
+        },
+        child: const TutorialItemContent(
+          title: 'Ejemplo de alerta',
+          content: '',
         ),
       ),
       TutorialItem(
@@ -103,19 +127,189 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
         child: const TutorialItemContent(
           title: 'Configuración mínima',
           content:
-              'Configura la alerta mínima del termómetro, si se alcanza este valor, se enviará una alerta',
+              'Configura la alerta mínima del termómetro, si se alcanza este valor, se enviará una alerta como la siguiente',
         ),
       ),
       TutorialItem(
-        globalKey: keys['managerScreen:titulo']!,
+        globalKey: keys['termometro:historialTemperatura']!,
         borderRadius: const Radius.circular(30),
         shapeFocus: ShapeFocus.roundedSquare,
         contentPosition: ContentPosition.below,
         focusMargin: 15.0,
         pageIndex: 2,
+        fullBackground: true,
         child: const TutorialItemContent(
-          title: 'Gestión del equipo',
-          content: 'En esta pantalla podrás ver y cambiar detalles del equipo',
+          title: 'Historial de temperatura',
+          content:
+              'En esta pantalla se guardan los datos tomados por el equipo',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['termometro:graficoTemperatura']!,
+        borderRadius: const Radius.circular(30),
+        shapeFocus: ShapeFocus.roundedSquare,
+        contentPosition: ContentPosition.above,
+        focusMargin: 15.0,
+        pageIndex: 2,
+        child: const TutorialItemContent(
+          title: 'Grafico de temperatura',
+          content:
+              'Aquí podrás ver el gráfico con los datos históricos de temperatura',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['termometro:ofrecerPremium']!,
+        borderRadius: const Radius.circular(30),
+        shapeFocus: ShapeFocus.roundedSquare,
+        contentPosition: ContentPosition.below,
+        focusMargin: 15.0,
+        pageIndex: 2,
+        fullBackground: true,
+        buttonAction: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: color0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 17),
+          ),
+          onPressed: () {
+            launchEmail(
+              'comercial@caldensmart.com',
+              'Habilitación para historial premium en $appName',
+              '¡Hola! Me comunico porque busco habilitar la opción de "historial premium" en mi equipo ${DeviceManager.getComercialName(deviceName)}\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner',
+            );
+          },
+          child: const Text(
+            'Enviar mail',
+            style: TextStyle(color: color1),
+          ),
+        ),
+        child: const TutorialItemContent(
+          title: 'Historial premium',
+          content:
+              'En caso de querer tener el historial premium comuníquese con nuestro mail comercial@caldensmart.com',
+        ),
+      ),
+      if (owner == currentUserEmail) ...{
+        TutorialItem(
+          globalKey: keys['managerScreen:agregarAdmin']!,
+          borderRadius: const Radius.circular(15),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 4,
+          contentPosition: ContentPosition.below,
+          buttonAction: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 17),
+            ),
+            onPressed: () {
+              launchEmail(
+                'comercial@caldensmart.com',
+                'Habilitación Administradores secundarios extras en $appName',
+                '¡Hola! Me comunico porque busco habilitar la opción de "Administradores secundarios extras" en mi equipo ${DeviceManager.getComercialName(deviceName)}\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner',
+              );
+            },
+            child: const Text(
+              'Enviar mail',
+              style: TextStyle(color: color1),
+            ),
+          ),
+          child: const TutorialItemContent(
+            title: 'Añadir administradores secundarios',
+            content:
+                'Podrás agregar correos secundarios hasta un límite de tres, en caso de querer extenderlo debes contactarte con comercial@caldensmart.com',
+          ),
+        ),
+        TutorialItem(
+          globalKey: keys['managerScreen:verAdmin']!,
+          borderRadius: const Radius.circular(15),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 4,
+          contentPosition: ContentPosition.above,
+          child: const TutorialItemContent(
+            title: 'Ver administradores secundarios',
+            content: 'Podrás ver o quitar los correos adicionales añadidos',
+          ),
+        ),
+        TutorialItem(
+          globalKey: keys['managerScreen:alquiler']!,
+          borderRadius: const Radius.circular(15),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 4,
+          child: const TutorialItemContent(
+            title: 'Alquiler temporario',
+            content:
+                'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
+          ),
+        ),
+        if (adminDevices.isNotEmpty) ...{
+          TutorialItem(
+            globalKey: keys['managerScreen:historialAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Historial de administradores secundarios',
+              content:
+                  'Se veran las acciones ejecutadas por cada uno con su respectiva flecha',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:horariosAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Horarios de administradores secundarios',
+              content:
+                  'Configura el rango de horarios y dias que podra accionar el equipo',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:wifiAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Wifi de administradores secundarios',
+              content:
+                  'Podras restringirle a los administradores secundarios el uso del menu wifi',
+            ),
+          ),
+        },
+      },
+      TutorialItem(
+        globalKey: keys['managerScreen:desconexionNotificacion']!,
+        borderRadius: const Radius.circular(20),
+        shapeFocus: ShapeFocus.roundedSquare,
+        pageIndex: 3,
+        child: const TutorialItemContent(
+          title: 'Notificación de desconexión',
+          content:
+              'Puedes establecer una alerta si el equipo se desconecta, en el siguiente paso verás un ejemplo de la misma',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['managerScreen:ejemploNoti']!,
+        borderRadius: const Radius.circular(20),
+        shapeFocus: ShapeFocus.roundedSquare,
+        pageIndex: 3,
+        fullBackground: true,
+        onStepReached: () {
+          setState(() {
+            showNotification(
+                '¡El equipo ${nicknamesMap[deviceName] ?? deviceName} se desconecto!',
+                'Se detecto una desconexión a las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                'noti');
+          });
+        },
+        child: const TutorialItemContent(
+          title: 'Ejemplo de notificación',
+          content: '',
         ),
       ),
       TutorialItem(
@@ -124,7 +318,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
         shapeFocus: ShapeFocus.roundedSquare,
         contentPosition: ContentPosition.below,
         focusMargin: 15.0,
-        pageIndex: 2,
+        pageIndex: 3,
         child: const TutorialItemContent(
           title: 'Imagen del equipo',
           content:
@@ -404,14 +598,12 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
             setState(() {
               if (type == 'max') {
                 alertMaxTemp = newValue;
-                String data =
-                    '${DeviceManager.getProductCode(deviceName)}[7]($newValue)';
+                String data = '$pc[7]($newValue)';
                 printLog.i('Enviando: $data');
                 bluetoothManager.toolsUuid.write(data.codeUnits);
               } else {
                 alertMinTemp = newValue;
-                String data =
-                    '${DeviceManager.getProductCode(deviceName)}[8]($newValue)';
+                String data = '$pc[8]($newValue)';
                 printLog.i('Enviando: $data');
                 bluetoothManager.toolsUuid.write(data.codeUnits);
               }
@@ -429,28 +621,30 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
   Widget _buildHistorialPage() {
     final String pc = DeviceManager.getProductCode(deviceName);
     final String sn = DeviceManager.extractSerialNumber(deviceName);
-    
+
     printLog.i('Building historial page for $pc/$sn');
     printLog.i('GlobalDATA keys: ${globalDATA.keys}');
     printLog.i('Device data: ${globalDATA['$pc/$sn']}');
-    
+
     // Obtener datos desde globalDATA
-    Map<String, dynamic> historicTemp = globalDATA['$pc/$sn']?['historicTemp'] ?? {};
-    bool historicTempPremium = globalDATA['$pc/$sn']?['historicTempPremium'] ?? false;
+    Map<String, dynamic> historicTemp =
+        globalDATA['$pc/$sn']?['historicTemp'] ?? {};
+    bool historicTempPremium =
+        globalDATA['$pc/$sn']?['historicTempPremium'] ?? false;
 
     printLog.i('HistoricTemp: $historicTemp');
     printLog.i('HistoricTempPremium: $historicTempPremium');
 
     // Convertir el mapa a lista de puntos ordenados por timestamp
     List<MapEntry<DateTime, double>> dataPoints = [];
-    
+
     historicTemp.forEach((key, value) {
       try {
         // Intentar parsear la fecha en formato "2025-10-27 00:00:51" (UTC)
         // Convertir a hora de Argentina (UTC-3)
         DateTime timestampUTC = DateTime.parse(key);
         DateTime timestamp = timestampUTC.subtract(const Duration(hours: 3));
-        
+
         // Convertir temperatura a double
         double temp = 0.0;
         if (value is num) {
@@ -458,14 +652,14 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
         } else if (value is String) {
           temp = double.tryParse(value) ?? 0.0;
         }
-        
+
         dataPoints.add(MapEntry(timestamp, temp));
         printLog.i('Parsed point: $timestamp -> $temp°C');
       } catch (e) {
         printLog.e('Error parsing timestamp "$key": $e');
       }
     });
-    
+
     // Ordenar por timestamp
     dataPoints.sort((a, b) => a.key.compareTo(b.key));
 
@@ -478,7 +672,8 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.info_outline, size: 80, color: color1.withValues(alpha: 0.5)),
+              Icon(Icons.info_outline,
+                  size: 80, color: color1.withValues(alpha: 0.5)),
               const SizedBox(height: 20),
               Text(
                 'No hay datos de historial disponibles',
@@ -678,7 +873,8 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(
+                          width: 12, key: keys['termometro:ejemploAlerta']!),
                       // Alerta Máxima
                       Expanded(
                         child: AnimatedOpacity(
@@ -1086,9 +1282,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
           actions: [
             Icon(
               //key: keys['termometros:servidor']!,
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-                          ?['cstate'] ??
-                      false
+              globalDATA['$pc/$sn']?['cstate'] ?? false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,
@@ -1238,28 +1432,27 @@ class _HistorialChartState extends State<_HistorialChart> {
           children: [
             const SizedBox(height: 20),
             // Título
-            const Text(
+            Text(
+              key: keys['termometro:historialTemperatura']!,
               'Historial de Temperatura',
-              style: TextStyle(
+              style: const TextStyle(
                 color: color1,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 20),
-            
+            SizedBox(height: 20, key: keys['termometro:ofrecerPremium']!),
+
             // Selector de período (solo si es premium)
-            if (widget.isPremium)
-              _buildPeriodSelector(),
-            
-            if (widget.isPremium)
-              const SizedBox(height: 20),
-            
+            if (widget.isPremium) _buildPeriodSelector(),
+
+            if (widget.isPremium) const SizedBox(height: 20),
+
             // Gráfico
             Expanded(
               child: _buildChart(),
             ),
-            
+
             const SizedBox(height: 100),
           ],
         ),
@@ -1333,8 +1526,9 @@ class _HistorialChartState extends State<_HistorialChart> {
     // Calcular promedios si es semanal o mensual
     List<FlSpot> spots = [];
     List<MapEntry<DateTime, double>> dataForChart = [];
-    
-    if (widget.isPremium && (selectedPeriod == 'semanal' || selectedPeriod == 'mensual')) {
+
+    if (widget.isPremium &&
+        (selectedPeriod == 'semanal' || selectedPeriod == 'mensual')) {
       dataForChart = _calculateDailyAverages(filteredData);
       spots = dataForChart
           .asMap()
@@ -1365,17 +1559,18 @@ class _HistorialChartState extends State<_HistorialChart> {
     // Calcular rango Y (temperatura)
     double minTemp = spots.map((e) => e.y).reduce((a, b) => a < b ? a : b);
     double maxTemp = spots.map((e) => e.y).reduce((a, b) => a > b ? a : b);
-    
+
     // Redondear hacia abajo para minY y hacia arriba para maxY
     double minY = (minTemp - 2).floorToDouble();
     double maxY = (maxTemp + 2).ceilToDouble();
-    
+
     // Calcular intervalo para tener valores redondos
     double range = maxY - minY;
     double interval = (range / 5).ceilToDouble();
     if (interval < 1) interval = 1.0;
 
     return Card(
+      key: keys['termometro:graficoTemperatura']!,
       color: color1,
       elevation: 6,
       shape: RoundedRectangleBorder(
@@ -1417,18 +1612,20 @@ class _HistorialChartState extends State<_HistorialChart> {
                   reservedSize: 30,
                   interval: (spots.length / 4).ceilToDouble(),
                   getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= 0 && value.toInt() < dataForChart.length) {
+                    if (value.toInt() >= 0 &&
+                        value.toInt() < dataForChart.length) {
                       final date = dataForChart[value.toInt()].key;
                       String label = '';
-                      
+
                       if (selectedPeriod == '24h') {
-                        label = '${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+                        label =
+                            '${date.hour}:${date.minute.toString().padLeft(2, '0')}';
                       } else if (selectedPeriod == 'semanal') {
                         label = '${date.day}/${date.month}';
                       } else {
                         label = '${date.day}/${date.month}';
                       }
-                      
+
                       return Padding(
                         padding: const EdgeInsets.only(top: 8.0),
                         child: Text(
@@ -1512,14 +1709,15 @@ class _HistorialChartState extends State<_HistorialChart> {
                     if (index >= 0 && index < dataForChart.length) {
                       final date = dataForChart[index].key;
                       final temp = touchedSpot.y;
-                      
+
                       String dateText;
                       if (selectedPeriod == '24h') {
-                        dateText = '${date.day}/${date.month} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+                        dateText =
+                            '${date.day}/${date.month} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
                       } else {
                         dateText = '${date.day}/${date.month}/${date.year}';
                       }
-                      
+
                       return LineTooltipItem(
                         '$dateText\n${temp.toStringAsFixed(1)}°C',
                         const TextStyle(
@@ -1563,12 +1761,13 @@ class _HistorialChartState extends State<_HistorialChart> {
         .toList();
   }
 
-  List<MapEntry<DateTime, double>> _calculateDailyAverages(List<MapEntry<DateTime, double>> data) {
+  List<MapEntry<DateTime, double>> _calculateDailyAverages(
+      List<MapEntry<DateTime, double>> data) {
     if (data.isEmpty) return [];
 
     // Tanto semanal como mensual usan promedios diarios
     Map<DateTime, List<double>> buckets = {};
-    
+
     for (var entry in data) {
       // Agrupar por día (promedios diarios)
       DateTime bucketKey = DateTime(

@@ -27,8 +27,6 @@ class LoadState extends State<LoadingPage> {
   void initState() {
     super.initState();
     printLog.i('HOSTIAAAAAAAAAAAAAAAAAAAAAAAA');
-    riego = globalDATA['$pc/$sn']?['riegoActive'] ?? false;
-    printLog.i('Riego activo: $riego', color: 'Naranja');
 
     _dotTimer =
         Timer.periodic(const Duration(milliseconds: 800), (Timer timer) {
@@ -152,6 +150,9 @@ class LoadState extends State<LoadingPage> {
             .addAll({"HardwareVersion": hardwareVersion});
       }
 
+      riego = globalDATA['$pc/$sn']?['riegoActive'] ?? false;
+      printLog.i('Riego activo: $riego', color: 'Naranja');
+
       canUseDevice = await checkAdminTimePermission(deviceName);
 
       specialUser = await isSpecialUser(currentUserEmail);
@@ -167,6 +168,7 @@ class LoadState extends State<LoadingPage> {
       final regex = RegExp(r'\((\d+)\)');
       final match = regex.firstMatch(parts3[2]);
       int users = int.parse(match!.group(1).toString());
+      lastUser = users;
       printLog.i('Hay $users conectados');
       userConnected = users > 1;
 
@@ -221,7 +223,6 @@ class LoadState extends State<LoadingPage> {
             printLog.i('Estado: $turnOn');
           }
 
-          lastUser = users;
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
           adminDevices =
@@ -494,7 +495,6 @@ class LoadState extends State<LoadingPage> {
           turnOn = parts2[2] == '1';
           trueStatus = parts2[4] == '1';
           printLog.i('Estado: $turnOn');
-          lastUser = users;
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
           adminDevices =

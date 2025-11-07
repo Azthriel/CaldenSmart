@@ -27,6 +27,9 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
   bool dOnOk = false;
   bool dOffOk = false;
 
+  final String pc = DeviceManager.getProductCode(deviceName);
+  final String sn = DeviceManager.extractSerialNumber(deviceName);
+
   bool isAgreeChecked = false;
   bool isPasswordCorrect = false;
   bool _isTutorialActive = false;
@@ -96,6 +99,43 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
         ),
       ),
       TutorialItem(
+        globalKey: keys['domotica:activarNoti']!,
+        borderRadius: const Radius.circular(30),
+        shapeFocus: ShapeFocus.roundedSquare,
+        contentPosition: ContentPosition.below,
+        focusMargin: 15.0,
+        pageIndex: 0,
+        contentOffsetY: -500,
+        fullBackground: true,
+        child: const TutorialItemContent(
+          title: 'Notificación de alarma',
+          content:
+              'En la entrada podrás activar una notificación para cuando cambie su estado como la siguiente...',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['domotica:ejemploAlerta']!,
+        borderRadius: const Radius.circular(20),
+        shapeFocus: ShapeFocus.roundedSquare,
+        contentPosition: ContentPosition.below,
+        contentOffsetY: -500,
+        pageIndex: 0,
+        fullBackground: true,
+        onStepReached: () {
+          setState(() {
+            showNotification(
+                '¡ALERTA EN ${nicknamesMap[deviceName] ?? deviceName}!',
+                'La Entrada 1 disparó una alarma.\nA las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                soundOfNotification[DeviceManager.getProductCode(deviceName)] ??
+                    'alarm2');
+          });
+        },
+        child: const TutorialItemContent(
+          title: 'Ejemplo de notificación',
+          content: '',
+        ),
+      ),
+      TutorialItem(
         globalKey: keys['domotica:modoPines']!,
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(30),
@@ -146,9 +186,30 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
           shapeFocus: ShapeFocus.roundedSquare,
           pageIndex: 2,
           contentPosition: ContentPosition.below,
+          buttonAction: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 17),
+            ),
+            onPressed: () {
+              launchEmail(
+                'comercial@caldensmart.com',
+                'Habilitación Administradores secundarios extras en $appName',
+                '¡Hola! Me comunico porque busco habilitar la opción de "Administradores secundarios extras" en mi equipo ${DeviceManager.getComercialName(deviceName)}\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner',
+              );
+            },
+            child: const Text(
+              'Enviar mail',
+              style: TextStyle(color: color1),
+            ),
+          ),
           child: const TutorialItemContent(
             title: 'Añadir administradores secundarios',
-            content: 'Podrás agregar correos secundarios hasta un límite de 3',
+            content:
+                'Podrás agregar correos secundarios hasta un límite de tres, en caso de querer extenderlo debes contactarte con comercial@caldensmart.com',
           ),
         ),
         TutorialItem(
@@ -173,6 +234,41 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                 'Puedes agregar el correo de tu inquilino al equipo y ajustarlo',
           ),
         ),
+        if (adminDevices.isNotEmpty) ...{
+          TutorialItem(
+            globalKey: keys['managerScreen:historialAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Historial de administradores secundarios',
+              content:
+                  'Se veran las acciones ejecutadas por cada uno con su respectiva flecha',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:horariosAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Horarios de administradores secundarios',
+              content:
+                  'Configura el rango de horarios y dias que podra accionar el equipo',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:wifiAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 4,
+            child: const TutorialItemContent(
+              title: 'Wifi de administradores secundarios',
+              content:
+                  'Podras restringirle a los administradores secundarios el uso del menu wifi',
+            ),
+          ),
+        },
       },
       if (!tenant) ...{
         TutorialItem(
@@ -185,17 +281,36 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
             content: 'Podrás encender y apagar el dispositivo desde el menú',
           ),
         ),
-        // TutorialItem(
-        //   globalKey: keys['managerScreen:desconexionNotificacion']!,
-        //
-        //   borderRadius: const Radius.circular(20),
-        //   shapeFocus: ShapeFocus.roundedSquare,
-        //   pageIndex: isPinMode ? 2 : 1,
-        //   child: const TutorialItemContent(
-        //     title: 'Notificación de desconexión',
-        //     content: 'Puedes establecer una alerta si el equipo se desconecta',
-        //   ),
-        // ),
+        TutorialItem(
+          globalKey: keys['managerScreen:desconexionNotificacion']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 2,
+          child: const TutorialItemContent(
+            title: 'Notificación de desconexión',
+            content:
+                'Puedes establecer una alerta si el equipo se desconecta, en el siguiente paso verás un ejemplo de la misma',
+          ),
+        ),
+        TutorialItem(
+          globalKey: keys['managerScreen:ejemploNoti']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 2,
+          fullBackground: true,
+          onStepReached: () {
+            setState(() {
+              showNotification(
+                  '¡El equipo ${nicknamesMap[deviceName] ?? deviceName} se desconecto!',
+                  'Se detecto una desconexión a las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                  'noti');
+            });
+          },
+          child: const TutorialItemContent(
+            title: 'Ejemplo de notificación',
+            content: '',
+          ),
+        ),
       },
       TutorialItem(
         globalKey: keys['managerScreen:imagen']!,
@@ -216,9 +331,8 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
   void initState() {
     super.initState();
     _selectedPins = List<bool>.filled(parts.length, false);
-    _notis = notificationMap[
-            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}'] ??
-        List<bool>.filled(parts.length, false);
+    _notis =
+        notificationMap['$pc/$sn'] ?? List<bool>.filled(parts.length, false);
 
     printLog.i(_notis);
 
@@ -228,11 +342,11 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
 
     if (deviceOwner) {
       if (vencimientoAdmSec < 10 && vencimientoAdmSec > 0) {
-        showPaymentTest(true, vencimientoAdmSec, navigatorKey.currentContext!);
+        showPaymentText(true, vencimientoAdmSec, navigatorKey.currentContext!);
       }
 
       if (vencimientoAT < 10 && vencimientoAT > 0) {
-        showPaymentTest(false, vencimientoAT, navigatorKey.currentContext!);
+        showPaymentText(false, vencimientoAT, navigatorKey.currentContext!);
       }
     }
 
@@ -246,15 +360,6 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
     subscribeToWifiStatus();
     subToIO();
     processValues(ioValues);
-    // notificationMap.putIfAbsent(
-    //     '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
-    //     () => List<bool>.filled(parts.length, false));
-
-    // WidgetsBinding.instance.addPostFrameCallback((_) async {
-    //   if (shouldUpdateDevice) {
-    //     await showUpdateDialog(context);
-    //   }
-    // });
   }
 
   @override
@@ -316,10 +421,8 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
 
     String fun = '$index#${value ? '1' : '0'}';
     bluetoothManager.ioUuid.write(fun.codeUnits);
-    String topic =
-        'devices_rx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
-    String topic2 =
-        'devices_tx/${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}';
+    String topic = 'devices_rx/$pc/$sn';
+    String topic2 = 'devices_tx/$pc/$sn';
     String message = jsonEncode({
       'pinType': tipo[index] == 'Salida' ? '0' : '1',
       'index': index,
@@ -329,11 +432,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
     sendMessagemqtt(topic, message);
     sendMessagemqtt(topic2, message);
 
-    globalDATA
-        .putIfAbsent(
-            '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
-            () => {})
-        .addAll({'io$index': message});
+    globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({'io$index': message});
 
     saveGlobalData(globalDATA);
 
@@ -432,11 +531,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
         common.add(equipo[2]);
         alertIO.add(estado[i] != common[i]);
 
-        globalDATA
-            .putIfAbsent(
-                '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
-                () => {})
-            .addAll({
+        globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({
           'io$i': jsonEncode({
             'pinType': tipo[i] == 'Salida' ? '0' : '1',
             'index': i,
@@ -456,11 +551,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
         common.add('0');
         alertIO.add(false);
 
-        globalDATA
-            .putIfAbsent(
-                '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
-                () => {})
-            .addAll({
+        globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({
           'io$i': jsonEncode({
             'pinType': tipo[i] == 'Salida' ? '0' : '1',
             'index': i,
@@ -477,11 +568,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
         common.add(equipo[1]);
         alertIO.add(estado[j] != common[j]);
 
-        globalDATA
-            .putIfAbsent(
-                '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}',
-                () => {})
-            .addAll({
+        globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({
           'io$j': jsonEncode({
             'pinType': tipo[j] == 'Salida' ? '0' : '1',
             'index': j,
@@ -501,10 +588,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
     for (int i = 0; i < parts.length; i++) {
       if (tipo[i] == 'Salida') {
         String dv = '${deviceName}_$i';
-        if (!alexaDevices.contains(dv)) {
-          alexaDevices.add(dv);
-          putDevicesForAlexa(currentUserEmail, alexaDevices);
-        }
+        addDeviceToCore(dv);
       }
     }
   }
@@ -558,8 +642,10 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
       //*- Página 1 entradas/salidas -*\\
       SingleChildScrollView(
         child: SizedBox(
+          key: keys['domotica:activarNoti']!,
           height: MediaQuery.of(context).size.height * 0.8,
           child: Padding(
+            key: keys['domotica:ejemploAlerta']!,
             padding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: ListView.separated(
@@ -796,9 +882,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                                           activated = !activated;
                                           _notis[index] = activated;
                                         });
-                                        notificationMap[
-                                                '${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}'] =
-                                            _notis;
+                                        notificationMap['$pc/$sn'] = _notis;
                                         saveNotificationMap(notificationMap);
                                       },
                                       icon: _notis[index]
@@ -1071,7 +1155,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                                                 onTap: () {
                                                   setState(() {
                                                     String data =
-                                                        '${DeviceManager.getProductCode(deviceName)}[14]($i#0)';
+                                                        '$pc[14]($i#0)';
                                                     printLog.i(data);
                                                     bluetoothManager.toolsUuid
                                                         .write(data.codeUnits);
@@ -1117,7 +1201,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                                                 onTap: () {
                                                   setState(() {
                                                     String data =
-                                                        '${DeviceManager.getProductCode(deviceName)}[14]($i#1)';
+                                                        '$pc[14]($i#1)';
                                                     printLog.i(data);
                                                     bluetoothManager.toolsUuid
                                                         .write(data.codeUnits);
@@ -1191,7 +1275,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                                         ),
                                         onPressed: () {
                                           String fun =
-                                              '${DeviceManager.getProductCode(deviceName)}[13]($i#${tipo[i] == 'Entrada' ? '0' : '1'})';
+                                              '$pc[13]($i#${tipo[i] == 'Entrada' ? '0' : '1'})';
                                           printLog.i(fun);
                                           bluetoothManager.toolsUuid
                                               .write(fun.codeUnits);
@@ -1325,10 +1409,6 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                       velocity: 50,
                     ),
                   ),
-                  // ScrollingText(
-                  //   text: nickname,
-                  //   style: poppinsStyle.copyWith(color: color0),
-                  // ),
                 ),
                 const SizedBox(width: 3),
                 const Icon(Icons.edit, size: 20, color: color0)
@@ -1356,9 +1436,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
           actions: [
             Icon(
               key: keys['domotica:servidor']!,
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-                          ?['cstate'] ??
-                      false
+              globalDATA['$pc/$sn']?['cstate'] ?? false
                   ? Icons.cloud
                   : Icons.cloud_off,
               color: color0,
