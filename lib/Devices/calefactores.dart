@@ -737,7 +737,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
       await registerAdminUsage(
           deviceName, on ? 'Encendió calefactor' : 'Apagó calefactor');
     } catch (e, s) {
-      printLog.i('Error al enviar valor a firebase $e $s');
+      printLog.e('Error al enviar valor a firebase $e $s');
     }
   }
 
@@ -763,7 +763,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
         }
       } catch (e) {
         showToast('Error al iniciar control por distancia.');
-        printLog.i('Error al setear la ubicación $e');
+        printLog.e('Error al setear la ubicación $e');
       }
     } else {
       // Cancelar la tarea.
@@ -828,8 +828,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                       permissionStatus4 =
                           await Permission.locationAlways.status;
                     } catch (e, s) {
-                      printLog.i(e);
-                      printLog.i(s);
+                      printLog.e(e);
+                      printLog.t(s);
                     }
                     Navigator.of(navigatorKey.currentContext ?? context).pop();
                   },
@@ -848,8 +848,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
         return false;
       }
     } catch (e, s) {
-      printLog.i('Error al habilitar la ubi: $e');
-      printLog.i(s);
+      printLog.e('Error al habilitar la ubi: $e');
+      printLog.t(s);
       return false;
     }
   }

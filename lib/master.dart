@@ -246,7 +246,9 @@ final List<String> weatherConditions = [
   'Lluvia',
   'Sol',
   'Viento fuerte',
+  'Viento moderado',
   'Viento suave',
+  'Sin viento',
   'Nieve',
   'Neblina',
   'Calor extremo',
@@ -541,6 +543,10 @@ String alertMinTemp = '';
 //*- Bloqueo admins -*\\
 bool canUseDevice = true;
 //*- Bloqueo admins -*\\
+
+//*-Logs guardados-*\\
+int printLogHistorialKey = DateTime.now().millisecondsSinceEpoch;
+//*-Logs guardados-*\\
 
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
@@ -928,24 +934,29 @@ void launchWebURL(String url) async {
 
 //*- Agrega y elimina equipos a Alexa y GoogleHome -*\\
 void addDeviceToCore(String deviceName) {
-  if (deviceName.contains("Termometro") ||
-      deviceName.contains("Detector") ||
-      ((deviceName.contains("Domotica") || deviceName.contains("Modulo")) &&
-          !deviceName.contains("_"))) {
-    return;
-  }
-  final String pc = DeviceManager.getProductCode(
-      deviceName.contains('_') ? deviceName.split('_')[0] : deviceName);
-  final String sn = DeviceManager.extractSerialNumber(
-      deviceName.contains('_') ? deviceName.split('_')[0] : deviceName);
-  List<String> admins = globalDATA['$pc/$sn']?['secondary_admin'] ?? [];
-  String ownerEmail = globalDATA['$pc/$sn']?['owner'] ?? '';
-  bool canControl = ownerEmail == currentUserEmail ||
-      admins.contains(currentUserEmail) ||
-      ownerEmail == '';
-  if (!alexaDevices.contains(deviceName) && canControl) {
-    alexaDevices.add(deviceName);
-    putDevicesForAlexa(currentUserEmail, alexaDevices);
+  try {
+    if (deviceName.contains("Termometro") ||
+        deviceName.contains("Detector") ||
+        ((deviceName.contains("Domotica") || deviceName.contains("Modulo")) &&
+            !deviceName.contains("_"))) {
+      return;
+    }
+    final String pc = DeviceManager.getProductCode(
+        deviceName.contains('_') ? deviceName.split('_')[0] : deviceName);
+    final String sn = DeviceManager.extractSerialNumber(
+        deviceName.contains('_') ? deviceName.split('_')[0] : deviceName);
+    List<String> admins =
+        List<String>.from(globalDATA['$pc/$sn']?['secondary_admin'] ?? []);
+    String ownerEmail = globalDATA['$pc/$sn']?['owner'] ?? '';
+    bool canControl = ownerEmail == currentUserEmail ||
+        admins.contains(currentUserEmail) ||
+        ownerEmail == '';
+    if (!alexaDevices.contains(deviceName) && canControl) {
+      alexaDevices.add(deviceName);
+      putDevicesForAlexa(currentUserEmail, alexaDevices);
+    }
+  } catch (e) {
+    printLog.e('Error al agregar dispositivo a Alexa: $e');
   }
 }
 
@@ -972,7 +983,7 @@ Future<void> sendWifitoBle(String ssid, String pass) async {
     await bluetoothManager.toolsUuid.write(dataToSend.codeUnits);
     printLog.i('Se mando el wifi ANASHE');
   } catch (e) {
-    printLog.i('Error al conectarse a Wifi $e');
+    printLog.e('Error al conectarse a Wifi $e');
   }
   ssid != 'DSC' ? atemp = true : null;
 }
@@ -1010,7 +1021,7 @@ Future<List<WiFiAccessPoint>> _fetchWiFiNetworks() async {
       printLog.i('Permiso de ubicación denegado.');
     }
   } catch (e) {
-    printLog.i('Error durante el escaneo de WiFi: $e');
+    printLog.e('Error durante el escaneo de WiFi: $e');
   } finally {
     _scanInProgress = false;
   }
@@ -1776,7 +1787,7 @@ String getWifiErrorSintax(int errorCode) {
 //*-Wifi, menú y scanner-*\\
 
 //*-Verifica si hay red inestable basado en discTime-*\\
-/// Verifica si hay 3 o más desconexiones en la misma hora
+/// Verifica si hay 3 o más desconexiones en la última hora
 /// [pc] código del producto
 /// [sn] número de serie
 /// Retorna true si hay red inestable, false en caso contrario
@@ -1795,8 +1806,14 @@ bool isWifiNetworkUnstable(String pc, String sn) {
     // Convertir a lista de strings
     List<String> timestamps = discTimeList.map((e) => e.toString()).toList();
 
-    // Mapa para contar desconexiones por hora
-    Map<String, int> disconnectionsByHour = {};
+    // Obtener el momento actual
+    DateTime now = DateTime.now();
+
+    // Calcular el límite de tiempo (hace 1 hora)
+    DateTime oneHourAgo = now.subtract(const Duration(hours: 1));
+
+    // Contador de desconexiones en la última hora
+    int disconnectionsInLastHour = 0;
 
     for (String timestamp in timestamps) {
       try {
@@ -1804,19 +1821,11 @@ bool isWifiNetworkUnstable(String pc, String sn) {
         int milliseconds = int.parse(timestamp);
         DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(milliseconds);
 
-        // Crear una clave con año, mes, día y hora
-        String hourKey =
-            '${dateTime.year}-${dateTime.month}-${dateTime.day}-${dateTime.hour}';
-
-        // Incrementar el contador para esa hora
-        disconnectionsByHour[hourKey] =
-            (disconnectionsByHour[hourKey] ?? 0) + 1;
-
-        // Si encontramos 3 o más desconexiones en la misma hora, retornar true
-        if (disconnectionsByHour[hourKey]! >= 3) {
+        // Si la desconexión ocurrió en la última hora, contarla
+        if (dateTime.isAfter(oneHourAgo)) {
+          disconnectionsInLastHour++;
           printLog.d(
-              'Red inestable detectada: ${disconnectionsByHour[hourKey]} desconexiones en $hourKey');
-          return true;
+              'Desconexión en última hora: $dateTime (${now.difference(dateTime).inMinutes} minutos atrás)');
         }
       } catch (e) {
         printLog.e('Error parseando timestamp $timestamp: $e');
@@ -1824,6 +1833,15 @@ bool isWifiNetworkUnstable(String pc, String sn) {
       }
     }
 
+    // Si hay 3 o más desconexiones en la última hora, la red es inestable
+    if (disconnectionsInLastHour >= 3) {
+      printLog.d(
+          'Red inestable detectada: $disconnectionsInLastHour desconexiones en la última hora');
+      return true;
+    }
+
+    printLog.d(
+        'Red estable: $disconnectionsInLastHour desconexiones en la última hora');
     return false;
   } catch (e) {
     printLog.e('Error verificando estabilidad de red: $e');
@@ -1857,11 +1875,9 @@ Future<void> openQRScanner(BuildContext context) async {
         qrResult = null;
       }
     });
-    if (context.mounted) {
-      wifiText(context);
-    }
+    if (context.mounted) {}
   } catch (e) {
-    printLog.i("Error during navigation: $e");
+    printLog.e("Error during navigation: $e");
   }
 }
 
@@ -1931,121 +1947,129 @@ Future<void> handleNotifications(RemoteMessage message) async {
 
     printLog.i('El caso que llego es $caso');
 
-    if (caso == 'Alarm') {
-      if (product == '015773_IOT') {
-        final now = DateTime.now();
-        String displayTitle = '¡ALERTA EN ${nicknamesMap[device] ?? device}!';
-        String displayMessage =
-            'El detector disparó una alarma.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
-        showNotification(displayTitle.toUpperCase(), displayMessage, sound);
-      } else if (product == '020010_IOT' ||
-          product == '020020_IOT' ||
-          product == '027313_IOT') {
-        notificationMap = await loadNotificationMap();
-        List<bool> notis =
-            notificationMap['$product/$number'] ?? List<bool>.filled(8, false);
-        final now = DateTime.now();
-        String entry = nicknamesMap['${device}_${message.data['entry']!}'] ??
-            'Entrada${message.data['entry']!}';
-        String displayTitle = '¡ALERTA EN ${nicknamesMap[device] ?? device}!';
-        String displayMessage =
-            'La $entry disparó una alarma.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
-        if (notis[int.parse(message.data['entry']!)]) {
-          printLog.i(
-              'En la lista: ${notificationMap['$product/$number']!} en la posición ${message.data['entry']!} hay un true');
+    switch (caso) {
+      case 'Alarm':
+        if (product == '015773_IOT') {
+          final now = DateTime.now();
+          String displayTitle = '¡ALERTA EN ${nicknamesMap[device] ?? device}!';
+          String displayMessage =
+              'El detector disparó una alarma.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+          showNotification(displayTitle.toUpperCase(), displayMessage, sound);
+        } else if (product == '020010_IOT' ||
+            product == '020020_IOT' ||
+            product == '027313_IOT') {
+          notificationMap = await loadNotificationMap();
+          List<bool> notis = notificationMap['$product/$number'] ??
+              List<bool>.filled(8, false);
+          final now = DateTime.now();
+          String entry = nicknamesMap['${device}_${message.data['entry']!}'] ??
+              'Entrada${message.data['entry']!}';
+          String displayTitle = '¡ALERTA EN ${nicknamesMap[device] ?? device}!';
+          String displayMessage =
+              'La $entry disparó una alarma.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+          if (notis[int.parse(message.data['entry']!)]) {
+            printLog.i(
+                'En la lista: ${notificationMap['$product/$number']!} en la posición ${message.data['entry']!} hay un true');
+            showNotification(displayTitle.toUpperCase(), displayMessage, sound);
+          }
+        } else if (product == '023430_IOT') {
+          final now = DateTime.now();
+          String alarmType = message.data['alarmType'] ?? '';
+          String deviceNickname = nicknamesMap[device] ?? device;
+          String displayTitle = '¡ALERTA DE TEMPERATURA EN $deviceNickname!';
+          String displayMessage = '';
+
+          printLog.i('El alarmType es $alarmType');
+
+          if (alarmType == 'max') {
+            displayMessage =
+                'Se detectó temperatura MÁXIMA alcanzada.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+          } else if (alarmType == 'min') {
+            displayMessage =
+                'Se detectó temperatura MÍNIMA alcanzada.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+          } else {
+            displayMessage =
+                'Se detectó una alerta de temperatura.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+          }
+
           showNotification(displayTitle.toUpperCase(), displayMessage, sound);
         }
-      } else if (product == '023430_IOT') {
-        final now = DateTime.now();
-        String alarmType = message.data['alarmType'] ?? '';
-        String deviceNickname = nicknamesMap[device] ?? device;
-        String displayTitle = '¡ALERTA DE TEMPERATURA EN $deviceNickname!';
-        String displayMessage = '';
-
-        printLog.i('El alarmType es $alarmType');
-
-        if (alarmType == 'max') {
-          displayMessage =
-              'Se detectó temperatura MÁXIMA alcanzada.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
-        } else if (alarmType == 'min') {
-          displayMessage =
-              'Se detectó temperatura MÍNIMA alcanzada.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
-        } else {
-          displayMessage =
-              'Se detectó una alerta de temperatura.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+        break;
+      case 'Disconnect':
+        configNotiDsc = await loadconfigNotiDsc();
+        if (configNotiDsc.keys.toList().contains(device)) {
+          final now = DateTime.now();
+          int espera = configNotiDsc[device] ?? 0;
+          printLog.i('La espera son $espera minutos');
+          printLog.i('Empezo la espera ${DateTime.now()}');
+          await Future.delayed(
+            Duration(minutes: espera),
+          );
+          printLog.i('Termino la espera ${DateTime.now()}');
+          await queryItems(product, number);
+          bool cstate = globalDATA['$product/$number']?['cstate'] ?? false;
+          printLog.i('El cstate después de la espera es $cstate');
+          bool redUnstable = isWifiNetworkUnstable(product, number);
+          printLog.i('Red inestable: $redUnstable');
+          if (!cstate && !redUnstable) {
+            String displayTitle =
+                '¡El equipo ${nicknamesMap[device] ?? device} se desconecto!';
+            String displayMessage =
+                'Se detecto una desconexión a las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+            showNotification(displayTitle, displayMessage, 'noti');
+          }
         }
-
-        showNotification(displayTitle.toUpperCase(), displayMessage, sound);
-      }
-    } else if (caso == 'Disconnect') {
-      configNotiDsc = await loadconfigNotiDsc();
-      if (configNotiDsc.keys.toList().contains(device)) {
+        break;
+      case 'evento':
+        String eventName = message.data['name'] ?? 'Evento';
         final now = DateTime.now();
-        int espera = configNotiDsc[device] ?? 0;
-        printLog.i('La espera son $espera minutos');
-        printLog.i('Empezo la espera ${DateTime.now()}');
-        await Future.delayed(
-          Duration(minutes: espera),
-        );
-        printLog.i('Termino la espera ${DateTime.now()}');
-        await queryItems(product, number);
-        bool cstate = globalDATA['$product/$number']?['cstate'] ?? false;
-        printLog.i('El cstate después de la espera es $cstate');
-        bool redUnstable = isWifiNetworkUnstable(product, number);
-        printLog.i('Red inestable: $redUnstable');
-        if (!cstate && !redUnstable) {
-          String displayTitle =
-              '¡El equipo ${nicknamesMap[device] ?? device} se desconecto!';
-          String displayMessage =
-              'Se detecto una desconexión a las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
-          showNotification(displayTitle, displayMessage, 'noti');
-        }
-      }
-    } else if (caso == 'evento') {
-      String eventName = message.data['name'] ?? 'Evento';
-      final now = DateTime.now();
-      String displayTitle = '¡Se activo el evento $eventName!';
-      String displayMessage =
-          'A las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
-      showNotification(displayTitle, displayMessage, 'noti');
-    } else if (caso == 'cadena') {
-      String cadenaName = message.data['name'] ?? 'Cadena';
-      final now = DateTime.now();
-      String displayTitle = '¡La cadena $cadenaName terminó de ejecutarse!';
-      String displayMessage =
-          'A las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
-      showNotification(displayTitle, displayMessage, 'noti');
+        String displayTitle = '¡Se activo el evento $eventName!';
+        String displayMessage =
+            'A las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+        showNotification(displayTitle, displayMessage, 'noti');
+        break;
+      case 'cadena':
+        String cadenaName = message.data['name'] ?? 'Cadena';
+        final now = DateTime.now();
+        String displayTitle = '¡La cadena $cadenaName terminó de ejecutarse!';
+        String displayMessage =
+            'A las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}';
+        showNotification(displayTitle, displayMessage, 'noti');
 
-      // Remover la flag de ejecución de la cadena
-      await removeCadenaExecuting(cadenaName, currentUserEmail);
-      printLog.i('Flag de ejecución removida para cadena: $cadenaName');
+        // Remover la flag de ejecución de la cadena
+        await removeCadenaExecuting(cadenaName, currentUserEmail);
+        printLog.i('Flag de ejecución removida para cadena: $cadenaName');
 
-      // Notificar a los listeners que la cadena terminó (para UI en tiempo real)
-      cadenaCompletedController.add(cadenaName);
-      printLog.i('Evento de cadena completada enviado para: $cadenaName');
-    } else if (caso == 'clima') {
-      String climaDetectado = message.data['clima_detectado'] ?? 'Desconocido';
-      String nombreEvento = message.data['name'] ?? 'Evento Climático';
-      final now = DateTime.now();
-      String displayTitle = '🌤️ Control por Clima Activado';
-      String displayMessage =
-          "Se detectó '$climaDetectado' y se ejecutaron las acciones programadas para el evento '$nombreEvento'.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}";
-      showNotification(displayTitle, displayMessage, 'noti');
-    } else if (caso == 'riego') {
-      String riegoName = message.data['name'] ?? 'Rutina de Riego';
-      final now = DateTime.now();
-      String displayTitle = '🌱 Rutina de Riego Completada';
-      String displayMessage =
-          "La rutina de riego '$riegoName' ha sido completada exitosamente.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}";
-      showNotification(displayTitle, displayMessage, 'noti');
+        // Notificar a los listeners que la cadena terminó (para UI en tiempo real)
+        cadenaCompletedController.add(cadenaName);
+        printLog.i('Evento de cadena completada enviado para: $cadenaName');
+        break;
+      case 'clima':
+        String climaDetectado =
+            message.data['clima_detectado'] ?? 'Desconocido';
+        String nombreEvento = message.data['name'] ?? 'Evento Climático';
+        final now = DateTime.now();
+        String displayTitle = '🌤️ Control por Clima Activado';
+        String displayMessage =
+            "Se detectó '$climaDetectado' y se ejecutaron las acciones programadas para el evento '$nombreEvento'.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}";
+        showNotification(displayTitle, displayMessage, 'noti');
+        break;
+      case 'riego':
+        String riegoName = message.data['name'] ?? 'Rutina de Riego';
+        final now = DateTime.now();
+        String displayTitle = '🌱 Rutina de Riego Completada';
+        String displayMessage =
+            "La rutina de riego '$riegoName' ha sido completada exitosamente.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}";
+        showNotification(displayTitle, displayMessage, 'noti');
 
-      // Remover la flag de ejecución del riego
-      await removeRiegoExecuting(riegoName, currentUserEmail);
-      printLog.i('Flag de ejecución removida para riego: $riegoName');
+        // Remover la flag de ejecución del riego
+        await removeRiegoExecuting(riegoName, currentUserEmail);
+        printLog.i('Flag de ejecución removida para riego: $riegoName');
 
-      // Notificar a los listeners que el riego terminó (para UI en tiempo real)
-      riegoCompletedController.add(riegoName);
-      printLog.i('Evento de riego completado enviado para: $riegoName');
+        // Notificar a los listeners que el riego terminó (para UI en tiempo real)
+        riegoCompletedController.add(riegoName);
+        printLog.i('Evento de riego completado enviado para: $riegoName');
+        break;
     }
   } catch (e, s) {
     printLog.e("Error: $e");
@@ -2094,39 +2118,60 @@ void showNotification(String title, String body, String sonido) async {
     );
     // printLog.i("Notificacion enviada anacardamente nasharda");
   } catch (e, s) {
-    printLog.i('Error enviando notif: $e');
-    printLog.i(s);
+    printLog.e('Error enviando notif: $e');
+    printLog.t(s);
   }
 }
 
 //*-Notificaciones-*\\
 
 //*-Admin secundarios y alquiler temporario-*\\
-Future<void> analizePayment(
+void analizePayment(
   String pc,
   String sn,
-) async {
-  List<DateTime> expDates = await getDates(pc, sn);
+) {
+  String fechaAT = globalDATA['$pc/$sn']?['DateAT'] ?? '';
+  String fechaAdmSec = globalDATA['$pc/$sn']?['DateAdmSec'] ?? '';
 
-  vencimientoAdmSec = expDates[0].difference(DateTime.now()).inDays;
+  if (fechaAdmSec == '') {
+    payAdmSec = false;
+  } else {
+    var partsAdmSec = fechaAdmSec.split('/');
+    final fechaParse = DateTime(
+      int.parse(partsAdmSec[0]),
+      int.parse(partsAdmSec[1]),
+      int.parse(partsAdmSec[2]),
+    );
+    vencimientoAdmSec = fechaParse.difference(DateTime.now()).inDays;
 
-  payAdmSec = vencimientoAdmSec > 0;
+    payAdmSec = vencimientoAdmSec > 0;
 
-  printLog.i('--------------Administradores secundarios--------------');
-  printLog.i(expDates[0].toIso8601String());
-  printLog.i('Se vence en $vencimientoAdmSec dias');
-  printLog.i('¿Esta pago? ${payAdmSec ? 'Si' : 'No'}');
-  printLog.i('--------------Administradores secundarios--------------');
+    printLog.i('--------------Administradores secundarios--------------');
+    printLog.i(fechaParse.toIso8601String());
+    printLog.i('Se vence en $vencimientoAdmSec dias');
+    printLog.i('¿Esta pago? ${payAdmSec ? 'Si' : 'No'}');
+    printLog.i('--------------Administradores secundarios--------------');
+  }
 
-  vencimientoAT = expDates[1].difference(DateTime.now()).inDays;
+  if (fechaAT == '') {
+    payAT = false;
+  } else {
+    var partsAT = fechaAT.split('/');
+    final fechaParseAT = DateTime(
+      int.parse(partsAT[0]),
+      int.parse(partsAT[1]),
+      int.parse(partsAT[2]),
+    );
+    vencimientoAT = fechaParseAT.difference(DateTime.now()).inDays;
 
-  payAT = vencimientoAT > 0;
+    payAT = vencimientoAT > 0;
 
-  printLog.i('--------------Alquiler Temporario--------------');
-  printLog.i(expDates[1].toIso8601String());
-  printLog.i('Se vence en $vencimientoAT dias');
-  printLog.i('¿Esta pago? ${payAT ? 'Si' : 'No'}');
-  printLog.i('--------------Alquiler Temporario--------------');
+    printLog.i('--------------Alquiler Temporario--------------');
+    printLog.i(fechaParseAT.toIso8601String());
+    printLog.i('Se vence en $vencimientoAT dias');
+    printLog.i('¿Esta pago? ${payAT ? 'Si' : 'No'}');
+    printLog.i('--------------Alquiler Temporario--------------');
+  }
 }
 
 void showPaymentText(bool adm, int vencimiento, BuildContext context) {
@@ -2189,14 +2234,13 @@ void showPaymentText(bool adm, int vencimiento, BuildContext context) {
       ],
     );
   } catch (e, s) {
-    printLog.i(e);
-    printLog.i(s);
+    printLog.e(e);
+    printLog.t(s);
   }
 }
 //*-Admin secundarios y alquiler temporario-*\\
 
 //*- Funciones para administradores secundarios -*\\
-
 /// Registra el uso de un dispositivo por un administrador secundario
 Future<void> registerAdminUsage(String deviceName, String action) async {
   String pc = DeviceManager.getProductCode(deviceName);
@@ -2308,13 +2352,12 @@ Future<String> getUserMail() async {
       }
     }
   } on AuthException catch (e) {
-    printLog.i('Error fetching user attributes: ${e.message}');
+    printLog.e('Error fetching user attributes: ${e.message}');
   }
 
   await saveEmail(email);
   return email;
 }
-
 //*-Cognito user flow-*\\
 
 //*-Background functions-*\\
@@ -2352,8 +2395,8 @@ Future<void> initializeService() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('hasInitService', true);
   } catch (e, s) {
-    printLog.i('Error al inicializar servicio $e');
-    printLog.i('$s');
+    printLog.e('Error al inicializar servicio $e');
+    printLog.t('$s');
   }
 }
 
@@ -2631,8 +2674,8 @@ Future<bool> backFunctionDS() async {
 
     return Future.value(true);
   } catch (e, s) {
-    printLog.i('Error en segundo plano $e');
-    printLog.i(s);
+    printLog.e('Error en segundo plano $e');
+    printLog.t(s);
 
     // showNotification('Error en segundo plano $e', '$e');
 
@@ -2819,22 +2862,23 @@ void showDisconnectDialog(BuildContext ctx) {
 //*-Acceso rápido BLE-*\\
 Future<void> controlDeviceBLE(String name, bool newState) async {
   printLog.i("Voy a ${newState ? 'Encender' : 'Apagar'} el equipo $name");
+  final String pc = DeviceManager.getProductCode(name);
+  final String sn = DeviceManager.extractSerialNumber(name);
 
-  if (DeviceManager.getProductCode(name) == '020010_IOT' ||
-      DeviceManager.getProductCode(name) == '020020_IOT' ||
-      (DeviceManager.getProductCode(name) == '027313_IOT' &&
-          globalDATA[
-                  '${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}']!
-              .keys
-              .contains('io'))) {
-    String fun = '${pinQuickAccess[name]!}#${newState ? '1' : '0'}';
+  if (pc == '020010_IOT' ||
+      pc == '020020_IOT' ||
+      (pc == '027313_IOT' && globalDATA['$pc/$sn']!.keys.contains('io'))) {
+    String? pinQuick = pinQuickAccess[name];
+    if (pinQuick == null) {
+      printLog.e('No se encontró el pin para acceso rápido en $name');
+      return;
+    }
+    String fun = '$pinQuick#${newState ? '1' : '0'}';
     bluetoothManager.ioUuid.write(fun.codeUnits);
-    String topic =
-        'devices_rx/${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}';
-    String topic2 =
-        'devices_tx/${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}';
+    String topic = 'devices_rx/$pc/$sn';
+    String topic2 = 'devices_tx/$pc/$sn';
     String message = jsonEncode({
-      'index': int.parse(pinQuickAccess[name]!),
+      'index': int.parse(pinQuick),
       'w_status': newState,
       'r_state': "0",
       'pinType': 0
@@ -2843,30 +2887,24 @@ Future<void> controlDeviceBLE(String name, bool newState) async {
     sendMessagemqtt(topic2, message);
 
     globalDATA
-        .putIfAbsent(
-            '${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}',
-            () => {})
-        .addAll({'io${pinQuickAccess[name]!}': message});
+        .putIfAbsent('$pc/$sn', () => {})
+        .addAll({'io$pinQuick': message});
 
     saveGlobalData(globalDATA);
   } else {
     int fun = newState ? 1 : 0;
-    String data = '${DeviceManager.getProductCode(name)}[11]($fun)';
+    String data = '$pc[11]($fun)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
-    globalDATA[
-            '${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}']![
-        'w_status'] = newState;
+    globalDATA['$pc/$sn']!['w_status'] = newState;
     saveGlobalData(globalDATA);
     try {
-      String topic =
-          'devices_rx/${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}';
-      String topic2 =
-          'devices_tx/${DeviceManager.getProductCode(name)}/${DeviceManager.extractSerialNumber(name)}';
+      String topic = 'devices_rx/$pc/$sn';
+      String topic2 = 'devices_tx/$pc/$sn';
       String message = jsonEncode({'w_status': newState});
       sendMessagemqtt(topic, message);
       sendMessagemqtt(topic2, message);
     } catch (e, s) {
-      printLog.i('Error al enviar valor en cdBLE $e $s');
+      printLog.e('Error al enviar valor en cdBLE $e $s');
     }
   }
 }
@@ -2952,6 +2990,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
   bool updating = false;
   bool error = false;
   int porcentaje = 0;
+  final String pc = DeviceManager.getProductCode(deviceName);
 
   return showDialog<void>(
     barrierDismissible: false,
@@ -3093,19 +3132,16 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                     bluetoothManager.device.cancelWhenDisconnected(otaSub);
 
                     final fileName = await Versioner.fetchLatestFirmwareFile(
-                        DeviceManager.getProductCode(deviceName),
-                        hardwareVersion);
+                        pc, hardwareVersion);
 
-                    String url = Versioner.buildFirmwareUrl(
-                        DeviceManager.getProductCode(deviceName), fileName);
+                    String url = Versioner.buildFirmwareUrl(pc, fileName);
                     printLog.i(url);
 
                     try {
                       if (isWifiConnected) {
                         printLog.i('Si mandé ota Wifi');
                         printLog.i('url: $url');
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[2]($url)';
+                        String data = '$pc[2]($url)';
                         await bluetoothManager.toolsUuid.write(data.codeUnits);
                       } else {
                         printLog.i('Arranca por la derecha la OTA BLE');
@@ -3128,8 +3164,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                         // printLog.i(
                         //     "Comprobando cosas ${bytes == bytes2}", "verde");
 
-                        String data =
-                            '${DeviceManager.getProductCode(deviceName)}[3](${bytes.length})';
+                        String data = '$pc[3](${bytes.length})';
                         printLog.i(data);
                         await bluetoothManager.toolsUuid.write(data.codeUnits);
                         printLog.i("Arranco OTA");
@@ -3151,7 +3186,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                           }
                           printLog.i('Acabe');
                         } catch (e, stackTrace) {
-                          printLog.i('El error es: $e $stackTrace');
+                          printLog.e('El error es: $e $stackTrace');
                           setState(() {
                             updating = false;
                             error = true;
@@ -3160,7 +3195,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                         }
                       }
                     } catch (e, stackTrace) {
-                      printLog.i('Error al enviar la OTA $e $stackTrace');
+                      printLog.e('Error al enviar la OTA $e $stackTrace');
                       // handleManualError(e, stackTrace);
                       setState(() {
                         updating = false;
@@ -3388,7 +3423,7 @@ void setupGlobalConnectionListener() {
       printLog.i('Estado de conexión global: $state');
 
       if (state == BluetoothConnectionState.disconnected) {
-        printLog.e('Dispositivo desconectado - Manejador global');
+        printLog.i('Dispositivo desconectado - Manejador global');
 
         printLog.d('¿Es acción rápida? $quickAction');
 
@@ -3432,25 +3467,34 @@ void cleanGlobalDeviceVariables() {
 
 ///*-Global Connection Manager-*\\\
 
+//*- PrintLogHistorial -*\\
+bool shouldSaveLog(String email) {
+  final loglUsers = (dbData['LogEmail'] as List<dynamic>?)
+      ?.map((e) => e.toString().toLowerCase())
+      .toList();
+  if (loglUsers == null) return false;
+  return loglUsers.contains(email.toLowerCase());
+}
+
+String stringifyPrintLog(dynamic message) {
+  final finalMessage = message is Function ? message() : message;
+  if (finalMessage is Map || finalMessage is Iterable) {
+    var encoder = JsonEncoder.withIndent('  ', (dynamic object) {
+      return object.toString();
+    });
+    return encoder.convert(finalMessage);
+  } else {
+    return finalMessage.toString();
+  }
+}
+//*- PrintLogHistorial -*\\
+
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
 //! CLASES !\\
 
 //*- Funciones relacionadas a los equipos*-\\
 class DeviceManager {
-  final List<String> productos = [
-    '015773_IOT',
-    '020010_IOT',
-    '022000_IOT',
-    '027000_IOT',
-    '050217_IOT',
-    '020020_IOT',
-    '041220_IOT',
-    '027313_IOT',
-    '027131_IOT',
-    '024011_IOT',
-  ];
-
   ///Extrae el número de serie desde el deviceName
   static String extractSerialNumber(String productName) {
     RegExp regExp = RegExp(r'(\d{8})');
@@ -3521,7 +3565,7 @@ class DeviceManager {
       Map<String, dynamic> data = await getGeneralData();
       dbData = data;
     } catch (e) {
-      printLog.i("Error al leer GENERALDATA: $e");
+      printLog.e("Error al leer GENERALDATA: $e");
       dbData = {};
     }
   }
@@ -3681,7 +3725,7 @@ class BluetoothManager {
 
       return Future.value(true);
     } catch (e, stackTrace) {
-      printLog.i('Lcdtmbe $e $stackTrace');
+      printLog.e('Lcdtmbe $e $stackTrace');
 
       return Future.value(false);
     }
@@ -3709,7 +3753,7 @@ class NativeService {
       }
     } on PlatformException catch (e) {
       android
-          ? printLog.i("Error al verificar o encender Bluetooth: ${e.message}")
+          ? printLog.e("Error al verificar o encender Bluetooth: ${e.message}")
           : null;
 
       bleFlag = false;
@@ -3732,7 +3776,7 @@ class NativeService {
           await platform.invokeMethod("isLocationServiceEnabled");
       return isEnabled;
     } on PlatformException catch (e) {
-      printLog.i('Error verificando ubicación: $e');
+      printLog.e('Error verificando ubicación: $e');
       return false;
     }
   }
@@ -3741,7 +3785,7 @@ class NativeService {
     try {
       await platform.invokeMethod("openLocationSettings");
     } on PlatformException catch (e) {
-      printLog.i('Error abriendo la configuración de ubicación: $e');
+      printLog.e('Error abriendo la configuración de ubicación: $e');
     }
   }
 
@@ -3749,7 +3793,7 @@ class NativeService {
     try {
       await platform.invokeMethod('stopSound');
     } catch (e) {
-      printLog.i("Error al detener sonido: $e");
+      printLog.e("Error al detener sonido: $e");
     }
   }
 }
@@ -3777,7 +3821,7 @@ class Versioner {
       return v1.date.isAfter(v2.date);
     } catch (e) {
       // Si hay error en el parseado, asumimos que la versión no es posterior
-      printLog.i(
+      printLog.e(
           'Error comparing versions "$myVersion" vs "$versionToCompare": $e');
       return false;
     }
@@ -3794,7 +3838,7 @@ class Versioner {
       return v1.date.isBefore(v2.date);
     } catch (e) {
       // Si hay error en el parseado, asumimos que la versión no es anterior
-      printLog.i(
+      printLog.e(
           'Error comparing versions "$myVersion" vs "$versionToCompare": $e');
       return false;
     }
@@ -3815,6 +3859,7 @@ class Versioner {
       final letter = version.substring(6, 7);
       return _VersionData(DateTime(yy, mm, dd), letter);
     } catch (e) {
+      printLog.e('Error parsing version $version: $e');
       throw FormatException('Error parsing version $version: $e');
     }
   }
@@ -3869,7 +3914,7 @@ class Versioner {
     }
 
     if (firmwareFiles.isEmpty) {
-      printLog.e(
+      printLog.i(
           'No matching firmware found for HW $sanitizedHw with prefix $prefix');
       throw Exception('No se encontró firmware para HW $sanitizedHw');
     }
@@ -4730,7 +4775,7 @@ class AnimSearchBarState extends State<AnimSearchBar>
                           }
                         } catch (e) {
                           ///print the error if the try block fails
-                          printLog.i(e);
+                          printLog.e(e);
                         }
                       },
 
@@ -5932,8 +5977,7 @@ class TutorialItem {
   final bool fullBackground;
   final double contentOffsetY;
   final VoidCallback? onStepReached;
-    final ElevatedButton? buttonAction;
-
+  final ElevatedButton? buttonAction;
 
   TutorialItem({
     required this.globalKey,
@@ -5946,8 +5990,7 @@ class TutorialItem {
     this.fullBackground = false,
     this.contentOffsetY = 0.0,
     this.onStepReached,
-        this.buttonAction,
-
+    this.buttonAction,
   });
 }
 

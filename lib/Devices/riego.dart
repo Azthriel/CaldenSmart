@@ -518,6 +518,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
             }
           } catch (e) {
             // Error handling
+            printLog.e('Error al procesar la extensión $extension: $e');
           }
         }
       });
@@ -598,6 +599,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
             }
           } catch (e) {
             // Error handling
+            printLog.e('Error al procesar la extensión $extension: $e');
           }
         }
       });
@@ -636,6 +638,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
             }
           } catch (e) {
             // Error handling
+            printLog.e('Error al procesar la extensión $extension: $e');
           }
         }
       });
@@ -731,6 +734,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
             }
           } catch (e) {
             // Error handling
+            printLog.e('Error al procesar la extensión $extension: $e');
           }
         }
       }
@@ -841,7 +845,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
-      printLog.i('sis $isWifiConnected');
+      // printlog.i('sis $isWifiConnected');
       errorMessage = '';
       errorSintax = '';
       werror = false;
@@ -854,7 +858,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
           'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
-      printLog.i('non $isWifiConnected');
+      // printlog.i('non $isWifiConnected');
 
       nameOfWifi = '';
       wifiNotifier.updateStatus(
@@ -2017,6 +2021,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                         }
                                       } catch (e) {
                                         // Error handling
+                                        printLog.e('Error al procesar la extensión $prevExtension: $e');
                                       }
                                     }
                                   });
@@ -2273,6 +2278,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                                             }
                                                           } catch (e) {
                                                             // Error handling
+                                                            printLog.e('Error al procesar la extensión $extension: $e');
                                                           }
                                                         }
 

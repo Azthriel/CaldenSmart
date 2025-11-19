@@ -1,11 +1,15 @@
 // ignore_for_file: avoid_print
 
 import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
+import 'package:caldensmart/aws/dynamo/dynamo.dart' show savePrintLog;
+import 'package:caldensmart/master.dart'
+    show shouldSaveLog, currentUserEmail, stringifyPrintLog;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+const bool forceEnableLogsInRelease = false;
 
 var printLog = Logger(
   printer: PrefixPrinter(
@@ -21,94 +25,9 @@ var printLog = Logger(
     debug: 'PrintDebug:',
     info: 'PrintData:',
     error: 'PrintData:',
+    db: 'PrintDatabase:',
   ),
-  filter: DevelopmentFilter(),
 );
-
-class FileOutput extends LogOutput {
-  FileOutput({
-    required File file,
-    bool overrideExisting = false,
-    Encoding encoding = utf8,
-  }) {
-    throw UnsupportedError("Not supported on this platform.");
-  }
-
-  @override
-  void output(OutputEvent event) {
-    throw UnsupportedError("Not supported on this platform.");
-  }
-}
-
-/// Accumulates logs in a buffer to reduce frequent disk, writes while optionally
-/// switching to a new log file if it reaches a certain size.
-///
-/// [AdvancedFileOutput] offer various improvements over the original
-/// [FileOutput]:
-/// * Managing an internal buffer which collects the logs and only writes
-/// them after a certain period of time to the disk.
-/// * Dynamically switching log files instead of using a single one specified
-/// by the user, when the current file reaches a specified size limit (optionally).
-///
-/// The buffered output can significantly reduce the
-/// frequency of file writes, which can be beneficial for (micro-)SD storage
-/// and other types of low-cost storage (e.g. on IoT devices). Specific log
-/// levels can trigger an immediate flush, without waiting for the next timer
-/// tick.
-///
-/// New log files are created when the current file reaches the specified size
-/// limit. This is useful for writing "archives" of telemetry data and logs
-/// while keeping them structured.
-class AdvancedFileOutput extends LogOutput {
-  /// Creates a buffered file output.
-  ///
-  /// By default, the log is buffered until either the [maxBufferSize] has been
-  /// reached, the timer controlled by [maxDelay] has been triggered or an
-  /// [OutputEvent] contains a [writeImmediately] log level.
-  ///
-  /// [maxFileSizeKB] controls the log file rotation. The output automatically
-  /// switches to a new log file as soon as the current file exceeds it.
-  /// Use -1 to disable log rotation.
-  ///
-  /// [maxDelay] describes the maximum amount of time before the buffer has to be
-  /// written to the file.
-  ///
-  /// Any log levels that are specified in [writeImmediately] trigger an immediate
-  /// flush to the disk ([Level.warning], [Level.error] and [Level.fatal] by default).
-  ///
-  /// [path] is either treated as directory for rotating or as target file name,
-  /// depending on [maxFileSizeKB].
-  ///
-  /// [maxRotatedFilesCount] controls the number of rotated files to keep. By default
-  /// is null, which means no limit.
-  /// If set to a positive number, the output will keep the last
-  /// [maxRotatedFilesCount] files. The deletion step will be executed by sorting
-  /// files following the [fileSorter] ascending strategy and keeping the last files.
-  /// The [latestFileName] will not be counted. The default [fileSorter] strategy is
-  /// sorting by last modified date, beware that could be not reliable in some
-  /// platforms and/or filesystems.
-  AdvancedFileOutput({
-    required String path,
-    bool overrideExisting = false,
-    Encoding encoding = utf8,
-    List<Level>? writeImmediately,
-    Duration maxDelay = const Duration(seconds: 2),
-    int maxBufferSize = 2000,
-    int maxFileSizeKB = 1024,
-    String latestFileName = 'latest.log',
-    String Function(DateTime timestamp)? fileNameFormatter,
-    int? maxRotatedFilesCount,
-    Comparator<File>? fileSorter,
-    Duration fileUpdateDuration = const Duration(minutes: 1),
-  }) {
-    throw UnsupportedError("Not supported on this platform.");
-  }
-
-  @override
-  void output(OutputEvent event) {
-    throw UnsupportedError("Not supported on this platform.");
-  }
-}
 
 class AnsiColor {
   /// ANSI Control Sequence Introducer, signals the terminal for new settings.
@@ -236,32 +155,6 @@ class DateTimeFormat {
   }
 }
 
-/// Prints all logs with `level >= Logger.level` while in development mode (eg
-/// when `assert`s are evaluated, Flutter calls this debug mode).
-///
-/// In release mode ALL logs are omitted.
-class DevelopmentFilter extends LogFilter {
-  @override
-  bool shouldLog(LogEvent event) {
-    var shouldLog = false;
-    assert(() {
-      if (event.level.value >= level!.value) {
-        shouldLog = true;
-      }
-      return true;
-    }());
-    return shouldLog;
-  }
-}
-
-/// Prints all logs with `level >= Logger.level` even in production.
-class ProductionFilter extends LogFilter {
-  @override
-  bool shouldLog(LogEvent event) {
-    return event.level.value >= level!.value;
-  }
-}
-
 class LogEvent {
   final Level level;
   final dynamic message;
@@ -279,29 +172,6 @@ class LogEvent {
   }) : time = time ?? DateTime.now();
 }
 
-/// An abstract filter of log messages.
-///
-/// You can implement your own `LogFilter` or use [DevelopmentFilter].
-/// Every implementation should consider [Logger.level].
-abstract class LogFilter {
-  Level? _level;
-
-  // Still nullable for backwards compatibility.
-  Level? get level => _level ?? Logger.level;
-
-  set level(Level? value) => _level = value;
-
-  Future<void> init() async {}
-
-  /// Is called every time a new log message is sent and decides if
-  /// it will be printed or canceled.
-  ///
-  /// Returns `true` if the message should be logged.
-  bool shouldLog(LogEvent event);
-
-  Future<void> destroy() async {}
-}
-
 /// [Level]s to control logging output. Logging can be enabled to include all
 /// levels above certain [Level].
 enum Level {
@@ -309,6 +179,7 @@ enum Level {
   trace(1000),
   debug(2000),
   info(3000),
+  db(4000),
   error(5000),
   off(10000),
   ;
@@ -359,21 +230,14 @@ class Logger {
   /// All logs with levels below this level will be omitted.
   static Level level = Level.trace;
 
-  /// The current default implementation of log filter.
-  static LogFilter Function() defaultFilter = () => DevelopmentFilter();
-
   /// The current default implementation of log printer.
   static LogPrinter Function() defaultPrinter = () => PrettyPrinter();
 
   /// The current default implementation of log output.
   static LogOutput Function() defaultOutput = () => ConsoleOutput();
 
-  static final Set<LogCallback> _logCallbacks = {};
-
-  static final Set<OutputCallback> _outputCallbacks = {};
-
   late final Future<void> _initialization;
-  final LogFilter _filter;
+
   final LogPrinter _printer;
   final LogOutput _output;
   bool _active = true;
@@ -384,20 +248,14 @@ class Logger {
   /// defaults: [PrettyPrinter], [DevelopmentFilter] and [ConsoleOutput] will be
   /// used.
   Logger({
-    LogFilter? filter,
     LogPrinter? printer,
     LogOutput? output,
     Level? level,
-  })  : _filter = filter ?? defaultFilter(),
-        _printer = printer ?? defaultPrinter(),
+  })  : _printer = printer ?? defaultPrinter(),
         _output = output ?? defaultOutput() {
-    var filterInit = _filter.init();
-    if (level != null) {
-      _filter.level = level;
-    }
     var printerInit = _printer.init();
     var outputInit = _output.init();
-    _initialization = Future.wait([filterInit, printerInit, outputInit]);
+    _initialization = Future.wait([printerInit, outputInit]);
   }
 
   /// Future indicating if the initialization of the
@@ -452,6 +310,23 @@ class Logger {
         time: time, error: error, stackTrace: stackTrace, color: color);
   }
 
+  /// Log a message at level [Level.db].
+  ///
+  /// [color] puede ser: 'rojo', 'verde', 'azul', 'amarillo', 'naranja', 'violeta', 'cyan', 'gris', 'blanco', 'negro', 'rosa', 'lima', 'marron'
+  /// También acepta colores de Flutter como Colors.red, Colors.blue, etc.
+  void db(
+    dynamic message, {
+    DateTime? time,
+    Object? error,
+    StackTrace? stackTrace,
+    dynamic color,
+  }) {
+    String msg = stringifyPrintLog(message);
+    savePrintLog(currentUserEmail, msg);
+    log(Level.db, message,
+        time: time, error: error, stackTrace: stackTrace, color: color);
+  }
+
   /// Log a message at level [Level.error].
   ///
   /// [color] puede ser: 'rojo', 'verde', 'azul', 'amarillo', 'naranja', 'violeta', 'cyan', 'gris', 'blanco', 'negro', 'rosa', 'lima', 'marron'
@@ -463,6 +338,10 @@ class Logger {
     StackTrace? stackTrace,
     dynamic color,
   }) {
+    if (shouldSaveLog(currentUserEmail)) {
+      String msg = stringifyPrintLog(message);
+      savePrintLog(currentUserEmail, msg);
+    }
     log(Level.error, message,
         time: time, error: error, stackTrace: stackTrace, color: color);
   }
@@ -476,6 +355,15 @@ class Logger {
     StackTrace? stackTrace,
     dynamic color,
   }) {
+    // Verificar si los logs deben mostrarse
+    // En debug: siempre se muestran
+    // En release/profile: solo si forceEnableLogsInRelease está en true
+    bool shouldLog = kDebugMode || forceEnableLogsInRelease;
+
+    if (!shouldLog) {
+      return;
+    }
+
     if (!_active) {
       throw ArgumentError('Logger has already been closed.');
     } else if (error != null && error is StackTrace) {
@@ -492,26 +380,18 @@ class Logger {
       stackTrace: stackTrace,
     );
     logEvent.customColor = color;
-    for (var callback in _logCallbacks) {
-      callback(logEvent);
-    }
 
-    if (_filter.shouldLog(logEvent)) {
-      var output = _printer.log(logEvent);
+    var output = _printer.log(logEvent);
 
-      if (output.isNotEmpty) {
-        var outputEvent = OutputEvent(logEvent, output);
-        // Issues with log output should NOT influence
-        // the main software behavior.
-        try {
-          for (var callback in _outputCallbacks) {
-            callback(outputEvent);
-          }
-          _output.output(outputEvent);
-        } catch (e, s) {
-          print(e);
-          print(s);
-        }
+    if (output.isNotEmpty) {
+      var outputEvent = OutputEvent(logEvent, output);
+      // Issues with log output should NOT influence
+      // the main software behavior.
+      try {
+        _output.output(outputEvent);
+      } catch (e, s) {
+        print(e);
+        print(s);
       }
     }
   }
@@ -523,33 +403,9 @@ class Logger {
   /// Closes the logger and releases all resources.
   Future<void> close() async {
     _active = false;
-    await _filter.destroy();
+
     await _printer.destroy();
     await _output.destroy();
-  }
-
-  /// Register a [LogCallback] which is called for each new [LogEvent].
-  static void addLogListener(LogCallback callback) {
-    _logCallbacks.add(callback);
-  }
-
-  /// Removes a [LogCallback] which was previously registered.
-  ///
-  /// Returns whether the callback was successfully removed.
-  static bool removeLogListener(LogCallback callback) {
-    return _logCallbacks.remove(callback);
-  }
-
-  /// Register an [OutputCallback] which is called for each new [OutputEvent].
-  static void addOutputListener(OutputCallback callback) {
-    _outputCallbacks.add(callback);
-  }
-
-  /// Removes a [OutputCallback] which was previously registered.
-  ///
-  /// Returns whether the callback was successfully removed.
-  static void removeOutputListener(OutputCallback callback) {
-    _outputCallbacks.remove(callback);
   }
 }
 
@@ -572,168 +428,6 @@ class ConsoleOutput extends LogOutput {
   }
 }
 
-/// Buffers [OutputEvent]s.
-class MemoryOutput extends LogOutput {
-  /// Maximum events in [buffer].
-  final int bufferSize;
-
-  /// A secondary [LogOutput] to also received events.
-  final LogOutput? secondOutput;
-
-  /// The buffer of events.
-  final ListQueue<OutputEvent> buffer;
-
-  MemoryOutput({this.bufferSize = 20, this.secondOutput})
-      : buffer = ListQueue(bufferSize);
-
-  @override
-  void output(OutputEvent event) {
-    if (buffer.length == bufferSize) {
-      buffer.removeFirst();
-    }
-
-    buffer.add(event);
-
-    secondOutput?.output(event);
-  }
-}
-
-/// Logs simultaneously to multiple [LogOutput] outputs.
-class MultiOutput extends LogOutput {
-  late List<LogOutput> _outputs;
-
-  MultiOutput(List<LogOutput?>? outputs) {
-    _outputs = _normalizeOutputs(outputs);
-  }
-
-  List<LogOutput> _normalizeOutputs(List<LogOutput?>? outputs) {
-    final normalizedOutputs = <LogOutput>[];
-
-    if (outputs != null) {
-      for (final output in outputs) {
-        if (output != null) {
-          normalizedOutputs.add(output);
-        }
-      }
-    }
-
-    return normalizedOutputs;
-  }
-
-  @override
-  Future<void> init() async {
-    await Future.wait(_outputs.map((e) => e.init()));
-  }
-
-  @override
-  void output(OutputEvent event) {
-    for (var o in _outputs) {
-      o.output(event);
-    }
-  }
-
-  @override
-  Future<void> destroy() async {
-    await Future.wait(_outputs.map((e) => e.destroy()));
-  }
-}
-
-class StreamOutput extends LogOutput {
-  late StreamController<List<String>> _controller;
-  bool _shouldForward = false;
-
-  StreamOutput() {
-    _controller = StreamController<List<String>>(
-      onListen: () => _shouldForward = true,
-      onPause: () => _shouldForward = false,
-      onResume: () => _shouldForward = true,
-      onCancel: () => _shouldForward = false,
-    );
-  }
-
-  Stream<List<String>> get stream => _controller.stream;
-
-  @override
-  void output(OutputEvent event) {
-    if (!_shouldForward) {
-      return;
-    }
-
-    _controller.add(event.lines);
-  }
-
-  @override
-  Future<void> destroy() {
-    return _controller.close();
-  }
-}
-
-/// A decorator for a [LogPrinter] that allows for the composition of
-/// different printers to handle different log messages. Provide it's
-/// constructor with a base printer, but include named parameters for
-/// any levels that have a different printer:
-///
-/// ```
-/// HybridPrinter(PrettyPrinter(), debug: SimplePrinter());
-/// ```
-///
-/// Will use the pretty printer for all logs except Level.debug
-/// logs, which will use SimplePrinter().
-class HybridPrinter extends LogPrinter {
-  final Map<Level, LogPrinter> _printerMap;
-
-  HybridPrinter(
-    LogPrinter realPrinter, {
-    LogPrinter? trace,
-    LogPrinter? debug,
-    LogPrinter? info,
-    LogPrinter? error,
-  }) : _printerMap = {
-          Level.trace: trace ?? realPrinter,
-          Level.debug: debug ?? realPrinter,
-          Level.info: info ?? realPrinter,
-          Level.error: error ?? realPrinter,
-        };
-
-  @override
-  List<String> log(LogEvent event) =>
-      _printerMap[event.level]?.log(event) ?? [];
-}
-
-/// Outputs a logfmt message:
-/// ```
-/// level=debug msg="hi there" time="2015-03-26T01:27:38-04:00" animal=walrus number=8 tag=usum
-/// ```
-class LogfmtPrinter extends LogPrinter {
-  static final levelPrefixes = {
-    Level.trace: 'trace',
-    Level.debug: 'debug',
-    Level.info: 'info',
-    Level.error: 'error',
-  };
-
-  @override
-  List<String> log(LogEvent event) {
-    var output = StringBuffer('level=${levelPrefixes[event.level]}');
-    if (event.message is String) {
-      output.write(' msg="${event.message}"');
-    } else if (event.message is Map) {
-      event.message.entries.forEach((entry) {
-        if (entry.value is num) {
-          output.write(' ${entry.key}=${entry.value}');
-        } else {
-          output.write(' ${entry.key}="${entry.value}"');
-        }
-      });
-    }
-    if (event.error != null) {
-      output.write(' error="${event.error}"');
-    }
-
-    return [output.toString()];
-  }
-}
-
 /// A decorator for a [LogPrinter] that allows for the prepending of every
 /// line in the log output with a string for the level of that log. For
 /// example:
@@ -753,12 +447,14 @@ class PrefixPrinter extends LogPrinter {
     String? trace,
     String? debug,
     String? info,
+    String? db,
     String? error,
   }) {
     _prefixMap = {
       Level.trace: trace ?? 'TRACE',
       Level.debug: debug ?? 'DEBUG',
       Level.info: info ?? 'INFO',
+      Level.db: db ?? 'DB',
       Level.error: error ?? 'ERROR',
     };
 
@@ -802,6 +498,7 @@ class PrettyPrinter extends LogPrinter {
     Level.trace: const AnsiColor.fg(12),
     Level.debug: const AnsiColor.fg(12),
     Level.info: const AnsiColor.fg(12),
+    Level.db: const AnsiColor.fg(12),
     Level.error: const AnsiColor.fg(12),
   };
 
@@ -809,6 +506,7 @@ class PrettyPrinter extends LogPrinter {
     Level.trace: '',
     Level.debug: '🐛',
     Level.info: '💡',
+    Level.db: '🗄️',
     Level.error: '⛔',
   };
 
@@ -1017,12 +715,9 @@ class PrettyPrinter extends LogPrinter {
 
     var errorStr = event.error?.toString();
 
-    String? timeStr;
-
     return _formatAndPrint(
       event.level,
       messageStr,
-      timeStr,
       errorStr,
       stackTraceStr,
       event.customColor,
@@ -1104,10 +799,6 @@ class PrettyPrinter extends LogPrinter {
       return true;
     }
     return _isInExcludePaths(segment);
-  }
-
-  String getTime(DateTime time) {
-    return dateTimeFormat(time);
   }
 
   // Handles any object that is causing JsonEncoder() problems
@@ -1207,9 +898,9 @@ class PrettyPrinter extends LogPrinter {
     return '';
   }
 
-  List<String> _formatAndPrint(Level level, String message, String? time,
-      String? error, String? stacktrace,
-      [String? customColor]) {
+  List<String> _formatAndPrint(
+      Level level, String message, String? error, String? stacktrace,
+      [dynamic customColor]) {
     List<String> buffer = [];
     var verticalLineAtLevel = (_includeBox[level]!) ? ('$verticalLine ') : '';
     var color = _getLevelColor(level, customColor);
@@ -1229,11 +920,6 @@ class PrettyPrinter extends LogPrinter {
       if (_includeBox[level]!) buffer.add(color(_middleBorder));
     }
 
-    if (time != null) {
-      buffer.add(color('$verticalLineAtLevel$time'));
-      if (_includeBox[level]!) buffer.add(color(_middleBorder));
-    }
-
     var emoji = _getEmoji(level);
     for (var line in message.split('\n')) {
       buffer.add(color('$verticalLineAtLevel$emoji$line'));
@@ -1241,55 +927,5 @@ class PrettyPrinter extends LogPrinter {
     if (_includeBox[level]!) buffer.add(color(_bottomBorder));
 
     return buffer;
-  }
-}
-
-/// Outputs simple log messages:
-/// ```
-/// [E] Log message  ERROR: Error info
-/// ```
-class SimplePrinter extends LogPrinter {
-  static final levelPrefixes = {
-    Level.trace: '[T]',
-    Level.debug: '[D]',
-    Level.info: '[I]',
-    Level.error: '[E]',
-  };
-
-  static final levelColors = {
-    Level.trace: const AnsiColor.fg(12),
-    Level.debug: const AnsiColor.fg(12),
-    Level.info: const AnsiColor.fg(12),
-    Level.error: const AnsiColor.fg(12),
-  };
-
-  final bool printTime;
-  final bool colors;
-
-  SimplePrinter({this.printTime = false, this.colors = true});
-
-  @override
-  List<String> log(LogEvent event) {
-    var messageStr = _stringifyMessage(event.message);
-    var errorStr = event.error != null ? '  ERROR: ${event.error}' : '';
-    var timeStr = printTime ? 'TIME: ${event.time.toIso8601String()}' : '';
-    return ['${_labelFor(event.level)} $timeStr $messageStr$errorStr'];
-  }
-
-  String _labelFor(Level level) {
-    var prefix = levelPrefixes[level]!;
-    var color = levelColors[level]!;
-
-    return colors ? color(prefix) : prefix;
-  }
-
-  String _stringifyMessage(dynamic message) {
-    final finalMessage = message is Function ? message() : message;
-    if (finalMessage is Map || finalMessage is Iterable) {
-      var encoder = const JsonEncoder.withIndent(null);
-      return encoder.convert(finalMessage);
-    } else {
-      return finalMessage.toString();
-    }
   }
 }

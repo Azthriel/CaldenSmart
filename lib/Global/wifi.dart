@@ -23,9 +23,7 @@ class WifiPageState extends ConsumerState<WifiPage>
     with WidgetsBindingObserver {
   final Map<String, bool> _expandedStates = {};
   final Set<String> _processingGroups = {};
-  final Set<String> _processingCadenas = {};
   final Set<String> _processingRiegos = {};
-  StreamSubscription<String>? _cadenaCompletedSubscription;
   StreamSubscription<String>? _riegoCompletedSubscription;
 
   // Flags para control de riego
@@ -44,43 +42,38 @@ class WifiPageState extends ConsumerState<WifiPage>
       _buildDeviceListFromLoadedData();
     });
 
-    // Verificar el estado de las cadenas al inicializar
-    _checkCadenasStatus();
-
     // Verificar el estado de los riegos al inicializar
     _checkRiegosStatus();
-
-    // Escuchar notificaciones de cadenas completadas
-    _setupCadenaCompletedListener();
 
     // Escuchar notificaciones de riegos completados
     _setupRiegoCompletedListener();
 
     // Cargar permisos de WiFi
     _loadWifiPermissions();
+
+    // 🆕 Suscribirse a los topics de eventos MQTT
+    _subscribeToEventosTopics();
+  }
+
+  // 🆕 Suscribirse a los topics MQTT de los eventos del usuario
+  void _subscribeToEventosTopics() async {
+    try {
+      // 1. Primero cargar estados iniciales desde DynamoDB
+      await loadInitialEventosState(currentUserEmail, ref);
+      
+      // 2. Luego suscribirse a actualizaciones en tiempo real
+      subscribeToAllUserEventos(currentUserEmail, eventosCreados);
+      printLog.i('✅ Suscrito a todos los eventos del usuario');
+    } catch (e) {
+      printLog.e('Error suscribiéndose a eventos: $e');
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _cadenaCompletedSubscription?.cancel();
     _riegoCompletedSubscription?.cancel();
     super.dispose();
-  }
-
-  // Configurar listener para cadenas completadas en tiempo real
-  void _setupCadenaCompletedListener() {
-    _cadenaCompletedSubscription =
-        cadenaCompletedController.stream.listen((cadenaName) {
-      printLog.i(
-          'Recibida notificación de cadena completada en WiFi UI: $cadenaName');
-      if (mounted) {
-        setState(() {
-          _processingCadenas.remove(cadenaName);
-        });
-        showToast('🎉 ¡Cadena "$cadenaName" completada exitosamente!');
-      }
-    });
   }
 
   @override
@@ -88,20 +81,12 @@ class WifiPageState extends ConsumerState<WifiPage>
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
       // Verificar el estado cuando la app vuelve al foreground
-      _checkCadenasStatus();
       _checkRiegosStatus();
       _loadWifiPermissions(); // Recargar permisos de WiFi
+      
+      // Re-suscribirse a eventos por si se desconectó MQTT
+      _subscribeToEventosTopics();
     }
-  }
-
-  // Verificar el estado de las cadenas en SharedPreferences
-  Future<void> _checkCadenasStatus() async {
-    List<String> executingCadenas = await getExecutingCadenas(currentUserEmail);
-    setState(() {
-      _processingCadenas.clear();
-      _processingCadenas.addAll(executingCadenas);
-    });
-    printLog.i('Cadenas en ejecución recuperadas: $executingCadenas');
   }
 
   // Verificar el estado de los riegos en SharedPreferences
@@ -169,9 +154,11 @@ class WifiPageState extends ConsumerState<WifiPage>
 
       for (String device in previusConnections) {
         MapEntry<String, String> newEntry = MapEntry('individual', device);
-        bool exists = todosLosDispositivos
+        bool existsInTodos = todosLosDispositivos
             .any((e) => e.key == newEntry.key && e.value == newEntry.value);
-        if (!exists) {
+        bool existsInSavedOrder = savedOrder.any(
+            (item) => item['key'] == 'individual' && item['value'] == device);
+        if (!existsInTodos && !existsInSavedOrder) {
           nuevosDispositivos.add(newEntry);
         }
       }
@@ -220,6 +207,25 @@ class WifiPageState extends ConsumerState<WifiPage>
           }
         }
 
+        for (var existing in todosLosDispositivos) {
+          bool ya = listaOrdenada
+              .any((e) => e.key == existing.key && e.value == existing.value);
+          if (!ya) {
+            bool existeEnConexiones = false;
+            if (existing.key == 'individual') {
+              existeEnConexiones = previusConnections.contains(existing.value);
+            } else {
+              existeEnConexiones = eventosCreados.any((evento) =>
+                  evento['title'] == existing.key &&
+                  (evento['deviceGroup'] as List<dynamic>).join(',') ==
+                      existing.value);
+            }
+            if (existeEnConexiones) {
+              listaOrdenada.add(existing);
+            }
+          }
+        }
+
         for (var nuevoDispositivo in nuevosDispositivos) {
           bool yaEstaEnLista = listaOrdenada.any((e) =>
               e.key == nuevoDispositivo.key &&
@@ -233,8 +239,12 @@ class WifiPageState extends ConsumerState<WifiPage>
         todosLosDispositivos
           ..clear()
           ..addAll(listaOrdenada);
+
+        _saveOrder();
       } else {
         todosLosDispositivos.addAll(nuevosDispositivos);
+
+        _saveOrder();
       }
 
       printLog.i(
@@ -576,20 +586,11 @@ class WifiPageState extends ConsumerState<WifiPage>
 
   //*- Controlar la cadena -*\\
   void controlarCadena(String name) async {
-    // Verificar si la cadena ya está siendo procesada usando SharedPreferences
-    bool isAlreadyExecuting = await isCadenaExecuting(name, currentUserEmail);
-    if (isAlreadyExecuting) {
-      showToast(
-          '⏳ La cadena "$name" ya se está ejecutando, aguarde un momento...');
-      return;
-    }
-
-    // Agregar la cadena al Set de procesamiento y actualizar UI
-    setState(() {
-      _processingCadenas.add(name);
+    String bd = jsonEncode({
+      'nombreEvento': name,
+      'email': currentUserEmail,
+      'accion': 'start'
     });
-
-    String bd = jsonEncode({'nombreEvento': name, 'email': currentUserEmail});
 
     printLog.i('Controlling cadena with body: $bd', color: 'rosa');
 
@@ -604,55 +605,318 @@ class WifiPageState extends ConsumerState<WifiPage>
       if (response.statusCode == 200) {
         printLog.i('Cadena iniciada exitosamente');
         showToast('✅ Cadena "$name" iniciada exitosamente');
-
-        // Marcar la cadena como en ejecución en SharedPreferences
-        await setCadenaExecuting(name, currentUserEmail);
-
-        // Ya no usamos timer, la cadena se desmarcará cuando llegue la notificación
-        printLog
-            .i('Cadena "$name" marcada como en ejecución en SharedPreferences');
       } else if (response.statusCode == 404) {
         printLog.e('Cadena no encontrada: ${response.statusCode}');
         showToast(
             '🔍 No se encontró la cadena "$name". Verifica que existe y tienes permisos.');
-        // Remover inmediatamente si hay error
-        setState(() {
-          _processingCadenas.remove(name);
-        });
       } else if (response.statusCode == 400) {
         printLog.e('Error de validación: ${response.statusCode}');
         showToast(
             '🚫 Error en los datos de la cadena. Por favor intenta nuevamente.');
-        // Remover inmediatamente si hay error
-        setState(() {
-          _processingCadenas.remove(name);
-        });
       } else {
         printLog.e('Error al controlar la cadena: ${response.statusCode}');
         showToast('⚡ Error del servidor. Intenta nuevamente en unos momentos.');
-        // Remover inmediatamente si hay error
-        setState(() {
-          _processingCadenas.remove(name);
-        });
       }
     } catch (e) {
       printLog.e('Error de conexión al controlar la cadena: $e');
       showToast(
           '📶 Sin conexión a internet. Verifica tu red y vuelve a intentar.');
-      // Remover inmediatamente si hay error de conexión
-      setState(() {
-        _processingCadenas.remove(name);
-      });
     }
   }
   //*- Controlar la cadena -*\\
+
+  //*- Pausar cadena -*\\
+  void pausarCadena(String name) async {
+    String bd = jsonEncode({
+      'nombreEvento': name,
+      'email': currentUserEmail,
+      'accion': 'pause'
+    });
+
+    printLog.i('Pausando cadena with body: $bd', color: 'rosa');
+
+    try {
+      showToast('⏸️ Pausando cadena "$name"...');
+
+      final response = await http.post(
+        Uri.parse(controlCadenaAPI),
+        body: bd,
+      );
+
+      if (response.statusCode == 200) {
+        printLog.i('Cadena pausada exitosamente');
+        showToast('⏸️ Cadena "$name" pausada');
+      } else if (response.statusCode == 400) {
+        final responseData = jsonDecode(response.body);
+        printLog.e('Error pausando cadena: ${responseData['error']}');
+        showToast('⚠️ ${responseData['error'] ?? 'No se pudo pausar la cadena'}');
+      } else {
+        printLog.e('Error al pausar la cadena: ${response.statusCode}');
+        showToast('⚡ Error del servidor. Intenta nuevamente en unos momentos.');
+      }
+    } catch (e) {
+      printLog.e('Error de conexión al pausar la cadena: $e');
+      showToast(
+          '📶 Sin conexión a internet. Verifica tu red y vuelve a intentar.');
+    }
+  }
+  //*- Pausar cadena -*\\
+
+  //*- Reanudar cadena -*\\
+  void reanudarCadena(String name) async {
+    String bd = jsonEncode({
+      'nombreEvento': name,
+      'email': currentUserEmail,
+      'accion': 'resume'
+    });
+
+    printLog.i('Reanudando cadena with body: $bd', color: 'rosa');
+
+    try {
+      showToast('▶️ Reanudando cadena "$name"...');
+
+      final response = await http.post(
+        Uri.parse(controlCadenaAPI),
+        body: bd,
+      );
+
+      if (response.statusCode == 200) {
+        printLog.i('Cadena reanudada exitosamente');
+        showToast('▶️ Cadena "$name" reanudada');
+      } else if (response.statusCode == 400) {
+        final responseData = jsonDecode(response.body);
+        printLog.e('Error reanudando cadena: ${responseData['error']}');
+        showToast('⚠️ ${responseData['error'] ?? 'No se pudo reanudar la cadena'}');
+      } else {
+        printLog.e('Error al reanudar la cadena: ${response.statusCode}');
+        showToast('⚡ Error del servidor. Intenta nuevamente en unos momentos.');
+      }
+    } catch (e) {
+      printLog.e('Error de conexión al reanudar la cadena: $e');
+      showToast(
+          '📶 Sin conexión a internet. Verifica tu red y vuelve a intentar.');
+    }
+  }
+  //*- Reanudar cadena -*\\
+
+  //*- Cancelar cadena -*\\
+  void cancelarCadena(String name) async {
+    // Mostrar diálogo de confirmación
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: color1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.0),
+          side: const BorderSide(color: color4, width: 2.0),
+        ),
+        title: Text(
+          'Cancelar Cadena',
+          style: GoogleFonts.poppins(color: color0),
+        ),
+        content: Text(
+          '¿Estás seguro que deseas cancelar la ejecución de "$name"?\n\nEsta acción no se puede deshacer.',
+          style: GoogleFonts.poppins(color: color0),
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: Text(
+              'No',
+              style: GoogleFonts.poppins(color: color0),
+            ),
+            onPressed: () {
+              Navigator.of(context).pop(false);
+            },
+          ),
+          TextButton(
+            child: Text(
+              'Sí, Cancelar',
+              style: GoogleFonts.poppins(color: color4, fontWeight: FontWeight.bold),
+            ),
+            onPressed: () {
+              Navigator.of(context).pop(true);
+            },
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true) return;
+
+    String bd = jsonEncode({
+      'nombreEvento': name,
+      'email': currentUserEmail,
+      'accion': 'cancel'
+    });
+
+    printLog.i('Cancelando cadena with body: $bd', color: 'rosa');
+
+    try {
+      showToast('❌ Cancelando cadena "$name"...');
+
+      final response = await http.post(
+        Uri.parse(controlCadenaAPI),
+        body: bd,
+      );
+
+      if (response.statusCode == 200) {
+        printLog.i('Cadena cancelada exitosamente');
+        showToast('❌ Cadena "$name" cancelada');
+      } else if (response.statusCode == 400) {
+        final responseData = jsonDecode(response.body);
+        printLog.e('Error cancelando cadena: ${responseData['error']}');
+        showToast('⚠️ ${responseData['error'] ?? 'No se pudo cancelar la cadena'}');
+      } else {
+        printLog.e('Error al cancelar la cadena: ${response.statusCode}');
+        showToast('⚡ Error del servidor. Intenta nuevamente en unos momentos.');
+      }
+    } catch (e) {
+      printLog.e('Error de conexión al cancelar la cadena: $e');
+      showToast(
+          '📶 Sin conexión a internet. Verifica tu red y vuelve a intentar.');
+    }
+  }
+  //*- Cancelar cadena -*\\
+
+  //*- Pausar riego -*\\
+  void pausarRiego(String name) async {
+    try {
+      showToast('⏸️ Pausando riego "$name"...');
+
+      final response = await http.post(
+        Uri.parse(controlRiegoAPI),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'operation': 'pausar',
+          'email': currentUserEmail,
+          'nombreEvento': name,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        printLog.i('Riego pausado exitosamente');
+        showToast('⏸️ Riego "$name" pausado');
+      } else {
+        printLog.e('Error al pausar riego: ${response.statusCode}');
+        showToast('⚡ Error al pausar el riego. Intenta nuevamente.');
+      }
+    } catch (e) {
+      printLog.e('Error de conexión al pausar riego: $e');
+      showToast('📶 Sin conexión a internet. Verifica tu red y vuelve a intentar.');
+    }
+  }
+  //*- Pausar riego -*\\
+
+  //*- Reanudar riego -*\\
+  void reanudarRiego(String name) async {
+    try {
+      showToast('▶️ Reanudando riego "$name"...');
+
+      final response = await http.post(
+        Uri.parse(controlRiegoAPI),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'operation': 'reanudar',
+          'email': currentUserEmail,
+          'nombreEvento': name,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        printLog.i('Riego reanudado exitosamente');
+        showToast('▶️ Riego "$name" reanudado');
+      } else {
+        printLog.e('Error al reanudar riego: ${response.statusCode}');
+        showToast('⚡ Error al reanudar el riego. Intenta nuevamente.');
+      }
+    } catch (e) {
+      printLog.e('Error de conexión al reanudar riego: $e');
+      showToast('📶 Sin conexión a internet. Verifica tu red y vuelve a intentar.');
+    }
+  }
+  //*- Reanudar riego -*\\
+
+  //*- Cancelar riego -*\\
+  void cancelarRiego(String name) async {
+    // Mostrar diálogo de confirmación
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: color1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.0),
+          side: const BorderSide(color: color4, width: 2.0),
+        ),
+        title: Text(
+          'Cancelar Riego',
+          style: GoogleFonts.poppins(color: color0),
+        ),
+        content: Text(
+          '¿Estás seguro que deseas cancelar la ejecución de "$name"?\n\nEsta acción no se puede deshacer.',
+          style: GoogleFonts.poppins(color: color0),
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: Text(
+              'No',
+              style: GoogleFonts.poppins(color: color0),
+            ),
+            onPressed: () {
+              Navigator.of(context).pop(false);
+            },
+          ),
+          TextButton(
+            child: Text(
+              'Sí, Cancelar',
+              style: GoogleFonts.poppins(color: color4, fontWeight: FontWeight.bold),
+            ),
+            onPressed: () {
+              Navigator.of(context).pop(true);
+            },
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true) return;
+
+    try {
+      showToast('❌ Cancelando riego "$name"...');
+
+      final response = await http.post(
+        Uri.parse(controlRiegoAPI),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'operation': 'cancelar',
+          'email': currentUserEmail,
+          'nombreEvento': name,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        printLog.i('Riego cancelado exitosamente');
+        showToast('❌ Riego "$name" cancelado');
+      } else {
+        printLog.e('Error al cancelar riego: ${response.statusCode}');
+        showToast('⚡ Error al cancelar el riego. Intenta nuevamente.');
+      }
+    } catch (e) {
+      printLog.e('Error de conexión al cancelar riego: $e');
+      showToast('📶 Sin conexión a internet. Verifica tu red y vuelve a intentar.');
+    }
+  }
+  //*- Cancelar riego -*\\
 
   //*- Guardar orden de equipos -*\\
   Future<void> _saveOrder() async {
     List<Map<String, String>> orderedDevices = todosLosDispositivos
         .map((e) => {'key': e.key, 'value': e.value})
         .toList();
+
     await saveWifiOrderDevices(orderedDevices, currentUserEmail);
+    savedOrder
+      ..clear()
+      ..addAll(orderedDevices);
   }
   //*- Guardar orden de equipos -*\\
 
@@ -816,8 +1080,14 @@ class WifiPageState extends ConsumerState<WifiPage>
           child: TabBarView(
             physics: const NeverScrollableScrollPhysics(),
             children: [
-              _buildDeviceList(dispositiosIndividuales, 'individual',
-                  shrinkWrap: false),
+              SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildDeviceList(dispositiosIndividuales, 'individual',
+                        shrinkWrap: true),
+                  ],
+                ),
+              ),
               SingleChildScrollView(
                 child: Column(
                   children: [
@@ -945,6 +1215,7 @@ class WifiPageState extends ConsumerState<WifiPage>
 
     return ReorderableListView.builder(
       shrinkWrap: shrinkWrap,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: deviceList.length,
       footer: SizedBox(height: shrinkWrap ? 10 : 120),
       onReorder: (int oldIndex, int newIndex) async {
@@ -4309,63 +4580,216 @@ class WifiPageState extends ConsumerState<WifiPage>
                               ),
                               const SizedBox(height: 12),
                             ],
-                            // Botón para activar la cadena
-                            Center(
-                              child: ElevatedButton.icon(
-                                onPressed: (cadenaOnline &&
-                                        !_processingCadenas.contains(grupo))
-                                    ? () => controlarCadena(grupo)
-                                    : null,
-                                icon: _processingCadenas.contains(grupo)
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                  color0),
+
+                            // 🆕 BARRA DE PROGRESO Y ESTADO
+                            Consumer(
+                              builder: (context, ref, child) {
+                                final eventoEstado = ref.watch(eventosEstadoProvider)['ControlPorCadena/$grupo'];
+
+                                if (eventoEstado != null && (eventoEstado.isRunning || eventoEstado.isPaused)) {
+                                  return Column(
+                                    children: [
+                                      // Barra de progreso
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: Colors.blue.withValues(alpha: 0.3),
+                                            width: 1,
+                                          ),
                                         ),
-                                      )
-                                    : Icon(
-                                        HugeIcons.strokeRoundedPlay,
-                                        color:
-                                            cadenaOnline ? color0 : Colors.grey,
-                                        size: 20,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  eventoEstado.isPaused
+                                                      ? Icons.pause_circle
+                                                      : Icons.play_circle,
+                                                  color: eventoEstado.isPaused
+                                                      ? Colors.orange
+                                                      : Colors.blue,
+                                                  size: 20,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    eventoEstado.mensaje.isNotEmpty
+                                                        ? eventoEstado.mensaje
+                                                        : eventoEstado.isPaused
+                                                            ? 'Pausado'
+                                                            : 'En ejecución',
+                                                    style: GoogleFonts.poppins(
+                                                      color: color0,
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Text(
+                                                  '${eventoEstado.progresoPortentaje.toStringAsFixed(0)}%',
+                                                  style: GoogleFonts.poppins(
+                                                    color: Colors.blue,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(4),
+                                              child: LinearProgressIndicator(
+                                                value: eventoEstado.progresoDecimal,
+                                                minHeight: 8,
+                                                backgroundColor: Colors.grey.withValues(alpha: 0.3),
+                                                valueColor: AlwaysStoppedAnimation<Color>(
+                                                  eventoEstado.isPaused ? Colors.orange : Colors.blue,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              'Paso ${eventoEstado.pasoActual} de ${eventoEstado.totalPasos}',
+                                              style: GoogleFonts.poppins(
+                                                color: color0.withValues(alpha: 0.7),
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                label: Text(
-                                  _processingCadenas.contains(grupo)
-                                      ? 'Ejecutando Cadena...'
-                                      : 'Activar Cadena',
-                                  style: GoogleFonts.poppins(
-                                    color: (cadenaOnline ||
-                                            _processingCadenas.contains(grupo))
-                                        ? color0
-                                        : Colors.grey,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: (cadenaOnline ||
-                                          _processingCadenas.contains(grupo))
-                                      ? color4
-                                      : Colors.grey.withValues(alpha: 0.3),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                    vertical: 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  elevation: (cadenaOnline ||
-                                          _processingCadenas.contains(grupo))
-                                      ? 3
-                                      : 0,
-                                ),
-                              ),
+                                      const SizedBox(height: 12),
+                                      // Botones de control
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          if (eventoEstado.isRunning) ...[
+                                            ElevatedButton.icon(
+                                              onPressed: () => pausarCadena(grupo),
+                                              icon: const Icon(Icons.pause, size: 18),
+                                              label: Text(
+                                                'Pausar',
+                                                style: GoogleFonts.poppins(fontSize: 13),
+                                              ),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.orange,
+                                                foregroundColor: color0,
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 8,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                          ],
+                                          if (eventoEstado.isPaused) ...[
+                                            ElevatedButton.icon(
+                                              onPressed: () => reanudarCadena(grupo),
+                                              icon: const Icon(Icons.play_arrow, size: 18),
+                                              label: Text(
+                                                'Reanudar',
+                                                style: GoogleFonts.poppins(fontSize: 13),
+                                              ),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.green,
+                                                foregroundColor: color0,
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 8,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                          ],
+                                          ElevatedButton.icon(
+                                            onPressed: () => cancelarCadena(grupo),
+                                            icon: const Icon(Icons.cancel, size: 18),
+                                            label: Text(
+                                              'Cancelar',
+                                              style: GoogleFonts.poppins(fontSize: 13),
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                              foregroundColor: color0,
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 8,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                    ],
+                                  );
+                                }
+
+                                // Mostrar botón de iniciar solo si no está en ejecución
+                                final bool isExecuting = eventoEstado != null && eventoEstado.isRunning;
+
+                                return Column(
+                                  children: [
+                                    Center(
+                                      child: ElevatedButton.icon(
+                                        onPressed: (cadenaOnline && !isExecuting)
+                                            ? () => controlarCadena(grupo)
+                                            : null,
+                                        icon: isExecuting
+                                            ? const SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  valueColor:
+                                                      AlwaysStoppedAnimation<Color>(
+                                                          color0),
+                                                ),
+                                              )
+                                            : Icon(
+                                                HugeIcons.strokeRoundedPlay,
+                                                color:
+                                                    cadenaOnline ? color0 : Colors.grey,
+                                                size: 20,
+                                              ),
+                                        label: Text(
+                                          isExecuting
+                                              ? 'Ejecutando Cadena...'
+                                              : 'Activar Cadena',
+                                          style: GoogleFonts.poppins(
+                                            color: (cadenaOnline || isExecuting)
+                                                ? color0
+                                                : Colors.grey,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: (cadenaOnline || isExecuting)
+                                              ? color4
+                                              : Colors.grey.withValues(alpha: 0.3),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 24,
+                                            vertical: 12,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          elevation: (cadenaOnline || isExecuting)
+                                              ? 3
+                                              : 0,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+                                );
+                              },
                             ),
-                            const SizedBox(height: 16),
                             Text(
                               'Pasos de la cadena:',
                               style: GoogleFonts.poppins(
@@ -4617,6 +5041,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             todosLosDispositivos.removeWhere(
                                                 (entry) => entry.key == grupo);
                                           });
+                                          _saveOrder();
                                           Navigator.of(context).pop();
                                         },
                                       ),
@@ -4767,63 +5192,216 @@ class WifiPageState extends ConsumerState<WifiPage>
                               ),
                               const SizedBox(height: 12),
                             ],
-                            // Botón para activar la rutina de riego
-                            Center(
-                              child: ElevatedButton.icon(
-                                onPressed: (riegoOnline &&
-                                        !_processingRiegos.contains(grupo))
-                                    ? () => activarRutinaRiego(eventoRiego)
-                                    : null,
-                                icon: _processingRiegos.contains(grupo)
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                  color0),
+
+                            // 🆕 BARRA DE PROGRESO Y ESTADO
+                            Consumer(
+                              builder: (context, ref, child) {
+                                final eventoEstado = ref.watch(eventosEstadoProvider)['ControlPorRiego/$grupo'];
+
+                                if (eventoEstado != null && (eventoEstado.isRunning || eventoEstado.isPaused)) {
+                                  return Column(
+                                    children: [
+                                      // Barra de progreso
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: Colors.green.withValues(alpha: 0.3),
+                                            width: 1,
+                                          ),
                                         ),
-                                      )
-                                    : Icon(
-                                        HugeIcons.strokeRoundedPlay,
-                                        color:
-                                            riegoOnline ? color0 : Colors.grey,
-                                        size: 20,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  eventoEstado.isPaused
+                                                      ? Icons.pause_circle
+                                                      : Icons.water_drop,
+                                                  color: eventoEstado.isPaused
+                                                      ? Colors.orange
+                                                      : Colors.green,
+                                                  size: 20,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    eventoEstado.mensaje.isNotEmpty
+                                                        ? eventoEstado.mensaje
+                                                        : eventoEstado.isPaused
+                                                            ? 'Pausado'
+                                                            : 'Regando...',
+                                                    style: GoogleFonts.poppins(
+                                                      color: color0,
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Text(
+                                                  '${eventoEstado.progresoPortentaje.toStringAsFixed(0)}%',
+                                                  style: GoogleFonts.poppins(
+                                                    color: Colors.green,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(4),
+                                              child: LinearProgressIndicator(
+                                                value: eventoEstado.progresoDecimal,
+                                                minHeight: 8,
+                                                backgroundColor: Colors.grey.withValues(alpha: 0.3),
+                                                valueColor: AlwaysStoppedAnimation<Color>(
+                                                  eventoEstado.isPaused ? Colors.orange : Colors.green,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              'Zona ${eventoEstado.pasoActual} de ${eventoEstado.totalPasos}',
+                                              style: GoogleFonts.poppins(
+                                                color: color0.withValues(alpha: 0.7),
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                label: Text(
-                                  _processingRiegos.contains(grupo)
-                                      ? 'Ejecutando Rutina...'
-                                      : 'Activar Rutina de Riego',
-                                  style: GoogleFonts.poppins(
-                                    color: (riegoOnline ||
-                                            _processingRiegos.contains(grupo))
-                                        ? color0
-                                        : Colors.grey,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: (riegoOnline ||
-                                          _processingRiegos.contains(grupo))
-                                      ? color4
-                                      : Colors.grey.withValues(alpha: 0.3),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                    vertical: 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  elevation: (riegoOnline ||
-                                          _processingRiegos.contains(grupo))
-                                      ? 3
-                                      : 0,
-                                ),
-                              ),
+                                      const SizedBox(height: 12),
+                                      // Botones de control
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          if (eventoEstado.isRunning) ...[
+                                            ElevatedButton.icon(
+                                              onPressed: () => pausarRiego(grupo),
+                                              icon: const Icon(Icons.pause, size: 18),
+                                              label: Text(
+                                                'Pausar',
+                                                style: GoogleFonts.poppins(fontSize: 13),
+                                              ),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.orange,
+                                                foregroundColor: color0,
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 8,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                          ],
+                                          if (eventoEstado.isPaused) ...[
+                                            ElevatedButton.icon(
+                                              onPressed: () => reanudarRiego(grupo),
+                                              icon: const Icon(Icons.play_arrow, size: 18),
+                                              label: Text(
+                                                'Reanudar',
+                                                style: GoogleFonts.poppins(fontSize: 13),
+                                              ),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.green,
+                                                foregroundColor: color0,
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 8,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                          ],
+                                          ElevatedButton.icon(
+                                            onPressed: () => cancelarRiego(grupo),
+                                            icon: const Icon(Icons.cancel, size: 18),
+                                            label: Text(
+                                              'Cancelar',
+                                              style: GoogleFonts.poppins(fontSize: 13),
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                              foregroundColor: color0,
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 8,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                    ],
+                                  );
+                                }
+
+                                // Mostrar botón de iniciar solo si no está en ejecución
+                                final bool isExecuting = eventoEstado != null && eventoEstado.isRunning;
+
+                                return Column(
+                                  children: [
+                                    Center(
+                                      child: ElevatedButton.icon(
+                                        onPressed: (riegoOnline && !isExecuting)
+                                            ? () => activarRutinaRiego(eventoRiego)
+                                            : null,
+                                        icon: isExecuting
+                                            ? const SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  valueColor:
+                                                      AlwaysStoppedAnimation<Color>(
+                                                          color0),
+                                                ),
+                                              )
+                                            : Icon(
+                                                HugeIcons.strokeRoundedPlay,
+                                                color:
+                                                    riegoOnline ? color0 : Colors.grey,
+                                                size: 20,
+                                              ),
+                                        label: Text(
+                                          isExecuting
+                                              ? 'Ejecutando Rutina...'
+                                              : 'Activar Rutina de Riego',
+                                          style: GoogleFonts.poppins(
+                                            color: (riegoOnline || isExecuting)
+                                                ? color0
+                                                : Colors.grey,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: (riegoOnline || isExecuting)
+                                              ? color4
+                                              : Colors.grey.withValues(alpha: 0.3),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 24,
+                                            vertical: 12,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          elevation: (riegoOnline || isExecuting)
+                                              ? 3
+                                              : 0,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+                                );
+                              },
                             ),
-                            const SizedBox(height: 16),
                             Text(
                               'Zonas de riego:',
                               style: GoogleFonts.poppins(
@@ -5353,6 +5931,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             todosLosDispositivos.removeWhere(
                                                 (entry) => entry.key == grupo);
                                           });
+                                          _saveOrder();
                                           Navigator.of(context).pop();
                                         },
                                       ),
@@ -5911,6 +6490,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                   (entry) =>
                                                       entry.key == grupo);
                                             });
+                                            _saveOrder();
                                             Navigator.of(context).pop();
                                           },
                                         ),
@@ -6311,6 +6891,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             todosLosDispositivos.removeWhere(
                                                 (entry) => entry.key == grupo);
                                           });
+                                          _saveOrder();
                                           Navigator.of(context).pop();
                                         },
                                       ),
@@ -6646,6 +7227,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           todosLosDispositivos.removeWhere(
                                               (entry) => entry.key == grupo);
                                         });
+                                        _saveOrder();
                                         Navigator.of(context).pop();
                                       },
                                     ),
@@ -6801,26 +7383,35 @@ class WifiPageState extends ConsumerState<WifiPage>
           children: <Widget>[
             if (online) ...[
               // Mostrar salidas del equipo principal (solo salidas, no entradas)
-              ...((deviceDATA.keys
+              ...(deviceDATA.keys
                       .where((key) =>
                           key.startsWith('io') &&
                           RegExp(r'^io\d+$').hasMatch(key))
                       .where((ioKey) {
-                if (deviceDATA[ioKey] == null) return false;
-                try {
-                  var ioData = jsonDecode(deviceDATA[ioKey]);
-                  return ioData['pinType'] == '0';
-                } catch (e) {
-                  return false;
-                }
-              }).toList()
+                        if (deviceDATA[ioKey] == null) return false;
+                        try {
+                          var ioData = deviceDATA[ioKey] is String
+                              ? jsonDecode(deviceDATA[ioKey])
+                              : deviceDATA[ioKey];
+                          // pinType puede ser '0', 0, "0"
+                          var pinTypeStr = ioData['pinType'].toString();
+                          bool isOutput = pinTypeStr == '0';
+                          printLog.i(
+                              'Riego $deviceName - $ioKey: pinType=$pinTypeStr, isOutput=$isOutput');
+                          return isOutput;
+                        } catch (e) {
+                          printLog.e('Error parseando $ioKey: $e');
+                          return false;
+                        }
+                      })
+                      .toList()
                     ..sort((a, b) {
                       int indexA = int.parse(a.substring(2));
                       int indexB = int.parse(b.substring(2));
                       return indexA.compareTo(indexB);
                     }))
                   .map((ioKey) => _buildRiegoOutput(deviceName, productCode,
-                      serialNumber, ioKey, deviceDATA, owner))),
+                      serialNumber, ioKey, deviceDATA, owner)),
 
               // Mostrar extensiones si las hay
               if (extensionesVinculadas.isNotEmpty) ...[
@@ -7083,6 +7674,7 @@ class WifiPageState extends ConsumerState<WifiPage>
           }
         } catch (e) {
           // Error handling
+          printLog.e('Error al decodificar $key: $e');
         }
       }
     });
@@ -7116,6 +7708,7 @@ class WifiPageState extends ConsumerState<WifiPage>
             }
           } catch (e) {
             // Error handling
+            printLog.e('Error al decodificar $key: $e');
           }
         }
       });
@@ -7136,6 +7729,7 @@ class WifiPageState extends ConsumerState<WifiPage>
           }
         } catch (e) {
           // Error handling
+          printLog.e('Error al decodificar $key: $e');
         }
       }
     });
@@ -7239,35 +7833,103 @@ class WifiPageState extends ConsumerState<WifiPage>
             }
           } catch (e) {
             // Error handling
+            printLog.e('Error al decodificar datos de la bomba: $e');
           }
         }
         return;
       } else {
-        // APAGAR: verificar si es la última activa (incluyendo extensiones)
-        int activeZones = _countActiveZonesForDevice(productCode, serialNumber);
-        int activeExtensionZones =
-            _countActiveZonesForAllExtensions(deviceName);
-        int totalActiveZones = activeZones + activeExtensionZones;
+        // APAGAR ZONA: Verificar DIRECTAMENTE el estado de las zonas
+        // Contar zonas activas en tiempo real (excluyendo la que vamos a apagar)
+        Map<String, dynamic> currentDeviceData =
+            globalDATA['$productCode/$serialNumber'] ?? {};
+        
+        int activeZonesCount = 0;
+        
+        // Verificar zonas del dispositivo principal (excluyendo io0 que es la bomba)
+        currentDeviceData.forEach((key, value) {
+          if (key.startsWith('io') && key != 'io0' && value is String) {
+            try {
+              var decoded = jsonDecode(value);
+              int ioIndex = int.parse(key.substring(2));
+              // Contar solo si: es salida, está encendida, y NO es la que vamos a apagar
+              if (decoded['pinType'].toString() == '0' && 
+                  decoded['w_status'] == true && 
+                  ioIndex != outputIndex) {
+                activeZonesCount++;
+              }
+            } catch (e) {
+              printLog.e('Error verificando $key: $e');
+            }
+          }
+        });
+        
+        // Verificar zonas de extensiones vinculadas
+        globalDATA.forEach((key, value) {
+          if (value['riegoMaster'] == deviceName) {
+            // Esta es una extensión vinculada
+            value.forEach((ioKey, ioValue) {
+              if (ioKey.startsWith('io') && ioValue is String) {
+                try {
+                  var decoded = jsonDecode(ioValue);
+                  // Contar zonas activas de extensiones
+                  if (decoded['pinType'].toString() == '0' && 
+                      decoded['w_status'] == true) {
+                    activeZonesCount++;
+                  }
+                } catch (e) {
+                  printLog.e('Error verificando extensión $ioKey: $e');
+                }
+              }
+            });
+          }
+        });
+        
+        printLog.i('🔍 Verificación antes de apagar zona $outputIndex:');
+        printLog.i('   - Zonas activas (excluyendo la actual): $activeZonesCount');
+        
+        // Verificar si la bomba está encendida
+        bool bombIsOn = false;
+        if (currentDeviceData['io0'] != null) {
+          try {
+            var bombData = jsonDecode(currentDeviceData['io0']);
+            bombIsOn = bombData['w_status'] ?? false;
+          } catch (e) {
+            printLog.e('Error verificando bomba: $e');
+          }
+        }
+        
+        printLog.i('   - Bomba encendida: $bombIsOn');
 
-        if (totalActiveZones == 1) {
+        if (activeZonesCount == 0 && bombIsOn) {
+          // Esta es la última zona activa Y la bomba está encendida
+          // APAGAR BOMBA PRIMERO
+          printLog.i('⚠️ Última zona activa - Apagando bomba primero');
+          
           setState(() {
             _isPumpShuttingDown = true;
           });
 
-          // Esta es la última zona activa - bomba primero, luego zona
+          // 1. Apagar bomba primero
           _sendRiegoCommand(productCode, serialNumber, 0, false);
 
-          // Delay de 1 segundo antes de apagar zona
+          // 2. Esperar 1 segundo
           Future.delayed(const Duration(seconds: 1), () {
             if (mounted) {
+              // 3. Apagar zona
               _sendRiegoCommand(productCode, serialNumber, outputIndex, value);
               setState(() {
                 _isPumpShuttingDown = false;
               });
+              printLog.i('✅ Secuencia completada: Bomba → Zona $outputIndex');
             }
           });
           return;
         }
+        
+        // Si no es la última o la bomba ya está apagada, apagar normalmente
+        printLog.i('➡️ Apagando zona $outputIndex normalmente');
+        _sendRiegoCommand(productCode, serialNumber, outputIndex, value);
+        return;
       }
     }
 
@@ -7327,33 +7989,103 @@ class WifiPageState extends ConsumerState<WifiPage>
             }
           } catch (e) {
             // Error handling
+            printLog.e('Error al decodificar datos de la bomba: $e');
           }
         }
         return;
       } else {
-        // APAGAR: verificar si es la última zona activa
-        int totalActiveZones = _countActiveZonesForDevice(masterPc, masterSn) +
-            _countActiveZonesForAllExtensions(masterDevice);
+        // APAGAR ZONA DE EXTENSIÓN: Verificar DIRECTAMENTE el estado de todas las zonas
+        Map<String, dynamic> masterData = globalDATA['$masterPc/$masterSn'] ?? {};
+        
+        int activeZonesCount = 0;
+        
+        // Verificar zonas del maestro (excluyendo io0 que es la bomba)
+        masterData.forEach((key, value) {
+          if (key.startsWith('io') && key != 'io0' && value is String) {
+            try {
+              var decoded = jsonDecode(value);
+              // Contar solo salidas activas
+              if (decoded['pinType'].toString() == '0' && 
+                  decoded['w_status'] == true) {
+                activeZonesCount++;
+              }
+            } catch (e) {
+              printLog.e('Error verificando maestro $key: $e');
+            }
+          }
+        });
+        
+        // Verificar zonas de TODAS las extensiones (incluyendo esta)
+        globalDATA.forEach((key, value) {
+          if (value['riegoMaster'] == masterDevice) {
+            value.forEach((ioKey, ioValue) {
+              if (ioKey.startsWith('io') && ioValue is String) {
+                try {
+                  var decoded = jsonDecode(ioValue);
+                  // Obtener el índice de la salida
+                  int ioIndex = int.parse(ioKey.substring(2));
+                  bool isCurrentOutput = (key == '$extensionPc/$extensionSn' && ioIndex == outputIndex);
+                  
+                  // Contar solo si: es salida, está encendida, y NO es la que vamos a apagar
+                  if (decoded['pinType'].toString() == '0' && 
+                      decoded['w_status'] == true && 
+                      !isCurrentOutput) {
+                    activeZonesCount++;
+                  }
+                } catch (e) {
+                  printLog.e('Error verificando extensión $ioKey: $e');
+                }
+              }
+            });
+          }
+        });
+        
+        printLog.i('🔍 Verificación antes de apagar extensión $extension zona $outputIndex:');
+        printLog.i('   - Zonas activas (excluyendo la actual): $activeZonesCount');
+        
+        // Verificar si la bomba del maestro está encendida
+        bool bombIsOn = false;
+        if (masterData['io0'] != null) {
+          try {
+            var bombData = jsonDecode(masterData['io0']);
+            bombIsOn = bombData['w_status'] ?? false;
+          } catch (e) {
+            printLog.e('Error verificando bomba maestro: $e');
+          }
+        }
+        
+        printLog.i('   - Bomba maestro encendida: $bombIsOn');
 
-        if (totalActiveZones == 1) {
+        if (activeZonesCount == 0 && bombIsOn) {
+          // Esta es la última zona activa Y la bomba está encendida
+          // APAGAR BOMBA DEL MAESTRO PRIMERO
+          printLog.i('⚠️ Última zona de extensión activa - Apagando bomba maestro primero');
+          
           setState(() {
             _isPumpShuttingDown = true;
           });
 
-          // Última zona activa - bomba primero, luego extensión
+          // 1. Apagar bomba del maestro primero
           _sendRiegoCommand(masterPc, masterSn, 0, false);
 
-          // Delay de 1 segundo antes de apagar extensión
+          // 2. Esperar 1 segundo
           Future.delayed(const Duration(seconds: 1), () {
             if (mounted) {
+              // 3. Apagar zona de extensión
               _sendRiegoCommand(extensionPc, extensionSn, outputIndex, value);
               setState(() {
                 _isPumpShuttingDown = false;
               });
+              printLog.i('✅ Secuencia completada: Bomba maestro → Extensión $extension zona $outputIndex');
             }
           });
           return;
         }
+        
+        // Si no es la última o la bomba ya está apagada, apagar normalmente
+        printLog.i('➡️ Apagando zona $outputIndex de extensión normalmente');
+        _sendRiegoCommand(extensionPc, extensionSn, outputIndex, value);
+        return;
       }
     }
 
@@ -7406,6 +8138,7 @@ class WifiPageState extends ConsumerState<WifiPage>
           }
         } catch (e) {
           // Error handling
+          printLog.e('Error al decodificar $key: $e');
         }
       }
     });
@@ -7430,6 +8163,7 @@ class WifiPageState extends ConsumerState<WifiPage>
               }
             } catch (e) {
               // Error handling
+              printLog.e('Error al decodificar $ioKey: $e');
             }
           }
         });

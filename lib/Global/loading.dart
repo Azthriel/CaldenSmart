@@ -102,6 +102,8 @@ class LoadState extends State<LoadingPage> {
       printLog.i('Valores tools: $toolsValues');
       printLog.i('Valores info: $infoValues');
 
+      await queryItems(pc, sn);
+
       // Usar la función segura para agregar dispositivos
       String result = await safeAddDevice(currentUserEmail, deviceName);
 
@@ -131,8 +133,6 @@ class LoadState extends State<LoadingPage> {
       String ubi = (await Geolocator.getCurrentPosition()).toString();
 
       await saveLocation(pc, sn, ubi);
-
-      await queryItems(pc, sn);
 
       if (softwareVersion != globalDATA['$pc/$sn']?['SoftwareVersion'] ||
           hardwareVersion != globalDATA['$pc/$sn']?['HardwareVersion']) {
@@ -195,6 +195,9 @@ class LoadState extends State<LoadingPage> {
         lastSV = null;
         shouldUpdateDevice = false;
       }
+
+      analizePayment(pc, sn);
+
       switch (pc) {
         case '022000_IOT' || '027000_IOT' || '027345_IOT':
           varsValues = await bluetoothManager.varsUuid.read();
@@ -245,8 +248,6 @@ class LoadState extends State<LoadingPage> {
           } else {
             deviceOwner = true;
           }
-
-          await analizePayment(pc, sn);
 
           if (payAT) {
             activatedAT = globalDATA['$pc/$sn']?['AT'] ?? false;
@@ -321,8 +322,6 @@ class LoadState extends State<LoadingPage> {
             deviceOwner = true;
           }
 
-          await analizePayment(pc, sn);
-
           if (payAT) {
             activatedAT = globalDATA['$pc/$sn']?['AT'] ?? false;
             tenant = globalDATA['$pc/$sn']?['tenant'] == currentUserEmail;
@@ -366,11 +365,6 @@ class LoadState extends State<LoadingPage> {
           } else {
             deviceOwner = true;
           }
-
-          await analizePayment(
-            pc,
-            sn,
-          );
 
           if (payAT) {
             activatedAT = globalDATA['$pc/$sn']?['AT'] ?? false;
@@ -428,11 +422,6 @@ class LoadState extends State<LoadingPage> {
             deviceOwner = true;
           }
 
-          await analizePayment(
-            pc,
-            sn,
-          );
-
           if (payAT) {
             activatedAT = globalDATA['$pc/$sn']?['AT'] ?? false;
             tenant = globalDATA['$pc/$sn']?['tenant'] == currentUserEmail;
@@ -469,11 +458,6 @@ class LoadState extends State<LoadingPage> {
           } else {
             deviceOwner = true;
           }
-
-          await analizePayment(
-            pc,
-            sn,
-          );
 
           if (payAT) {
             activatedAT = globalDATA['$pc/$sn']?['AT'] ?? false;
@@ -517,11 +501,6 @@ class LoadState extends State<LoadingPage> {
           } else {
             deviceOwner = true;
           }
-
-          await analizePayment(
-            pc,
-            sn,
-          );
 
           if (payAT) {
             activatedAT = globalDATA['$pc/$sn']?['AT'] ?? false;

@@ -48,7 +48,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
 
-   void initItems() {
+  void initItems() {
     items.addAll({
       TutorialItem(
         globalKey: keys['rele:estado']!,
@@ -328,7 +328,6 @@ class RelayPageState extends ConsumerState<RelayPage> {
     });
   }
 
-
   ///*- Elementos para tutoriales -*\\\
 
   @override
@@ -421,7 +420,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
-      printLog.i('sis $isWifiConnected');
+      // printlog.i('sis $isWifiConnected');
       errorMessage = '';
       errorSintax = '';
       werror = false;
@@ -434,7 +433,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
           'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
-      printLog.i('non $isWifiConnected');
+      // printlog.i('non $isWifiConnected');
 
       nameOfWifi = '';
       wifiNotifier.updateStatus(
@@ -513,7 +512,8 @@ class RelayPageState extends ConsumerState<RelayPage> {
       // Registrar uso si es administrador secundario
       await registerAdminUsage(deviceName, on ? 'Encendió relé' : 'Apagó relé');
     } catch (e, s) {
-      printLog.i('Error al enviar valor a firebase $e $s');
+      printLog
+          .e('Error al enviar ${on ? 'Encender relé' : 'Apagar relé'} $e $s');
     }
   }
 
@@ -539,7 +539,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
         }
       } catch (e) {
         showToast('Error al iniciar control por distancia.');
-        printLog.i('Error al setear la ubicación $e');
+        printLog.e('Error al setear la ubicación $e');
       }
     } else {
       // Cancelar la tarea.
@@ -601,8 +601,8 @@ class RelayPageState extends ConsumerState<RelayPage> {
                   completer.complete();
                   Navigator.of(navigatorKey.currentContext ?? context).pop();
                 } catch (e, s) {
-                  printLog.i(e);
-                  printLog.i(s);
+                  printLog.e(e);
+                  printLog.t(s);
                   completer.completeError(
                       e); // Completa con error si ocurre una excepción
                 }
@@ -624,8 +624,8 @@ class RelayPageState extends ConsumerState<RelayPage> {
         return false;
       }
     } catch (e, s) {
-      printLog.i('Error al habilitar la ubicación: $e');
-      printLog.i(s);
+      printLog.e('Error al habilitar la ubicación: $e');
+      printLog.t(s);
       return false;
     }
   }

@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:caldensmart/logger.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:flutter/material.dart';
 
 typedef VoidAsync = Future<void> Function();
 
@@ -57,7 +57,7 @@ class BluetoothWatcher {
     try {
       await _channel.invokeMethod('openBluetoothSettings');
     } on PlatformException catch (e) {
-      debugPrint('No se pudo abrir ajustes: ${e.code} ${e.message}');
+      printLog.e('No se pudo abrir ajustes: ${e.code} ${e.message}');
     }
   }
 }

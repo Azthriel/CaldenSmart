@@ -122,7 +122,7 @@ class ScanPageState extends State<ScanPage>
           },
         );
       } catch (e, stackTrace) {
-        printLog.i('Error al escanear $e $stackTrace');
+        printLog.e('Error al escanear $e $stackTrace');
         showToast('Error al escanear, intentelo nuevamente');
       }
     }
@@ -248,7 +248,7 @@ class ScanPageState extends State<ScanPage>
       device.cancelWhenDisconnected(conenctionSub, delayed: true);
     } catch (e, stackTrace) {
       if (connectionTry < 3) {
-        printLog.i('Retry');
+        printLog.e('Retry');
         connectionTry++;
         connectToDevice(device);
       } else {
@@ -362,7 +362,7 @@ class ScanPageState extends State<ScanPage>
 
       showToast('Comando enviado correctamente');
     } catch (e) {
-      printLog.i("Error en acción rápida: $e");
+      printLog.e("Error en acción rápida: $e");
 
       setState(() {
         quickAction = false;
@@ -442,7 +442,7 @@ class ScanPageState extends State<ScanPage>
               sendMessagemqtt(topic, message);
               sendMessagemqtt(topic2, message);
             } catch (e, s) {
-              printLog.i('Error al enviar valor en cdBLE $e $s');
+              printLog.e('Error al enviar valor en cdBLE $e $s');
             }
           }
           await bluetoothManager.device.disconnect();
@@ -966,7 +966,7 @@ class ScanPageState extends State<ScanPage>
                       );
                     } catch (e, s) {
                       printLog.e('Error al construir el dispositivo: $e');
-                      printLog.e('Stack trace: $s');
+                      printLog.t('Stack trace: $s');
                       return const SizedBox.shrink();
                     }
                   },
@@ -975,7 +975,7 @@ class ScanPageState extends State<ScanPage>
       );
     } catch (e, s) {
       printLog.e('Error en ScanPage: $e');
-      printLog.e('Stack trace: $s');
+      printLog.t('Stack trace: $s');
       return const Scaffold(
         backgroundColor: color0,
         body: Center(

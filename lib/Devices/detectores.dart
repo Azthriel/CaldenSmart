@@ -304,7 +304,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
-      printLog.i('sis $isWifiConnected');
+      // printlog.i('sis $isWifiConnected');
       errorMessage = '';
       errorSintax = '';
       werror = false;
@@ -317,7 +317,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
           'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
-      printLog.i('non $isWifiConnected');
+      // printlog.i('non $isWifiConnected');
 
       nameOfWifi = '';
       wifiNotifier.updateStatus(
@@ -435,7 +435,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
       final data = [value];
       bluetoothManager.lightUuid.write(data, withoutResponse: true);
     } catch (e, stackTrace) {
-      printLog.i('Error al mandar el valor del brillo $e $stackTrace');
+      printLog.e('Error al mandar el valor del brillo $e $stackTrace');
       // handleManualError(e, stackTrace);
     }
   }

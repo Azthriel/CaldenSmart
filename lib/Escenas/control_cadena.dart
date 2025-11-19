@@ -3,6 +3,7 @@
 import 'dart:convert';
 
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
+import 'package:caldensmart/aws/mqtt/mqtt.dart';
 import 'package:caldensmart/logger.dart';
 import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
@@ -1302,6 +1303,10 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
     putEventoControlPorCadena(
         currentUserEmail, title.text.trim(), stepsToDynamo);
     putEventos(currentUserEmail, eventosCreados);
+
+    // Suscribirse al topic MQTT del nuevo evento
+    subscribeToEventoStatus(
+        'ControlPorCadena', currentUserEmail, title.text.trim());
 
     _initializeData();
     title.clear();

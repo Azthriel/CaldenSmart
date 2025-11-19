@@ -62,7 +62,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
 
-    void initItems() {
+  void initItems() {
     items.addAll({
       TutorialItem(
         globalKey: keys['heladera:estado']!,
@@ -427,7 +427,6 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
     });
   }
 
-
   ///*- Elementos para tutoriales -*\\\
 
   @override
@@ -586,7 +585,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
-      printLog.i('sis $isWifiConnected');
+      // printlog.i('sis $isWifiConnected');
       errorMessage = '';
       errorSintax = '';
       werror = false;
@@ -599,7 +598,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
           'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
-      printLog.i('non $isWifiConnected');
+      // printlog.i('non $isWifiConnected');
 
       nameOfWifi = '';
       wifiNotifier.updateStatus(
@@ -688,7 +687,8 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
       await registerAdminUsage(
           deviceName, on ? 'Encendió heladera' : 'Apagó heladera');
     } catch (e, s) {
-      printLog.i('Error al enviar valor a firebase $e $s');
+      printLog
+          .e('Error al ${on ? 'encender heladera' : 'apagar heladera'} $e $s');
     }
   }
 
@@ -714,7 +714,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
         }
       } catch (e) {
         showToast('Error al iniciar control por distancia.');
-        printLog.i('Error al setear la ubicación $e');
+        printLog.e('Error al setear la ubicación $e');
       }
     } else {
       // Cancelar la tarea.
@@ -779,8 +779,8 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                       permissionStatus4 =
                           await Permission.locationAlways.status;
                     } catch (e, s) {
-                      printLog.i(e);
-                      printLog.i(s);
+                      printLog.e(e);
+                      printLog.t(s);
                     }
                     Navigator.of(navigatorKey.currentContext ?? context).pop();
                   },
@@ -799,8 +799,8 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
         return false;
       }
     } catch (e, s) {
-      printLog.i('Error al habilitar la ubi: $e');
-      printLog.i(s);
+      printLog.e('Error al habilitar la ubi: $e');
+      printLog.t(s);
       return false;
     }
   }

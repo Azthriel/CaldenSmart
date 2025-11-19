@@ -250,6 +250,16 @@ Future<void> queryItems(String pc, String sn) async {
                     .putIfAbsent('$pc/$sn', () => {})
                     .addAll({key: discTimes});
                 break;
+              case 'DateSecAdm':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.s ?? ''});
+                break;
+              case 'DateAT':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.s ?? ''});
+                break;
             }
           }
           printLog.i("$key: $displayValue");
@@ -261,7 +271,7 @@ Future<void> queryItems(String pc, String sn) async {
       printLog.i('Dispositivo no encontrado');
     }
   } catch (e) {
-    printLog.i('Error durante la consulta: $e');
+    printLog.e('Error durante la consulta: $e');
   }
 }
 //*-Lee todos los datos de un equipo-*\\
@@ -298,7 +308,7 @@ Future<void> putTokensInAlexaDevices(String email, List<String> tokens) async {
 
     printLog.i('Tokens guardados en Alexa-Devices para $email: $response');
   } catch (e) {
-    printLog.i('Error guardando tokens en Alexa-Devices: $e');
+    printLog.e('Error guardando tokens en Alexa-Devices: $e');
   }
 }
 
@@ -328,7 +338,7 @@ Future<List<String>> getTokensFromAlexaDevices(String email) async {
       return [];
     }
   } catch (e) {
-    printLog.i('Error obteniendo tokens de Alexa-Devices: $e');
+    printLog.e('Error obteniendo tokens de Alexa-Devices: $e');
     return [];
   }
 }
@@ -367,7 +377,7 @@ Future<void> putActiveUsers(
 
     printLog.i('ActiveUsers guardados para $pc/$sn: $response');
   } catch (e) {
-    printLog.i('Error guardando activeUsers: $e');
+    printLog.e('Error guardando activeUsers: $e');
   }
 }
 
@@ -398,7 +408,7 @@ Future<List<String>> getActiveUsers(String pc, String sn) async {
       return [];
     }
   } catch (e) {
-    printLog.i('Error obteniendo activeUsers: $e');
+    printLog.e('Error obteniendo activeUsers: $e');
     return [];
   }
 }
@@ -415,7 +425,7 @@ Future<void> addToActiveUsers(String pc, String sn, String email) async {
       printLog.i('Email $email ya está en activeUsers de $pc/$sn');
     }
   } catch (e) {
-    printLog.i('Error añadiendo email a activeUsers: $e');
+    printLog.e('Error añadiendo email a activeUsers: $e');
   }
 }
 
@@ -431,7 +441,7 @@ Future<void> removeFromActiveUsers(String pc, String sn, String email) async {
       printLog.i('Email $email no estaba en activeUsers de $pc/$sn');
     }
   } catch (e) {
-    printLog.i('Error removiendo email de activeUsers: $e');
+    printLog.e('Error removiendo email de activeUsers: $e');
   }
 }
 
@@ -484,7 +494,7 @@ Future<void> putOwner(String pc, String sn, String data) async {
 
     printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog.i('Error inserting item: $e');
+    printLog.e('Error inserting item: $e');
   }
 }
 //*-Guarda el mail del owner de un equipo en dynamo-*\\
@@ -504,65 +514,10 @@ Future<void> putSecondaryAdmins(String pc, String sn, List<String> data) async {
 
     printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog.i('Error inserting item: $e');
+    printLog.e('Error inserting item: $e');
   }
 }
 //*-Guarda y lee los mails de los admins de un equipo en dynamo-*\\
-
-//*-Lee las fechas de vencimiento de los beneficios que se hayan pagado en un equipo-*\\
-Future<List<DateTime>> getDates(String pc, String sn) async {
-  try {
-    final response = await service.getItem(
-      tableName: 'sime-domotica',
-      key: {
-        'product_code': AttributeValue(s: pc),
-        'device_id': AttributeValue(s: sn),
-      },
-    );
-    if (response.item != null) {
-      var item = response.item!;
-      List<DateTime> fechaExp = [];
-      String? date = item['DateSecAdm']?.s;
-      String? date2 = item['DateAT']?.s;
-      printLog.i('Fecha encontrada');
-
-      if (date != null && date != '') {
-        var parts = date.split('/');
-        fechaExp.add(
-          DateTime(
-            int.parse(parts[0]),
-            int.parse(parts[1]),
-            int.parse(parts[2]),
-          ),
-        );
-      } else {
-        fechaExp.add(DateTime.now());
-      }
-
-      if (date2 != null && date2 != '') {
-        var parts = date2.split('/');
-        fechaExp.add(
-          DateTime(
-            int.parse(parts[0]),
-            int.parse(parts[1]),
-            int.parse(parts[2]),
-          ),
-        );
-      } else {
-        fechaExp.add(DateTime.now());
-      }
-
-      return fechaExp;
-    } else {
-      printLog.i('Item no encontrado.');
-      return [DateTime.now(), DateTime.now()];
-    }
-  } catch (e) {
-    printLog.i('Error al obtener las fechas $e');
-    return [DateTime.now(), DateTime.now()];
-  }
-}
-//*-Lee las fechas de vencimiento de los beneficios que se hayan pagado en un equipo-*\\
 
 //*-Escribe la distancia de encendido y apagado de el control por distancia de un equipo-*\\
 Future<void> putDistanceOn(String pc, String sn, String data) async {
@@ -576,7 +531,7 @@ Future<void> putDistanceOn(String pc, String sn, String data) async {
 
     printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog.i('Error inserting item: $e');
+    printLog.e('Error inserting item: $e');
   }
 }
 
@@ -591,7 +546,7 @@ Future<void> putDistanceOff(String pc, String sn, String data) async {
 
     printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog.i('Error inserting item: $e');
+    printLog.e('Error inserting item: $e');
   }
 }
 //*-Escribe la distancia de encendido y apagado de el control por distancia de un equipo-*\\
@@ -613,7 +568,7 @@ Future<void> saveATData(String pc, String sn, bool activate, String mail,
     activatedAT = activate;
     printLog.i('Inquilino escrito perfectamente $response');
   } catch (e) {
-    printLog.i('Error inserting item: $e');
+    printLog.e('Error inserting item: $e');
   }
 }
 //*-Guarda la data del alquiler temporario (airbnb) de un equipo-*\\
@@ -630,7 +585,7 @@ Future<void> saveNC(String pc, String sn, bool data) async {
 
     printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog.i('Error inserting item: $e');
+    printLog.e('Error inserting item: $e');
   }
 }
 //*-Guardar si un equipo es NA o NC-*\\
@@ -653,7 +608,7 @@ Future<void> putDevicesForAlexa(String email, List<String> data) async {
     );
     printLog.i('Item actualizado correctamente: $response');
   } catch (e) {
-    printLog.i('Error actualizando el ítem de Alexa: $e');
+    printLog.e('Error actualizando el ítem de Alexa: $e');
   }
 }
 
@@ -719,7 +674,7 @@ Future<void> putNicknames(String email, Map<String, String> data) async {
 
     printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog.i('Error guardando alexa item: $e');
+    printLog.e('Error guardando alexa item: $e');
   }
 }
 
@@ -742,7 +697,7 @@ Future<void> getNicknames(String email) async {
       printLog.i('Item no encontrado. No está el mail en la database');
     }
   } catch (e) {
-    printLog.i('Error al obtener el item: $e');
+    printLog.e('Error al obtener el item: $e');
   }
 }
 
@@ -760,7 +715,7 @@ Future<void> putRollerLength(String pc, String sn, String data) async {
 
     printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog.i('Error inserting item: $e');
+    printLog.e('Error inserting item: $e');
   }
 }
 
@@ -1003,7 +958,7 @@ void putEventos(
     );
     printLog.i('Eventos guardados correctamente');
   } catch (e) {
-    printLog.i('Error al guardar eventos: $e');
+    printLog.e('Error al guardar eventos: $e');
   }
 }
 
@@ -1118,7 +1073,7 @@ Future<List<Map<String, dynamic>>> getEventos(
     printLog.i('Eventos procesados: ${result.length}');
     return result;
   } catch (e) {
-    printLog.i('Error al cargar eventos: $e');
+    printLog.e('Error al cargar eventos: $e');
     return [];
   }
 }
@@ -1135,7 +1090,7 @@ Future<void> saveLocation(String pc, String sn, String data) async {
 
     printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog.i('Error inserting item: $e');
+    printLog.e('Error inserting item: $e');
   }
 }
 
@@ -1152,7 +1107,7 @@ Future<void> putVersions(String pc, String sn, String hard, String soft) async {
 
     printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog.i('Error inserting item: $e');
+    printLog.e('Error inserting item: $e');
   }
 }
 
@@ -1214,7 +1169,7 @@ Future<Map<String, dynamic>> getGeneralData() async {
       return {};
     }
   } catch (e) {
-    printLog.i('Error al obtener datos generales de GENERALDATA: $e');
+    printLog.e('Error al obtener datos generales de GENERALDATA: $e');
     return {};
   }
 }
@@ -1256,7 +1211,7 @@ Future<void> putEventoControlPorDisparadores(
     printLog.i(
         'Evento de control por disparadores guardado (nueva lógica): $response');
   } catch (e) {
-    printLog.i('Error guardando evento de control por disparadores: $e');
+    printLog.e('Error guardando evento de control por disparadores: $e');
   }
 }
 
@@ -1284,7 +1239,7 @@ void removeEjecutoresFromDisparador(String activador, String sortKey) async {
     await _removeFromOldTable(activador);
   } catch (e) {
     printLog
-        .i('Error general eliminando evento de control por disparadores: $e');
+        .e('Error general eliminando evento de control por disparadores: $e');
   }
 }
 
@@ -1310,7 +1265,7 @@ Future<bool> _tryRemoveFromNewTable(String activador, String sortKey) async {
         'Todos los eventos eliminados exitosamente de Eventos_ControlPorDisparadores');
     return true;
   } catch (e) {
-    printLog.i('Error en nueva lógica (Eventos_ControlPorDisparadores): $e');
+    printLog.e('Error en nueva lógica (Eventos_ControlPorDisparadores): $e');
     return false;
   }
 }
@@ -1330,7 +1285,7 @@ Future<void> _removeFromOldTable(String activador) async {
     printLog.i(
         'Evento eliminado de tabla vieja (Eventos_ControlDisparadores): $response');
   } catch (e) {
-    printLog.i('Error eliminando de tabla vieja: $e');
+    printLog.e('Error eliminando de tabla vieja: $e');
   }
 }
 //*- Guarda evento: Control por disparadores -*\\
@@ -1385,7 +1340,7 @@ Future<void> putEventoControlPorHorarios(
     printLog.i(
         'Timezone: $timezoneName (UTC${timezoneOffset >= 0 ? '+' : ''}$timezoneOffset)');
   } catch (e) {
-    printLog.i('Error guardando evento de control por horarios: $e');
+    printLog.e('Error guardando evento de control por horarios: $e');
   }
 }
 
@@ -1408,7 +1363,7 @@ void deleteEventoControlPorHorarios(
 
     printLog.i('Evento de control por horarios eliminado: $response');
   } catch (e) {
-    printLog.i('Error eliminando evento de control por horarios: $e');
+    printLog.e('Error eliminando evento de control por horarios: $e');
   }
 }
 
@@ -1430,7 +1385,7 @@ Future<void> putDevicesInDistanceControl(
 
     printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog.i('Error inserting item: $e');
+    printLog.e('Error inserting item: $e');
   }
 }
 
@@ -1457,7 +1412,7 @@ Future<List<String>> getDevicesInDistanceControl(String email) async {
       return [];
     }
   } catch (e) {
-    printLog.i('Error al obtener el item: $e');
+    printLog.e('Error al obtener el item: $e');
     return [];
   }
 }
@@ -1474,7 +1429,7 @@ Future<void> putDistanceControl(String pc, String sn, bool status) async {
 
     printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog.i('Error inserting item: $e');
+    printLog.e('Error inserting item: $e');
   }
 }
 //*- Dispositivos control por distancia -*\\
@@ -1507,7 +1462,7 @@ void putEventoControlPorCadena(
 
     printLog.i('Evento de control por cadena guardado: $response');
   } catch (e) {
-    printLog.i('Error guardando evento de control por cadena: $e');
+    printLog.e('Error guardando evento de control por cadena: $e');
   }
 }
 
@@ -1523,7 +1478,88 @@ void deleteEventoControlPorCadena(String email, String nombreEvento) async {
 
     printLog.i('Evento de control por cadena eliminado: $response');
   } catch (e) {
-    printLog.i('Error eliminando evento de control por cadena: $e');
+    printLog.e('Error eliminando evento de control por cadena: $e');
+  }
+}
+
+// Consultar todos los eventos de control por cadena del usuario
+Future<List<Map<String, dynamic>>> queryEventosControlPorCadena(String email) async {
+  try {
+    final response = await service.query(
+      tableName: 'Eventos_ControlPorCadena',
+      keyConditionExpression: 'email = :email',
+      expressionAttributeValues: {
+        ':email': AttributeValue(s: email),
+      },
+    );
+
+    List<Map<String, dynamic>> eventos = [];
+    
+    if (response.items != null) {
+      for (var item in response.items!) {
+        eventos.add({
+          'nombreEvento': item['nombreEvento']?.s ?? '',
+          'estado_ejecucion': item['estado_ejecucion']?.m != null 
+            ? {
+                'status': item['estado_ejecucion']!.m!['status']?.s ?? 'idle',
+                'paso_actual': int.tryParse(item['estado_ejecucion']!.m!['paso_actual']?.n ?? '0') ?? 0,
+                'total_pasos': int.tryParse(item['estado_ejecucion']!.m!['total_pasos']?.n ?? '0') ?? 0,
+                'pasos_completados': item['estado_ejecucion']!.m!['pasos_completados']?.l
+                  ?.map((e) => int.tryParse(e.n ?? '0') ?? 0)
+                  .toList() ?? [],
+              }
+            : null,
+        });
+      }
+    }
+
+    printLog.i('Eventos de control por cadena consultados: ${eventos.length}');
+    return eventos;
+  } catch (e) {
+    printLog.e('Error consultando eventos de control por cadena: $e');
+    return [];
+  }
+}
+
+// 🆕 Query eventos de Control de Riego con estado de ejecución
+Future<List<Map<String, dynamic>>> queryEventosControlDeRiego(String email) async {
+  try {
+    final response = await service.query(
+      tableName: 'Eventos_ControlDeRiego',
+      keyConditionExpression: 'email = :email',
+      expressionAttributeValues: {
+        ':email': AttributeValue(s: email),
+      },
+    );
+
+    List<Map<String, dynamic>> eventos = [];
+    
+    if (response.items != null) {
+      for (var item in response.items!) {
+        eventos.add({
+          'nombreEvento': item['nombreEvento']?.s ?? '',
+          'estado_ejecucion': item['estado_ejecucion']?.m != null 
+            ? {
+                'status': item['estado_ejecucion']!.m!['status']?.s ?? 'idle',
+                'paso_actual': int.tryParse(item['estado_ejecucion']!.m!['paso_actual']?.n ?? '0') ?? 0,
+                'total_pasos': int.tryParse(item['estado_ejecucion']!.m!['total_pasos']?.n ?? '0') ?? 0,
+                'pasos_completados': item['estado_ejecucion']!.m!['pasos_completados']?.l
+                  ?.map((e) => int.tryParse(e.n ?? '0') ?? 0)
+                  .toList() ?? [],
+                'zonas_canceladas_por_lluvia': item['estado_ejecucion']!.m!['zonas_canceladas_por_lluvia']?.l
+                  ?.map((e) => e.s ?? '')
+                  .toList() ?? [],
+              }
+            : null,
+        });
+      }
+    }
+
+    printLog.i('Eventos de control de riego consultados: ${eventos.length}');
+    return eventos;
+  } catch (e) {
+    printLog.e('Error consultando eventos de control de riego: $e');
+    return [];
   }
 }
 //*- Guarda evento: Control por cadena -*\\
@@ -1543,7 +1579,7 @@ void putEventoControlPorGrupos(
 
     printLog.i('Evento de control por grupos guardado: $response');
   } catch (e) {
-    printLog.i('Error guardando evento de control por grupos: $e');
+    printLog.e('Error guardando evento de control por grupos: $e');
   }
 }
 
@@ -1559,7 +1595,7 @@ void deleteEventoControlPorGrupos(String email, String nombreEvento) async {
 
     printLog.i('Evento de control por grupos eliminado: $response');
   } catch (e) {
-    printLog.i('Error eliminando evento de control por grupos: $e');
+    printLog.e('Error eliminando evento de control por grupos: $e');
   }
 }
 //*- Guarda evento: Control por grupos -*\\
@@ -1590,7 +1626,7 @@ void putEventoControlPorClima(String email, String nombreEvento, String clima,
 
     printLog.i('Evento de control por clima guardado: $response');
   } catch (e) {
-    printLog.i('Error guardando evento de control por clima: $e');
+    printLog.e('Error guardando evento de control por clima: $e');
   }
 }
 
@@ -1606,7 +1642,7 @@ void deleteEventoControlPorClima(String email, String nombreEvento) async {
 
     printLog.i('Evento de control por clima eliminado: $response');
   } catch (e) {
-    printLog.i('Error eliminando evento de control por clima: $e');
+    printLog.e('Error eliminando evento de control por clima: $e');
   }
 }
 //*- Guarda evento: Control por clima -*\\
@@ -1626,7 +1662,7 @@ Future<void> putRiegoExtensions(String pc, String sn, List<String> data) async {
 
     printLog.i('Item escrito perfectamente $response');
   } catch (e) {
-    printLog.i('Error inserting item: $e');
+    printLog.e('Error inserting item: $e');
   }
 }
 
@@ -1643,7 +1679,7 @@ Future<void> putFreeBomb(String pc, String sn, bool status) async {
 
     printLog.i('Item freeBomb escrito perfectamente $response');
   } catch (e) {
-    printLog.i('Error insertando freeBomb: $e');
+    printLog.e('Error insertando freeBomb: $e');
   }
 }
 
@@ -1661,7 +1697,7 @@ Future<void> putRiegoMaster(
 
     printLog.i('Item riegoMaster escrito perfectamente $response');
   } catch (e) {
-    printLog.i('Error insertando riegoMaster: $e');
+    printLog.e('Error insertando riegoMaster: $e');
   }
 }
 //*- Guarda el maestro de riego para extensiones -*\\
@@ -1690,7 +1726,7 @@ void putEventoControlDeRiego(String email, String nombreEvento,
 
     printLog.i('Evento de control de riego guardado: $response');
   } catch (e) {
-    printLog.i('Error guardando evento de control de riego: $e');
+    printLog.e('Error guardando evento de control de riego: $e');
   }
 }
 
@@ -1706,7 +1742,7 @@ void deleteEventoControlDeRiego(String email, String nombreEvento) async {
 
     printLog.i('Evento de control de riego eliminado: $response');
   } catch (e) {
-    printLog.i('Error eliminando evento de control de riego: $e');
+    printLog.e('Error eliminando evento de control de riego: $e');
   }
 }
 
@@ -1750,7 +1786,7 @@ Future<void> putAdminUsageHistory(
 
     printLog.i('Historial de uso guardado: $response');
   } catch (e) {
-    printLog.i('Error guardando historial de uso: $e');
+    printLog.e('Error guardando historial de uso: $e');
   }
 }
 
@@ -1774,7 +1810,7 @@ Future<List<String>> getAdminUsageHistory(String pc, String sn) async {
     }
     return [];
   } catch (e) {
-    printLog.i('Error obteniendo historial de uso: $e');
+    printLog.e('Error obteniendo historial de uso: $e');
     return [];
   }
 }
@@ -1803,7 +1839,7 @@ Future<List<Map<String, dynamic>>> getParsedAdminUsageHistory(
 
     return parsedHistory;
   } catch (e) {
-    printLog.i('Error obteniendo historial parseado: $e');
+    printLog.e('Error obteniendo historial parseado: $e');
     return [];
   }
 }
@@ -1846,7 +1882,7 @@ Future<void> putAdminTimeRestrictions(String pc, String sn,
 
     printLog.i('Restricciones horarias guardadas: $response');
   } catch (e) {
-    printLog.i('Error guardando restricciones horarias: $e');
+    printLog.e('Error guardando restricciones horarias: $e');
   }
 }
 
@@ -1881,7 +1917,7 @@ Future<Map<String, Map<String, dynamic>>> getAdminTimeRestrictions(
     }
     return {};
   } catch (e) {
-    printLog.i('Error obteniendo restricciones horarias: $e');
+    printLog.e('Error obteniendo restricciones horarias: $e');
     return {};
   }
 }
@@ -1924,7 +1960,7 @@ Future<bool> isAdminAllowedAtCurrentTime(
 
     return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
   } catch (e) {
-    printLog.i('Error verificando permisos horarios: $e');
+    printLog.e('Error verificando permisos horarios: $e');
     return true; // En caso de error, permitir acceso
   }
 }
@@ -1998,7 +2034,7 @@ Future<Map<String, Map<String, dynamic>>> getAdminWifiRestrictions(
     }
     return {};
   } catch (e) {
-    printLog.i('Error obteniendo restricciones de WiFi: $e');
+    printLog.e('Error obteniendo restricciones de WiFi: $e');
     return {};
   }
 }
@@ -2023,7 +2059,25 @@ Future<bool> isAdminAllowedToUseWifi(
 
     return true; // Restricciones deshabilitadas = permitido
   } catch (e) {
-    printLog.i('Error verificando permisos de WiFi: $e');
+    printLog.e('Error verificando permisos de WiFi: $e');
     return true; // En caso de error, permitir acceso
+  }
+}
+
+/// Guarda un log de impresión en la tabla PrintLogHistorial
+void savePrintLog(String email, String log) async {
+  try {
+    final response =
+        await service.updateItem(tableName: 'PrintLogHistorial', key: {
+      'email': AttributeValue(s: email),
+      'key': AttributeValue(n: printLogHistorialKey.toString()),
+    }, attributeUpdates: {
+      'logs': AttributeValueUpdate(
+          value: AttributeValue(ss: [log]), action: AttributeAction.add),
+    });
+
+    printLog.i('Log guardado perfectamente $response');
+  } catch (e) {
+    printLog.e('Error insertando log: $e');
   }
 }

@@ -90,7 +90,7 @@ class PermissionHandlerState extends State<PermissionHandler> {
         }
       }
     } catch (e) {
-      printLog.i('Error verificando la autenticación: $e');
+      printLog.e('Error verificando la autenticación: $e');
     }
   }
 

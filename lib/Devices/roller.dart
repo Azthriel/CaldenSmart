@@ -134,7 +134,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
-      printLog.i('sis $isWifiConnected');
+      // printlog.i('sis $isWifiConnected');
       errorMessage = '';
       errorSintax = '';
       werror = false;
@@ -147,7 +147,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
           'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
-      printLog.i('non $isWifiConnected');
+      // printlog.i('non $isWifiConnected');
 
       nameOfWifi = '';
       wifiNotifier.updateStatus(

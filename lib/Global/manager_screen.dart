@@ -602,6 +602,7 @@ class ManagerScreenState extends State<ManagerScreen> {
       DateTime dateTime = DateTime.parse(isoString);
       return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     } catch (e) {
+      printLog.e('Error al formatear la fecha: $e');
       return 'Fecha inválida';
     }
   }
@@ -655,7 +656,7 @@ class ManagerScreenState extends State<ManagerScreen> {
 
       showToast('Administrador eliminado correctamente.');
     } catch (e) {
-      printLog.i('Error al eliminar administrador secundario: $e');
+      printLog.e('Error al eliminar administrador secundario: $e');
       showToast('Error al eliminar el administrador. Inténtalo de nuevo.');
     }
   }
@@ -887,7 +888,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                 saveGlobalData(globalDATA);
                               } catch (e, s) {
                                 printLog
-                                    .i('Error al borrar owner $e Trace: $s');
+                                    .e('Error al borrar owner $e Trace: $s');
                                 showToast('Error al borrar el administrador.');
                               }
                             },
@@ -909,7 +910,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                         showToast('Ahora eres el propietario del equipo');
                         saveGlobalData(globalDATA);
                       } catch (e, s) {
-                        printLog.i('Error al agregar owner $e Trace: $s');
+                        printLog.e('Error al agregar owner $e Trace: $s');
                         showToast('Error al agregar el administrador.');
                       }
                     } else {
@@ -1102,7 +1103,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                                   cuerpo,
                                                                   cc: 'pablo@intelligentgas.com.ar');
                                                             } catch (e) {
-                                                              printLog.i(
+                                                              printLog.e(
                                                                   'Error al enviar email: $e');
                                                               showToast(
                                                                   'No se pudo enviar el correo electrónico');
@@ -1297,7 +1298,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                     cuerpo,
                                                     cc: 'pablo@intelligentgas.com.ar');
                                               } catch (e) {
-                                                printLog.i(
+                                                printLog.e(
                                                     'Error al enviar email: $e');
                                                 showToast(
                                                     'No se pudo enviar el correo electrónico');
@@ -2739,6 +2740,8 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                   showToast(
                                                       'Bomba ${newStatus ? 'manual' : 'automática'} activada correctamente');
                                                 } catch (e) {
+                                                  printLog.e(
+                                                      'Error al cambiar el estado de la bomba: $e');
                                                   showToast(
                                                       'Error al cambiar el estado de la bomba');
                                                 }

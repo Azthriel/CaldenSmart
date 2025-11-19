@@ -59,7 +59,7 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
 
-   void initItems() {
+  void initItems() {
     items.addAll({
       TutorialItem(
         globalKey: keys['termotanque:estado']!,
@@ -401,7 +401,6 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
     });
   }
 
-
   ///*- Elementos para tutoriales -*\\\
 
   @override
@@ -560,7 +559,7 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
-      printLog.i('sis $isWifiConnected');
+      // printlog.i('sis $isWifiConnected');
       errorMessage = '';
       errorSintax = '';
       werror = false;
@@ -573,7 +572,7 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
           'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
-      printLog.i('non $isWifiConnected');
+      // printlog.i('non $isWifiConnected');
 
       nameOfWifi = '';
       wifiNotifier.updateStatus(
@@ -662,7 +661,8 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
       await registerAdminUsage(
           deviceName, on ? 'Encendió termotanque' : 'Apagó termotanque');
     } catch (e, s) {
-      printLog.i('Error al enviar valor a firebase $e $s');
+      printLog.e(
+          'Error al ${on ? 'encender termotanque' : 'apagar termotanque'}: $e $s');
     }
   }
 

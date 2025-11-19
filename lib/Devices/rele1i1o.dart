@@ -493,7 +493,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
       atemp = false;
       nameOfWifi = parts[1];
       isWifiConnected = true;
-      printLog.i('sis $isWifiConnected');
+      // printlog.i('sis $isWifiConnected');
       errorMessage = '';
       errorSintax = '';
       werror = false;
@@ -506,7 +506,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
           'CONECTADO', Colors.green, wifiPower(signalPower));
     } else if (parts[0] == 'WCS_DISCONNECTED') {
       isWifiConnected = false;
-      printLog.i('non $isWifiConnected');
+      // printlog.i('non $isWifiConnected');
 
       nameOfWifi = '';
 
@@ -700,7 +700,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
         }
       } catch (e) {
         showToast('Error al iniciar control por distancia.');
-        printLog.i('Error al setear la ubicación $e');
+        printLog.e('Error al setear la ubicación $e');
       }
     } else {
       // Cancelar la tarea.
@@ -762,8 +762,8 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                   completer.complete();
                   Navigator.of(navigatorKey.currentContext ?? context).pop();
                 } catch (e, s) {
-                  printLog.i(e);
-                  printLog.i(s);
+                  printLog.e(e);
+                  printLog.t(s);
                   completer.completeError(
                       e); // Completa con error si ocurre una excepción
                 }
@@ -785,8 +785,8 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
         return false;
       }
     } catch (e, s) {
-      printLog.i('Error al habilitar la ubicación: $e');
-      printLog.i(s);
+      printLog.e('Error al habilitar la ubicación: $e');
+      printLog.t(s);
       return false;
     }
   }
