@@ -5,7 +5,6 @@ import 'package:geolocator/geolocator.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
-import 'stored_data.dart';
 import 'package:caldensmart/logger.dart';
 
 class LoadingPage extends StatefulWidget {
@@ -267,7 +266,6 @@ class LoadState extends State<LoadingPage> {
               .putIfAbsent('$pc/$sn', () => {})
               .addAll({"f_status": trueStatus});
 
-          saveGlobalData(globalDATA);
           break;
         case '015773_IOT':
           workValues = await bluetoothManager.workUuid.read();
@@ -288,7 +286,7 @@ class LoadState extends State<LoadingPage> {
           globalDATA
               .putIfAbsent('$pc/$sn', () => {})
               .addAll({"alert": workValues[4] == 1});
-          saveGlobalData(globalDATA);
+
           break;
         case '020010_IOT':
           ioValues = await bluetoothManager.ioUuid.read();
@@ -520,7 +518,6 @@ class LoadState extends State<LoadingPage> {
               .putIfAbsent('$pc/$sn', () => {})
               .addAll({"f_status": trueStatus});
 
-          saveGlobalData(globalDATA);
           break;
         case '023430_IOT':
           varsValues = await bluetoothManager.varsUuid.read();

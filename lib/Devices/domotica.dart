@@ -434,7 +434,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
 
     globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({'io$index': message});
 
-    saveGlobalData(globalDATA);
+    
 
     // Registrar uso si es administrador secundario
     String action = value ? 'Encendió salida $index' : 'Apagó salida $index';
@@ -583,7 +583,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
       setState(() {});
     }
 
-    saveGlobalData(globalDATA);
+    
 
     for (int i = 0; i < parts.length; i++) {
       if (tipo[i] == 'Salida') {

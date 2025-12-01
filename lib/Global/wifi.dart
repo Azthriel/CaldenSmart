@@ -60,7 +60,7 @@ class WifiPageState extends ConsumerState<WifiPage>
     try {
       // 1. Primero cargar estados iniciales desde DynamoDB
       await loadInitialEventosState(currentUserEmail, ref);
-      
+
       // 2. Luego suscribirse a actualizaciones en tiempo real
       subscribeToAllUserEventos(currentUserEmail, eventosCreados);
       printLog.i('✅ Suscrito a todos los eventos del usuario');
@@ -83,7 +83,7 @@ class WifiPageState extends ConsumerState<WifiPage>
       // Verificar el estado cuando la app vuelve al foreground
       _checkRiegosStatus();
       _loadWifiPermissions(); // Recargar permisos de WiFi
-      
+
       // Re-suscribirse a eventos por si se desconectó MQTT
       _subscribeToEventosTopics();
     }
@@ -263,7 +263,7 @@ class WifiPageState extends ConsumerState<WifiPage>
     String deviceSerialNumber = DeviceManager.extractSerialNumber(deviceName);
     String productCode = DeviceManager.getProductCode(deviceName);
     globalDATA['$productCode/$deviceSerialNumber']!['w_status'] = newState;
-    saveGlobalData(globalDATA);
+
     String topic = 'devices_rx/$productCode/$deviceSerialNumber';
     String topic2 = 'devices_tx/$productCode/$deviceSerialNumber';
     String message = jsonEncode({"w_status": newState});
@@ -586,11 +586,8 @@ class WifiPageState extends ConsumerState<WifiPage>
 
   //*- Controlar la cadena -*\\
   void controlarCadena(String name) async {
-    String bd = jsonEncode({
-      'nombreEvento': name,
-      'email': currentUserEmail,
-      'accion': 'start'
-    });
+    String bd = jsonEncode(
+        {'nombreEvento': name, 'email': currentUserEmail, 'accion': 'start'});
 
     printLog.i('Controlling cadena with body: $bd', color: 'rosa');
 
@@ -627,11 +624,8 @@ class WifiPageState extends ConsumerState<WifiPage>
 
   //*- Pausar cadena -*\\
   void pausarCadena(String name) async {
-    String bd = jsonEncode({
-      'nombreEvento': name,
-      'email': currentUserEmail,
-      'accion': 'pause'
-    });
+    String bd = jsonEncode(
+        {'nombreEvento': name, 'email': currentUserEmail, 'accion': 'pause'});
 
     printLog.i('Pausando cadena with body: $bd', color: 'rosa');
 
@@ -649,7 +643,8 @@ class WifiPageState extends ConsumerState<WifiPage>
       } else if (response.statusCode == 400) {
         final responseData = jsonDecode(response.body);
         printLog.e('Error pausando cadena: ${responseData['error']}');
-        showToast('⚠️ ${responseData['error'] ?? 'No se pudo pausar la cadena'}');
+        showToast(
+            '⚠️ ${responseData['error'] ?? 'No se pudo pausar la cadena'}');
       } else {
         printLog.e('Error al pausar la cadena: ${response.statusCode}');
         showToast('⚡ Error del servidor. Intenta nuevamente en unos momentos.');
@@ -664,11 +659,8 @@ class WifiPageState extends ConsumerState<WifiPage>
 
   //*- Reanudar cadena -*\\
   void reanudarCadena(String name) async {
-    String bd = jsonEncode({
-      'nombreEvento': name,
-      'email': currentUserEmail,
-      'accion': 'resume'
-    });
+    String bd = jsonEncode(
+        {'nombreEvento': name, 'email': currentUserEmail, 'accion': 'resume'});
 
     printLog.i('Reanudando cadena with body: $bd', color: 'rosa');
 
@@ -686,7 +678,8 @@ class WifiPageState extends ConsumerState<WifiPage>
       } else if (response.statusCode == 400) {
         final responseData = jsonDecode(response.body);
         printLog.e('Error reanudando cadena: ${responseData['error']}');
-        showToast('⚠️ ${responseData['error'] ?? 'No se pudo reanudar la cadena'}');
+        showToast(
+            '⚠️ ${responseData['error'] ?? 'No se pudo reanudar la cadena'}');
       } else {
         printLog.e('Error al reanudar la cadena: ${response.statusCode}');
         showToast('⚡ Error del servidor. Intenta nuevamente en unos momentos.');
@@ -731,7 +724,8 @@ class WifiPageState extends ConsumerState<WifiPage>
           TextButton(
             child: Text(
               'Sí, Cancelar',
-              style: GoogleFonts.poppins(color: color4, fontWeight: FontWeight.bold),
+              style: GoogleFonts.poppins(
+                  color: color4, fontWeight: FontWeight.bold),
             ),
             onPressed: () {
               Navigator.of(context).pop(true);
@@ -743,11 +737,8 @@ class WifiPageState extends ConsumerState<WifiPage>
 
     if (confirmar != true) return;
 
-    String bd = jsonEncode({
-      'nombreEvento': name,
-      'email': currentUserEmail,
-      'accion': 'cancel'
-    });
+    String bd = jsonEncode(
+        {'nombreEvento': name, 'email': currentUserEmail, 'accion': 'cancel'});
 
     printLog.i('Cancelando cadena with body: $bd', color: 'rosa');
 
@@ -765,7 +756,8 @@ class WifiPageState extends ConsumerState<WifiPage>
       } else if (response.statusCode == 400) {
         final responseData = jsonDecode(response.body);
         printLog.e('Error cancelando cadena: ${responseData['error']}');
-        showToast('⚠️ ${responseData['error'] ?? 'No se pudo cancelar la cadena'}');
+        showToast(
+            '⚠️ ${responseData['error'] ?? 'No se pudo cancelar la cadena'}');
       } else {
         printLog.e('Error al cancelar la cadena: ${response.statusCode}');
         showToast('⚡ Error del servidor. Intenta nuevamente en unos momentos.');
@@ -802,7 +794,8 @@ class WifiPageState extends ConsumerState<WifiPage>
       }
     } catch (e) {
       printLog.e('Error de conexión al pausar riego: $e');
-      showToast('📶 Sin conexión a internet. Verifica tu red y vuelve a intentar.');
+      showToast(
+          '📶 Sin conexión a internet. Verifica tu red y vuelve a intentar.');
     }
   }
   //*- Pausar riego -*\\
@@ -831,7 +824,8 @@ class WifiPageState extends ConsumerState<WifiPage>
       }
     } catch (e) {
       printLog.e('Error de conexión al reanudar riego: $e');
-      showToast('📶 Sin conexión a internet. Verifica tu red y vuelve a intentar.');
+      showToast(
+          '📶 Sin conexión a internet. Verifica tu red y vuelve a intentar.');
     }
   }
   //*- Reanudar riego -*\\
@@ -868,7 +862,8 @@ class WifiPageState extends ConsumerState<WifiPage>
           TextButton(
             child: Text(
               'Sí, Cancelar',
-              style: GoogleFonts.poppins(color: color4, fontWeight: FontWeight.bold),
+              style: GoogleFonts.poppins(
+                  color: color4, fontWeight: FontWeight.bold),
             ),
             onPressed: () {
               Navigator.of(context).pop(true);
@@ -902,7 +897,8 @@ class WifiPageState extends ConsumerState<WifiPage>
       }
     } catch (e) {
       printLog.e('Error de conexión al cancelar riego: $e');
-      showToast('📶 Sin conexión a internet. Verifica tu red y vuelve a intentar.');
+      showToast(
+          '📶 Sin conexión a internet. Verifica tu red y vuelve a intentar.');
     }
   }
   //*- Cancelar riego -*\\
@@ -1268,7 +1264,7 @@ class WifiPageState extends ConsumerState<WifiPage>
           globalDATA
               .putIfAbsent('$productCode/$serialNumber', () => {})
               .addAll(topicData);
-          saveGlobalData(globalDATA);
+
           Map<String, dynamic> deviceDATA =
               globalDATA['$productCode/$serialNumber'] ?? {};
           // printLog.i(deviceDATA, 'cyan');
@@ -2231,8 +2227,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                               .addAll({
                                                             'io$i': message
                                                           });
-                                                          saveGlobalData(
-                                                              globalDATA);
                                                         } else {
                                                           showToast(
                                                             'No tienes permisos para realizar esta acción en este momento',
@@ -2654,8 +2648,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                                 .addAll({
                                                               'io0': message
                                                             });
-                                                            saveGlobalData(
-                                                                globalDATA);
                                                           } else {
                                                             showToast(
                                                               'No tienes permisos para realizar esta acción en este momento',
@@ -2761,8 +2753,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                                             'io0':
                                                                                 message
                                                                           });
-                                                                          saveGlobalData(
-                                                                              globalDATA);
                                                                         } else {
                                                                           showToast(
                                                                             'No tienes permisos para realizar esta acción en este momento',
@@ -3425,8 +3415,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                               .addAll({
                                                             'io$i': message
                                                           });
-                                                          saveGlobalData(
-                                                              globalDATA);
                                                         } else {
                                                           showToast(
                                                             'No tienes permisos para realizar esta acción en este momento',
@@ -4584,9 +4572,13 @@ class WifiPageState extends ConsumerState<WifiPage>
                             // 🆕 BARRA DE PROGRESO Y ESTADO
                             Consumer(
                               builder: (context, ref, child) {
-                                final eventoEstado = ref.watch(eventosEstadoProvider)['ControlPorCadena/$grupo'];
+                                final eventoEstado =
+                                    ref.watch(eventosEstadoProvider)[
+                                        'ControlPorCadena/$grupo'];
 
-                                if (eventoEstado != null && (eventoEstado.isRunning || eventoEstado.isPaused)) {
+                                if (eventoEstado != null &&
+                                    (eventoEstado.isRunning ||
+                                        eventoEstado.isPaused)) {
                                   return Column(
                                     children: [
                                       // Barra de progreso
@@ -4594,15 +4586,19 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         width: double.infinity,
                                         padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
-                                          color: Colors.blue.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(8),
+                                          color: Colors.blue
+                                              .withValues(alpha: 0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                           border: Border.all(
-                                            color: Colors.blue.withValues(alpha: 0.3),
+                                            color: Colors.blue
+                                                .withValues(alpha: 0.3),
                                             width: 1,
                                           ),
                                         ),
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Row(
                                               children: [
@@ -4618,7 +4614,8 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                 const SizedBox(width: 8),
                                                 Expanded(
                                                   child: Text(
-                                                    eventoEstado.mensaje.isNotEmpty
+                                                    eventoEstado
+                                                            .mensaje.isNotEmpty
                                                         ? eventoEstado.mensaje
                                                         : eventoEstado.isPaused
                                                             ? 'Pausado'
@@ -4626,7 +4623,8 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                     style: GoogleFonts.poppins(
                                                       color: color0,
                                                       fontSize: 13,
-                                                      fontWeight: FontWeight.w600,
+                                                      fontWeight:
+                                                          FontWeight.w600,
                                                     ),
                                                   ),
                                                 ),
@@ -4642,13 +4640,20 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             ),
                                             const SizedBox(height: 8),
                                             ClipRRect(
-                                              borderRadius: BorderRadius.circular(4),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
                                               child: LinearProgressIndicator(
-                                                value: eventoEstado.progresoDecimal,
+                                                value: eventoEstado
+                                                    .progresoDecimal,
                                                 minHeight: 8,
-                                                backgroundColor: Colors.grey.withValues(alpha: 0.3),
-                                                valueColor: AlwaysStoppedAnimation<Color>(
-                                                  eventoEstado.isPaused ? Colors.orange : Colors.blue,
+                                                backgroundColor: Colors.grey
+                                                    .withValues(alpha: 0.3),
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                        Color>(
+                                                  eventoEstado.isPaused
+                                                      ? Colors.orange
+                                                      : Colors.blue,
                                                 ),
                                               ),
                                             ),
@@ -4656,7 +4661,8 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             Text(
                                               'Paso ${eventoEstado.pasoActual} de ${eventoEstado.totalPasos}',
                                               style: GoogleFonts.poppins(
-                                                color: color0.withValues(alpha: 0.7),
+                                                color: color0.withValues(
+                                                    alpha: 0.7),
                                                 fontSize: 11,
                                               ),
                                             ),
@@ -4666,20 +4672,25 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       const SizedBox(height: 12),
                                       // Botones de control
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           if (eventoEstado.isRunning) ...[
                                             ElevatedButton.icon(
-                                              onPressed: () => pausarCadena(grupo),
-                                              icon: const Icon(Icons.pause, size: 18),
+                                              onPressed: () =>
+                                                  pausarCadena(grupo),
+                                              icon: const Icon(Icons.pause,
+                                                  size: 18),
                                               label: Text(
                                                 'Pausar',
-                                                style: GoogleFonts.poppins(fontSize: 13),
+                                                style: GoogleFonts.poppins(
+                                                    fontSize: 13),
                                               ),
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor: Colors.orange,
                                                 foregroundColor: color0,
-                                                padding: const EdgeInsets.symmetric(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
                                                   horizontal: 16,
                                                   vertical: 8,
                                                 ),
@@ -4689,16 +4700,20 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           ],
                                           if (eventoEstado.isPaused) ...[
                                             ElevatedButton.icon(
-                                              onPressed: () => reanudarCadena(grupo),
-                                              icon: const Icon(Icons.play_arrow, size: 18),
+                                              onPressed: () =>
+                                                  reanudarCadena(grupo),
+                                              icon: const Icon(Icons.play_arrow,
+                                                  size: 18),
                                               label: Text(
                                                 'Reanudar',
-                                                style: GoogleFonts.poppins(fontSize: 13),
+                                                style: GoogleFonts.poppins(
+                                                    fontSize: 13),
                                               ),
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor: Colors.green,
                                                 foregroundColor: color0,
-                                                padding: const EdgeInsets.symmetric(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
                                                   horizontal: 16,
                                                   vertical: 8,
                                                 ),
@@ -4707,16 +4722,20 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             const SizedBox(width: 8),
                                           ],
                                           ElevatedButton.icon(
-                                            onPressed: () => cancelarCadena(grupo),
-                                            icon: const Icon(Icons.cancel, size: 18),
+                                            onPressed: () =>
+                                                cancelarCadena(grupo),
+                                            icon: const Icon(Icons.cancel,
+                                                size: 18),
                                             label: Text(
                                               'Cancelar',
-                                              style: GoogleFonts.poppins(fontSize: 13),
+                                              style: GoogleFonts.poppins(
+                                                  fontSize: 13),
                                             ),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.red,
                                               foregroundColor: color0,
-                                              padding: const EdgeInsets.symmetric(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
                                                 horizontal: 16,
                                                 vertical: 8,
                                               ),
@@ -4730,30 +4749,34 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 }
 
                                 // Mostrar botón de iniciar solo si no está en ejecución
-                                final bool isExecuting = eventoEstado != null && eventoEstado.isRunning;
+                                final bool isExecuting = eventoEstado != null &&
+                                    eventoEstado.isRunning;
 
                                 return Column(
                                   children: [
                                     Center(
                                       child: ElevatedButton.icon(
-                                        onPressed: (cadenaOnline && !isExecuting)
-                                            ? () => controlarCadena(grupo)
-                                            : null,
+                                        onPressed:
+                                            (cadenaOnline && !isExecuting)
+                                                ? () => controlarCadena(grupo)
+                                                : null,
                                         icon: isExecuting
                                             ? const SizedBox(
                                                 width: 20,
                                                 height: 20,
-                                                child: CircularProgressIndicator(
+                                                child:
+                                                    CircularProgressIndicator(
                                                   strokeWidth: 2,
                                                   valueColor:
-                                                      AlwaysStoppedAnimation<Color>(
-                                                          color0),
+                                                      AlwaysStoppedAnimation<
+                                                          Color>(color0),
                                                 ),
                                               )
                                             : Icon(
                                                 HugeIcons.strokeRoundedPlay,
-                                                color:
-                                                    cadenaOnline ? color0 : Colors.grey,
+                                                color: cadenaOnline
+                                                    ? color0
+                                                    : Colors.grey,
                                                 size: 20,
                                               ),
                                         label: Text(
@@ -4769,19 +4792,23 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           ),
                                         ),
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: (cadenaOnline || isExecuting)
-                                              ? color4
-                                              : Colors.grey.withValues(alpha: 0.3),
+                                          backgroundColor:
+                                              (cadenaOnline || isExecuting)
+                                                  ? color4
+                                                  : Colors.grey
+                                                      .withValues(alpha: 0.3),
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 24,
                                             vertical: 12,
                                           ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(20),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
                                           ),
-                                          elevation: (cadenaOnline || isExecuting)
-                                              ? 3
-                                              : 0,
+                                          elevation:
+                                              (cadenaOnline || isExecuting)
+                                                  ? 3
+                                                  : 0,
                                         ),
                                       ),
                                     ),
@@ -5196,9 +5223,13 @@ class WifiPageState extends ConsumerState<WifiPage>
                             // 🆕 BARRA DE PROGRESO Y ESTADO
                             Consumer(
                               builder: (context, ref, child) {
-                                final eventoEstado = ref.watch(eventosEstadoProvider)['ControlPorRiego/$grupo'];
+                                final eventoEstado =
+                                    ref.watch(eventosEstadoProvider)[
+                                        'ControlPorRiego/$grupo'];
 
-                                if (eventoEstado != null && (eventoEstado.isRunning || eventoEstado.isPaused)) {
+                                if (eventoEstado != null &&
+                                    (eventoEstado.isRunning ||
+                                        eventoEstado.isPaused)) {
                                   return Column(
                                     children: [
                                       // Barra de progreso
@@ -5206,15 +5237,19 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         width: double.infinity,
                                         padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
-                                          color: Colors.green.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(8),
+                                          color: Colors.green
+                                              .withValues(alpha: 0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                           border: Border.all(
-                                            color: Colors.green.withValues(alpha: 0.3),
+                                            color: Colors.green
+                                                .withValues(alpha: 0.3),
                                             width: 1,
                                           ),
                                         ),
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Row(
                                               children: [
@@ -5230,7 +5265,8 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                 const SizedBox(width: 8),
                                                 Expanded(
                                                   child: Text(
-                                                    eventoEstado.mensaje.isNotEmpty
+                                                    eventoEstado
+                                                            .mensaje.isNotEmpty
                                                         ? eventoEstado.mensaje
                                                         : eventoEstado.isPaused
                                                             ? 'Pausado'
@@ -5238,7 +5274,8 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                     style: GoogleFonts.poppins(
                                                       color: color0,
                                                       fontSize: 13,
-                                                      fontWeight: FontWeight.w600,
+                                                      fontWeight:
+                                                          FontWeight.w600,
                                                     ),
                                                   ),
                                                 ),
@@ -5254,13 +5291,20 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             ),
                                             const SizedBox(height: 8),
                                             ClipRRect(
-                                              borderRadius: BorderRadius.circular(4),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
                                               child: LinearProgressIndicator(
-                                                value: eventoEstado.progresoDecimal,
+                                                value: eventoEstado
+                                                    .progresoDecimal,
                                                 minHeight: 8,
-                                                backgroundColor: Colors.grey.withValues(alpha: 0.3),
-                                                valueColor: AlwaysStoppedAnimation<Color>(
-                                                  eventoEstado.isPaused ? Colors.orange : Colors.green,
+                                                backgroundColor: Colors.grey
+                                                    .withValues(alpha: 0.3),
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                        Color>(
+                                                  eventoEstado.isPaused
+                                                      ? Colors.orange
+                                                      : Colors.green,
                                                 ),
                                               ),
                                             ),
@@ -5268,7 +5312,8 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             Text(
                                               'Zona ${eventoEstado.pasoActual} de ${eventoEstado.totalPasos}',
                                               style: GoogleFonts.poppins(
-                                                color: color0.withValues(alpha: 0.7),
+                                                color: color0.withValues(
+                                                    alpha: 0.7),
                                                 fontSize: 11,
                                               ),
                                             ),
@@ -5278,20 +5323,25 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       const SizedBox(height: 12),
                                       // Botones de control
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           if (eventoEstado.isRunning) ...[
                                             ElevatedButton.icon(
-                                              onPressed: () => pausarRiego(grupo),
-                                              icon: const Icon(Icons.pause, size: 18),
+                                              onPressed: () =>
+                                                  pausarRiego(grupo),
+                                              icon: const Icon(Icons.pause,
+                                                  size: 18),
                                               label: Text(
                                                 'Pausar',
-                                                style: GoogleFonts.poppins(fontSize: 13),
+                                                style: GoogleFonts.poppins(
+                                                    fontSize: 13),
                                               ),
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor: Colors.orange,
                                                 foregroundColor: color0,
-                                                padding: const EdgeInsets.symmetric(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
                                                   horizontal: 16,
                                                   vertical: 8,
                                                 ),
@@ -5301,16 +5351,20 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           ],
                                           if (eventoEstado.isPaused) ...[
                                             ElevatedButton.icon(
-                                              onPressed: () => reanudarRiego(grupo),
-                                              icon: const Icon(Icons.play_arrow, size: 18),
+                                              onPressed: () =>
+                                                  reanudarRiego(grupo),
+                                              icon: const Icon(Icons.play_arrow,
+                                                  size: 18),
                                               label: Text(
                                                 'Reanudar',
-                                                style: GoogleFonts.poppins(fontSize: 13),
+                                                style: GoogleFonts.poppins(
+                                                    fontSize: 13),
                                               ),
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor: Colors.green,
                                                 foregroundColor: color0,
-                                                padding: const EdgeInsets.symmetric(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
                                                   horizontal: 16,
                                                   vertical: 8,
                                                 ),
@@ -5319,16 +5373,20 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             const SizedBox(width: 8),
                                           ],
                                           ElevatedButton.icon(
-                                            onPressed: () => cancelarRiego(grupo),
-                                            icon: const Icon(Icons.cancel, size: 18),
+                                            onPressed: () =>
+                                                cancelarRiego(grupo),
+                                            icon: const Icon(Icons.cancel,
+                                                size: 18),
                                             label: Text(
                                               'Cancelar',
-                                              style: GoogleFonts.poppins(fontSize: 13),
+                                              style: GoogleFonts.poppins(
+                                                  fontSize: 13),
                                             ),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.red,
                                               foregroundColor: color0,
-                                              padding: const EdgeInsets.symmetric(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
                                                 horizontal: 16,
                                                 vertical: 8,
                                               ),
@@ -5342,30 +5400,34 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 }
 
                                 // Mostrar botón de iniciar solo si no está en ejecución
-                                final bool isExecuting = eventoEstado != null && eventoEstado.isRunning;
+                                final bool isExecuting = eventoEstado != null &&
+                                    eventoEstado.isRunning;
 
                                 return Column(
                                   children: [
                                     Center(
                                       child: ElevatedButton.icon(
                                         onPressed: (riegoOnline && !isExecuting)
-                                            ? () => activarRutinaRiego(eventoRiego)
+                                            ? () =>
+                                                activarRutinaRiego(eventoRiego)
                                             : null,
                                         icon: isExecuting
                                             ? const SizedBox(
                                                 width: 20,
                                                 height: 20,
-                                                child: CircularProgressIndicator(
+                                                child:
+                                                    CircularProgressIndicator(
                                                   strokeWidth: 2,
                                                   valueColor:
-                                                      AlwaysStoppedAnimation<Color>(
-                                                          color0),
+                                                      AlwaysStoppedAnimation<
+                                                          Color>(color0),
                                                 ),
                                               )
                                             : Icon(
                                                 HugeIcons.strokeRoundedPlay,
-                                                color:
-                                                    riegoOnline ? color0 : Colors.grey,
+                                                color: riegoOnline
+                                                    ? color0
+                                                    : Colors.grey,
                                                 size: 20,
                                               ),
                                         label: Text(
@@ -5381,19 +5443,23 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           ),
                                         ),
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: (riegoOnline || isExecuting)
-                                              ? color4
-                                              : Colors.grey.withValues(alpha: 0.3),
+                                          backgroundColor:
+                                              (riegoOnline || isExecuting)
+                                                  ? color4
+                                                  : Colors.grey
+                                                      .withValues(alpha: 0.3),
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 24,
                                             vertical: 12,
                                           ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(20),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
                                           ),
-                                          elevation: (riegoOnline || isExecuting)
-                                              ? 3
-                                              : 0,
+                                          elevation:
+                                              (riegoOnline || isExecuting)
+                                                  ? 3
+                                                  : 0,
                                         ),
                                       ),
                                     ),
@@ -7388,23 +7454,22 @@ class WifiPageState extends ConsumerState<WifiPage>
                           key.startsWith('io') &&
                           RegExp(r'^io\d+$').hasMatch(key))
                       .where((ioKey) {
-                        if (deviceDATA[ioKey] == null) return false;
-                        try {
-                          var ioData = deviceDATA[ioKey] is String
-                              ? jsonDecode(deviceDATA[ioKey])
-                              : deviceDATA[ioKey];
-                          // pinType puede ser '0', 0, "0"
-                          var pinTypeStr = ioData['pinType'].toString();
-                          bool isOutput = pinTypeStr == '0';
-                          printLog.i(
-                              'Riego $deviceName - $ioKey: pinType=$pinTypeStr, isOutput=$isOutput');
-                          return isOutput;
-                        } catch (e) {
-                          printLog.e('Error parseando $ioKey: $e');
-                          return false;
-                        }
-                      })
-                      .toList()
+                if (deviceDATA[ioKey] == null) return false;
+                try {
+                  var ioData = deviceDATA[ioKey] is String
+                      ? jsonDecode(deviceDATA[ioKey])
+                      : deviceDATA[ioKey];
+                  // pinType puede ser '0', 0, "0"
+                  var pinTypeStr = ioData['pinType'].toString();
+                  bool isOutput = pinTypeStr == '0';
+                  printLog.i(
+                      'Riego $deviceName - $ioKey: pinType=$pinTypeStr, isOutput=$isOutput');
+                  return isOutput;
+                } catch (e) {
+                  printLog.e('Error parseando $ioKey: $e');
+                  return false;
+                }
+              }).toList()
                     ..sort((a, b) {
                       int indexA = int.parse(a.substring(2));
                       int indexB = int.parse(b.substring(2));
@@ -7842,9 +7907,9 @@ class WifiPageState extends ConsumerState<WifiPage>
         // Contar zonas activas en tiempo real (excluyendo la que vamos a apagar)
         Map<String, dynamic> currentDeviceData =
             globalDATA['$productCode/$serialNumber'] ?? {};
-        
+
         int activeZonesCount = 0;
-        
+
         // Verificar zonas del dispositivo principal (excluyendo io0 que es la bomba)
         currentDeviceData.forEach((key, value) {
           if (key.startsWith('io') && key != 'io0' && value is String) {
@@ -7852,8 +7917,8 @@ class WifiPageState extends ConsumerState<WifiPage>
               var decoded = jsonDecode(value);
               int ioIndex = int.parse(key.substring(2));
               // Contar solo si: es salida, está encendida, y NO es la que vamos a apagar
-              if (decoded['pinType'].toString() == '0' && 
-                  decoded['w_status'] == true && 
+              if (decoded['pinType'].toString() == '0' &&
+                  decoded['w_status'] == true &&
                   ioIndex != outputIndex) {
                 activeZonesCount++;
               }
@@ -7862,7 +7927,7 @@ class WifiPageState extends ConsumerState<WifiPage>
             }
           }
         });
-        
+
         // Verificar zonas de extensiones vinculadas
         globalDATA.forEach((key, value) {
           if (value['riegoMaster'] == deviceName) {
@@ -7872,7 +7937,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                 try {
                   var decoded = jsonDecode(ioValue);
                   // Contar zonas activas de extensiones
-                  if (decoded['pinType'].toString() == '0' && 
+                  if (decoded['pinType'].toString() == '0' &&
                       decoded['w_status'] == true) {
                     activeZonesCount++;
                   }
@@ -7883,10 +7948,11 @@ class WifiPageState extends ConsumerState<WifiPage>
             });
           }
         });
-        
+
         printLog.i('🔍 Verificación antes de apagar zona $outputIndex:');
-        printLog.i('   - Zonas activas (excluyendo la actual): $activeZonesCount');
-        
+        printLog
+            .i('   - Zonas activas (excluyendo la actual): $activeZonesCount');
+
         // Verificar si la bomba está encendida
         bool bombIsOn = false;
         if (currentDeviceData['io0'] != null) {
@@ -7897,14 +7963,14 @@ class WifiPageState extends ConsumerState<WifiPage>
             printLog.e('Error verificando bomba: $e');
           }
         }
-        
+
         printLog.i('   - Bomba encendida: $bombIsOn');
 
         if (activeZonesCount == 0 && bombIsOn) {
           // Esta es la última zona activa Y la bomba está encendida
           // APAGAR BOMBA PRIMERO
           printLog.i('⚠️ Última zona activa - Apagando bomba primero');
-          
+
           setState(() {
             _isPumpShuttingDown = true;
           });
@@ -7925,7 +7991,7 @@ class WifiPageState extends ConsumerState<WifiPage>
           });
           return;
         }
-        
+
         // Si no es la última o la bomba ya está apagada, apagar normalmente
         printLog.i('➡️ Apagando zona $outputIndex normalmente');
         _sendRiegoCommand(productCode, serialNumber, outputIndex, value);
@@ -7995,17 +8061,18 @@ class WifiPageState extends ConsumerState<WifiPage>
         return;
       } else {
         // APAGAR ZONA DE EXTENSIÓN: Verificar DIRECTAMENTE el estado de todas las zonas
-        Map<String, dynamic> masterData = globalDATA['$masterPc/$masterSn'] ?? {};
-        
+        Map<String, dynamic> masterData =
+            globalDATA['$masterPc/$masterSn'] ?? {};
+
         int activeZonesCount = 0;
-        
+
         // Verificar zonas del maestro (excluyendo io0 que es la bomba)
         masterData.forEach((key, value) {
           if (key.startsWith('io') && key != 'io0' && value is String) {
             try {
               var decoded = jsonDecode(value);
               // Contar solo salidas activas
-              if (decoded['pinType'].toString() == '0' && 
+              if (decoded['pinType'].toString() == '0' &&
                   decoded['w_status'] == true) {
                 activeZonesCount++;
               }
@@ -8014,7 +8081,7 @@ class WifiPageState extends ConsumerState<WifiPage>
             }
           }
         });
-        
+
         // Verificar zonas de TODAS las extensiones (incluyendo esta)
         globalDATA.forEach((key, value) {
           if (value['riegoMaster'] == masterDevice) {
@@ -8024,11 +8091,12 @@ class WifiPageState extends ConsumerState<WifiPage>
                   var decoded = jsonDecode(ioValue);
                   // Obtener el índice de la salida
                   int ioIndex = int.parse(ioKey.substring(2));
-                  bool isCurrentOutput = (key == '$extensionPc/$extensionSn' && ioIndex == outputIndex);
-                  
+                  bool isCurrentOutput = (key == '$extensionPc/$extensionSn' &&
+                      ioIndex == outputIndex);
+
                   // Contar solo si: es salida, está encendida, y NO es la que vamos a apagar
-                  if (decoded['pinType'].toString() == '0' && 
-                      decoded['w_status'] == true && 
+                  if (decoded['pinType'].toString() == '0' &&
+                      decoded['w_status'] == true &&
                       !isCurrentOutput) {
                     activeZonesCount++;
                   }
@@ -8039,10 +8107,12 @@ class WifiPageState extends ConsumerState<WifiPage>
             });
           }
         });
-        
-        printLog.i('🔍 Verificación antes de apagar extensión $extension zona $outputIndex:');
-        printLog.i('   - Zonas activas (excluyendo la actual): $activeZonesCount');
-        
+
+        printLog.i(
+            '🔍 Verificación antes de apagar extensión $extension zona $outputIndex:');
+        printLog
+            .i('   - Zonas activas (excluyendo la actual): $activeZonesCount');
+
         // Verificar si la bomba del maestro está encendida
         bool bombIsOn = false;
         if (masterData['io0'] != null) {
@@ -8053,14 +8123,15 @@ class WifiPageState extends ConsumerState<WifiPage>
             printLog.e('Error verificando bomba maestro: $e');
           }
         }
-        
+
         printLog.i('   - Bomba maestro encendida: $bombIsOn');
 
         if (activeZonesCount == 0 && bombIsOn) {
           // Esta es la última zona activa Y la bomba está encendida
           // APAGAR BOMBA DEL MAESTRO PRIMERO
-          printLog.i('⚠️ Última zona de extensión activa - Apagando bomba maestro primero');
-          
+          printLog.i(
+              '⚠️ Última zona de extensión activa - Apagando bomba maestro primero');
+
           setState(() {
             _isPumpShuttingDown = true;
           });
@@ -8076,12 +8147,13 @@ class WifiPageState extends ConsumerState<WifiPage>
               setState(() {
                 _isPumpShuttingDown = false;
               });
-              printLog.i('✅ Secuencia completada: Bomba maestro → Extensión $extension zona $outputIndex');
+              printLog.i(
+                  '✅ Secuencia completada: Bomba maestro → Extensión $extension zona $outputIndex');
             }
           });
           return;
         }
-        
+
         // Si no es la última o la bomba ya está apagada, apagar normalmente
         printLog.i('➡️ Apagando zona $outputIndex de extensión normalmente');
         _sendRiegoCommand(extensionPc, extensionSn, outputIndex, value);
@@ -8118,7 +8190,6 @@ class WifiPageState extends ConsumerState<WifiPage>
     globalDATA
         .putIfAbsent('$productCode/$serialNumber', () => {})
         .addAll({'io$outputIndex': message});
-    saveGlobalData(globalDATA);
 
     setState(() {});
   }

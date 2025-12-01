@@ -745,9 +745,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                       ),
                       const SizedBox(height: 10),
                       ElevatedButton(
-                        onPressed: () {
-                          //TODO Guardar fin logica
-                        },
+                        onPressed: () {},
                         style: ElevatedButton.styleFrom(
                           backgroundColor: color4,
                           minimumSize: const Size(double.infinity, 50),

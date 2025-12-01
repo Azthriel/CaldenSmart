@@ -96,7 +96,7 @@ class MenuPageState extends State<MenuPage> {
       if (currentUserEmail.isNotEmpty) {
         await getDevices(currentUserEmail);
         eventosCreados = await getEventos(currentUserEmail);
-        await getNicknames(currentUserEmail);
+        nicknamesMap = await getNicknames(currentUserEmail);
         savedOrder = await loadWifiOrderDevices(currentUserEmail);
 
         printLog.i(

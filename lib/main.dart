@@ -12,6 +12,7 @@ import 'package:caldensmart/Devices/termometro.dart';
 import 'package:caldensmart/Devices/termotanques.dart';
 import 'package:caldensmart/Escenas/escenas.dart';
 import 'package:caldensmart/Global/profile.dart';
+// import 'package:caldensmart/widget/select_device.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -180,6 +181,7 @@ class MyAppState extends State<MyApp> {
         '/termometro': (context) => const TermometroPage(),
         '/riego': (context) => const RiegoPage(),
         '/termotanque': (context) => const TermotanquePage(),
+        // '/widget_config_selection': (context) => const SelectDeviceScreen(),
       },
     );
   }

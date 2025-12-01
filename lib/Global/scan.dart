@@ -9,7 +9,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../master.dart';
 import '../aws/mqtt/mqtt.dart';
-import 'stored_data.dart';
 import 'package:caldensmart/logger.dart';
 
 class ScanPage extends StatefulWidget {
@@ -428,13 +427,13 @@ class ScanPageState extends State<ScanPage>
                 .putIfAbsent('$productCode/$serialNumber', () => {})
                 .addAll({'io${pinQuickAccess[device.platformName]!}': message});
 
-            saveGlobalData(globalDATA);
+            
           } else {
             int fun = newValue ? 1 : 0;
             String data = '$productCode[11]($fun)';
             bluetoothManager.toolsUuid.write(data.codeUnits);
             globalDATA['$productCode/$serialNumber']!['w_status'] = newValue;
-            saveGlobalData(globalDATA);
+            
             try {
               String topic = 'devices_rx/$productCode/$serialNumber';
               String topic2 = 'devices_tx/$productCode/$serialNumber';

@@ -8,7 +8,6 @@ import '../Global/manager_screen.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
-import '../Global/stored_data.dart';
 import 'package:caldensmart/logger.dart';
 
 class RiegoPage extends ConsumerStatefulWidget {
@@ -751,7 +750,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
     });
 
     globalDATA.putIfAbsent(key, () => {}).addAll({'io$outputIndex': message});
-    saveGlobalData(globalDATA);
+    
 
     // Enviar comando MQTT si la extensión está conectada
     String extensionPc = DeviceManager.getProductCode(extension);
@@ -812,7 +811,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
 
     globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({'io$index': message});
 
-    saveGlobalData(globalDATA);
+    
 
     // Registrar uso si es administrador secundario
     String action;
@@ -1025,7 +1024,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
       }
     }
 
-    saveGlobalData(globalDATA);
+    
 
     for (int i = 0; i < parts.length; i++) {
       if (tipo[i] == 'Salida') {
@@ -1955,7 +1954,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                                     List<String>.from(
                                                         extensionesVinculadas)
                                               });
-                                              saveGlobalData(globalDATA);
+                                              
 
                                               // Actualizar la lista de extensiones disponibles
                                               searchExtensions();
@@ -3684,7 +3683,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                         'riegoExtensions': List<String>.from(
                                             extensionesVinculadas)
                                       });
-                                      saveGlobalData(globalDATA);
+                                      
 
                                       setState(() {
                                         isExtension = false;

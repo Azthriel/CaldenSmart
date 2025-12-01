@@ -433,7 +433,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
 
     globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({'io$index': message});
 
-    saveGlobalData(globalDATA);
+    
 
     // Registrar uso si es administrador secundario
     String action = value ? 'Encendió salida $index' : 'Apagó salida $index';
@@ -564,7 +564,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
       }
     }
 
-    saveGlobalData(globalDATA);
+    
     setState(() {});
   }
 

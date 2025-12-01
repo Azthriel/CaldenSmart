@@ -467,7 +467,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
 
     globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({'io$index': message});
 
-    saveGlobalData(globalDATA);
+    
 
     // Registrar uso si es administrador secundario
     String action = value ? 'Encendió salida $index' : 'Apagó salida $index';
@@ -579,7 +579,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
       });
     }
 
-    saveGlobalData(globalDATA);
+    
 
     for (int i = 0; i < parts.length; i++) {
       if (tipo[i] == 'Salida') {

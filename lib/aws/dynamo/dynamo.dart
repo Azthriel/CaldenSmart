@@ -4,7 +4,6 @@ import 'package:caldensmart/logger.dart';
 import 'package:aws_dynamodb_api/dynamodb-2012-08-10.dart';
 import 'package:caldensmart/aws/mqtt/mqtt.dart';
 import '/master.dart';
-import '../../Global/stored_data.dart';
 
 //*-Lee todos los datos de un equipo-*\\
 Future<void> queryItems(String pc, String sn) async {
@@ -263,7 +262,6 @@ Future<void> queryItems(String pc, String sn) async {
             }
           }
           printLog.i("$key: $displayValue");
-          saveGlobalData(globalDATA);
         }
         printLog.i("-----------Fin de un item-----------");
       }
@@ -678,7 +676,8 @@ Future<void> putNicknames(String email, Map<String, String> data) async {
   }
 }
 
-Future<void> getNicknames(String email) async {
+Future<Map<String, String>> getNicknames(String email) async {
+  Map<String, String> nicks = {};
   try {
     final response = await service.getItem(
       tableName: 'Alexa-Devices',
@@ -690,14 +689,46 @@ Future<void> getNicknames(String email) async {
 
       Map<String, AttributeValue> mapa = item['nicknames']?.m ?? {};
       mapa.forEach((key, value) {
-        nicknamesMap.addAll({key: value.s ?? ''});
+        nicks.addAll({key: value.s ?? ''});
       });
-      printLog.i('Nicknames encontrados: $nicknamesMap');
+      printLog.i('Nicknames encontrados: $nicks');
+      return nicks;
     } else {
       printLog.i('Item no encontrado. No está el mail en la database');
+      return nicks;
     }
   } catch (e) {
     printLog.e('Error al obtener el item: $e');
+    return nicks;
+  }
+}
+
+Future<List<String>> getPreviusConnections(String email) async {
+  try {
+    final response = await service.getItem(
+      tableName: 'Alexa-Devices',
+      key: {'email': AttributeValue(s: email)},
+    );
+    if (response.item != null) {
+      // Convertir AttributeValue a String
+      var item = response.item!;
+
+      List<String> equipos = item['previusConnections']?.ss ?? [];
+
+      // Filtrar marcadores fantasma y strings vacíos
+      equipos = equipos
+          .where((device) =>
+              device.isNotEmpty && device != intentionallyEmptyMarker)
+          .toList();
+
+      return equipos;
+    } else {
+      printLog.i('Item no encontrado. No está el mail en la database');
+      return [];
+    }
+  } catch (e) {
+    printLog.e('Error al obtener el item: $e');
+    return [];
   }
 }
 
@@ -787,9 +818,6 @@ Future<void> getDevices(String email) async {
     printLog.e('Error al obtener dispositivos del usuario: $e');
     deviceLoadState = DeviceLoadState.loadError;
     loadRetryCount++;
-
-    // NO modificar previusConnections en caso de error
-    // Mantener el estado anterior si existe
   }
 }
 
@@ -1483,7 +1511,8 @@ void deleteEventoControlPorCadena(String email, String nombreEvento) async {
 }
 
 // Consultar todos los eventos de control por cadena del usuario
-Future<List<Map<String, dynamic>>> queryEventosControlPorCadena(String email) async {
+Future<List<Map<String, dynamic>>> queryEventosControlPorCadena(
+    String email) async {
   try {
     final response = await service.query(
       tableName: 'Eventos_ControlPorCadena',
@@ -1494,21 +1523,30 @@ Future<List<Map<String, dynamic>>> queryEventosControlPorCadena(String email) as
     );
 
     List<Map<String, dynamic>> eventos = [];
-    
+
     if (response.items != null) {
       for (var item in response.items!) {
         eventos.add({
           'nombreEvento': item['nombreEvento']?.s ?? '',
-          'estado_ejecucion': item['estado_ejecucion']?.m != null 
-            ? {
-                'status': item['estado_ejecucion']!.m!['status']?.s ?? 'idle',
-                'paso_actual': int.tryParse(item['estado_ejecucion']!.m!['paso_actual']?.n ?? '0') ?? 0,
-                'total_pasos': int.tryParse(item['estado_ejecucion']!.m!['total_pasos']?.n ?? '0') ?? 0,
-                'pasos_completados': item['estado_ejecucion']!.m!['pasos_completados']?.l
-                  ?.map((e) => int.tryParse(e.n ?? '0') ?? 0)
-                  .toList() ?? [],
-              }
-            : null,
+          'estado_ejecucion': item['estado_ejecucion']?.m != null
+              ? {
+                  'status': item['estado_ejecucion']!.m!['status']?.s ?? 'idle',
+                  'paso_actual': int.tryParse(
+                          item['estado_ejecucion']!.m!['paso_actual']?.n ??
+                              '0') ??
+                      0,
+                  'total_pasos': int.tryParse(
+                          item['estado_ejecucion']!.m!['total_pasos']?.n ??
+                              '0') ??
+                      0,
+                  'pasos_completados': item['estado_ejecucion']!
+                          .m!['pasos_completados']
+                          ?.l
+                          ?.map((e) => int.tryParse(e.n ?? '0') ?? 0)
+                          .toList() ??
+                      [],
+                }
+              : null,
         });
       }
     }
@@ -1522,7 +1560,8 @@ Future<List<Map<String, dynamic>>> queryEventosControlPorCadena(String email) as
 }
 
 // 🆕 Query eventos de Control de Riego con estado de ejecución
-Future<List<Map<String, dynamic>>> queryEventosControlDeRiego(String email) async {
+Future<List<Map<String, dynamic>>> queryEventosControlDeRiego(
+    String email) async {
   try {
     final response = await service.query(
       tableName: 'Eventos_ControlDeRiego',
@@ -1533,24 +1572,36 @@ Future<List<Map<String, dynamic>>> queryEventosControlDeRiego(String email) asyn
     );
 
     List<Map<String, dynamic>> eventos = [];
-    
+
     if (response.items != null) {
       for (var item in response.items!) {
         eventos.add({
           'nombreEvento': item['nombreEvento']?.s ?? '',
-          'estado_ejecucion': item['estado_ejecucion']?.m != null 
-            ? {
-                'status': item['estado_ejecucion']!.m!['status']?.s ?? 'idle',
-                'paso_actual': int.tryParse(item['estado_ejecucion']!.m!['paso_actual']?.n ?? '0') ?? 0,
-                'total_pasos': int.tryParse(item['estado_ejecucion']!.m!['total_pasos']?.n ?? '0') ?? 0,
-                'pasos_completados': item['estado_ejecucion']!.m!['pasos_completados']?.l
-                  ?.map((e) => int.tryParse(e.n ?? '0') ?? 0)
-                  .toList() ?? [],
-                'zonas_canceladas_por_lluvia': item['estado_ejecucion']!.m!['zonas_canceladas_por_lluvia']?.l
-                  ?.map((e) => e.s ?? '')
-                  .toList() ?? [],
-              }
-            : null,
+          'estado_ejecucion': item['estado_ejecucion']?.m != null
+              ? {
+                  'status': item['estado_ejecucion']!.m!['status']?.s ?? 'idle',
+                  'paso_actual': int.tryParse(
+                          item['estado_ejecucion']!.m!['paso_actual']?.n ??
+                              '0') ??
+                      0,
+                  'total_pasos': int.tryParse(
+                          item['estado_ejecucion']!.m!['total_pasos']?.n ??
+                              '0') ??
+                      0,
+                  'pasos_completados': item['estado_ejecucion']!
+                          .m!['pasos_completados']
+                          ?.l
+                          ?.map((e) => int.tryParse(e.n ?? '0') ?? 0)
+                          .toList() ??
+                      [],
+                  'zonas_canceladas_por_lluvia': item['estado_ejecucion']!
+                          .m!['zonas_canceladas_por_lluvia']
+                          ?.l
+                          ?.map((e) => e.s ?? '')
+                          .toList() ??
+                      [],
+                }
+              : null,
         });
       }
     }

@@ -6,7 +6,6 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
 import '../master.dart';
 import '../aws/dynamo/dynamo.dart';
-import 'stored_data.dart';
 import 'package:caldensmart/logger.dart';
 
 class QRScannerScreen extends StatefulWidget {
@@ -269,9 +268,6 @@ class QRScannerScreenState extends State<QRScannerScreen> {
       previusConnections.add(deviceName);
 
       await putPreviusConnections(currentUserEmail, previusConnections);
-
-      // Guardar en SharedPreferences usando la funció0n global
-      await saveGlobalData(globalDATA);
 
       _showSuccessDialog(deviceName, sharedBy);
     } catch (e) {

@@ -11,7 +11,6 @@ import '../Global/manager_screen.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
-import '../Global/stored_data.dart';
 
 // CLASES \\
 
@@ -501,7 +500,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
     String data = '$pc[11]($fun)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
     globalDATA['$pc/$sn']!['w_status'] = on;
-    saveGlobalData(globalDATA);
+    
     try {
       String topic = 'devices_rx/$pc/$sn';
       String topic2 = 'devices_tx/$pc/$sn';

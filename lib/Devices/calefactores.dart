@@ -725,7 +725,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
     String data = '$pc[11]($fun)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
     globalDATA['$pc/$sn']!['w_status'] = on;
-    saveGlobalData(globalDATA);
+    
     try {
       String topic = 'devices_rx/$pc/$sn';
       String topic2 = 'devices_tx/$pc/$sn';

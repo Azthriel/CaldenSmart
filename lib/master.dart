@@ -1935,7 +1935,7 @@ Future<void> handleNotifications(RemoteMessage message) async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     currentUserEmail = await loadEmail();
-    await getNicknames(currentUserEmail);
+    nicknamesMap = await getNicknames(currentUserEmail);
     soundOfNotification = await loadSounds();
     await DeviceManager.init();
     printLog.i('Llegó esta notif: ${message.data}', color: 'lima');
@@ -2482,13 +2482,12 @@ Future<bool> backFunctionDS() async {
   printLog.i('Entre a hacer locuritas. ${DateTime.now()}');
   // showNotification('Entre a la función', '${DateTime.now()}');
   try {
-    currentUserEmail = await loadEmail();
+    String currentUserEmail = await loadEmail();
     List<String> devicesStored =
         await getDevicesInDistanceControl(currentUserEmail);
-    globalDATA = await loadGlobalData();
+    Map<String, Map<String, dynamic>> globalDATA = {};
     await DeviceManager.init();
-    await getNicknames(currentUserEmail);
-    Map<String, String> nicks = nicknamesMap;
+    Map<String, String> nicks = await getNicknames(currentUserEmail);
 
     for (int index = 0; index < devicesStored.length; index++) {
       printLog.i('Analizando dispositivo: ${devicesStored[index]}');
@@ -2614,7 +2613,7 @@ Future<bool> backFunctionDS() async {
             globalDATA
                 .putIfAbsent('$productCode/$sn', () => {})
                 .addAll({"w_status": true});
-            saveGlobalData(globalDATA);
+
             String topic = 'devices_rx/$productCode/$sn';
             String topic2 = 'devices_tx/$productCode/$sn';
             String message = jsonEncode({"w_status": true});
@@ -2653,7 +2652,7 @@ Future<bool> backFunctionDS() async {
             globalDATA
                 .putIfAbsent('$productCode/$sn', () => {})
                 .addAll({"w_status": false});
-            saveGlobalData(globalDATA);
+
             String topic = 'devices_rx/$productCode/$sn';
             String topic2 = 'devices_tx/$productCode/$sn';
             String message = jsonEncode({"w_status": false});
@@ -2889,14 +2888,12 @@ Future<void> controlDeviceBLE(String name, bool newState) async {
     globalDATA
         .putIfAbsent('$pc/$sn', () => {})
         .addAll({'io$pinQuick': message});
-
-    saveGlobalData(globalDATA);
   } else {
     int fun = newState ? 1 : 0;
     String data = '$pc[11]($fun)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
     globalDATA['$pc/$sn']!['w_status'] = newState;
-    saveGlobalData(globalDATA);
+
     try {
       String topic = 'devices_rx/$pc/$sn';
       String topic2 = 'devices_tx/$pc/$sn';
@@ -3631,7 +3628,6 @@ class BluetoothManager {
       globalDATA.putIfAbsent(
           '${DeviceManager.getProductCode(device.platformName)}/${DeviceManager.extractSerialNumber(device.platformName)}',
           () => {});
-      saveGlobalData(globalDATA);
 
       switch (DeviceManager.getProductCode(device.platformName)) {
         case '022000_IOT' ||

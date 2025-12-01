@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 // MASTERLOAD \\
 //*-Cargo toda la data-*\\
 Future<void> loadValues() async {
-  globalDATA = await loadGlobalData();
   notificationMap = await loadNotificationMap();
   deviceImages = await loadDeviceImages();
   soundOfNotification = await loadSounds();
@@ -17,31 +16,6 @@ Future<void> loadValues() async {
 }
 //*-Cargo toda la data-*\\
 // MASTERLOAD \\
-
-//*-GlobalDATA-*\\
-Future<void> saveGlobalData(
-    Map<String, Map<String, dynamic>> globalData) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  Map<String, String> stringMap = globalData.map((key, value) {
-    return MapEntry(key, json.encode(value));
-  });
-  await prefs.setString('CSglobalData', json.encode(stringMap));
-}
-
-Future<Map<String, Map<String, dynamic>>> loadGlobalData() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? jsonString = prefs.getString('CSglobalData');
-  if (jsonString == null) {
-    return {};
-  }
-  Map<String, dynamic> stringMap =
-      json.decode(jsonString) as Map<String, dynamic>;
-  Map<String, Map<String, dynamic>> globalData = stringMap.map((key, value) {
-    return MapEntry(key, json.decode(value) as Map<String, dynamic>);
-  });
-  return globalData;
-}
-//*-GlobalDATA-*\\
 
 //*-Dómotica con notis encendida-*\\
 Future<void> saveNotificationMap(Map<String, List<bool>> map) async {

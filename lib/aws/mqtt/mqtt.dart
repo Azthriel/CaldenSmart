@@ -279,7 +279,7 @@ void listenToTopics() {
         int index = messageMap["index"];
         final encoded = {'io$index': json.encode(messageMap)};
         globalDATA.putIfAbsent(keyName, () => {}).addAll(encoded);
-        saveGlobalData(globalDATA);
+
         final container =
             riverpod.ProviderScope.containerOf(navigatorKey.currentContext!);
         container
@@ -287,7 +287,7 @@ void listenToTopics() {
             .updateData(keyName, encoded);
       } else {
         globalDATA.putIfAbsent(keyName, () => {}).addAll(messageMap);
-        saveGlobalData(globalDATA);
+
         final container =
             riverpod.ProviderScope.containerOf(navigatorKey.currentContext!);
         container
