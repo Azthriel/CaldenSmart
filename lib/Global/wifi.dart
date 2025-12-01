@@ -33,6 +33,10 @@ class WifiPageState extends ConsumerState<WifiPage>
   // Mapa para almacenar permisos de WiFi por dispositivo
   Map<String, bool> _wifiPermissions = {};
 
+  Timer? _saveOrderTimer;
+  List<MapEntry<String, String>> _listaIndividuales = [];
+  List<MapEntry<String, String>> _listaEventos = [];
+
   @override
   void initState() {
     super.initState();
@@ -71,6 +75,7 @@ class WifiPageState extends ConsumerState<WifiPage>
 
   @override
   void dispose() {
+    _saveOrderTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _riegoCompletedSubscription?.cancel();
     super.dispose();
@@ -250,6 +255,8 @@ class WifiPageState extends ConsumerState<WifiPage>
       printLog.i(
           'Lista final de dispositivos: ${todosLosDispositivos.length} elementos');
 
+      _actualizarListasUI();
+
       if (mounted) {
         setState(() {});
       }
@@ -337,6 +344,7 @@ class WifiPageState extends ConsumerState<WifiPage>
     previusConnections.remove(deviceName);
     alexaDevices.removeWhere((d) => d.contains(deviceName));
     todosLosDispositivos.removeWhere((e) => e.value == deviceName);
+    _actualizarListasUI();
     await _saveOrder();
 
     setState(() {});
@@ -904,15 +912,29 @@ class WifiPageState extends ConsumerState<WifiPage>
   //*- Cancelar riego -*\\
 
   //*- Guardar orden de equipos -*\\
-  Future<void> _saveOrder() async {
-    List<Map<String, String>> orderedDevices = todosLosDispositivos
-        .map((e) => {'key': e.key, 'value': e.value})
-        .toList();
+  Future<void> _saveOrder({bool immediate = true}) async {
+    if (immediate) {
+      List<Map<String, String>> orderedDevices = todosLosDispositivos
+          .map((e) => {'key': e.key, 'value': e.value})
+          .toList();
 
-    await saveWifiOrderDevices(orderedDevices, currentUserEmail);
-    savedOrder
-      ..clear()
-      ..addAll(orderedDevices);
+      await saveWifiOrderDevices(orderedDevices, currentUserEmail);
+      savedOrder
+        ..clear()
+        ..addAll(orderedDevices);
+    } else {
+      _saveOrderTimer?.cancel();
+      _saveOrderTimer = Timer(const Duration(milliseconds: 500), () async {
+        List<Map<String, String>> orderedDevices = todosLosDispositivos
+            .map((e) => {'key': e.key, 'value': e.value})
+            .toList();
+
+        await saveWifiOrderDevices(orderedDevices, currentUserEmail);
+        savedOrder
+          ..clear()
+          ..addAll(orderedDevices);
+      });
+    }
   }
   //*- Guardar orden de equipos -*\\
 
@@ -990,16 +1012,18 @@ class WifiPageState extends ConsumerState<WifiPage>
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final dispositiosIndividuales = todosLosDispositivos
+  void _actualizarListasUI() {
+    _listaIndividuales = todosLosDispositivos
         .where((device) => device.key == 'individual')
         .toList();
 
-    final eventos = todosLosDispositivos
+    _listaEventos = todosLosDispositivos
         .where((device) => device.key != 'individual')
         .toList();
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -1035,7 +1059,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        'Individuales (${dispositiosIndividuales.length})',
+                        'Individuales (${_listaIndividuales.length})',
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
@@ -1055,7 +1079,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                     const Icon(HugeIcons.strokeRoundedUserGroup, size: 18),
                     const SizedBox(width: 8),
                     Text(
-                      'Eventos (${eventos.length})',
+                      'Eventos (${_listaEventos.length})',
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -1076,24 +1100,9 @@ class WifiPageState extends ConsumerState<WifiPage>
           child: TabBarView(
             physics: const NeverScrollableScrollPhysics(),
             children: [
-              SingleChildScrollView(
-                child: Column(
-                  children: [
-                    _buildDeviceList(dispositiosIndividuales, 'individual',
-                        shrinkWrap: true),
-                  ],
-                ),
-              ),
-              SingleChildScrollView(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 10),
-                    _buildDeviceList(eventos, 'grupos', shrinkWrap: true),
-                    const SizedBox(height: 10),
-                    _buildConfigButton(),
-                  ],
-                ),
-              ),
+              _buildDeviceList(_listaIndividuales, 'individual'),
+              _buildDeviceList(_listaEventos, 'grupos',
+                  footerWidget: _buildConfigButton()),
             ],
           ),
         ),
@@ -1165,7 +1174,7 @@ class WifiPageState extends ConsumerState<WifiPage>
 
   Widget _buildDeviceList(
       List<MapEntry<String, String>> deviceList, String tipo,
-      {bool shrinkWrap = false}) {
+      {Widget? footerWidget}) {
     if (deviceList.where((e) => e.value.trim().isNotEmpty).isEmpty) {
       return Center(
         child: Padding(
@@ -1210,52 +1219,47 @@ class WifiPageState extends ConsumerState<WifiPage>
     }
 
     return ReorderableListView.builder(
-      shrinkWrap: shrinkWrap,
-      physics: const NeverScrollableScrollPhysics(),
+      buildDefaultDragHandles: false,
       itemCount: deviceList.length,
-      footer: SizedBox(height: shrinkWrap ? 10 : 120),
-      onReorder: (int oldIndex, int newIndex) async {
+      footer: Column(
+        children: [
+          if (footerWidget != null) ...[
+            const SizedBox(height: 10),
+            footerWidget,
+          ],
+          const SizedBox(height: 120),
+        ],
+      ),
+      onReorder: (int oldIndex, int newIndex) {
         if (newIndex > oldIndex) newIndex -= 1;
 
-        // Ordenar solo la sublista correspondiente
-        List<MapEntry<String, String>> sublist = List.from(deviceList);
-        final item = sublist.removeAt(oldIndex);
-        sublist.insert(newIndex, item);
-
-        // Reconstruir todosLosDispositivos manteniendo el orden de ambas sublistas
-        List<MapEntry<String, String>> individuales =
-            todosLosDispositivos.where((e) => e.key == 'individual').toList();
-        List<MapEntry<String, String>> grupos =
-            todosLosDispositivos.where((e) => e.key != 'individual').toList();
-
-        if (tipo == 'individual') {
-          individuales = sublist;
-        } else {
-          grupos = sublist;
-        }
-
         setState(() {
+          if (tipo == 'individual') {
+            final item = _listaIndividuales.removeAt(oldIndex);
+            _listaIndividuales.insert(newIndex, item);
+          } else {
+            final item = _listaEventos.removeAt(oldIndex);
+            _listaEventos.insert(newIndex, item);
+          }
+
           todosLosDispositivos
             ..clear()
-            ..addAll(individuales)
-            ..addAll(grupos);
+            ..addAll(_listaIndividuales)
+            ..addAll(_listaEventos);
         });
 
-        await _saveOrder();
+        _saveOrder(immediate: false);
       },
       itemBuilder: (BuildContext context, int index) {
         final String grupo = deviceList[index].key;
         final String deviceName = deviceList[index].value;
 
         final bool esGrupo = grupo != 'individual';
+        String productCode = DeviceManager.getProductCode(deviceName);
+        String serialNumber = DeviceManager.extractSerialNumber(deviceName);
 
-        // Escuchar cambios en todos los datos globales para detectar cambios en extensiones de riego
-        final allGlobalData = ref.watch(globalDataProvider);
-
-        final topicData =
-            allGlobalData['${DeviceManager.getProductCode(deviceName)}/'
-                    '${DeviceManager.extractSerialNumber(deviceName)}'] ??
-                {};
+        final topicData = ref.watch(globalDataProvider
+            .select((data) => data['$productCode/$serialNumber'] ?? {}));
 
         if (!esGrupo) {
           String productCode = DeviceManager.getProductCode(deviceName);
@@ -1309,2290 +1313,310 @@ class WifiPageState extends ConsumerState<WifiPage>
                 int ppmCO = deviceDATA['ppmco'] ?? 0;
                 int ppmCH4 = deviceDATA['ppmch4'] ?? 0;
                 bool alert = deviceDATA['alert'] == 1;
-                return Card(
+                return RepaintBoundary(
                   key: ValueKey(deviceName),
-                  color: color1,
-                  margin:
-                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                  elevation: 2,
-                  child: Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color4,
-                      collapsedIconColor: color4,
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.7,
-                                child: Text(
-                                  nicknamesMap[deviceName] ?? deviceName,
-                                  style: GoogleFonts.poppins(
-                                    color: color0,
-                                    fontWeight: FontWeight.bold,
+                  child: Card(
+                    color: color1,
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                    elevation: 2,
+                    child: Theme(
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding:
+                            const EdgeInsets.symmetric(horizontal: 16.0),
+                        iconColor: color4,
+                        collapsedIconColor: color4,
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ReorderableDragStartListener(
+                                  index: index,
+                                  child: const Icon(
+                                      HugeIcons.strokeRoundedDragDropVertical,
+                                      color: Colors.grey),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        nicknamesMap[deviceName] ?? deviceName,
+                                        style: GoogleFonts.poppins(
+                                          color: color0,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        spacing: 10,
+                                        children: [
+                                          Text(
+                                            online
+                                                ? '● CONECTADO'
+                                                : '● DESCONECTADO',
+                                            style: GoogleFonts.poppins(
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              fontSize: 15,
+                                            ),
+                                          ),
+                                          Icon(
+                                            online
+                                                ? Icons.cloud
+                                                : Icons.cloud_off,
+                                            color:
+                                                online ? Colors.green : color3,
+                                            size: 15,
+                                          ),
+                                        ],
+                                      ),
+                                      if (online && networkUnstable) ...[
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Icons.warning_amber_rounded,
+                                              color: Colors.orange,
+                                              size: 18,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Red inestable',
+                                              style: GoogleFonts.poppins(
+                                                color: Colors.orange,
+                                                fontSize: 15,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            const Icon(
+                                              Icons.warning_amber_rounded,
+                                              color: Colors.orange,
+                                              size: 18,
+                                            ),
+                                          ],
+                                        )
+                                      ],
+                                    ],
                                   ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        children: <Widget>[
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: ListTile(
+                                  title: online
+                                      ? Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'PPM CO: $ppmCO',
+                                              style: GoogleFonts.poppins(
+                                                color: color0,
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            Text(
+                                              'CH4 LIE: ${(ppmCH4 / 500).round()}%',
+                                              style: GoogleFonts.poppins(
+                                                color: color0,
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  alert
+                                                      ? 'PELIGRO'
+                                                      : 'AIRE PURO',
+                                                  style: GoogleFonts.poppins(
+                                                    color: color0,
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 5),
+                                                alert
+                                                    ? const Icon(
+                                                        HugeIcons
+                                                            .strokeRoundedAlert02,
+                                                        color: color4,
+                                                      )
+                                                    : const Icon(
+                                                        HugeIcons
+                                                            .strokeRoundedLeaf01,
+                                                        color: Colors.green,
+                                                      ),
+                                              ],
+                                            ),
+                                          ],
+                                        )
+                                      : Text(
+                                          'El equipo debe estar\nconectado para su uso',
+                                          style: GoogleFonts.poppins(
+                                            color: color3,
+                                            fontSize: 15,
+                                          ),
+                                        ),
                                 ),
                               ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                spacing: 10,
-                                children: [
-                                  Text(
-                                    online ? '● CONECTADO' : '● DESCONECTADO',
-                                    style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color3,
-                                      fontSize: 15,
-                                    ),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    right: 8.0, bottom: 8.0),
+                                child: IconButton(
+                                  icon: const Icon(
+                                    HugeIcons.strokeRoundedDelete02,
+                                    color: color0,
+                                    size: 20,
                                   ),
-                                  Icon(
-                                    online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color3,
-                                    size: 15,
-                                  ),
-                                ],
+                                  onPressed: () {
+                                    _confirmDelete(deviceName, productCode);
+                                  },
+                                ),
                               ),
-                              if (online && networkUnstable) ...[
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Red inestable',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.orange,
-                                        fontSize: 15,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                  ],
-                                )
-                              ],
                             ],
                           ),
                         ],
                       ),
-                      children: <Widget>[
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: ListTile(
-                                title: online
-                                    ? Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'PPM CO: $ppmCO',
-                                            style: GoogleFonts.poppins(
-                                              color: color0,
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          Text(
-                                            'CH4 LIE: ${(ppmCH4 / 500).round()}%',
-                                            style: GoogleFonts.poppins(
-                                              color: color0,
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          Row(
-                                            children: [
-                                              Text(
-                                                alert ? 'PELIGRO' : 'AIRE PURO',
-                                                style: GoogleFonts.poppins(
-                                                  color: color0,
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 5),
-                                              alert
-                                                  ? const Icon(
-                                                      HugeIcons
-                                                          .strokeRoundedAlert02,
-                                                      color: color4,
-                                                    )
-                                                  : const Icon(
-                                                      HugeIcons
-                                                          .strokeRoundedLeaf01,
-                                                      color: Colors.green,
-                                                    ),
-                                            ],
-                                          ),
-                                        ],
-                                      )
-                                    : Text(
-                                        'El equipo debe estar\nconectado para su uso',
-                                        style: GoogleFonts.poppins(
-                                          color: color3,
-                                          fontSize: 15,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                  right: 8.0, bottom: 8.0),
-                              child: IconButton(
-                                icon: const Icon(
-                                  HugeIcons.strokeRoundedDelete02,
-                                  color: color0,
-                                  size: 20,
-                                ),
-                                onPressed: () {
-                                  _confirmDelete(deviceName, productCode);
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                     ),
                   ),
                 );
               case '022000_IOT':
                 bool estado = deviceDATA['w_status'] ?? false;
                 bool heaterOn = deviceDATA['f_status'] ?? false;
-                return Card(
+                return RepaintBoundary(
                   key: ValueKey(deviceName),
-                  color: color1,
-                  margin:
-                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                  elevation: 2,
-                  child: Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color4,
-                      collapsedIconColor: color4,
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.7,
-                                child: Text(
-                                  nicknamesMap[deviceName] ?? deviceName,
-                                  style: GoogleFonts.poppins(
-                                    color: color0,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                spacing: 10,
-                                children: [
-                                  Text(
-                                    online ? '● CONECTADO' : '● DESCONECTADO',
-                                    style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color3,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  Icon(
-                                    online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color3,
-                                    size: 15,
-                                  ),
-                                ],
-                              ),
-                              if (online && networkUnstable) ...[
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Red inestable',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.orange,
-                                        fontSize: 15,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                  ],
-                                )
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                      children: <Widget>[
-                        isRestrictedAdmin
-                            ? Row(
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0, vertical: 5.0),
-                                      child: Text(
-                                        'El dueño del equipo restringió su uso por wifi.',
-                                        style: GoogleFonts.poppins(
-                                          color: color3,
-                                          fontSize: 15,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0, vertical: 5.0),
-                                      child: online
-                                          ? Row(
-                                              children: [
-                                                estado
-                                                    ? Row(
-                                                        children: [
-                                                          if (heaterOn) ...[
-                                                            Text(
-                                                              'Calentando',
-                                                              style: GoogleFonts
-                                                                  .poppins(
-                                                                color: Colors
-                                                                    .amber[800],
-                                                                fontSize: 15,
-                                                              ),
-                                                            ),
-                                                            Icon(
-                                                              HugeIcons
-                                                                  .strokeRoundedFlash,
-                                                              size: 15,
-                                                              color: Colors
-                                                                  .amber[800],
-                                                            ),
-                                                          ] else ...[
-                                                            Text(
-                                                              'Encendido',
-                                                              style: GoogleFonts
-                                                                  .poppins(
-                                                                color: Colors
-                                                                    .green,
-                                                                fontSize: 15,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ],
-                                                      )
-                                                    : Text(
-                                                        'Apagado',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                                color: color4,
-                                                                fontSize: 15),
-                                                      ),
-                                                const SizedBox(width: 5),
-                                                owner
-                                                    ? Switch(
-                                                        activeThumbColor:
-                                                            const Color(
-                                                                0xFF9C9D98),
-                                                        activeTrackColor:
-                                                            const Color(
-                                                                0xFFB2B5AE),
-                                                        inactiveThumbColor:
-                                                            const Color(
-                                                                0xFFB2B5AE),
-                                                        inactiveTrackColor:
-                                                            const Color(
-                                                                0xFF9C9D98),
-                                                        value: estado,
-                                                        onChanged: (newValue) {
-                                                          toggleState(
-                                                              deviceName,
-                                                              newValue);
-                                                          setState(() {
-                                                            estado = newValue;
-                                                          });
-                                                        },
-                                                      )
-                                                    : const SizedBox(
-                                                        height: 0, width: 0),
-                                              ],
-                                            )
-                                          : Text(
-                                              'El equipo debe estar\nconectado para su uso',
-                                              style: GoogleFonts.poppins(
-                                                color: color3,
-                                                fontSize: 15,
-                                              ),
-                                            ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        right: 8.0, bottom: 8.0),
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        HugeIcons.strokeRoundedDelete02,
-                                        color: color0,
-                                        size: 20,
-                                      ),
-                                      onPressed: () {
-                                        _confirmDelete(deviceName, productCode);
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                      ],
-                    ),
-                  ),
-                );
-              case '027000_IOT':
-                bool estado = deviceDATA['w_status'] ?? false;
-                bool heaterOn = deviceDATA['f_status'] ?? false;
-                return Card(
-                  key: ValueKey(deviceName),
-                  color: color1,
-                  margin:
-                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                  elevation: 2,
-                  child: Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color4,
-                      collapsedIconColor: color4,
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.7,
-                                child: Text(
-                                  nicknamesMap[deviceName] ?? deviceName,
-                                  style: GoogleFonts.poppins(
-                                    color: color0,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                spacing: 10,
-                                children: [
-                                  Text(
-                                    online ? '● CONECTADO' : '● DESCONECTADO',
-                                    style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color3,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  Icon(
-                                    online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color3,
-                                    size: 15,
-                                  ),
-                                ],
-                              ),
-                              if (online && networkUnstable) ...[
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Red inestable',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.orange,
-                                        fontSize: 15,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                  ],
-                                )
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                      children: <Widget>[
-                        isRestrictedAdmin
-                            ? Row(
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0, vertical: 5.0),
-                                      child: Text(
-                                        'El dueño del equipo restringió su uso por wifi.',
-                                        style: GoogleFonts.poppins(
-                                          color: color3,
-                                          fontSize: 15,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0, vertical: 5.0),
-                                      child: online
-                                          ? Row(
-                                              children: [
-                                                estado
-                                                    ? Row(
-                                                        children: [
-                                                          if (heaterOn) ...[
-                                                            Text(
-                                                              'Calentando',
-                                                              style: GoogleFonts
-                                                                  .poppins(
-                                                                color: Colors
-                                                                    .amber[800],
-                                                                fontSize: 15,
-                                                              ),
-                                                            ),
-                                                            Icon(
-                                                              HugeIcons
-                                                                  .strokeRoundedFire,
-                                                              size: 15,
-                                                              color: Colors
-                                                                  .amber[800],
-                                                            ),
-                                                          ] else ...[
-                                                            Text(
-                                                              'Encendido',
-                                                              style: GoogleFonts
-                                                                  .poppins(
-                                                                color: Colors
-                                                                    .green,
-                                                                fontSize: 15,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ],
-                                                      )
-                                                    : Text(
-                                                        'Apagado',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          color: color4,
-                                                          fontSize: 15,
-                                                        ),
-                                                      ),
-                                                const SizedBox(width: 5),
-                                                Switch(
-                                                    activeThumbColor:
-                                                        const Color(0xFF9C9D98),
-                                                    activeTrackColor:
-                                                        const Color(0xFFB2B5AE),
-                                                    inactiveThumbColor:
-                                                        const Color(0xFFB2B5AE),
-                                                    inactiveTrackColor:
-                                                        const Color(0xFF9C9D98),
-                                                    value: estado,
-                                                    onChanged: online
-                                                        ? (newValue) {
-                                                            toggleState(
-                                                                deviceName,
-                                                                newValue);
-                                                            setState(
-                                                              () {
-                                                                estado =
-                                                                    newValue;
-                                                                if (!newValue) {
-                                                                  heaterOn =
-                                                                      false;
-                                                                }
-                                                              },
-                                                            );
-                                                          }
-                                                        : null),
-                                              ],
-                                            )
-                                          : Text(
-                                              'El equipo debe estar\nconectado para su uso',
-                                              style: GoogleFonts.poppins(
-                                                color: color3,
-                                                fontSize: 15,
-                                              ),
-                                            ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        right: 8.0, bottom: 8.0),
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        HugeIcons.strokeRoundedDelete02,
-                                        color: color0,
-                                        size: 20,
-                                      ),
-                                      onPressed: () {
-                                        _confirmDelete(deviceName, productCode);
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                      ],
-                    ),
-                  ),
-                );
-              case '020010_IOT':
-
-                // Verificar si es un equipo de riego
-                bool isRiegoActive = deviceDATA['riegoActive'] == true;
-                if (isRiegoActive) {
-                  return _buildRiegoCard(deviceName, productCode, serialNumber,
-                      deviceDATA, online, owner);
-                }
-
-                // Código original para equipos normales
-                return Card(
-                  key: ValueKey(deviceName),
-                  color: color1,
-                  margin: const EdgeInsets.symmetric(
-                    vertical: 5,
-                    horizontal: 10,
-                  ),
-                  elevation: 2,
-                  child: Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(
-                        horizontal: 16.0,
-                      ),
-                      iconColor: color4,
-                      collapsedIconColor: color4,
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.7,
-                                child: Text(
-                                  nicknamesMap[deviceName] ?? deviceName,
-                                  style: GoogleFonts.poppins(
-                                    color: color0,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                spacing: 10,
-                                children: [
-                                  Text(
-                                    online ? '● CONECTADO' : '● DESCONECTADO',
-                                    style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color3,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  Icon(
-                                    online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color3,
-                                    size: 15,
-                                  ),
-                                ],
-                              ),
-                              if (online && networkUnstable) ...[
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Red inestable',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.orange,
-                                        fontSize: 15,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                  ],
-                                )
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                      children: <Widget>[
-                        isRestrictedAdmin
-                            ? Row(
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0, vertical: 5.0),
-                                      child: Text(
-                                        'El dueño del equipo restringió su uso por wifi.',
-                                        style: GoogleFonts.poppins(
-                                          color: color3,
-                                          fontSize: 15,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : online
-                                ? Column(
-                                    children: [
-                                      ...(deviceDATA.keys
-                                              .where((key) =>
-                                                  key.startsWith('io') &&
-                                                  RegExp(r'^io\d+$')
-                                                      .hasMatch(key))
-                                              .where((ioKey) =>
-                                                  deviceDATA[ioKey] != null)
-                                              .toList()
-                                            ..sort((a, b) {
-                                              int indexA =
-                                                  int.parse(a.substring(2));
-                                              int indexB =
-                                                  int.parse(b.substring(2));
-                                              return indexA.compareTo(indexB);
-                                            }))
-                                          .map((ioKey) {
-                                        // Extraer el índice del ioKey (ejemplo: "io0" -> 0)
-                                        int i = int.parse(ioKey.substring(2));
-                                        Map<String, dynamic> equipo =
-                                            jsonDecode(deviceDATA[ioKey]);
-                                        printLog.i(
-                                          'Voy a realizar el cambio: $equipo',
-                                        );
-                                        String tipoWifi =
-                                            equipo['pinType'].toString() == '0'
-                                                ? 'Salida'
-                                                : 'Entrada';
-                                        bool estadoWifi = equipo['w_status'];
-                                        String comunWifi =
-                                            (equipo['r_state'] ?? '0')
-                                                .toString();
-                                        bool entradaWifi =
-                                            tipoWifi == 'Entrada';
-                                        return ListTile(
-                                          title: Row(
-                                            children: [
-                                              Text(
-                                                nicknamesMap[
-                                                        '${deviceName}_$i'] ??
-                                                    '$tipoWifi $i',
-                                                style: GoogleFonts.poppins(
-                                                  color: color0,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 5),
-                                            ],
-                                          ),
-                                          subtitle: Align(
-                                            alignment: AlignmentDirectional
-                                                .centerStart,
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.start,
-                                              children: [
-                                                entradaWifi
-                                                    ? estadoWifi
-                                                        ? comunWifi == '1'
-                                                            ? Text(
-                                                                'Cerrado',
-                                                                style:
-                                                                    GoogleFonts
-                                                                        .poppins(
-                                                                  color: Colors
-                                                                      .green,
-                                                                  fontSize: 15,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                              )
-                                                            : Text(
-                                                                'Abierto',
-                                                                style:
-                                                                    GoogleFonts
-                                                                        .poppins(
-                                                                  color: color4,
-                                                                  fontSize: 15,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                              )
-                                                        : comunWifi == '1'
-                                                            ? Text(
-                                                                'Abierto',
-                                                                style:
-                                                                    GoogleFonts
-                                                                        .poppins(
-                                                                  color: color4,
-                                                                  fontSize: 15,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                              )
-                                                            : Text(
-                                                                'Cerrado',
-                                                                style:
-                                                                    GoogleFonts
-                                                                        .poppins(
-                                                                  color: Colors
-                                                                      .green,
-                                                                  fontSize: 15,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                              )
-                                                    : estadoWifi
-                                                        ? Text(
-                                                            'Encendido',
-                                                            style: GoogleFonts
-                                                                .poppins(
-                                                              color:
-                                                                  Colors.green,
-                                                              fontSize: 15,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                            ),
-                                                          )
-                                                        : Text(
-                                                            'Apagado',
-                                                            style: GoogleFonts
-                                                                .poppins(
-                                                              color: color4,
-                                                              fontSize: 15,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                            ),
-                                                          ),
-                                              ],
-                                            ),
-                                          ),
-                                          trailing: owner
-                                              ? entradaWifi
-                                                  ? estadoWifi
-                                                      ? comunWifi == '1'
-                                                          ? const Icon(
-                                                              Icons
-                                                                  .new_releases,
-                                                              color: Color(
-                                                                0xff9b9b9b,
-                                                              ),
-                                                            )
-                                                          : const Icon(
-                                                              Icons
-                                                                  .new_releases,
-                                                              color: color4,
-                                                            )
-                                                      : comunWifi == '1'
-                                                          ? const Icon(
-                                                              Icons
-                                                                  .new_releases,
-                                                              color: color4,
-                                                            )
-                                                          : const Icon(
-                                                              Icons
-                                                                  .new_releases,
-                                                              color: Color(
-                                                                0xff9b9b9b,
-                                                              ),
-                                                            )
-                                                  : Switch(
-                                                      activeThumbColor:
-                                                          const Color(
-                                                        0xFF9C9D98,
-                                                      ),
-                                                      activeTrackColor:
-                                                          const Color(
-                                                        0xFFB2B5AE,
-                                                      ),
-                                                      inactiveThumbColor:
-                                                          const Color(
-                                                        0xFFB2B5AE,
-                                                      ),
-                                                      inactiveTrackColor:
-                                                          const Color(
-                                                        0xFF9C9D98,
-                                                      ),
-                                                      value: estadoWifi,
-                                                      onChanged: (value) async {
-                                                        String topic =
-                                                            'devices_rx/$productCode/$serialNumber';
-                                                        String topic2 =
-                                                            'devices_tx/$productCode/$serialNumber';
-                                                        String message =
-                                                            jsonEncode({
-                                                          'pinType': tipoWifi ==
-                                                                  'Salida'
-                                                              ? 0
-                                                              : 1,
-                                                          'index': i,
-                                                          'w_status': value,
-                                                          'r_state': comunWifi,
-                                                        });
-                                                        bool result =
-                                                            await sendMQTTMessageWithPermission(
-                                                                deviceName,
-                                                                message,
-                                                                topic,
-                                                                topic2,
-                                                                value
-                                                                    ? 'Encendió dispositivo desde WiFi'
-                                                                    : 'Apagó dispositivo desde WiFi');
-                                                        if (result) {
-                                                          setState(() {
-                                                            estadoWifi = value;
-                                                          });
-                                                          globalDATA
-                                                              .putIfAbsent(
-                                                                  '$productCode/$serialNumber',
-                                                                  () => {})
-                                                              .addAll({
-                                                            'io$i': message
-                                                          });
-                                                        } else {
-                                                          showToast(
-                                                            'No tienes permisos para realizar esta acción en este momento',
-                                                          );
-                                                        }
-                                                      },
-                                                    )
-                                              : null,
-                                        );
-                                      }),
-                                    ],
-                                  )
-                                : const SizedBox(height: 0),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                  child: Card(
+                    color: color1,
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                    elevation: 2,
+                    child: Theme(
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding:
+                            const EdgeInsets.symmetric(horizontal: 16.0),
+                        iconColor: color4,
+                        collapsedIconColor: color4,
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
+                            ReorderableDragStartListener(
+                              index: index,
+                              child: const Icon(
+                                  HugeIcons.strokeRoundedDragDropVertical,
+                                  color: Colors.grey),
+                            ),
+                            const SizedBox(width: 10),
                             Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(
-                                    left: 20.0, bottom: 16.0),
-                                child: !online
-                                    ? Text(
-                                        'El equipo debe estar\nconectado para su uso',
-                                        style: GoogleFonts.poppins(
-                                          color: color3,
-                                          fontSize: 15,
-                                        ),
-                                      )
-                                    : const SizedBox(height: 0),
-                              ),
-                            ),
-                            if (!online)
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                    right: 8.0, bottom: 8.0),
-                                child: IconButton(
-                                  icon: const Icon(
-                                    HugeIcons.strokeRoundedDelete02,
-                                    color: color0,
-                                    size: 20,
-                                  ),
-                                  onPressed: () {
-                                    _confirmDelete(deviceName, productCode);
-                                  },
-                                ),
-                              ),
-                          ],
-                        ),
-                        if (online)
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                  right: 16.0, bottom: 8.0),
-                              child: IconButton(
-                                icon: const Icon(
-                                  HugeIcons.strokeRoundedDelete02,
-                                  color: color0,
-                                  size: 20,
-                                ),
-                                onPressed: () {
-                                  _confirmDelete(deviceName, productCode);
-                                },
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                );
-              case '027313_IOT':
-
-                // Verificar si es un equipo de riego
-                bool isRiegoActive = deviceDATA['riegoActive'] == true;
-                if (isRiegoActive) {
-                  return _buildRiegoCard(deviceName, productCode, serialNumber,
-                      deviceDATA, online, owner);
-                }
-
-                // Código original para equipos normales (cerraduras)
-                bool estado = deviceDATA['w_status'] ?? false;
-                bool hasEntry = deviceDATA['hasEntry'] ?? false;
-                String hardv = deviceDATA['HardwareVersion'] ?? '000000A';
-                // bool isNC = deviceDATA['isNC'] ?? false;
-
-                return Card(
-                  key: ValueKey(deviceName),
-                  color: color1,
-                  margin: const EdgeInsets.symmetric(
-                    vertical: 5,
-                    horizontal: 10,
-                  ),
-                  elevation: 2,
-                  child: Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(
-                        horizontal: 16.0,
-                      ),
-                      iconColor: color4,
-                      collapsedIconColor: color4,
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.7,
-                                child: Text(
-                                  nicknamesMap[deviceName] ?? deviceName,
-                                  style: GoogleFonts.poppins(
-                                    color: color0,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                spacing: 10,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    online ? '● CONECTADO' : '● DESCONECTADO',
+                                    nicknamesMap[deviceName] ?? deviceName,
                                     style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color3,
-                                      fontSize: 15,
+                                      color: color0,
+                                      fontWeight: FontWeight.bold,
                                     ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
                                   ),
-                                  Icon(
-                                    online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color3,
-                                    size: 15,
-                                  ),
-                                ],
-                              ),
-                              if (online && networkUnstable) ...[
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Red inestable',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.orange,
-                                        fontSize: 15,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                  ],
-                                )
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                      children: <Widget>[
-                        if (Versioner.isPrevious(hardv, '241220A')) ...{
-                          isRestrictedAdmin
-                              ? Row(
-                                  children: [
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 16.0, vertical: 5.0),
-                                        child: Text(
-                                          'El dueño del equipo restringió su uso por wifi.',
-                                          style: GoogleFonts.poppins(
-                                            color: color3,
-                                            fontSize: 15,
-                                          ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    spacing: 10,
+                                    children: [
+                                      Text(
+                                        online
+                                            ? '● CONECTADO'
+                                            : '● DESCONECTADO',
+                                        style: GoogleFonts.poppins(
+                                          color: online ? Colors.green : color3,
+                                          fontSize: 15,
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                )
-                              : Stack(
-                                  children: [
+                                      Icon(
+                                        online ? Icons.cloud : Icons.cloud_off,
+                                        color: online ? Colors.green : color3,
+                                        size: 15,
+                                      ),
+                                    ],
+                                  ),
+                                  if (online && networkUnstable) ...[
                                     Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Expanded(
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 16.0,
-                                                vertical: 5.0),
-                                            child: online
-                                                ? Row(
-                                                    children: [
-                                                      estado
-                                                          ? Text(
-                                                              'ENCENDIDO',
-                                                              style: GoogleFonts
-                                                                  .poppins(
-                                                                color: Colors
-                                                                    .green,
-                                                                fontSize: 15,
-                                                              ),
-                                                            )
-                                                          : Text(
-                                                              'APAGADO',
-                                                              style: GoogleFonts
-                                                                  .poppins(
-                                                                color: color4,
-                                                                fontSize: 15,
-                                                              ),
-                                                            ),
-                                                      const SizedBox(width: 5),
-                                                      owner
-                                                          ? Switch(
-                                                              activeThumbColor:
-                                                                  const Color(
-                                                                      0xFF9C9D98),
-                                                              activeTrackColor:
-                                                                  const Color(
-                                                                      0xFFB2B5AE),
-                                                              inactiveThumbColor:
-                                                                  const Color(
-                                                                      0xFFB2B5AE),
-                                                              inactiveTrackColor:
-                                                                  const Color(
-                                                                      0xFF9C9D98),
-                                                              value: estado,
-                                                              onChanged:
-                                                                  (newValue) {
-                                                                toggleState(
-                                                                    deviceName,
-                                                                    newValue);
-                                                                setState(() {
-                                                                  estado =
-                                                                      newValue;
-                                                                });
-                                                              },
-                                                            )
-                                                          : const SizedBox(
-                                                              height: 0,
-                                                              width: 0),
-                                                    ],
-                                                  )
-                                                : Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            right: 8.0,
-                                                            bottom: 8.0),
-                                                    child: Text(
-                                                      'El equipo debe estar\nconectado para su uso',
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                        color: color3,
-                                                        fontSize: 15,
-                                                      ),
-                                                    ),
-                                                  ),
-                                          ),
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
                                         ),
-                                        if (!online)
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                right: 8.0, bottom: 8.0),
-                                            child: IconButton(
-                                              icon: const Icon(
-                                                HugeIcons.strokeRoundedDelete02,
-                                                color: color0,
-                                                size: 20,
-                                              ),
-                                              onPressed: () {
-                                                _confirmDelete(
-                                                    deviceName, productCode);
-                                              },
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    if (online)
-                                      Align(
-                                        alignment: Alignment.centerRight,
-                                        child: Padding(
-                                          padding: const EdgeInsets.only(
-                                              right: 16.0, bottom: 8.0),
-                                          child: IconButton(
-                                            icon: const Icon(
-                                              HugeIcons.strokeRoundedDelete02,
-                                              color: color0,
-                                              size: 20,
-                                            ),
-                                            onPressed: () {
-                                              _confirmDelete(
-                                                  deviceName, productCode);
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                )
-                        } else ...{
-                          isRestrictedAdmin
-                              ? Row(
-                                  children: [
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 16.0, vertical: 5.0),
-                                        child: Text(
-                                          'El dueño del equipo restringió su uso por wifi.',
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Red inestable',
                                           style: GoogleFonts.poppins(
-                                            color: color3,
+                                            color: Colors.orange,
                                             fontSize: 15,
                                           ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : online
-                                  ? Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // POSICIÓN 0: Salida con switch
-                                        if (deviceDATA['io0'] == null) ...[
-                                          const SizedBox
-                                              .shrink() // No mostrar nada si no hay datos
-                                        ] else ...[
-                                          if (deviceDATA['io0'] == null) ...[
-                                            const SizedBox
-                                                .shrink() // No mostrar nada si no hay datos
-                                          ] else ...[
-                                            if (hasEntry) ...[
-                                              ListTile(
-                                                title: Text(
-                                                  nicknamesMap[
-                                                          '${deviceName}_0'] ??
-                                                      'Salida 0',
-                                                  style: GoogleFonts.poppins(
-                                                    color: color0,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                                trailing: owner
-                                                    ? Switch(
-                                                        activeThumbColor:
-                                                            const Color(
-                                                                0xFF9C9D98),
-                                                        activeTrackColor:
-                                                            const Color(
-                                                                0xFFB2B5AE),
-                                                        inactiveThumbColor:
-                                                            const Color(
-                                                                0xFFB2B5AE),
-                                                        inactiveTrackColor:
-                                                            const Color(
-                                                                0xFF9C9D98),
-                                                        value: (jsonDecode(
-                                                                    deviceDATA[
-                                                                        'io0'])[
-                                                                'w_status'] ??
-                                                            false),
-                                                        onChanged:
-                                                            (value) async {
-                                                          final deviceSerialNumber =
-                                                              DeviceManager
-                                                                  .extractSerialNumber(
-                                                                      deviceName);
-                                                          final productCode =
-                                                              DeviceManager
-                                                                  .getProductCode(
-                                                                      deviceName);
-                                                          final topicRx =
-                                                              'devices_rx/$productCode/$deviceSerialNumber';
-                                                          final topicTx =
-                                                              'devices_tx/$productCode/$deviceSerialNumber';
-                                                          final Map<String,
-                                                                  dynamic>
-                                                              io0Map =
-                                                              jsonDecode(
-                                                                  deviceDATA[
-                                                                      'io0']);
-                                                          final rState =
-                                                              (io0Map['r_state'] ??
-                                                                      '0')
-                                                                  .toString();
-                                                          final message =
-                                                              jsonEncode({
-                                                            'pinType': 0,
-                                                            'index': 0,
-                                                            'w_status': value,
-                                                            'r_state': rState,
-                                                          });
-                                                          bool result =
-                                                              await sendMQTTMessageWithPermission(
-                                                                  deviceName,
-                                                                  message,
-                                                                  topicRx,
-                                                                  topicTx,
-                                                                  value
-                                                                      ? 'Encendió dispositivo desde WiFi'
-                                                                      : 'Apagó dispositivo desde WiFi');
-
-                                                          if (result) {
-                                                            setState(() {});
-                                                            globalDATA
-                                                                .putIfAbsent(
-                                                                    '$productCode/$deviceSerialNumber',
-                                                                    () => {})
-                                                                .addAll({
-                                                              'io0': message
-                                                            });
-                                                          } else {
-                                                            showToast(
-                                                              'No tienes permisos para realizar esta acción en este momento',
-                                                            );
-                                                          }
-                                                        },
-                                                      )
-                                                    : null,
-                                              ),
-                                            ] else ...[
-                                              Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 16.0,
-                                                  vertical: 5.0,
-                                                ),
-                                                child: Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
-                                                  children: [
-                                                    online
-                                                        ? Row(
-                                                            children: [
-                                                              (jsonDecode(deviceDATA[
-                                                                              'io0'])[
-                                                                          'w_status'] ??
-                                                                      false)
-                                                                  ? Text(
-                                                                      'ENCENDIDO',
-                                                                      style: GoogleFonts
-                                                                          .poppins(
-                                                                        color: Colors
-                                                                            .green,
-                                                                        fontSize:
-                                                                            15,
-                                                                      ),
-                                                                    )
-                                                                  : Text(
-                                                                      'APAGADO',
-                                                                      style: GoogleFonts
-                                                                          .poppins(
-                                                                        color:
-                                                                            color4,
-                                                                        fontSize:
-                                                                            15,
-                                                                      ),
-                                                                    ),
-                                                              const SizedBox(
-                                                                  width: 5),
-                                                              owner
-                                                                  ? Switch(
-                                                                      activeThumbColor:
-                                                                          const Color(
-                                                                              0xFF9C9D98),
-                                                                      activeTrackColor:
-                                                                          const Color(
-                                                                              0xFFB2B5AE),
-                                                                      inactiveThumbColor:
-                                                                          const Color(
-                                                                              0xFFB2B5AE),
-                                                                      inactiveTrackColor:
-                                                                          const Color(
-                                                                              0xFF9C9D98),
-                                                                      value: (jsonDecode(
-                                                                              deviceDATA['io0'])['w_status'] ??
-                                                                          false),
-                                                                      onChanged:
-                                                                          (value) async {
-                                                                        final topicRx =
-                                                                            'devices_rx/$productCode/$serialNumber';
-                                                                        final topicTx =
-                                                                            'devices_tx/$productCode/$serialNumber';
-                                                                        final Map<String,
-                                                                                dynamic>
-                                                                            io0Map =
-                                                                            jsonDecode(deviceDATA['io0']);
-                                                                        final rState =
-                                                                            (io0Map['r_state'] ?? '0').toString();
-                                                                        final message =
-                                                                            jsonEncode({
-                                                                          'pinType':
-                                                                              0,
-                                                                          'index':
-                                                                              0,
-                                                                          'w_status':
-                                                                              value,
-                                                                          'r_state':
-                                                                              rState,
-                                                                        });
-                                                                        bool result = await sendMQTTMessageWithPermission(
-                                                                            deviceName,
-                                                                            message,
-                                                                            topicRx,
-                                                                            topicTx,
-                                                                            value
-                                                                                ? 'Encendió dispositivo desde WiFi'
-                                                                                : 'Apagó dispositivo desde WiFi');
-                                                                        if (result) {
-                                                                          setState(
-                                                                              () {});
-                                                                          globalDATA.putIfAbsent('$productCode/$serialNumber', () => {}).addAll({
-                                                                            'io0':
-                                                                                message
-                                                                          });
-                                                                        } else {
-                                                                          showToast(
-                                                                            'No tienes permisos para realizar esta acción en este momento',
-                                                                          );
-                                                                        }
-                                                                      },
-                                                                    )
-                                                                  : const SizedBox(
-                                                                      height: 0,
-                                                                      width: 0),
-                                                            ],
-                                                          )
-                                                        : Text(
-                                                            'El equipo debe estar\nconectado para su uso',
-                                                            style: GoogleFonts
-                                                                .poppins(
-                                                              color: color3,
-                                                              fontSize: 15,
-                                                            ),
-                                                          ),
-                                                  ],
-                                                ),
-                                              )
-                                            ],
-                                          ],
-                                        ],
-                                        // POSICIÓN 1: Entrada, solo si hasEntry == true
-                                        if (hasEntry) ...[
-                                          if (deviceDATA['io1'] == null) ...[
-                                            const SizedBox
-                                                .shrink() // No mostrar nada si no hay datos
-                                          ] else ...[
-                                            ListTile(
-                                              title: Text(
-                                                nicknamesMap[
-                                                        '${deviceName}_1'] ??
-                                                    'Entrada 1',
-                                                style: GoogleFonts.poppins(
-                                                  color: color0,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              trailing: Icon(
-                                                Icons.new_releases,
-                                                color: (() {
-                                                  final io1 = jsonDecode(
-                                                      deviceDATA['io1']);
-                                                  final bool wStatus =
-                                                      io1['w_status'] ?? false;
-                                                  final String rState =
-                                                      (io1['r_state'] ?? '0')
-                                                          .toString();
-                                                  final bool mismatch =
-                                                      (rState == '0' &&
-                                                              wStatus) ||
-                                                          (rState == '1' &&
-                                                              !wStatus);
-                                                  return mismatch
-                                                      ? color4
-                                                      : const Color(0xFF9C9D98);
-                                                })(),
-                                              ),
-                                            ),
-                                          ]
-                                        ]
+                                        const SizedBox(width: 4),
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
                                       ],
                                     )
-                                  : Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        Expanded(
-                                          child: Padding(
-                                            padding: const EdgeInsets.only(
-                                                left: 16.0, bottom: 16.0),
-                                            child: Text(
-                                              'El equipo debe estar\nconectado para su uso',
-                                              style: GoogleFonts.poppins(
-                                                color: color3,
-                                                fontSize: 15,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                              right: 8.0, bottom: 8.0),
-                                          child: IconButton(
-                                            icon: const Icon(
-                                              HugeIcons.strokeRoundedDelete02,
-                                              color: color0,
-                                              size: 20,
-                                            ),
-                                            onPressed: () {
-                                              _confirmDelete(
-                                                  deviceName, productCode);
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                          if (online)
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: IconButton(
-                                icon: const Icon(
-                                  HugeIcons.strokeRoundedDelete02,
-                                  color: color0,
-                                  size: 20,
-                                ),
-                                onPressed: () {
-                                  _confirmDelete(deviceName, productCode);
-                                },
+                                  ],
+                                ],
                               ),
                             ),
-                        }
-                      ],
-                    ),
-                  ),
-                );
-              case '050217_IOT':
-                bool estado = deviceDATA['w_status'] ?? false;
-                bool heaterOn = deviceDATA['f_status'] ?? false;
-                return Card(
-                  key: ValueKey(deviceName),
-                  color: color1,
-                  margin:
-                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                  elevation: 2,
-                  child: Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color4,
-                      collapsedIconColor: color4,
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.7,
-                                child: Text(
-                                  nicknamesMap[deviceName] ?? deviceName,
-                                  style: GoogleFonts.poppins(
-                                    color: color0,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                spacing: 10,
-                                children: [
-                                  Text(
-                                    online ? '● CONECTADO' : '● DESCONECTADO',
-                                    style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color3,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  Icon(
-                                    online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color3,
-                                    size: 15,
-                                  ),
-                                ],
-                              ),
-                              if (online && networkUnstable) ...[
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Red inestable',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.orange,
-                                        fontSize: 15,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                  ],
-                                )
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                      children: <Widget>[
-                        isRestrictedAdmin
-                            ? Row(
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0, vertical: 5.0),
-                                      child: Text(
-                                        'El dueño del equipo restringió su uso por wifi.',
-                                        style: GoogleFonts.poppins(
-                                          color: color3,
-                                          fontSize: 15,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0, vertical: 5.0),
-                                      child: online
-                                          ? Row(
-                                              children: [
-                                                estado
-                                                    ? Row(
-                                                        children: [
-                                                          if (heaterOn) ...[
-                                                            Text(
-                                                              'Calentando',
-                                                              style: GoogleFonts
-                                                                  .poppins(
-                                                                color: Colors
-                                                                    .amber[800],
-                                                                fontSize: 15,
-                                                              ),
-                                                            ),
-                                                            Icon(
-                                                              Icons.water_drop,
-                                                              size: 15,
-                                                              color: Colors
-                                                                  .amber[800],
-                                                            ),
-                                                          ] else ...[
-                                                            Text(
-                                                              'Encendido',
-                                                              style: GoogleFonts
-                                                                  .poppins(
-                                                                color: Colors
-                                                                    .green,
-                                                                fontSize: 15,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ],
-                                                      )
-                                                    : Text(
-                                                        'Apagado',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                                color: color4,
-                                                                fontSize: 15),
-                                                      ),
-                                                const SizedBox(width: 5),
-                                                owner
-                                                    ? Switch(
-                                                        activeThumbColor:
-                                                            const Color(
-                                                                0xFF9C9D98),
-                                                        activeTrackColor:
-                                                            const Color(
-                                                                0xFFB2B5AE),
-                                                        inactiveThumbColor:
-                                                            const Color(
-                                                                0xFFB2B5AE),
-                                                        inactiveTrackColor:
-                                                            const Color(
-                                                                0xFF9C9D98),
-                                                        value: estado,
-                                                        onChanged: (newValue) {
-                                                          toggleState(
-                                                              deviceName,
-                                                              newValue);
-                                                          setState(() {
-                                                            estado = newValue;
-                                                          });
-                                                        },
-                                                      )
-                                                    : const SizedBox(
-                                                        height: 0, width: 0),
-                                              ],
-                                            )
-                                          : Padding(
-                                              padding: const EdgeInsets.only(
-                                                  left: 8.0, bottom: 8.0),
-                                              child: Text(
-                                                'El equipo debe estar\nconectado para su uso',
-                                                style: GoogleFonts.poppins(
-                                                  color: color3,
-                                                  fontSize: 15,
-                                                ),
-                                              ),
-                                            ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        right: 8.0, bottom: 8.0),
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        HugeIcons.strokeRoundedDelete02,
-                                        color: color0,
-                                        size: 20,
-                                      ),
-                                      onPressed: () {
-                                        _confirmDelete(deviceName, productCode);
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                      ],
-                    ),
-                  ),
-                );
-              case '020020_IOT':
-                // Verificar si es un equipo de riego
-                bool isRiegoActive = deviceDATA['riegoActive'] == true;
-                if (isRiegoActive) {
-                  return _buildRiegoCard(deviceName, productCode, serialNumber,
-                      deviceDATA, online, owner);
-                }
-
-                // Código original para equipos normales
-                return Card(
-                  key: ValueKey(deviceName),
-                  color: color1,
-                  margin:
-                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                  elevation: 2,
-                  child: Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color4,
-                      collapsedIconColor: color4,
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.7,
-                                child: Text(
-                                  nicknamesMap[deviceName] ?? deviceName,
-                                  style: GoogleFonts.poppins(
-                                    color: color0,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                spacing: 10,
-                                children: [
-                                  Text(
-                                    online ? '● CONECTADO' : '● DESCONECTADO',
-                                    style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color3,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  Icon(
-                                    online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color3,
-                                    size: 15,
-                                  ),
-                                ],
-                              ),
-                              if (online && networkUnstable) ...[
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Red inestable',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.orange,
-                                        fontSize: 15,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                  ],
-                                )
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                      children: <Widget>[
-                        isRestrictedAdmin
-                            ? Row(
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0, vertical: 5.0),
-                                      child: Text(
-                                        'El dueño del equipo restringió su uso por wifi.',
-                                        style: GoogleFonts.poppins(
-                                          color: color3,
-                                          fontSize: 15,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : online
-                                ? Column(
-                                    children: [
-                                      ...(deviceDATA.keys
-                                              .where((key) =>
-                                                  key.startsWith('io') &&
-                                                  RegExp(r'^io\d+$')
-                                                      .hasMatch(key))
-                                              .where((ioKey) =>
-                                                  deviceDATA[ioKey] != null)
-                                              .toList()
-                                            ..sort((a, b) {
-                                              int indexA =
-                                                  int.parse(a.substring(2));
-                                              int indexB =
-                                                  int.parse(b.substring(2));
-                                              return indexA.compareTo(indexB);
-                                            }))
-                                          .map((ioKey) {
-                                        // Extraer el índice del ioKey (ejemplo: "io0" -> 0)
-                                        int i = int.parse(ioKey.substring(2));
-                                        Map<String, dynamic> equipo =
-                                            jsonDecode(deviceDATA[ioKey]);
-                                        printLog.i(
-                                          'Voy a realizar el cambio: $equipo',
-                                        );
-                                        String tipoWifi =
-                                            equipo['pinType'].toString() == '0'
-                                                ? 'Salida'
-                                                : 'Entrada';
-                                        bool estadoWifi = equipo['w_status'];
-                                        String comunWifi =
-                                            (equipo['r_state'] ?? '0')
-                                                .toString();
-                                        bool entradaWifi =
-                                            tipoWifi == 'Entrada';
-                                        return ListTile(
-                                          title: Row(
-                                            children: [
-                                              Text(
-                                                nicknamesMap[
-                                                        '${deviceName}_$i'] ??
-                                                    '$tipoWifi $i',
-                                                style: GoogleFonts.poppins(
-                                                  color: color0,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 5),
-                                            ],
-                                          ),
-                                          subtitle: Align(
-                                            alignment: AlignmentDirectional
-                                                .centerStart,
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.start,
-                                              children: [
-                                                entradaWifi
-                                                    ? estadoWifi
-                                                        ? comunWifi == '1'
-                                                            ? Text(
-                                                                'Cerrado',
-                                                                style:
-                                                                    GoogleFonts
-                                                                        .poppins(
-                                                                  color: Colors
-                                                                      .green,
-                                                                  fontSize: 15,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                              )
-                                                            : Text(
-                                                                'Abierto',
-                                                                style:
-                                                                    GoogleFonts
-                                                                        .poppins(
-                                                                  color: color4,
-                                                                  fontSize: 15,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                              )
-                                                        : comunWifi == '1'
-                                                            ? Text(
-                                                                'Abierto',
-                                                                style:
-                                                                    GoogleFonts
-                                                                        .poppins(
-                                                                  color: color4,
-                                                                  fontSize: 15,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                              )
-                                                            : Text(
-                                                                'Cerrado',
-                                                                style:
-                                                                    GoogleFonts
-                                                                        .poppins(
-                                                                  color: Colors
-                                                                      .green,
-                                                                  fontSize: 15,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                              )
-                                                    : estadoWifi
-                                                        ? Text(
-                                                            'Encendido',
-                                                            style: GoogleFonts
-                                                                .poppins(
-                                                              color:
-                                                                  Colors.green,
-                                                              fontSize: 15,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                            ),
-                                                          )
-                                                        : Text(
-                                                            'Apagado',
-                                                            style: GoogleFonts
-                                                                .poppins(
-                                                              color: color4,
-                                                              fontSize: 15,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                            ),
-                                                          ),
-                                              ],
-                                            ),
-                                          ),
-                                          trailing: owner
-                                              ? entradaWifi
-                                                  ? estadoWifi
-                                                      ? comunWifi == '1'
-                                                          ? const Icon(
-                                                              Icons
-                                                                  .new_releases,
-                                                              color: Color(
-                                                                0xff9b9b9b,
-                                                              ),
-                                                            )
-                                                          : const Icon(
-                                                              Icons
-                                                                  .new_releases,
-                                                              color: color4,
-                                                            )
-                                                      : comunWifi == '1'
-                                                          ? const Icon(
-                                                              Icons
-                                                                  .new_releases,
-                                                              color: color4,
-                                                            )
-                                                          : const Icon(
-                                                              Icons
-                                                                  .new_releases,
-                                                              color: Color(
-                                                                0xff9b9b9b,
-                                                              ),
-                                                            )
-                                                  : Switch(
-                                                      activeThumbColor:
-                                                          const Color(
-                                                        0xFF9C9D98,
-                                                      ),
-                                                      activeTrackColor:
-                                                          const Color(
-                                                        0xFFB2B5AE,
-                                                      ),
-                                                      inactiveThumbColor:
-                                                          const Color(
-                                                        0xFFB2B5AE,
-                                                      ),
-                                                      inactiveTrackColor:
-                                                          const Color(
-                                                        0xFF9C9D98,
-                                                      ),
-                                                      value: estadoWifi,
-                                                      onChanged: (value) async {
-                                                        String topic =
-                                                            'devices_rx/$productCode/$serialNumber';
-                                                        String topic2 =
-                                                            'devices_tx/$productCode/$serialNumber';
-                                                        String message =
-                                                            jsonEncode({
-                                                          'pinType': tipoWifi ==
-                                                                  'Salida'
-                                                              ? 0
-                                                              : 1,
-                                                          'index': i,
-                                                          'w_status': value,
-                                                          'r_state': comunWifi,
-                                                        });
-                                                        bool result =
-                                                            await sendMQTTMessageWithPermission(
-                                                                deviceName,
-                                                                message,
-                                                                topic,
-                                                                topic2,
-                                                                value
-                                                                    ? 'Encendió dispositivo desde WiFi'
-                                                                    : 'Apagó dispositivo desde WiFi');
-                                                        if (result) {
-                                                          setState(() {
-                                                            estadoWifi = value;
-                                                          });
-                                                          globalDATA
-                                                              .putIfAbsent(
-                                                                  '$productCode/$serialNumber',
-                                                                  () => {})
-                                                              .addAll({
-                                                            'io$i': message
-                                                          });
-                                                        } else {
-                                                          showToast(
-                                                            'No tienes permisos para realizar esta acción en este momento',
-                                                          );
-                                                        }
-                                                      },
-                                                    )
-                                              : null,
-                                        );
-                                      }),
-                                    ],
-                                  )
-                                : const SizedBox(height: 0),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(
-                                    left: 20.0, bottom: 16.0),
-                                child: !online
-                                    ? Text(
-                                        'El equipo debe estar\nconectado para su uso',
-                                        style: GoogleFonts.poppins(
-                                          color: color3,
-                                          fontSize: 15,
-                                        ),
-                                      )
-                                    : const SizedBox(height: 0),
-                              ),
-                            ),
-                            if (!online)
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                    right: 8.0, bottom: 8.0),
-                                child: IconButton(
-                                  icon: const Icon(
-                                    HugeIcons.strokeRoundedDelete02,
-                                    color: color0,
-                                    size: 20,
-                                  ),
-                                  onPressed: () {
-                                    _confirmDelete(deviceName, productCode);
-                                  },
-                                ),
-                              ),
                           ],
                         ),
-                        if (online)
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                  right: 16.0, bottom: 8.0),
-                              child: IconButton(
-                                icon: const Icon(
-                                  HugeIcons.strokeRoundedDelete02,
-                                  color: color0,
-                                  size: 20,
-                                ),
-                                onPressed: () {
-                                  _confirmDelete(deviceName, productCode);
-                                },
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                );
-              case '041220_IOT':
-                bool estado = deviceDATA['w_status'] ?? false;
-                bool heaterOn = deviceDATA['f_status'] ?? false;
-
-                return Card(
-                  key: ValueKey(deviceName),
-                  color: color1,
-                  margin:
-                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                  elevation: 2,
-                  child: Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color4,
-                      collapsedIconColor: color4,
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.7,
-                                child: Text(
-                                  nicknamesMap[deviceName] ?? deviceName,
-                                  style: GoogleFonts.poppins(
-                                    color: color0,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                spacing: 10,
-                                children: [
-                                  Text(
-                                    online ? '● CONECTADO' : '● DESCONECTADO',
-                                    style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color3,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  Icon(
-                                    online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color3,
-                                    size: 15,
-                                  ),
-                                ],
-                              ),
-                              if (online && networkUnstable) ...[
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          isRestrictedAdmin
+                              ? Row(
                                   children: [
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Red inestable',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.orange,
-                                        fontSize: 15,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                  ],
-                                )
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                      children: <Widget>[
-                        isRestrictedAdmin
-                            ? Row(
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0, vertical: 5.0),
-                                      child: Text(
-                                        'El dueño del equipo restringió su uso por wifi.',
-                                        style: GoogleFonts.poppins(
-                                          color: color3,
-                                          fontSize: 15,
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16.0, vertical: 5.0),
+                                        child: Text(
+                                          'El dueño del equipo restringió su uso por wifi.',
+                                          style: GoogleFonts.poppins(
+                                            color: color3,
+                                            fontSize: 15,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              )
-                            : Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Expanded(
-                                    child: Padding(
+                                  ],
+                                )
+                              : Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 16.0, vertical: 5.0),
                                         child: online
@@ -3677,137 +1701,150 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                   color: color3,
                                                   fontSize: 15,
                                                 ),
-                                              )),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        right: 8.0, bottom: 8.0),
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        HugeIcons.strokeRoundedDelete02,
-                                        color: color0,
-                                        size: 20,
+                                              ),
                                       ),
-                                      onPressed: () {
-                                        _confirmDelete(deviceName, productCode);
-                                      },
                                     ),
-                                  ),
-                                ],
-                              ),
-                      ],
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          right: 8.0, bottom: 8.0),
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          HugeIcons.strokeRoundedDelete02,
+                                          color: color0,
+                                          size: 20,
+                                        ),
+                                        onPressed: () {
+                                          _confirmDelete(
+                                              deviceName, productCode);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ],
+                      ),
                     ),
                   ),
                 );
-              case '028000_IOT':
+              case '027000_IOT':
                 bool estado = deviceDATA['w_status'] ?? false;
                 bool heaterOn = deviceDATA['f_status'] ?? false;
-                return Card(
+                return RepaintBoundary(
                   key: ValueKey(deviceName),
-                  color: color1,
-                  margin:
-                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                  elevation: 2,
-                  child: Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color4,
-                      collapsedIconColor: color4,
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.7,
-                                child: Text(
-                                  nicknamesMap[deviceName] ?? deviceName,
-                                  style: GoogleFonts.poppins(
-                                    color: color0,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                spacing: 10,
+                  child: Card(
+                    color: color1,
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                    elevation: 2,
+                    child: Theme(
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding:
+                            const EdgeInsets.symmetric(horizontal: 16.0),
+                        iconColor: color4,
+                        collapsedIconColor: color4,
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            ReorderableDragStartListener(
+                              index: index,
+                              child: const Icon(
+                                  HugeIcons.strokeRoundedDragDropVertical,
+                                  color: Colors.grey),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    online ? '● CONECTADO' : '● DESCONECTADO',
+                                    nicknamesMap[deviceName] ?? deviceName,
                                     style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color3,
-                                      fontSize: 15,
+                                      color: color0,
+                                      fontWeight: FontWeight.bold,
                                     ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
                                   ),
-                                  Icon(
-                                    online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color3,
-                                    size: 15,
-                                  ),
-                                ],
-                              ),
-                              if (online && networkUnstable) ...[
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Red inestable',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.orange,
-                                        fontSize: 15,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                  ],
-                                )
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                      children: <Widget>[
-                        isRestrictedAdmin
-                            ? Row(
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0, vertical: 5.0),
-                                      child: Text(
-                                        'El dueño del equipo restringió su uso por wifi.',
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    spacing: 10,
+                                    children: [
+                                      Text(
+                                        online
+                                            ? '● CONECTADO'
+                                            : '● DESCONECTADO',
                                         style: GoogleFonts.poppins(
-                                          color: color3,
+                                          color: online ? Colors.green : color3,
                                           fontSize: 15,
                                         ),
                                       ),
-                                    ),
+                                      Icon(
+                                        online ? Icons.cloud : Icons.cloud_off,
+                                        color: online ? Colors.green : color3,
+                                        size: 15,
+                                      ),
+                                    ],
                                   ),
+                                  if (online && networkUnstable) ...[
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Red inestable',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.orange,
+                                            fontSize: 15,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                      ],
+                                    )
+                                  ],
                                 ],
-                              )
-                            : Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Expanded(
-                                    child: Padding(
+                              ),
+                            ),
+                          ],
+                        ),
+                        children: <Widget>[
+                          isRestrictedAdmin
+                              ? Row(
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
                                         padding: const EdgeInsets.symmetric(
-                                            horizontal: 16.0, vertical: 16.0),
+                                            horizontal: 16.0, vertical: 5.0),
+                                        child: Text(
+                                          'El dueño del equipo restringió su uso por wifi.',
+                                          style: GoogleFonts.poppins(
+                                            color: color3,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16.0, vertical: 5.0),
                                         child: online
                                             ? Row(
                                                 children: [
@@ -3816,23 +1853,1259 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                           children: [
                                                             if (heaterOn) ...[
                                                               Text(
-                                                                'Enfriando',
+                                                                'Calentando',
                                                                 style:
                                                                     GoogleFonts
                                                                         .poppins(
                                                                   color: Colors
-                                                                      .lightBlueAccent
-                                                                      .shade400,
+                                                                          .amber[
+                                                                      800],
                                                                   fontSize: 15,
                                                                 ),
                                                               ),
                                                               Icon(
                                                                 HugeIcons
-                                                                    .strokeRoundedSnow,
+                                                                    .strokeRoundedFire,
                                                                 size: 15,
                                                                 color: Colors
-                                                                    .lightBlueAccent
-                                                                    .shade400,
+                                                                    .amber[800],
+                                                              ),
+                                                            ] else ...[
+                                                              Text(
+                                                                'Encendido',
+                                                                style:
+                                                                    GoogleFonts
+                                                                        .poppins(
+                                                                  color: Colors
+                                                                      .green,
+                                                                  fontSize: 15,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ],
+                                                        )
+                                                      : Text(
+                                                          'Apagado',
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                            color: color4,
+                                                            fontSize: 15,
+                                                          ),
+                                                        ),
+                                                  const SizedBox(width: 5),
+                                                  Switch(
+                                                      activeThumbColor:
+                                                          const Color(
+                                                              0xFF9C9D98),
+                                                      activeTrackColor:
+                                                          const Color(
+                                                              0xFFB2B5AE),
+                                                      inactiveThumbColor:
+                                                          const Color(
+                                                              0xFFB2B5AE),
+                                                      inactiveTrackColor:
+                                                          const Color(
+                                                              0xFF9C9D98),
+                                                      value: estado,
+                                                      onChanged: online
+                                                          ? (newValue) {
+                                                              toggleState(
+                                                                  deviceName,
+                                                                  newValue);
+                                                              setState(
+                                                                () {
+                                                                  estado =
+                                                                      newValue;
+                                                                  if (!newValue) {
+                                                                    heaterOn =
+                                                                        false;
+                                                                  }
+                                                                },
+                                                              );
+                                                            }
+                                                          : null),
+                                                ],
+                                              )
+                                            : Text(
+                                                'El equipo debe estar\nconectado para su uso',
+                                                style: GoogleFonts.poppins(
+                                                  color: color3,
+                                                  fontSize: 15,
+                                                ),
+                                              ),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          right: 8.0, bottom: 8.0),
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          HugeIcons.strokeRoundedDelete02,
+                                          color: color0,
+                                          size: 20,
+                                        ),
+                                        onPressed: () {
+                                          _confirmDelete(
+                                              deviceName, productCode);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              case '020010_IOT':
+
+                // Verificar si es un equipo de riego
+                bool isRiegoActive = deviceDATA['riegoActive'] == true;
+                if (isRiegoActive) {
+                  return _buildRiegoCard(deviceName, productCode, serialNumber,
+                      deviceDATA, online, owner, index);
+                }
+
+                // Código original para equipos normales
+                return RepaintBoundary(
+                  key: ValueKey(deviceName),
+                  child: Card(
+                    color: color1,
+                    margin: const EdgeInsets.symmetric(
+                      vertical: 5,
+                      horizontal: 10,
+                    ),
+                    elevation: 2,
+                    child: Theme(
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding: const EdgeInsets.symmetric(
+                          horizontal: 16.0,
+                        ),
+                        iconColor: color4,
+                        collapsedIconColor: color4,
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            ReorderableDragStartListener(
+                              index: index,
+                              child: const Icon(
+                                  HugeIcons.strokeRoundedDragDropVertical,
+                                  color: Colors.grey),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    nicknamesMap[deviceName] ?? deviceName,
+                                    style: GoogleFonts.poppins(
+                                      color: color0,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    spacing: 10,
+                                    children: [
+                                      Text(
+                                        online
+                                            ? '● CONECTADO'
+                                            : '● DESCONECTADO',
+                                        style: GoogleFonts.poppins(
+                                          color: online ? Colors.green : color3,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                      Icon(
+                                        online ? Icons.cloud : Icons.cloud_off,
+                                        color: online ? Colors.green : color3,
+                                        size: 15,
+                                      ),
+                                    ],
+                                  ),
+                                  if (online && networkUnstable) ...[
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Red inestable',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.orange,
+                                            fontSize: 15,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                      ],
+                                    )
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        children: <Widget>[
+                          isRestrictedAdmin
+                              ? Row(
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16.0, vertical: 5.0),
+                                        child: Text(
+                                          'El dueño del equipo restringió su uso por wifi.',
+                                          style: GoogleFonts.poppins(
+                                            color: color3,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : online
+                                  ? Column(
+                                      children: [
+                                        ...(deviceDATA.keys
+                                                .where((key) =>
+                                                    key.startsWith('io') &&
+                                                    RegExp(r'^io\d+$')
+                                                        .hasMatch(key))
+                                                .where((ioKey) =>
+                                                    deviceDATA[ioKey] != null)
+                                                .toList()
+                                              ..sort((a, b) {
+                                                int indexA =
+                                                    int.parse(a.substring(2));
+                                                int indexB =
+                                                    int.parse(b.substring(2));
+                                                return indexA.compareTo(indexB);
+                                              }))
+                                            .map((ioKey) {
+                                          // Extraer el índice del ioKey (ejemplo: "io0" -> 0)
+                                          int i = int.parse(ioKey.substring(2));
+                                          Map<String, dynamic> equipo =
+                                              jsonDecode(deviceDATA[ioKey]);
+                                          printLog.i(
+                                            'Voy a realizar el cambio: $equipo',
+                                          );
+                                          String tipoWifi =
+                                              equipo['pinType'].toString() ==
+                                                      '0'
+                                                  ? 'Salida'
+                                                  : 'Entrada';
+                                          bool estadoWifi = equipo['w_status'];
+                                          String comunWifi =
+                                              (equipo['r_state'] ?? '0')
+                                                  .toString();
+                                          bool entradaWifi =
+                                              tipoWifi == 'Entrada';
+                                          return ListTile(
+                                            title: Row(
+                                              children: [
+                                                Text(
+                                                  nicknamesMap[
+                                                          '${deviceName}_$i'] ??
+                                                      '$tipoWifi $i',
+                                                  style: GoogleFonts.poppins(
+                                                    color: color0,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 5),
+                                              ],
+                                            ),
+                                            subtitle: Align(
+                                              alignment: AlignmentDirectional
+                                                  .centerStart,
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.start,
+                                                children: [
+                                                  entradaWifi
+                                                      ? estadoWifi
+                                                          ? comunWifi == '1'
+                                                              ? Text(
+                                                                  'Cerrado',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                    color: Colors
+                                                                        .green,
+                                                                    fontSize:
+                                                                        15,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                  ),
+                                                                )
+                                                              : Text(
+                                                                  'Abierto',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                    color:
+                                                                        color4,
+                                                                    fontSize:
+                                                                        15,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                  ),
+                                                                )
+                                                          : comunWifi == '1'
+                                                              ? Text(
+                                                                  'Abierto',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                    color:
+                                                                        color4,
+                                                                    fontSize:
+                                                                        15,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                  ),
+                                                                )
+                                                              : Text(
+                                                                  'Cerrado',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                    color: Colors
+                                                                        .green,
+                                                                    fontSize:
+                                                                        15,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                  ),
+                                                                )
+                                                      : estadoWifi
+                                                          ? Text(
+                                                              'Encendido',
+                                                              style: GoogleFonts
+                                                                  .poppins(
+                                                                color: Colors
+                                                                    .green,
+                                                                fontSize: 15,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                            )
+                                                          : Text(
+                                                              'Apagado',
+                                                              style: GoogleFonts
+                                                                  .poppins(
+                                                                color: color4,
+                                                                fontSize: 15,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                            ),
+                                                ],
+                                              ),
+                                            ),
+                                            trailing: owner
+                                                ? entradaWifi
+                                                    ? estadoWifi
+                                                        ? comunWifi == '1'
+                                                            ? const Icon(
+                                                                Icons
+                                                                    .new_releases,
+                                                                color: Color(
+                                                                  0xff9b9b9b,
+                                                                ),
+                                                              )
+                                                            : const Icon(
+                                                                Icons
+                                                                    .new_releases,
+                                                                color: color4,
+                                                              )
+                                                        : comunWifi == '1'
+                                                            ? const Icon(
+                                                                Icons
+                                                                    .new_releases,
+                                                                color: color4,
+                                                              )
+                                                            : const Icon(
+                                                                Icons
+                                                                    .new_releases,
+                                                                color: Color(
+                                                                  0xff9b9b9b,
+                                                                ),
+                                                              )
+                                                    : Switch(
+                                                        activeThumbColor:
+                                                            const Color(
+                                                          0xFF9C9D98,
+                                                        ),
+                                                        activeTrackColor:
+                                                            const Color(
+                                                          0xFFB2B5AE,
+                                                        ),
+                                                        inactiveThumbColor:
+                                                            const Color(
+                                                          0xFFB2B5AE,
+                                                        ),
+                                                        inactiveTrackColor:
+                                                            const Color(
+                                                          0xFF9C9D98,
+                                                        ),
+                                                        value: estadoWifi,
+                                                        onChanged:
+                                                            (value) async {
+                                                          String topic =
+                                                              'devices_rx/$productCode/$serialNumber';
+                                                          String topic2 =
+                                                              'devices_tx/$productCode/$serialNumber';
+                                                          String message =
+                                                              jsonEncode({
+                                                            'pinType':
+                                                                tipoWifi ==
+                                                                        'Salida'
+                                                                    ? 0
+                                                                    : 1,
+                                                            'index': i,
+                                                            'w_status': value,
+                                                            'r_state':
+                                                                comunWifi,
+                                                          });
+                                                          bool result =
+                                                              await sendMQTTMessageWithPermission(
+                                                                  deviceName,
+                                                                  message,
+                                                                  topic,
+                                                                  topic2,
+                                                                  value
+                                                                      ? 'Encendió dispositivo desde WiFi'
+                                                                      : 'Apagó dispositivo desde WiFi');
+                                                          if (result) {
+                                                            setState(() {
+                                                              estadoWifi =
+                                                                  value;
+                                                            });
+                                                            globalDATA
+                                                                .putIfAbsent(
+                                                                    '$productCode/$serialNumber',
+                                                                    () => {})
+                                                                .addAll({
+                                                              'io$i': message
+                                                            });
+                                                          } else {
+                                                            showToast(
+                                                              'No tienes permisos para realizar esta acción en este momento',
+                                                            );
+                                                          }
+                                                        },
+                                                      )
+                                                : null,
+                                          );
+                                        }),
+                                      ],
+                                    )
+                                  : const SizedBox(height: 0),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                      left: 20.0, bottom: 16.0),
+                                  child: !online
+                                      ? Text(
+                                          'El equipo debe estar\nconectado para su uso',
+                                          style: GoogleFonts.poppins(
+                                            color: color3,
+                                            fontSize: 15,
+                                          ),
+                                        )
+                                      : const SizedBox(height: 0),
+                                ),
+                              ),
+                              if (!online)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      right: 8.0, bottom: 8.0),
+                                  child: IconButton(
+                                    icon: const Icon(
+                                      HugeIcons.strokeRoundedDelete02,
+                                      color: color0,
+                                      size: 20,
+                                    ),
+                                    onPressed: () {
+                                      _confirmDelete(deviceName, productCode);
+                                    },
+                                  ),
+                                ),
+                            ],
+                          ),
+                          if (online)
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Padding(
+                                padding: const EdgeInsets.only(
+                                    right: 16.0, bottom: 8.0),
+                                child: IconButton(
+                                  icon: const Icon(
+                                    HugeIcons.strokeRoundedDelete02,
+                                    color: color0,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    _confirmDelete(deviceName, productCode);
+                                  },
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              case '027313_IOT':
+
+                // Verificar si es un equipo de riego
+                bool isRiegoActive = deviceDATA['riegoActive'] == true;
+                if (isRiegoActive) {
+                  return _buildRiegoCard(deviceName, productCode, serialNumber,
+                      deviceDATA, online, owner, index);
+                }
+
+                // Código original para equipos normales (cerraduras)
+                bool estado = deviceDATA['w_status'] ?? false;
+                bool hasEntry = deviceDATA['hasEntry'] ?? false;
+                String hardv = deviceDATA['HardwareVersion'] ?? '000000A';
+                // bool isNC = deviceDATA['isNC'] ?? false;
+
+                return RepaintBoundary(
+                  key: ValueKey(deviceName),
+                  child: Card(
+                    color: color1,
+                    margin: const EdgeInsets.symmetric(
+                      vertical: 5,
+                      horizontal: 10,
+                    ),
+                    elevation: 2,
+                    child: Theme(
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding: const EdgeInsets.symmetric(
+                          horizontal: 16.0,
+                        ),
+                        iconColor: color4,
+                        collapsedIconColor: color4,
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            ReorderableDragStartListener(
+                              index: index,
+                              child: const Icon(
+                                  HugeIcons.strokeRoundedDragDropVertical,
+                                  color: Colors.grey),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    nicknamesMap[deviceName] ?? deviceName,
+                                    style: GoogleFonts.poppins(
+                                      color: color0,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    spacing: 10,
+                                    children: [
+                                      Text(
+                                        online
+                                            ? '● CONECTADO'
+                                            : '● DESCONECTADO',
+                                        style: GoogleFonts.poppins(
+                                          color: online ? Colors.green : color3,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                      Icon(
+                                        online ? Icons.cloud : Icons.cloud_off,
+                                        color: online ? Colors.green : color3,
+                                        size: 15,
+                                      ),
+                                    ],
+                                  ),
+                                  if (online && networkUnstable) ...[
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Red inestable',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.orange,
+                                            fontSize: 15,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                      ],
+                                    )
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        children: <Widget>[
+                          if (Versioner.isPrevious(hardv, '241220A')) ...{
+                            isRestrictedAdmin
+                                ? Row(
+                                    children: [
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 16.0, vertical: 5.0),
+                                          child: Text(
+                                            'El dueño del equipo restringió su uso por wifi.',
+                                            style: GoogleFonts.poppins(
+                                              color: color3,
+                                              fontSize: 15,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Stack(
+                                    children: [
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
+                                        children: [
+                                          Expanded(
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 16.0,
+                                                      vertical: 5.0),
+                                              child: online
+                                                  ? Row(
+                                                      children: [
+                                                        estado
+                                                            ? Text(
+                                                                'ENCENDIDO',
+                                                                style:
+                                                                    GoogleFonts
+                                                                        .poppins(
+                                                                  color: Colors
+                                                                      .green,
+                                                                  fontSize: 15,
+                                                                ),
+                                                              )
+                                                            : Text(
+                                                                'APAGADO',
+                                                                style:
+                                                                    GoogleFonts
+                                                                        .poppins(
+                                                                  color: color4,
+                                                                  fontSize: 15,
+                                                                ),
+                                                              ),
+                                                        const SizedBox(
+                                                            width: 5),
+                                                        owner
+                                                            ? Switch(
+                                                                activeThumbColor:
+                                                                    const Color(
+                                                                        0xFF9C9D98),
+                                                                activeTrackColor:
+                                                                    const Color(
+                                                                        0xFFB2B5AE),
+                                                                inactiveThumbColor:
+                                                                    const Color(
+                                                                        0xFFB2B5AE),
+                                                                inactiveTrackColor:
+                                                                    const Color(
+                                                                        0xFF9C9D98),
+                                                                value: estado,
+                                                                onChanged:
+                                                                    (newValue) {
+                                                                  toggleState(
+                                                                      deviceName,
+                                                                      newValue);
+                                                                  setState(() {
+                                                                    estado =
+                                                                        newValue;
+                                                                  });
+                                                                },
+                                                              )
+                                                            : const SizedBox(
+                                                                height: 0,
+                                                                width: 0),
+                                                      ],
+                                                    )
+                                                  : Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                              right: 8.0,
+                                                              bottom: 8.0),
+                                                      child: Text(
+                                                        'El equipo debe estar\nconectado para su uso',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          color: color3,
+                                                          fontSize: 15,
+                                                        ),
+                                                      ),
+                                                    ),
+                                            ),
+                                          ),
+                                          if (!online)
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                  right: 8.0, bottom: 8.0),
+                                              child: IconButton(
+                                                icon: const Icon(
+                                                  HugeIcons
+                                                      .strokeRoundedDelete02,
+                                                  color: color0,
+                                                  size: 20,
+                                                ),
+                                                onPressed: () {
+                                                  _confirmDelete(
+                                                      deviceName, productCode);
+                                                },
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      if (online)
+                                        Align(
+                                          alignment: Alignment.centerRight,
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(
+                                                right: 16.0, bottom: 8.0),
+                                            child: IconButton(
+                                              icon: const Icon(
+                                                HugeIcons.strokeRoundedDelete02,
+                                                color: color0,
+                                                size: 20,
+                                              ),
+                                              onPressed: () {
+                                                _confirmDelete(
+                                                    deviceName, productCode);
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  )
+                          } else ...{
+                            isRestrictedAdmin
+                                ? Row(
+                                    children: [
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 16.0, vertical: 5.0),
+                                          child: Text(
+                                            'El dueño del equipo restringió su uso por wifi.',
+                                            style: GoogleFonts.poppins(
+                                              color: color3,
+                                              fontSize: 15,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : online
+                                    ? Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          // POSICIÓN 0: Salida con switch
+                                          if (deviceDATA['io0'] == null) ...[
+                                            const SizedBox
+                                                .shrink() // No mostrar nada si no hay datos
+                                          ] else ...[
+                                            if (deviceDATA['io0'] == null) ...[
+                                              const SizedBox
+                                                  .shrink() // No mostrar nada si no hay datos
+                                            ] else ...[
+                                              if (hasEntry) ...[
+                                                ListTile(
+                                                  title: Text(
+                                                    nicknamesMap[
+                                                            '${deviceName}_0'] ??
+                                                        'Salida 0',
+                                                    style: GoogleFonts.poppins(
+                                                      color: color0,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  trailing: owner
+                                                      ? Switch(
+                                                          activeThumbColor:
+                                                              const Color(
+                                                                  0xFF9C9D98),
+                                                          activeTrackColor:
+                                                              const Color(
+                                                                  0xFFB2B5AE),
+                                                          inactiveThumbColor:
+                                                              const Color(
+                                                                  0xFFB2B5AE),
+                                                          inactiveTrackColor:
+                                                              const Color(
+                                                                  0xFF9C9D98),
+                                                          value: (jsonDecode(
+                                                                      deviceDATA[
+                                                                          'io0'])[
+                                                                  'w_status'] ??
+                                                              false),
+                                                          onChanged:
+                                                              (value) async {
+                                                            final deviceSerialNumber =
+                                                                DeviceManager
+                                                                    .extractSerialNumber(
+                                                                        deviceName);
+                                                            final productCode =
+                                                                DeviceManager
+                                                                    .getProductCode(
+                                                                        deviceName);
+                                                            final topicRx =
+                                                                'devices_rx/$productCode/$deviceSerialNumber';
+                                                            final topicTx =
+                                                                'devices_tx/$productCode/$deviceSerialNumber';
+                                                            final Map<String,
+                                                                    dynamic>
+                                                                io0Map =
+                                                                jsonDecode(
+                                                                    deviceDATA[
+                                                                        'io0']);
+                                                            final rState =
+                                                                (io0Map['r_state'] ??
+                                                                        '0')
+                                                                    .toString();
+                                                            final message =
+                                                                jsonEncode({
+                                                              'pinType': 0,
+                                                              'index': 0,
+                                                              'w_status': value,
+                                                              'r_state': rState,
+                                                            });
+                                                            bool result =
+                                                                await sendMQTTMessageWithPermission(
+                                                                    deviceName,
+                                                                    message,
+                                                                    topicRx,
+                                                                    topicTx,
+                                                                    value
+                                                                        ? 'Encendió dispositivo desde WiFi'
+                                                                        : 'Apagó dispositivo desde WiFi');
+
+                                                            if (result) {
+                                                              setState(() {});
+                                                              globalDATA
+                                                                  .putIfAbsent(
+                                                                      '$productCode/$deviceSerialNumber',
+                                                                      () => {})
+                                                                  .addAll({
+                                                                'io0': message
+                                                              });
+                                                            } else {
+                                                              showToast(
+                                                                'No tienes permisos para realizar esta acción en este momento',
+                                                              );
+                                                            }
+                                                          },
+                                                        )
+                                                      : null,
+                                                ),
+                                              ] else ...[
+                                                Padding(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 16.0,
+                                                    vertical: 5.0,
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceBetween,
+                                                    children: [
+                                                      online
+                                                          ? Row(
+                                                              children: [
+                                                                (jsonDecode(deviceDATA['io0'])[
+                                                                            'w_status'] ??
+                                                                        false)
+                                                                    ? Text(
+                                                                        'ENCENDIDO',
+                                                                        style: GoogleFonts
+                                                                            .poppins(
+                                                                          color:
+                                                                              Colors.green,
+                                                                          fontSize:
+                                                                              15,
+                                                                        ),
+                                                                      )
+                                                                    : Text(
+                                                                        'APAGADO',
+                                                                        style: GoogleFonts
+                                                                            .poppins(
+                                                                          color:
+                                                                              color4,
+                                                                          fontSize:
+                                                                              15,
+                                                                        ),
+                                                                      ),
+                                                                const SizedBox(
+                                                                    width: 5),
+                                                                owner
+                                                                    ? Switch(
+                                                                        activeThumbColor:
+                                                                            const Color(0xFF9C9D98),
+                                                                        activeTrackColor:
+                                                                            const Color(0xFFB2B5AE),
+                                                                        inactiveThumbColor:
+                                                                            const Color(0xFFB2B5AE),
+                                                                        inactiveTrackColor:
+                                                                            const Color(0xFF9C9D98),
+                                                                        value: (jsonDecode(deviceDATA['io0'])['w_status'] ??
+                                                                            false),
+                                                                        onChanged:
+                                                                            (value) async {
+                                                                          final topicRx =
+                                                                              'devices_rx/$productCode/$serialNumber';
+                                                                          final topicTx =
+                                                                              'devices_tx/$productCode/$serialNumber';
+                                                                          final Map<String, dynamic>
+                                                                              io0Map =
+                                                                              jsonDecode(deviceDATA['io0']);
+                                                                          final rState =
+                                                                              (io0Map['r_state'] ?? '0').toString();
+                                                                          final message =
+                                                                              jsonEncode({
+                                                                            'pinType':
+                                                                                0,
+                                                                            'index':
+                                                                                0,
+                                                                            'w_status':
+                                                                                value,
+                                                                            'r_state':
+                                                                                rState,
+                                                                          });
+                                                                          bool result = await sendMQTTMessageWithPermission(
+                                                                              deviceName,
+                                                                              message,
+                                                                              topicRx,
+                                                                              topicTx,
+                                                                              value ? 'Encendió dispositivo desde WiFi' : 'Apagó dispositivo desde WiFi');
+                                                                          if (result) {
+                                                                            setState(() {});
+                                                                            globalDATA.putIfAbsent('$productCode/$serialNumber', () => {}).addAll({
+                                                                              'io0': message
+                                                                            });
+                                                                          } else {
+                                                                            showToast(
+                                                                              'No tienes permisos para realizar esta acción en este momento',
+                                                                            );
+                                                                          }
+                                                                        },
+                                                                      )
+                                                                    : const SizedBox(
+                                                                        height:
+                                                                            0,
+                                                                        width:
+                                                                            0),
+                                                              ],
+                                                            )
+                                                          : Text(
+                                                              'El equipo debe estar\nconectado para su uso',
+                                                              style: GoogleFonts
+                                                                  .poppins(
+                                                                color: color3,
+                                                                fontSize: 15,
+                                                              ),
+                                                            ),
+                                                    ],
+                                                  ),
+                                                )
+                                              ],
+                                            ],
+                                          ],
+                                          // POSICIÓN 1: Entrada, solo si hasEntry == true
+                                          if (hasEntry) ...[
+                                            if (deviceDATA['io1'] == null) ...[
+                                              const SizedBox
+                                                  .shrink() // No mostrar nada si no hay datos
+                                            ] else ...[
+                                              ListTile(
+                                                title: Text(
+                                                  nicknamesMap[
+                                                          '${deviceName}_1'] ??
+                                                      'Entrada 1',
+                                                  style: GoogleFonts.poppins(
+                                                    color: color0,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                trailing: Icon(
+                                                  Icons.new_releases,
+                                                  color: (() {
+                                                    final io1 = jsonDecode(
+                                                        deviceDATA['io1']);
+                                                    final bool wStatus =
+                                                        io1['w_status'] ??
+                                                            false;
+                                                    final String rState =
+                                                        (io1['r_state'] ?? '0')
+                                                            .toString();
+                                                    final bool mismatch =
+                                                        (rState == '0' &&
+                                                                wStatus) ||
+                                                            (rState == '1' &&
+                                                                !wStatus);
+                                                    return mismatch
+                                                        ? color4
+                                                        : const Color(
+                                                            0xFF9C9D98);
+                                                  })(),
+                                                ),
+                                              ),
+                                            ]
+                                          ]
+                                        ],
+                                      )
+                                    : Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
+                                        children: [
+                                          Expanded(
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                  left: 16.0, bottom: 16.0),
+                                              child: Text(
+                                                'El equipo debe estar\nconectado para su uso',
+                                                style: GoogleFonts.poppins(
+                                                  color: color3,
+                                                  fontSize: 15,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                                right: 8.0, bottom: 8.0),
+                                            child: IconButton(
+                                              icon: const Icon(
+                                                HugeIcons.strokeRoundedDelete02,
+                                                color: color0,
+                                                size: 20,
+                                              ),
+                                              onPressed: () {
+                                                _confirmDelete(
+                                                    deviceName, productCode);
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                            if (online)
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    HugeIcons.strokeRoundedDelete02,
+                                    color: color0,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    _confirmDelete(deviceName, productCode);
+                                  },
+                                ),
+                              ),
+                          }
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              case '050217_IOT':
+                bool estado = deviceDATA['w_status'] ?? false;
+                bool heaterOn = deviceDATA['f_status'] ?? false;
+                return RepaintBoundary(
+                  key: ValueKey(deviceName),
+                  child: Card(
+                    color: color1,
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                    elevation: 2,
+                    child: Theme(
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding:
+                            const EdgeInsets.symmetric(horizontal: 16.0),
+                        iconColor: color4,
+                        collapsedIconColor: color4,
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            ReorderableDragStartListener(
+                              index: index,
+                              child: const Icon(
+                                  HugeIcons.strokeRoundedDragDropVertical,
+                                  color: Colors.grey),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    nicknamesMap[deviceName] ?? deviceName,
+                                    style: GoogleFonts.poppins(
+                                      color: color0,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    spacing: 10,
+                                    children: [
+                                      Text(
+                                        online
+                                            ? '● CONECTADO'
+                                            : '● DESCONECTADO',
+                                        style: GoogleFonts.poppins(
+                                          color: online ? Colors.green : color3,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                      Icon(
+                                        online ? Icons.cloud : Icons.cloud_off,
+                                        color: online ? Colors.green : color3,
+                                        size: 15,
+                                      ),
+                                    ],
+                                  ),
+                                  if (online && networkUnstable) ...[
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Red inestable',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.orange,
+                                            fontSize: 15,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                      ],
+                                    )
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        children: <Widget>[
+                          isRestrictedAdmin
+                              ? Row(
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16.0, vertical: 5.0),
+                                        child: Text(
+                                          'El dueño del equipo restringió su uso por wifi.',
+                                          style: GoogleFonts.poppins(
+                                            color: color3,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16.0, vertical: 5.0),
+                                        child: online
+                                            ? Row(
+                                                children: [
+                                                  estado
+                                                      ? Row(
+                                                          children: [
+                                                            if (heaterOn) ...[
+                                                              Text(
+                                                                'Calentando',
+                                                                style:
+                                                                    GoogleFonts
+                                                                        .poppins(
+                                                                  color: Colors
+                                                                          .amber[
+                                                                      800],
+                                                                  fontSize: 15,
+                                                                ),
+                                                              ),
+                                                              Icon(
+                                                                Icons
+                                                                    .water_drop,
+                                                                size: 15,
+                                                                color: Colors
+                                                                    .amber[800],
                                                               ),
                                                             ] else ...[
                                                               Text(
@@ -3885,31 +3158,916 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                           height: 0, width: 0),
                                                 ],
                                               )
-                                            : Text(
-                                                'El equipo debe estar\nconectado para su uso',
-                                                style: GoogleFonts.poppins(
-                                                  color: color3,
-                                                  fontSize: 15,
+                                            : Padding(
+                                                padding: const EdgeInsets.only(
+                                                    left: 8.0, bottom: 8.0),
+                                                child: Text(
+                                                  'El equipo debe estar\nconectado para su uso',
+                                                  style: GoogleFonts.poppins(
+                                                    color: color3,
+                                                    fontSize: 15,
+                                                  ),
                                                 ),
-                                              )),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        right: 8.0, bottom: 8.0),
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        HugeIcons.strokeRoundedDelete02,
-                                        color: color0,
-                                        size: 20,
+                                              ),
                                       ),
-                                      onPressed: () {
-                                        _confirmDelete(deviceName, productCode);
-                                      },
                                     ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          right: 8.0, bottom: 8.0),
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          HugeIcons.strokeRoundedDelete02,
+                                          color: color0,
+                                          size: 20,
+                                        ),
+                                        onPressed: () {
+                                          _confirmDelete(
+                                              deviceName, productCode);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              case '020020_IOT':
+                // Verificar si es un equipo de riego
+                bool isRiegoActive = deviceDATA['riegoActive'] == true;
+                if (isRiegoActive) {
+                  return _buildRiegoCard(deviceName, productCode, serialNumber,
+                      deviceDATA, online, owner, index);
+                }
+
+                // Código original para equipos normales
+                return RepaintBoundary(
+                  key: ValueKey(deviceName),
+                  child: Card(
+                    color: color1,
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                    elevation: 2,
+                    child: Theme(
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding:
+                            const EdgeInsets.symmetric(horizontal: 16.0),
+                        iconColor: color4,
+                        collapsedIconColor: color4,
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            ReorderableDragStartListener(
+                              index: index,
+                              child: const Icon(
+                                  HugeIcons.strokeRoundedDragDropVertical,
+                                  color: Colors.grey),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    nicknamesMap[deviceName] ?? deviceName,
+                                    style: GoogleFonts.poppins(
+                                      color: color0,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
                                   ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    spacing: 10,
+                                    children: [
+                                      Text(
+                                        online
+                                            ? '● CONECTADO'
+                                            : '● DESCONECTADO',
+                                        style: GoogleFonts.poppins(
+                                          color: online ? Colors.green : color3,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                      Icon(
+                                        online ? Icons.cloud : Icons.cloud_off,
+                                        color: online ? Colors.green : color3,
+                                        size: 15,
+                                      ),
+                                    ],
+                                  ),
+                                  if (online && networkUnstable) ...[
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Red inestable',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.orange,
+                                            fontSize: 15,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                      ],
+                                    )
+                                  ],
                                 ],
                               ),
-                      ],
+                            ),
+                          ],
+                        ),
+                        children: <Widget>[
+                          isRestrictedAdmin
+                              ? Row(
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16.0, vertical: 5.0),
+                                        child: Text(
+                                          'El dueño del equipo restringió su uso por wifi.',
+                                          style: GoogleFonts.poppins(
+                                            color: color3,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : online
+                                  ? Column(
+                                      children: [
+                                        ...(deviceDATA.keys
+                                                .where((key) =>
+                                                    key.startsWith('io') &&
+                                                    RegExp(r'^io\d+$')
+                                                        .hasMatch(key))
+                                                .where((ioKey) =>
+                                                    deviceDATA[ioKey] != null)
+                                                .toList()
+                                              ..sort((a, b) {
+                                                int indexA =
+                                                    int.parse(a.substring(2));
+                                                int indexB =
+                                                    int.parse(b.substring(2));
+                                                return indexA.compareTo(indexB);
+                                              }))
+                                            .map((ioKey) {
+                                          // Extraer el índice del ioKey (ejemplo: "io0" -> 0)
+                                          int i = int.parse(ioKey.substring(2));
+                                          Map<String, dynamic> equipo =
+                                              jsonDecode(deviceDATA[ioKey]);
+                                          printLog.i(
+                                            'Voy a realizar el cambio: $equipo',
+                                          );
+                                          String tipoWifi =
+                                              equipo['pinType'].toString() ==
+                                                      '0'
+                                                  ? 'Salida'
+                                                  : 'Entrada';
+                                          bool estadoWifi = equipo['w_status'];
+                                          String comunWifi =
+                                              (equipo['r_state'] ?? '0')
+                                                  .toString();
+                                          bool entradaWifi =
+                                              tipoWifi == 'Entrada';
+                                          return ListTile(
+                                            title: Row(
+                                              children: [
+                                                Text(
+                                                  nicknamesMap[
+                                                          '${deviceName}_$i'] ??
+                                                      '$tipoWifi $i',
+                                                  style: GoogleFonts.poppins(
+                                                    color: color0,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 5),
+                                              ],
+                                            ),
+                                            subtitle: Align(
+                                              alignment: AlignmentDirectional
+                                                  .centerStart,
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.start,
+                                                children: [
+                                                  entradaWifi
+                                                      ? estadoWifi
+                                                          ? comunWifi == '1'
+                                                              ? Text(
+                                                                  'Cerrado',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                    color: Colors
+                                                                        .green,
+                                                                    fontSize:
+                                                                        15,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                  ),
+                                                                )
+                                                              : Text(
+                                                                  'Abierto',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                    color:
+                                                                        color4,
+                                                                    fontSize:
+                                                                        15,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                  ),
+                                                                )
+                                                          : comunWifi == '1'
+                                                              ? Text(
+                                                                  'Abierto',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                    color:
+                                                                        color4,
+                                                                    fontSize:
+                                                                        15,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                  ),
+                                                                )
+                                                              : Text(
+                                                                  'Cerrado',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                    color: Colors
+                                                                        .green,
+                                                                    fontSize:
+                                                                        15,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                  ),
+                                                                )
+                                                      : estadoWifi
+                                                          ? Text(
+                                                              'Encendido',
+                                                              style: GoogleFonts
+                                                                  .poppins(
+                                                                color: Colors
+                                                                    .green,
+                                                                fontSize: 15,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                            )
+                                                          : Text(
+                                                              'Apagado',
+                                                              style: GoogleFonts
+                                                                  .poppins(
+                                                                color: color4,
+                                                                fontSize: 15,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                            ),
+                                                ],
+                                              ),
+                                            ),
+                                            trailing: owner
+                                                ? entradaWifi
+                                                    ? estadoWifi
+                                                        ? comunWifi == '1'
+                                                            ? const Icon(
+                                                                Icons
+                                                                    .new_releases,
+                                                                color: Color(
+                                                                  0xff9b9b9b,
+                                                                ),
+                                                              )
+                                                            : const Icon(
+                                                                Icons
+                                                                    .new_releases,
+                                                                color: color4,
+                                                              )
+                                                        : comunWifi == '1'
+                                                            ? const Icon(
+                                                                Icons
+                                                                    .new_releases,
+                                                                color: color4,
+                                                              )
+                                                            : const Icon(
+                                                                Icons
+                                                                    .new_releases,
+                                                                color: Color(
+                                                                  0xff9b9b9b,
+                                                                ),
+                                                              )
+                                                    : Switch(
+                                                        activeThumbColor:
+                                                            const Color(
+                                                          0xFF9C9D98,
+                                                        ),
+                                                        activeTrackColor:
+                                                            const Color(
+                                                          0xFFB2B5AE,
+                                                        ),
+                                                        inactiveThumbColor:
+                                                            const Color(
+                                                          0xFFB2B5AE,
+                                                        ),
+                                                        inactiveTrackColor:
+                                                            const Color(
+                                                          0xFF9C9D98,
+                                                        ),
+                                                        value: estadoWifi,
+                                                        onChanged:
+                                                            (value) async {
+                                                          String topic =
+                                                              'devices_rx/$productCode/$serialNumber';
+                                                          String topic2 =
+                                                              'devices_tx/$productCode/$serialNumber';
+                                                          String message =
+                                                              jsonEncode({
+                                                            'pinType':
+                                                                tipoWifi ==
+                                                                        'Salida'
+                                                                    ? 0
+                                                                    : 1,
+                                                            'index': i,
+                                                            'w_status': value,
+                                                            'r_state':
+                                                                comunWifi,
+                                                          });
+                                                          bool result =
+                                                              await sendMQTTMessageWithPermission(
+                                                                  deviceName,
+                                                                  message,
+                                                                  topic,
+                                                                  topic2,
+                                                                  value
+                                                                      ? 'Encendió dispositivo desde WiFi'
+                                                                      : 'Apagó dispositivo desde WiFi');
+                                                          if (result) {
+                                                            setState(() {
+                                                              estadoWifi =
+                                                                  value;
+                                                            });
+                                                            globalDATA
+                                                                .putIfAbsent(
+                                                                    '$productCode/$serialNumber',
+                                                                    () => {})
+                                                                .addAll({
+                                                              'io$i': message
+                                                            });
+                                                          } else {
+                                                            showToast(
+                                                              'No tienes permisos para realizar esta acción en este momento',
+                                                            );
+                                                          }
+                                                        },
+                                                      )
+                                                : null,
+                                          );
+                                        }),
+                                      ],
+                                    )
+                                  : const SizedBox(height: 0),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                      left: 20.0, bottom: 16.0),
+                                  child: !online
+                                      ? Text(
+                                          'El equipo debe estar\nconectado para su uso',
+                                          style: GoogleFonts.poppins(
+                                            color: color3,
+                                            fontSize: 15,
+                                          ),
+                                        )
+                                      : const SizedBox(height: 0),
+                                ),
+                              ),
+                              if (!online)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      right: 8.0, bottom: 8.0),
+                                  child: IconButton(
+                                    icon: const Icon(
+                                      HugeIcons.strokeRoundedDelete02,
+                                      color: color0,
+                                      size: 20,
+                                    ),
+                                    onPressed: () {
+                                      _confirmDelete(deviceName, productCode);
+                                    },
+                                  ),
+                                ),
+                            ],
+                          ),
+                          if (online)
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Padding(
+                                padding: const EdgeInsets.only(
+                                    right: 16.0, bottom: 8.0),
+                                child: IconButton(
+                                  icon: const Icon(
+                                    HugeIcons.strokeRoundedDelete02,
+                                    color: color0,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    _confirmDelete(deviceName, productCode);
+                                  },
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              case '041220_IOT':
+                bool estado = deviceDATA['w_status'] ?? false;
+                bool heaterOn = deviceDATA['f_status'] ?? false;
+
+                return RepaintBoundary(
+                  key: ValueKey(deviceName),
+                  child: Card(
+                    color: color1,
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                    elevation: 2,
+                    child: Theme(
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding:
+                            const EdgeInsets.symmetric(horizontal: 16.0),
+                        iconColor: color4,
+                        collapsedIconColor: color4,
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            ReorderableDragStartListener(
+                              index: index,
+                              child: const Icon(
+                                  HugeIcons.strokeRoundedDragDropVertical,
+                                  color: Colors.grey),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    nicknamesMap[deviceName] ?? deviceName,
+                                    style: GoogleFonts.poppins(
+                                      color: color0,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    spacing: 10,
+                                    children: [
+                                      Text(
+                                        online
+                                            ? '● CONECTADO'
+                                            : '● DESCONECTADO',
+                                        style: GoogleFonts.poppins(
+                                          color: online ? Colors.green : color3,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                      Icon(
+                                        online ? Icons.cloud : Icons.cloud_off,
+                                        color: online ? Colors.green : color3,
+                                        size: 15,
+                                      ),
+                                    ],
+                                  ),
+                                  if (online && networkUnstable) ...[
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Red inestable',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.orange,
+                                            fontSize: 15,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                      ],
+                                    )
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        children: <Widget>[
+                          isRestrictedAdmin
+                              ? Row(
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16.0, vertical: 5.0),
+                                        child: Text(
+                                          'El dueño del equipo restringió su uso por wifi.',
+                                          style: GoogleFonts.poppins(
+                                            color: color3,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 16.0, vertical: 5.0),
+                                          child: online
+                                              ? Row(
+                                                  children: [
+                                                    estado
+                                                        ? Row(
+                                                            children: [
+                                                              if (heaterOn) ...[
+                                                                Text(
+                                                                  'Calentando',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                    color: Colors
+                                                                            .amber[
+                                                                        800],
+                                                                    fontSize:
+                                                                        15,
+                                                                  ),
+                                                                ),
+                                                                Icon(
+                                                                  HugeIcons
+                                                                      .strokeRoundedFlash,
+                                                                  size: 15,
+                                                                  color: Colors
+                                                                          .amber[
+                                                                      800],
+                                                                ),
+                                                              ] else ...[
+                                                                Text(
+                                                                  'Encendido',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                    color: Colors
+                                                                        .green,
+                                                                    fontSize:
+                                                                        15,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ],
+                                                          )
+                                                        : Text(
+                                                            'Apagado',
+                                                            style: GoogleFonts
+                                                                .poppins(
+                                                                    color:
+                                                                        color4,
+                                                                    fontSize:
+                                                                        15),
+                                                          ),
+                                                    const SizedBox(width: 5),
+                                                    owner
+                                                        ? Switch(
+                                                            activeThumbColor:
+                                                                const Color(
+                                                                    0xFF9C9D98),
+                                                            activeTrackColor:
+                                                                const Color(
+                                                                    0xFFB2B5AE),
+                                                            inactiveThumbColor:
+                                                                const Color(
+                                                                    0xFFB2B5AE),
+                                                            inactiveTrackColor:
+                                                                const Color(
+                                                                    0xFF9C9D98),
+                                                            value: estado,
+                                                            onChanged:
+                                                                (newValue) {
+                                                              toggleState(
+                                                                  deviceName,
+                                                                  newValue);
+                                                              setState(() {
+                                                                estado =
+                                                                    newValue;
+                                                              });
+                                                            },
+                                                          )
+                                                        : const SizedBox(
+                                                            height: 0,
+                                                            width: 0),
+                                                  ],
+                                                )
+                                              : Text(
+                                                  'El equipo debe estar\nconectado para su uso',
+                                                  style: GoogleFonts.poppins(
+                                                    color: color3,
+                                                    fontSize: 15,
+                                                  ),
+                                                )),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          right: 8.0, bottom: 8.0),
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          HugeIcons.strokeRoundedDelete02,
+                                          color: color0,
+                                          size: 20,
+                                        ),
+                                        onPressed: () {
+                                          _confirmDelete(
+                                              deviceName, productCode);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              case '028000_IOT':
+                bool estado = deviceDATA['w_status'] ?? false;
+                bool heaterOn = deviceDATA['f_status'] ?? false;
+                return RepaintBoundary(
+                  key: ValueKey(deviceName),
+                  child: Card(
+                    color: color1,
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                    elevation: 2,
+                    child: Theme(
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding:
+                            const EdgeInsets.symmetric(horizontal: 16.0),
+                        iconColor: color4,
+                        collapsedIconColor: color4,
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            ReorderableDragStartListener(
+                              index: index,
+                              child: const Icon(
+                                  HugeIcons.strokeRoundedDragDropVertical,
+                                  color: Colors.grey),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    nicknamesMap[deviceName] ?? deviceName,
+                                    style: GoogleFonts.poppins(
+                                      color: color0,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    spacing: 10,
+                                    children: [
+                                      Text(
+                                        online
+                                            ? '● CONECTADO'
+                                            : '● DESCONECTADO',
+                                        style: GoogleFonts.poppins(
+                                          color: online ? Colors.green : color3,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                      Icon(
+                                        online ? Icons.cloud : Icons.cloud_off,
+                                        color: online ? Colors.green : color3,
+                                        size: 15,
+                                      ),
+                                    ],
+                                  ),
+                                  if (online && networkUnstable) ...[
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Red inestable',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.orange,
+                                            fontSize: 15,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                      ],
+                                    )
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        children: <Widget>[
+                          isRestrictedAdmin
+                              ? Row(
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16.0, vertical: 5.0),
+                                        child: Text(
+                                          'El dueño del equipo restringió su uso por wifi.',
+                                          style: GoogleFonts.poppins(
+                                            color: color3,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 16.0, vertical: 16.0),
+                                          child: online
+                                              ? Row(
+                                                  children: [
+                                                    estado
+                                                        ? Row(
+                                                            children: [
+                                                              if (heaterOn) ...[
+                                                                Text(
+                                                                  'Enfriando',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                    color: Colors
+                                                                        .lightBlueAccent
+                                                                        .shade400,
+                                                                    fontSize:
+                                                                        15,
+                                                                  ),
+                                                                ),
+                                                                Icon(
+                                                                  HugeIcons
+                                                                      .strokeRoundedSnow,
+                                                                  size: 15,
+                                                                  color: Colors
+                                                                      .lightBlueAccent
+                                                                      .shade400,
+                                                                ),
+                                                              ] else ...[
+                                                                Text(
+                                                                  'Encendido',
+                                                                  style: GoogleFonts
+                                                                      .poppins(
+                                                                    color: Colors
+                                                                        .green,
+                                                                    fontSize:
+                                                                        15,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ],
+                                                          )
+                                                        : Text(
+                                                            'Apagado',
+                                                            style: GoogleFonts
+                                                                .poppins(
+                                                                    color:
+                                                                        color4,
+                                                                    fontSize:
+                                                                        15),
+                                                          ),
+                                                    const SizedBox(width: 5),
+                                                    owner
+                                                        ? Switch(
+                                                            activeThumbColor:
+                                                                const Color(
+                                                                    0xFF9C9D98),
+                                                            activeTrackColor:
+                                                                const Color(
+                                                                    0xFFB2B5AE),
+                                                            inactiveThumbColor:
+                                                                const Color(
+                                                                    0xFFB2B5AE),
+                                                            inactiveTrackColor:
+                                                                const Color(
+                                                                    0xFF9C9D98),
+                                                            value: estado,
+                                                            onChanged:
+                                                                (newValue) {
+                                                              toggleState(
+                                                                  deviceName,
+                                                                  newValue);
+                                                              setState(() {
+                                                                estado =
+                                                                    newValue;
+                                                              });
+                                                            },
+                                                          )
+                                                        : const SizedBox(
+                                                            height: 0,
+                                                            width: 0),
+                                                  ],
+                                                )
+                                              : Text(
+                                                  'El equipo debe estar\nconectado para su uso',
+                                                  style: GoogleFonts.poppins(
+                                                    color: color3,
+                                                    fontSize: 15,
+                                                  ),
+                                                )),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          right: 8.0, bottom: 8.0),
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          HugeIcons.strokeRoundedDelete02,
+                                          color: color0,
+                                          size: 20,
+                                        ),
+                                        onPressed: () {
+                                          _confirmDelete(
+                                              deviceName, productCode);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -3917,422 +4075,454 @@ class WifiPageState extends ConsumerState<WifiPage>
                 String temp = deviceDATA['actualTemp'].toString();
                 bool alertMaxFlag = deviceDATA['alert_maxflag'] ?? false;
                 bool alertMinFlag = deviceDATA['alert_minflag'] ?? false;
-                return Card(
+                return RepaintBoundary(
                   key: ValueKey(deviceName),
-                  color: color1,
-                  margin:
-                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                  elevation: 2,
-                  child: Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color4,
-                      collapsedIconColor: color4,
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.7,
-                                child: Text(
-                                  nicknamesMap[deviceName] ?? deviceName,
-                                  style: GoogleFonts.poppins(
-                                    color: color0,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                spacing: 10,
+                  child: Card(
+                    color: color1,
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                    elevation: 2,
+                    child: Theme(
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding:
+                            const EdgeInsets.symmetric(horizontal: 16.0),
+                        iconColor: color4,
+                        collapsedIconColor: color4,
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            ReorderableDragStartListener(
+                              index: index,
+                              child: const Icon(
+                                  HugeIcons.strokeRoundedDragDropVertical,
+                                  color: Colors.grey),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    online ? '● CONECTADO' : '● DESCONECTADO',
+                                    nicknamesMap[deviceName] ?? deviceName,
                                     style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color3,
-                                      fontSize: 15,
+                                      color: color0,
+                                      fontWeight: FontWeight.bold,
                                     ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
                                   ),
-                                  Icon(
-                                    online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color3,
-                                    size: 15,
-                                  ),
-                                ],
-                              ),
-                              if (online && networkUnstable) ...[
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Red inestable',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.orange,
-                                        fontSize: 15,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                  ],
-                                )
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                      children: <Widget>[
-                        isRestrictedAdmin
-                            ? Row(
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0, vertical: 5.0),
-                                      child: Text(
-                                        'El dueño del equipo restringió su uso por wifi.',
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    spacing: 10,
+                                    children: [
+                                      Text(
+                                        online
+                                            ? '● CONECTADO'
+                                            : '● DESCONECTADO',
                                         style: GoogleFonts.poppins(
-                                          color: color3,
+                                          color: online ? Colors.green : color3,
                                           fontSize: 15,
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0, vertical: 5.0),
-                                      child: online
-                                          ? Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  'Temperatura: $temp °C',
-                                                  style: GoogleFonts.poppins(
-                                                    color: color0,
-                                                    fontSize: 15,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                                Row(
-                                                  children: [
-                                                    Text(
-                                                      'Alerta máxima:',
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                        color: color0,
-                                                        fontSize: 15,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 5),
-                                                    alertMaxFlag
-                                                        ? const Icon(
-                                                            HugeIcons
-                                                                .strokeRoundedAlert02,
-                                                            color: color4,
-                                                          )
-                                                        : const Icon(
-                                                            HugeIcons
-                                                                .strokeRoundedTemperature,
-                                                            color: Colors.green,
-                                                          ),
-                                                  ],
-                                                ),
-                                                Row(
-                                                  children: [
-                                                    Text(
-                                                      'Alerta mínima:',
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                        color: color0,
-                                                        fontSize: 15,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 5),
-                                                    alertMinFlag
-                                                        ? const Icon(
-                                                            HugeIcons
-                                                                .strokeRoundedAlert02,
-                                                            color: color4,
-                                                          )
-                                                        : const Icon(
-                                                            HugeIcons
-                                                                .strokeRoundedTemperature,
-                                                            color: Colors.green,
-                                                          ),
-                                                  ],
-                                                ),
-                                              ],
-                                            )
-                                          : Padding(
-                                              padding: const EdgeInsets.only(
-                                                  left: 8.0, bottom: 8.0),
-                                              child: Text(
-                                                'El equipo debe estar\nconectado para su uso',
-                                                style: GoogleFonts.poppins(
-                                                  color: color3,
-                                                  fontSize: 15,
-                                                ),
-                                              ),
-                                            ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        right: 8.0, bottom: 8.0),
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        HugeIcons.strokeRoundedDelete02,
-                                        color: color0,
-                                        size: 20,
+                                      Icon(
+                                        online ? Icons.cloud : Icons.cloud_off,
+                                        color: online ? Colors.green : color3,
+                                        size: 15,
                                       ),
-                                      onPressed: () {
-                                        _confirmDelete(deviceName, productCode);
-                                      },
-                                    ),
+                                    ],
                                   ),
+                                  if (online && networkUnstable) ...[
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Red inestable',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.orange,
+                                            fontSize: 15,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                      ],
+                                    )
+                                  ],
                                 ],
                               ),
-                      ],
+                            ),
+                          ],
+                        ),
+                        children: <Widget>[
+                          isRestrictedAdmin
+                              ? Row(
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16.0, vertical: 5.0),
+                                        child: Text(
+                                          'El dueño del equipo restringió su uso por wifi.',
+                                          style: GoogleFonts.poppins(
+                                            color: color3,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16.0, vertical: 5.0),
+                                        child: online
+                                            ? Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Temperatura: $temp °C',
+                                                    style: GoogleFonts.poppins(
+                                                      color: color0,
+                                                      fontSize: 15,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  Row(
+                                                    children: [
+                                                      Text(
+                                                        'Alerta máxima:',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          color: color0,
+                                                          fontSize: 15,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 5),
+                                                      alertMaxFlag
+                                                          ? const Icon(
+                                                              HugeIcons
+                                                                  .strokeRoundedAlert02,
+                                                              color: color4,
+                                                            )
+                                                          : const Icon(
+                                                              HugeIcons
+                                                                  .strokeRoundedTemperature,
+                                                              color:
+                                                                  Colors.green,
+                                                            ),
+                                                    ],
+                                                  ),
+                                                  Row(
+                                                    children: [
+                                                      Text(
+                                                        'Alerta mínima:',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          color: color0,
+                                                          fontSize: 15,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 5),
+                                                      alertMinFlag
+                                                          ? const Icon(
+                                                              HugeIcons
+                                                                  .strokeRoundedAlert02,
+                                                              color: color4,
+                                                            )
+                                                          : const Icon(
+                                                              HugeIcons
+                                                                  .strokeRoundedTemperature,
+                                                              color:
+                                                                  Colors.green,
+                                                            ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              )
+                                            : Padding(
+                                                padding: const EdgeInsets.only(
+                                                    left: 8.0, bottom: 8.0),
+                                                child: Text(
+                                                  'El equipo debe estar\nconectado para su uso',
+                                                  style: GoogleFonts.poppins(
+                                                    color: color3,
+                                                    fontSize: 15,
+                                                  ),
+                                                ),
+                                              ),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          right: 8.0, bottom: 8.0),
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          HugeIcons.strokeRoundedDelete02,
+                                          color: color0,
+                                          size: 20,
+                                        ),
+                                        onPressed: () {
+                                          _confirmDelete(
+                                              deviceName, productCode);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ],
+                      ),
                     ),
                   ),
                 );
               case '027345_IOT':
                 bool estado = deviceDATA['w_status'] ?? false;
                 bool heaterOn = deviceDATA['f_status'] ?? false;
-                return Card(
+                return RepaintBoundary(
                   key: ValueKey(deviceName),
-                  color: color1,
-                  margin:
-                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                  elevation: 2,
-                  child: Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color4,
-                      collapsedIconColor: color4,
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.7,
-                                child: Text(
-                                  nicknamesMap[deviceName] ?? deviceName,
-                                  style: GoogleFonts.poppins(
-                                    color: color0,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                spacing: 10,
+                  child: Card(
+                    color: color1,
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                    elevation: 2,
+                    child: Theme(
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding:
+                            const EdgeInsets.symmetric(horizontal: 16.0),
+                        iconColor: color4,
+                        collapsedIconColor: color4,
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            ReorderableDragStartListener(
+                              index: index,
+                              child: const Icon(
+                                  HugeIcons.strokeRoundedDragDropVertical,
+                                  color: Colors.grey),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    online ? '● CONECTADO' : '● DESCONECTADO',
+                                    nicknamesMap[deviceName] ?? deviceName,
                                     style: GoogleFonts.poppins(
-                                      color: online ? Colors.green : color3,
-                                      fontSize: 15,
+                                      color: color0,
+                                      fontWeight: FontWeight.bold,
                                     ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
                                   ),
-                                  Icon(
-                                    online ? Icons.cloud : Icons.cloud_off,
-                                    color: online ? Colors.green : color3,
-                                    size: 15,
-                                  ),
-                                ],
-                              ),
-                              if (online && networkUnstable) ...[
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Red inestable',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.orange,
-                                        fontSize: 15,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: Colors.orange,
-                                      size: 18,
-                                    ),
-                                  ],
-                                )
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                      children: <Widget>[
-                        isRestrictedAdmin
-                            ? Row(
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0, vertical: 5.0),
-                                      child: Text(
-                                        'El dueño del equipo restringió su uso por wifi.',
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    spacing: 10,
+                                    children: [
+                                      Text(
+                                        online
+                                            ? '● CONECTADO'
+                                            : '● DESCONECTADO',
                                         style: GoogleFonts.poppins(
-                                          color: color3,
+                                          color: online ? Colors.green : color3,
                                           fontSize: 15,
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0, vertical: 5.0),
-                                      child: online
-                                          ? Row(
-                                              children: [
-                                                estado
-                                                    ? Row(
-                                                        children: [
-                                                          if (heaterOn) ...[
-                                                            Text(
-                                                              'Calentando',
-                                                              style: GoogleFonts
-                                                                  .poppins(
-                                                                color: Colors
-                                                                    .amber[800],
-                                                                fontSize: 15,
-                                                              ),
-                                                            ),
-                                                            Icon(
-                                                              Icons.water_drop,
-                                                              size: 15,
-                                                              color: Colors
-                                                                  .amber[800],
-                                                            ),
-                                                          ] else ...[
-                                                            Text(
-                                                              'Encendido',
-                                                              style: GoogleFonts
-                                                                  .poppins(
-                                                                color: Colors
-                                                                    .green,
-                                                                fontSize: 15,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ],
-                                                      )
-                                                    : Text(
-                                                        'Apagado',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                                color: color4,
-                                                                fontSize: 15),
-                                                      ),
-                                                const SizedBox(width: 5),
-                                                owner
-                                                    ? Switch(
-                                                        activeThumbColor:
-                                                            const Color(
-                                                                0xFF9C9D98),
-                                                        activeTrackColor:
-                                                            const Color(
-                                                                0xFFB2B5AE),
-                                                        inactiveThumbColor:
-                                                            const Color(
-                                                                0xFFB2B5AE),
-                                                        inactiveTrackColor:
-                                                            const Color(
-                                                                0xFF9C9D98),
-                                                        value: estado,
-                                                        onChanged: (newValue) {
-                                                          toggleState(
-                                                              deviceName,
-                                                              newValue);
-                                                          setState(() {
-                                                            estado = newValue;
-                                                          });
-                                                        },
-                                                      )
-                                                    : const SizedBox(
-                                                        height: 0, width: 0),
-                                              ],
-                                            )
-                                          : Padding(
-                                              padding: const EdgeInsets.only(
-                                                  left: 8.0, bottom: 8.0),
-                                              child: Text(
-                                                'El equipo debe estar\nconectado para su uso',
-                                                style: GoogleFonts.poppins(
-                                                  color: color3,
-                                                  fontSize: 15,
-                                                ),
-                                              ),
-                                            ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        right: 8.0, bottom: 8.0),
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        HugeIcons.strokeRoundedDelete02,
-                                        color: color0,
-                                        size: 20,
+                                      Icon(
+                                        online ? Icons.cloud : Icons.cloud_off,
+                                        color: online ? Colors.green : color3,
+                                        size: 15,
                                       ),
-                                      onPressed: () {
-                                        _confirmDelete(deviceName, productCode);
-                                      },
-                                    ),
+                                    ],
                                   ),
+                                  if (online && networkUnstable) ...[
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Red inestable',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.orange,
+                                            fontSize: 15,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                      ],
+                                    )
+                                  ],
                                 ],
                               ),
-                      ],
+                            ),
+                          ],
+                        ),
+                        children: <Widget>[
+                          isRestrictedAdmin
+                              ? Row(
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16.0, vertical: 5.0),
+                                        child: Text(
+                                          'El dueño del equipo restringió su uso por wifi.',
+                                          style: GoogleFonts.poppins(
+                                            color: color3,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16.0, vertical: 5.0),
+                                        child: online
+                                            ? Row(
+                                                children: [
+                                                  estado
+                                                      ? Row(
+                                                          children: [
+                                                            if (heaterOn) ...[
+                                                              Text(
+                                                                'Calentando',
+                                                                style:
+                                                                    GoogleFonts
+                                                                        .poppins(
+                                                                  color: Colors
+                                                                          .amber[
+                                                                      800],
+                                                                  fontSize: 15,
+                                                                ),
+                                                              ),
+                                                              Icon(
+                                                                Icons
+                                                                    .water_drop,
+                                                                size: 15,
+                                                                color: Colors
+                                                                    .amber[800],
+                                                              ),
+                                                            ] else ...[
+                                                              Text(
+                                                                'Encendido',
+                                                                style:
+                                                                    GoogleFonts
+                                                                        .poppins(
+                                                                  color: Colors
+                                                                      .green,
+                                                                  fontSize: 15,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ],
+                                                        )
+                                                      : Text(
+                                                          'Apagado',
+                                                          style: GoogleFonts
+                                                              .poppins(
+                                                                  color: color4,
+                                                                  fontSize: 15),
+                                                        ),
+                                                  const SizedBox(width: 5),
+                                                  owner
+                                                      ? Switch(
+                                                          activeThumbColor:
+                                                              const Color(
+                                                                  0xFF9C9D98),
+                                                          activeTrackColor:
+                                                              const Color(
+                                                                  0xFFB2B5AE),
+                                                          inactiveThumbColor:
+                                                              const Color(
+                                                                  0xFFB2B5AE),
+                                                          inactiveTrackColor:
+                                                              const Color(
+                                                                  0xFF9C9D98),
+                                                          value: estado,
+                                                          onChanged:
+                                                              (newValue) {
+                                                            toggleState(
+                                                                deviceName,
+                                                                newValue);
+                                                            setState(() {
+                                                              estado = newValue;
+                                                            });
+                                                          },
+                                                        )
+                                                      : const SizedBox(
+                                                          height: 0, width: 0),
+                                                ],
+                                              )
+                                            : Padding(
+                                                padding: const EdgeInsets.only(
+                                                    left: 8.0, bottom: 8.0),
+                                                child: Text(
+                                                  'El equipo debe estar\nconectado para su uso',
+                                                  style: GoogleFonts.poppins(
+                                                    color: color3,
+                                                    fontSize: 15,
+                                                  ),
+                                                ),
+                                              ),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          right: 8.0, bottom: 8.0),
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          HugeIcons.strokeRoundedDelete02,
+                                          color: color0,
+                                          size: 20,
+                                        ),
+                                        onPressed: () {
+                                          _confirmDelete(
+                                              deviceName, productCode);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -4344,35 +4534,37 @@ class WifiPageState extends ConsumerState<WifiPage>
             }
           } catch (e) {
             printLog.e('Error al procesar el equipo $deviceName: $e');
-            return Card(
+            return RepaintBoundary(
               key: ValueKey('${deviceName}_error'),
-              color: color1,
-              margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-              elevation: 2,
-              child: Theme(
-                  data: Theme.of(context)
-                      .copyWith(dividerColor: Colors.transparent),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ListTile(
-                        title: Text(
-                          nicknamesMap[deviceName] ?? deviceName,
-                          style: GoogleFonts.poppins(
-                            color: color0,
-                            fontWeight: FontWeight.bold,
+              child: Card(
+                color: color1,
+                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                elevation: 2,
+                child: Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          title: Text(
+                            nicknamesMap[deviceName] ?? deviceName,
+                            style: GoogleFonts.poppins(
+                              color: color0,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Por favor, verifica la conexión y actualice su equipo.',
+                            style: GoogleFonts.poppins(
+                              color: color0,
+                              fontSize: 15,
+                            ),
                           ),
                         ),
-                        subtitle: Text(
-                          'Por favor, verifica la conexión y actualice su equipo.',
-                          style: GoogleFonts.poppins(
-                            color: color0,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                    ],
-                  )),
+                      ],
+                    )),
+              ),
             );
           }
         } else {
@@ -4477,636 +4669,662 @@ class WifiPageState extends ConsumerState<WifiPage>
               bool cadenaOnline =
                   isCadenaOnline(eventoCadena['deviceGroup'] as List<dynamic>);
 
-              return Card(
+              return RepaintBoundary(
                 key: ValueKey('cadena_$grupo'),
-                color: color1,
-                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                elevation: 2,
-                child: Theme(
-                  data: Theme.of(context)
-                      .copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    iconColor: color4,
-                    collapsedIconColor: color4,
-                    onExpansionChanged: (bool expanded) {
-                      setState(() {
-                        _expandedStates[deviceName] = expanded;
-                      });
-                    },
-                    title: Row(
+                child: Card(
+                  color: color1,
+                  margin:
+                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                  elevation: 2,
+                  child: Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      iconColor: color4,
+                      collapsedIconColor: color4,
+                      onExpansionChanged: (bool expanded) {
+                        setState(() {
+                          _expandedStates[deviceName] = expanded;
+                        });
+                      },
+                      title: Row(
+                        children: [
+                          ReorderableDragStartListener(
+                            index: index,
+                            child: const Icon(
+                                HugeIcons.strokeRoundedDragDropVertical,
+                                color: Colors.grey),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(HugeIcons.strokeRoundedLink01,
+                              color: color4),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              grupo,
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: color0.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'CADENA',
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       children: [
-                        const Icon(HugeIcons.strokeRoundedLink01,
-                            color: color4),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            grupo,
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: color0.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            'CADENA',
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (!cadenaOnline) ...[
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.red.withValues(alpha: 0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.wifi_off,
-                                      color: Colors.red,
-                                      size: 16,
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (!cadenaOnline) ...[
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.red.withValues(alpha: 0.3),
+                                      width: 1,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Todos los equipos deben estar conectados para activar la cadena',
-                                        style: GoogleFonts.poppins(
-                                          color: Colors.red,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.wifi_off,
+                                        color: Colors.red,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'Todos los equipos deben estar conectados para activar la cadena',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.red,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+
+                              // 🆕 BARRA DE PROGRESO Y ESTADO
+                              Consumer(
+                                builder: (context, ref, child) {
+                                  final eventoEstado =
+                                      ref.watch(eventosEstadoProvider)[
+                                          'ControlPorCadena/$grupo'];
+
+                                  if (eventoEstado != null &&
+                                      (eventoEstado.isRunning ||
+                                          eventoEstado.isPaused)) {
+                                    return Column(
+                                      children: [
+                                        // Barra de progreso
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue
+                                                .withValues(alpha: 0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: Colors.blue
+                                                  .withValues(alpha: 0.3),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    eventoEstado.isPaused
+                                                        ? Icons.pause_circle
+                                                        : Icons.play_circle,
+                                                    color: eventoEstado.isPaused
+                                                        ? Colors.orange
+                                                        : Colors.blue,
+                                                    size: 20,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Text(
+                                                      eventoEstado.mensaje
+                                                              .isNotEmpty
+                                                          ? eventoEstado.mensaje
+                                                          : eventoEstado
+                                                                  .isPaused
+                                                              ? 'Pausado'
+                                                              : 'En ejecución',
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        color: color0,
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    '${eventoEstado.progresoPortentaje.toStringAsFixed(0)}%',
+                                                    style: GoogleFonts.poppins(
+                                                      color: Colors.blue,
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 8),
+                                              ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                                child: LinearProgressIndicator(
+                                                  value: eventoEstado
+                                                      .progresoDecimal,
+                                                  minHeight: 8,
+                                                  backgroundColor: Colors.grey
+                                                      .withValues(alpha: 0.3),
+                                                  valueColor:
+                                                      AlwaysStoppedAnimation<
+                                                          Color>(
+                                                    eventoEstado.isPaused
+                                                        ? Colors.orange
+                                                        : Colors.blue,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Text(
+                                                'Paso ${eventoEstado.pasoActual} de ${eventoEstado.totalPasos}',
+                                                style: GoogleFonts.poppins(
+                                                  color: color0.withValues(
+                                                      alpha: 0.7),
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        // Botones de control
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            if (eventoEstado.isRunning) ...[
+                                              ElevatedButton.icon(
+                                                onPressed: () =>
+                                                    pausarCadena(grupo),
+                                                icon: const Icon(Icons.pause,
+                                                    size: 18),
+                                                label: Text(
+                                                  'Pausar',
+                                                  style: GoogleFonts.poppins(
+                                                      fontSize: 13),
+                                                ),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      Colors.orange,
+                                                  foregroundColor: color0,
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 16,
+                                                    vertical: 8,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                            ],
+                                            if (eventoEstado.isPaused) ...[
+                                              ElevatedButton.icon(
+                                                onPressed: () =>
+                                                    reanudarCadena(grupo),
+                                                icon: const Icon(
+                                                    Icons.play_arrow,
+                                                    size: 18),
+                                                label: Text(
+                                                  'Reanudar',
+                                                  style: GoogleFonts.poppins(
+                                                      fontSize: 13),
+                                                ),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.green,
+                                                  foregroundColor: color0,
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 16,
+                                                    vertical: 8,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                            ],
+                                            ElevatedButton.icon(
+                                              onPressed: () =>
+                                                  cancelarCadena(grupo),
+                                              icon: const Icon(Icons.cancel,
+                                                  size: 18),
+                                              label: Text(
+                                                'Cancelar',
+                                                style: GoogleFonts.poppins(
+                                                    fontSize: 13),
+                                              ),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.red,
+                                                foregroundColor: color0,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 8,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 16),
+                                      ],
+                                    );
+                                  }
+
+                                  // Mostrar botón de iniciar solo si no está en ejecución
+                                  final bool isExecuting =
+                                      eventoEstado != null &&
+                                          eventoEstado.isRunning;
+
+                                  return Column(
+                                    children: [
+                                      Center(
+                                        child: ElevatedButton.icon(
+                                          onPressed:
+                                              (cadenaOnline && !isExecuting)
+                                                  ? () => controlarCadena(grupo)
+                                                  : null,
+                                          icon: isExecuting
+                                              ? const SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    valueColor:
+                                                        AlwaysStoppedAnimation<
+                                                            Color>(color0),
+                                                  ),
+                                                )
+                                              : Icon(
+                                                  HugeIcons.strokeRoundedPlay,
+                                                  color: cadenaOnline
+                                                      ? color0
+                                                      : Colors.grey,
+                                                  size: 20,
+                                                ),
+                                          label: Text(
+                                            isExecuting
+                                                ? 'Ejecutando Cadena...'
+                                                : 'Activar Cadena',
+                                            style: GoogleFonts.poppins(
+                                              color:
+                                                  (cadenaOnline || isExecuting)
+                                                      ? color0
+                                                      : Colors.grey,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                (cadenaOnline || isExecuting)
+                                                    ? color4
+                                                    : Colors.grey
+                                                        .withValues(alpha: 0.3),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 24,
+                                              vertical: 12,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                            elevation:
+                                                (cadenaOnline || isExecuting)
+                                                    ? 3
+                                                    : 0,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                    ],
+                                  );
+                                },
+                              ),
+                              Text(
+                                'Pasos de la cadena:',
+                                style: GoogleFonts.poppins(
+                                  color: color0,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
                                 ),
                               ),
                               const SizedBox(height: 12),
-                            ],
+                              ...((eventoCadena['pasos'] ?? [])
+                                      as List<dynamic>)
+                                  .asMap()
+                                  .entries
+                                  .map((entry) {
+                                final paso = entry.value;
+                                final idx = entry.key + 1;
 
-                            // 🆕 BARRA DE PROGRESO Y ESTADO
-                            Consumer(
-                              builder: (context, ref, child) {
-                                final eventoEstado =
-                                    ref.watch(eventosEstadoProvider)[
-                                        'ControlPorCadena/$grupo'];
+                                // Si paso es String, intentar parsearlo para compatibilidad
+                                dynamic pasoProcessed = paso;
+                                if (paso is String) {
+                                  try {
+                                    pasoProcessed = parseMapString(paso);
+                                  } catch (e) {
+                                    printLog.e(
+                                        'Error parseando paso de cadena: $e');
+                                    return const SizedBox.shrink();
+                                  }
+                                }
 
-                                if (eventoEstado != null &&
-                                    (eventoEstado.isRunning ||
-                                        eventoEstado.isPaused)) {
-                                  return Column(
+                                // Validar que los campos requeridos existan
+                                if (pasoProcessed == null ||
+                                    pasoProcessed['devices'] == null ||
+                                    pasoProcessed['actions'] == null) {
+                                  printLog.i(
+                                      'Paso de cadena incompleto, saltando...');
+                                  return const SizedBox.shrink();
+                                }
+
+                                final devices =
+                                    pasoProcessed['devices'] as List<dynamic>;
+                                if (pasoProcessed['actions'].runtimeType ==
+                                    String) {
+                                  pasoProcessed['actions'] =
+                                      parseMapString(pasoProcessed['actions']);
+                                }
+                                final actions = pasoProcessed['actions'];
+                                final stepDelay = pasoProcessed['stepDelay'];
+                                final stepDelayUnit =
+                                    pasoProcessed['stepDelayUnit'] as String? ??
+                                        'seg';
+
+                                // Formatear tiempo
+                                String delayText = 'Instantáneo';
+                                if (stepDelay != null) {
+                                  if (stepDelay is Duration) {
+                                    int totalSeconds = stepDelay.inSeconds;
+                                    if (totalSeconds > 0) {
+                                      int minutes = (totalSeconds / 60).floor();
+
+                                      if (stepDelayUnit == 'min') {
+                                        delayText =
+                                            '$minutes ${minutes == 1 ? 'minuto' : 'minutos'}';
+                                      } else {
+                                        delayText =
+                                            '$totalSeconds ${totalSeconds == 1 ? 'segundo' : 'segundos'}';
+                                      }
+                                    }
+                                  }
+                                }
+
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: color0.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: color4.withValues(alpha: 0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      // Barra de progreso
-                                      Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue
-                                              .withValues(alpha: 0.1),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: Colors.blue
-                                                .withValues(alpha: 0.3),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Icon(
-                                                  eventoEstado.isPaused
-                                                      ? Icons.pause_circle
-                                                      : Icons.play_circle,
-                                                  color: eventoEstado.isPaused
-                                                      ? Colors.orange
-                                                      : Colors.blue,
-                                                  size: 20,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: Text(
-                                                    eventoEstado
-                                                            .mensaje.isNotEmpty
-                                                        ? eventoEstado.mensaje
-                                                        : eventoEstado.isPaused
-                                                            ? 'Pausado'
-                                                            : 'En ejecución',
-                                                    style: GoogleFonts.poppins(
-                                                      color: color0,
-                                                      fontSize: 13,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                ),
-                                                Text(
-                                                  '${eventoEstado.progresoPortentaje.toStringAsFixed(0)}%',
-                                                  style: GoogleFonts.poppins(
-                                                    color: Colors.blue,
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                              child: LinearProgressIndicator(
-                                                value: eventoEstado
-                                                    .progresoDecimal,
-                                                minHeight: 8,
-                                                backgroundColor: Colors.grey
-                                                    .withValues(alpha: 0.3),
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<
-                                                        Color>(
-                                                  eventoEstado.isPaused
-                                                      ? Colors.orange
-                                                      : Colors.blue,
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              'Paso ${eventoEstado.pasoActual} de ${eventoEstado.totalPasos}',
-                                              style: GoogleFonts.poppins(
-                                                color: color0.withValues(
-                                                    alpha: 0.7),
-                                                fontSize: 11,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      // Botones de control
                                       Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
                                         children: [
-                                          if (eventoEstado.isRunning) ...[
-                                            ElevatedButton.icon(
-                                              onPressed: () =>
-                                                  pausarCadena(grupo),
-                                              icon: const Icon(Icons.pause,
-                                                  size: 18),
-                                              label: Text(
-                                                'Pausar',
+                                          Container(
+                                            width: 24,
+                                            height: 24,
+                                            decoration: const BoxDecoration(
+                                              color: color4,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                '$idx',
                                                 style: GoogleFonts.poppins(
-                                                    fontSize: 13),
-                                              ),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.orange,
-                                                foregroundColor: color0,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 16,
-                                                  vertical: 8,
+                                                  color: color1,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 12,
                                                 ),
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
-                                          ],
-                                          if (eventoEstado.isPaused) ...[
-                                            ElevatedButton.icon(
-                                              onPressed: () =>
-                                                  reanudarCadena(grupo),
-                                              icon: const Icon(Icons.play_arrow,
-                                                  size: 18),
-                                              label: Text(
-                                                'Reanudar',
-                                                style: GoogleFonts.poppins(
-                                                    fontSize: 13),
-                                              ),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.green,
-                                                foregroundColor: color0,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 16,
-                                                  vertical: 8,
-                                                ),
-                                              ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Paso $idx',
+                                            style: GoogleFonts.poppins(
+                                              fontWeight: FontWeight.bold,
+                                              color: color4,
+                                              fontSize: 14,
                                             ),
-                                            const SizedBox(width: 8),
-                                          ],
-                                          ElevatedButton.icon(
-                                            onPressed: () =>
-                                                cancelarCadena(grupo),
-                                            icon: const Icon(Icons.cancel,
-                                                size: 18),
-                                            label: Text(
-                                              'Cancelar',
+                                          ),
+                                          const Spacer(),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  color0.withValues(alpha: 0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              delayText,
                                               style: GoogleFonts.poppins(
-                                                  fontSize: 13),
-                                            ),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.red,
-                                              foregroundColor: color0,
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 16,
-                                                vertical: 8,
+                                                color: color0,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w500,
                                               ),
                                             ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 16),
-                                    ],
-                                  );
-                                }
+                                      const SizedBox(height: 8),
+                                      ...devices.map((device) {
+                                        final deviceStr = device.toString();
+                                        if (actions[deviceStr].runtimeType ==
+                                            String) {
+                                          actions[deviceStr] =
+                                              actions[deviceStr] == 'true';
+                                        }
+                                        final action =
+                                            actions[deviceStr] ?? false;
 
-                                // Mostrar botón de iniciar solo si no está en ejecución
-                                final bool isExecuting = eventoEstado != null &&
-                                    eventoEstado.isRunning;
+                                        // Formatear nombre del dispositivo igual que en grupos
+                                        String displayName = '';
+                                        if (deviceStr.contains('_')) {
+                                          final parts = deviceStr.split('_');
+                                          displayName = nicknamesMap[
+                                                  deviceStr] ??
+                                              '${nicknamesMap[parts[0]] ?? parts[0]} salida ${parts[1]}';
+                                        } else {
+                                          displayName =
+                                              nicknamesMap[deviceStr] ??
+                                                  deviceStr;
+                                        }
 
-                                return Column(
-                                  children: [
-                                    Center(
-                                      child: ElevatedButton.icon(
-                                        onPressed:
-                                            (cadenaOnline && !isExecuting)
-                                                ? () => controlarCadena(grupo)
-                                                : null,
-                                        icon: isExecuting
-                                            ? const SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  valueColor:
-                                                      AlwaysStoppedAnimation<
-                                                          Color>(color0),
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 2),
+                                          child: Row(
+                                            children: [
+                                              const SizedBox(width: 32),
+                                              Expanded(
+                                                child: Text(
+                                                  displayName,
+                                                  style: GoogleFonts.poppins(
+                                                    color: color0,
+                                                    fontSize: 12,
+                                                  ),
                                                 ),
-                                              )
-                                            : Icon(
-                                                HugeIcons.strokeRoundedPlay,
-                                                color: cadenaOnline
-                                                    ? color0
-                                                    : Colors.grey,
-                                                size: 20,
                                               ),
-                                        label: Text(
-                                          isExecuting
-                                              ? 'Ejecutando Cadena...'
-                                              : 'Activar Cadena',
-                                          style: GoogleFonts.poppins(
-                                            color: (cadenaOnline || isExecuting)
-                                                ? color0
-                                                : Colors.grey,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: action
+                                                      ? Colors.green.withValues(
+                                                          alpha: 0.2)
+                                                      : Colors.red.withValues(
+                                                          alpha: 0.2),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: Text(
+                                                  action ? 'ON' : 'OFF',
+                                                  style: GoogleFonts.poppins(
+                                                    color: action
+                                                        ? Colors.green
+                                                        : Colors.red,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                              (cadenaOnline || isExecuting)
-                                                  ? color4
-                                                  : Colors.grey
-                                                      .withValues(alpha: 0.3),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 24,
-                                            vertical: 12,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                          ),
-                                          elevation:
-                                              (cadenaOnline || isExecuting)
-                                                  ? 3
-                                                  : 0,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                  ],
-                                );
-                              },
-                            ),
-                            Text(
-                              'Pasos de la cadena:',
-                              style: GoogleFonts.poppins(
-                                color: color0,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            ...((eventoCadena['pasos'] ?? []) as List<dynamic>)
-                                .asMap()
-                                .entries
-                                .map((entry) {
-                              final paso = entry.value;
-                              final idx = entry.key + 1;
-
-                              // Si paso es String, intentar parsearlo para compatibilidad
-                              dynamic pasoProcessed = paso;
-                              if (paso is String) {
-                                try {
-                                  pasoProcessed = parseMapString(paso);
-                                } catch (e) {
-                                  printLog
-                                      .e('Error parseando paso de cadena: $e');
-                                  return const SizedBox.shrink();
-                                }
-                              }
-
-                              // Validar que los campos requeridos existan
-                              if (pasoProcessed == null ||
-                                  pasoProcessed['devices'] == null ||
-                                  pasoProcessed['actions'] == null) {
-                                printLog.i(
-                                    'Paso de cadena incompleto, saltando...');
-                                return const SizedBox.shrink();
-                              }
-
-                              final devices =
-                                  pasoProcessed['devices'] as List<dynamic>;
-                              if (pasoProcessed['actions'].runtimeType ==
-                                  String) {
-                                pasoProcessed['actions'] =
-                                    parseMapString(pasoProcessed['actions']);
-                              }
-                              final actions = pasoProcessed['actions'];
-                              final stepDelay = pasoProcessed['stepDelay'];
-                              final stepDelayUnit =
-                                  pasoProcessed['stepDelayUnit'] as String? ??
-                                      'seg';
-
-                              // Formatear tiempo
-                              String delayText = 'Instantáneo';
-                              if (stepDelay != null) {
-                                if (stepDelay is Duration) {
-                                  int totalSeconds = stepDelay.inSeconds;
-                                  if (totalSeconds > 0) {
-                                    int minutes = (totalSeconds / 60).floor();
-
-                                    if (stepDelayUnit == 'min') {
-                                      delayText =
-                                          '$minutes ${minutes == 1 ? 'minuto' : 'minutos'}';
-                                    } else {
-                                      delayText =
-                                          '$totalSeconds ${totalSeconds == 1 ? 'segundo' : 'segundos'}';
-                                    }
-                                  }
-                                }
-                              }
-
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: color0.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: color4.withValues(alpha: 0.3),
-                                    width: 1,
+                                        );
+                                      })
+                                    ],
                                   ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          width: 24,
-                                          height: 24,
-                                          decoration: const BoxDecoration(
-                                            color: color4,
-                                            shape: BoxShape.circle,
+                                );
+                              }),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    HugeIcons.strokeRoundedDelete02,
+                                    color: color0,
+                                  ),
+                                  tooltip: 'Eliminar evento de cadena',
+                                  onPressed: () {
+                                    showAlertDialog(
+                                      context,
+                                      false,
+                                      const Text(
+                                        '¿Eliminar este evento de cadena?',
+                                        style: TextStyle(color: color0),
+                                      ),
+                                      const Text(
+                                        'Esta acción no se puede deshacer.',
+                                        style: TextStyle(color: color0),
+                                      ),
+                                      <Widget>[
+                                        TextButton(
+                                          style: ButtonStyle(
+                                            foregroundColor:
+                                                WidgetStateProperty.all(color0),
                                           ),
-                                          child: Center(
-                                            child: Text(
-                                              '$idx',
-                                              style: GoogleFonts.poppins(
-                                                color: color1,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ),
+                                          child: const Text('Cancelar'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
                                         ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'Paso $idx',
-                                          style: GoogleFonts.poppins(
-                                            fontWeight: FontWeight.bold,
-                                            color: color4,
-                                            fontSize: 14,
+                                        TextButton(
+                                          style: ButtonStyle(
+                                            foregroundColor:
+                                                WidgetStateProperty.all(color0),
                                           ),
-                                        ),
-                                        const Spacer(),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color:
-                                                color0.withValues(alpha: 0.1),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          child: Text(
-                                            delayText,
-                                            style: GoogleFonts.poppins(
-                                              color: color0,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
+                                          child: const Text('Confirmar'),
+                                          onPressed: () {
+                                            setState(() {
+                                              eventosCreados.removeAt(index);
+                                              putEventos(currentUserEmail,
+                                                  eventosCreados);
+                                              printLog.d(grupo,
+                                                  color: 'naranja');
+                                              deleteEventoControlPorCadena(
+                                                  currentUserEmail, grupo);
+                                              todosLosDispositivos.removeWhere(
+                                                  (entry) =>
+                                                      entry.key == grupo);
+                                            });
+                                            _saveOrder();
+                                            Navigator.of(context).pop();
+                                          },
                                         ),
                                       ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    ...devices.map((device) {
-                                      final deviceStr = device.toString();
-                                      if (actions[deviceStr].runtimeType ==
-                                          String) {
-                                        actions[deviceStr] =
-                                            actions[deviceStr] == 'true';
-                                      }
-                                      final action =
-                                          actions[deviceStr] ?? false;
-
-                                      // Formatear nombre del dispositivo igual que en grupos
-                                      String displayName = '';
-                                      if (deviceStr.contains('_')) {
-                                        final parts = deviceStr.split('_');
-                                        displayName = nicknamesMap[deviceStr] ??
-                                            '${nicknamesMap[parts[0]] ?? parts[0]} salida ${parts[1]}';
-                                      } else {
-                                        displayName = nicknamesMap[deviceStr] ??
-                                            deviceStr;
-                                      }
-
-                                      return Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 2),
-                                        child: Row(
-                                          children: [
-                                            const SizedBox(width: 32),
-                                            Expanded(
-                                              child: Text(
-                                                displayName,
-                                                style: GoogleFonts.poppins(
-                                                  color: color0,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ),
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: action
-                                                    ? Colors.green
-                                                        .withValues(alpha: 0.2)
-                                                    : Colors.red
-                                                        .withValues(alpha: 0.2),
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                              child: Text(
-                                                action ? 'ON' : 'OFF',
-                                                style: GoogleFonts.poppins(
-                                                  color: action
-                                                      ? Colors.green
-                                                      : Colors.red,
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    })
-                                  ],
+                                    );
+                                  },
                                 ),
-                              );
-                            }),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: IconButton(
-                                icon: const Icon(
-                                  HugeIcons.strokeRoundedDelete02,
-                                  color: color0,
-                                ),
-                                tooltip: 'Eliminar evento de cadena',
-                                onPressed: () {
-                                  showAlertDialog(
-                                    context,
-                                    false,
-                                    const Text(
-                                      '¿Eliminar este evento de cadena?',
-                                      style: TextStyle(color: color0),
-                                    ),
-                                    const Text(
-                                      'Esta acción no se puede deshacer.',
-                                      style: TextStyle(color: color0),
-                                    ),
-                                    <Widget>[
-                                      TextButton(
-                                        style: ButtonStyle(
-                                          foregroundColor:
-                                              WidgetStateProperty.all(color0),
-                                        ),
-                                        child: const Text('Cancelar'),
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                        },
-                                      ),
-                                      TextButton(
-                                        style: ButtonStyle(
-                                          foregroundColor:
-                                              WidgetStateProperty.all(color0),
-                                        ),
-                                        child: const Text('Confirmar'),
-                                        onPressed: () {
-                                          setState(() {
-                                            eventosCreados.removeAt(index);
-                                            putEventos(currentUserEmail,
-                                                eventosCreados);
-                                            printLog.d(grupo, color: 'naranja');
-                                            deleteEventoControlPorCadena(
-                                                currentUserEmail, grupo);
-                                            todosLosDispositivos.removeWhere(
-                                                (entry) => entry.key == grupo);
-                                          });
-                                          _saveOrder();
-                                          Navigator.of(context).pop();
-                                        },
-                                      ),
-                                    ],
-                                  );
-                                },
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
             } catch (e) {
               printLog.e('Error al procesar la cadena $grupo: $e');
-              return Card(
+              return RepaintBoundary(
                 key: ValueKey('cadena_error_$grupo'),
-                color: color1,
-                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                elevation: 2,
-                child: Theme(
-                  data: Theme.of(context)
-                      .copyWith(dividerColor: Colors.transparent),
-                  child: ListTile(
-                    title: Text(
-                      'Error al cargar la cadena $grupo',
-                      style: GoogleFonts.poppins(
-                        color: color0,
-                        fontWeight: FontWeight.bold,
+                child: Card(
+                  color: color1,
+                  margin:
+                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                  elevation: 2,
+                  child: Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: ListTile(
+                      title: Text(
+                        'Error al cargar la cadena $grupo',
+                        style: GoogleFonts.poppins(
+                          color: color0,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    subtitle: Text(
-                      'Por favor, elimine el evento y vuelva a crearlo.',
-                      style: GoogleFonts.poppins(
-                        color: color0,
-                        fontSize: 15,
+                      subtitle: Text(
+                        'Por favor, elimine el evento y vuelva a crearlo.',
+                        style: GoogleFonts.poppins(
+                          color: color0,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                   ),
@@ -5128,549 +5346,630 @@ class WifiPageState extends ConsumerState<WifiPage>
                   globalDATA['$productCode/$serialNumber'] ?? {};
               bool riegoOnline = deviceDATA['cstate'] ?? false;
 
-              return Card(
+              List<String> allRiegoDevices = [creatorDevice];
+              List<dynamic> rawExtensions = deviceDATA['riegoExtensions'] ?? [];
+              List<String> sortedExtensions =
+                  rawExtensions.map((e) => e.toString()).toList();
+              sortedExtensions.sort();
+              allRiegoDevices.addAll(sortedExtensions);
+
+              Map<String, int> zonaMap = {};
+              int globalZoneCounter = 1;
+
+              for (String devName in allRiegoDevices) {
+                String dPc = DeviceManager.getProductCode(devName);
+                String dSn = DeviceManager.extractSerialNumber(devName);
+                Map<String, dynamic> dData = globalDATA['$dPc/$dSn'] ?? {};
+
+                List<String> ioKeys =
+                    dData.keys.where((k) => k.startsWith('io')).toList();
+                ioKeys.sort((a, b) {
+                  int idxA = int.tryParse(a.substring(2)) ?? 0;
+                  int idxB = int.tryParse(b.substring(2)) ?? 0;
+                  return idxA.compareTo(idxB);
+                });
+
+                for (String key in ioKeys) {
+                  if (devName == creatorDevice && key == 'io0') continue;
+
+                  dynamic val = dData[key];
+                  if (val is String) {
+                    try {
+                      var decoded = jsonDecode(val);
+                      if (decoded['pinType'].toString() == '0') {
+                        int ioIndex = int.parse(key.substring(2));
+                        zonaMap['${devName}_$ioIndex'] = globalZoneCounter;
+                        globalZoneCounter++;
+                      }
+                    } catch (e) {
+                      continue;
+                    }
+                  }
+                }
+              }
+
+              printLog.d(
+                  'Mapa de zonas generado para evento ${eventoRiego['title']}: $zonaMap');
+
+              return RepaintBoundary(
                 key: ValueKey('riego_$grupo'),
-                color: color1,
-                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                elevation: 2,
-                child: Theme(
-                  data: Theme.of(context)
-                      .copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    iconColor: color4,
-                    collapsedIconColor: color4,
-                    onExpansionChanged: (bool expanded) {
-                      setState(() {
-                        _expandedStates[deviceName] = expanded;
-                      });
-                    },
-                    title: Row(
+                child: Card(
+                  color: color1,
+                  margin:
+                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                  elevation: 2,
+                  child: Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      iconColor: color4,
+                      collapsedIconColor: color4,
+                      onExpansionChanged: (bool expanded) {
+                        setState(() {
+                          _expandedStates[deviceName] = expanded;
+                        });
+                      },
+                      title: Row(
+                        children: [
+                          ReorderableDragStartListener(
+                            index: index,
+                            child: const Icon(
+                                HugeIcons.strokeRoundedDragDropVertical,
+                                color: Colors.grey),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(HugeIcons.strokeRoundedPlant03,
+                              color: color4),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              grupo,
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: color0.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'RIEGO',
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       children: [
-                        const Icon(HugeIcons.strokeRoundedPlant03,
-                            color: color4),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            grupo,
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: color0.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            'RIEGO',
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (!riegoOnline) ...[
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.red.withValues(alpha: 0.3),
-                                    width: 1,
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (!riegoOnline) ...[
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.red.withValues(alpha: 0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.wifi_off,
+                                        color: Colors.red,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'El equipo de riego debe estar conectado para activar la rutina',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.red,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.wifi_off,
-                                      color: Colors.red,
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'El equipo de riego debe estar conectado para activar la rutina',
-                                        style: GoogleFonts.poppins(
-                                          color: Colors.red,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                            ],
+                                const SizedBox(height: 12),
+                              ],
 
-                            // 🆕 BARRA DE PROGRESO Y ESTADO
-                            Consumer(
-                              builder: (context, ref, child) {
-                                final eventoEstado =
-                                    ref.watch(eventosEstadoProvider)[
-                                        'ControlPorRiego/$grupo'];
+                              // 🆕 BARRA DE PROGRESO Y ESTADO
+                              Consumer(
+                                builder: (context, ref, child) {
+                                  final eventoEstado =
+                                      ref.watch(eventosEstadoProvider)[
+                                          'ControlPorRiego/$grupo'];
 
-                                if (eventoEstado != null &&
-                                    (eventoEstado.isRunning ||
-                                        eventoEstado.isPaused)) {
-                                  return Column(
-                                    children: [
-                                      // Barra de progreso
-                                      Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.green
-                                              .withValues(alpha: 0.1),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          border: Border.all(
+                                  if (eventoEstado != null &&
+                                      (eventoEstado.isRunning ||
+                                          eventoEstado.isPaused)) {
+                                    return Column(
+                                      children: [
+                                        // Barra de progreso
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
                                             color: Colors.green
-                                                .withValues(alpha: 0.3),
-                                            width: 1,
+                                                .withValues(alpha: 0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: Colors.green
+                                                  .withValues(alpha: 0.3),
+                                              width: 1,
+                                            ),
                                           ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Icon(
-                                                  eventoEstado.isPaused
-                                                      ? Icons.pause_circle
-                                                      : Icons.water_drop,
-                                                  color: eventoEstado.isPaused
-                                                      ? Colors.orange
-                                                      : Colors.green,
-                                                  size: 20,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: Text(
-                                                    eventoEstado
-                                                            .mensaje.isNotEmpty
-                                                        ? eventoEstado.mensaje
-                                                        : eventoEstado.isPaused
-                                                            ? 'Pausado'
-                                                            : 'Regando...',
-                                                    style: GoogleFonts.poppins(
-                                                      color: color0,
-                                                      fontSize: 13,
-                                                      fontWeight:
-                                                          FontWeight.w600,
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    eventoEstado.isPaused
+                                                        ? Icons.pause_circle
+                                                        : Icons.water_drop,
+                                                    color: eventoEstado.isPaused
+                                                        ? Colors.orange
+                                                        : Colors.green,
+                                                    size: 20,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Text(
+                                                      eventoEstado.mensaje
+                                                              .isNotEmpty
+                                                          ? eventoEstado.mensaje
+                                                          : eventoEstado
+                                                                  .isPaused
+                                                              ? 'Pausado'
+                                                              : 'Regando...',
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        color: color0,
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
-                                                Text(
-                                                  '${eventoEstado.progresoPortentaje.toStringAsFixed(0)}%',
-                                                  style: GoogleFonts.poppins(
-                                                    color: Colors.green,
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.bold,
+                                                  Text(
+                                                    '${eventoEstado.progresoPortentaje.toStringAsFixed(0)}%',
+                                                    style: GoogleFonts.poppins(
+                                                      color: Colors.green,
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 8),
+                                              ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                                child: LinearProgressIndicator(
+                                                  value: eventoEstado
+                                                      .progresoDecimal,
+                                                  minHeight: 8,
+                                                  backgroundColor: Colors.grey
+                                                      .withValues(alpha: 0.3),
+                                                  valueColor:
+                                                      AlwaysStoppedAnimation<
+                                                          Color>(
+                                                    eventoEstado.isPaused
+                                                        ? Colors.orange
+                                                        : Colors.green,
                                                   ),
                                                 ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                              child: LinearProgressIndicator(
-                                                value: eventoEstado
-                                                    .progresoDecimal,
-                                                minHeight: 8,
-                                                backgroundColor: Colors.grey
-                                                    .withValues(alpha: 0.3),
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<
-                                                        Color>(
-                                                  eventoEstado.isPaused
-                                                      ? Colors.orange
-                                                      : Colors.green,
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Text(
+                                                'Zona ${eventoEstado.pasoActual} de ${eventoEstado.totalPasos}',
+                                                style: GoogleFonts.poppins(
+                                                  color: color0.withValues(
+                                                      alpha: 0.7),
+                                                  fontSize: 11,
                                                 ),
                                               ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              'Zona ${eventoEstado.pasoActual} de ${eventoEstado.totalPasos}',
-                                              style: GoogleFonts.poppins(
-                                                color: color0.withValues(
-                                                    alpha: 0.7),
-                                                fontSize: 11,
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        // Botones de control
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            if (eventoEstado.isRunning) ...[
+                                              ElevatedButton.icon(
+                                                onPressed: () =>
+                                                    pausarRiego(grupo),
+                                                icon: const Icon(Icons.pause,
+                                                    size: 18),
+                                                label: Text(
+                                                  'Pausar',
+                                                  style: GoogleFonts.poppins(
+                                                      fontSize: 13),
+                                                ),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      Colors.orange,
+                                                  foregroundColor: color0,
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 16,
+                                                    vertical: 8,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                            ],
+                                            if (eventoEstado.isPaused) ...[
+                                              ElevatedButton.icon(
+                                                onPressed: () =>
+                                                    reanudarRiego(grupo),
+                                                icon: const Icon(
+                                                    Icons.play_arrow,
+                                                    size: 18),
+                                                label: Text(
+                                                  'Reanudar',
+                                                  style: GoogleFonts.poppins(
+                                                      fontSize: 13),
+                                                ),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.green,
+                                                  foregroundColor: color0,
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 16,
+                                                    vertical: 8,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                            ],
+                                            ElevatedButton.icon(
+                                              onPressed: () =>
+                                                  cancelarRiego(grupo),
+                                              icon: const Icon(Icons.cancel,
+                                                  size: 18),
+                                              label: Text(
+                                                'Cancelar',
+                                                style: GoogleFonts.poppins(
+                                                    fontSize: 13),
+                                              ),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.red,
+                                                foregroundColor: color0,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 8,
+                                                ),
                                               ),
                                             ),
                                           ],
                                         ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      // Botones de control
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          if (eventoEstado.isRunning) ...[
-                                            ElevatedButton.icon(
-                                              onPressed: () =>
-                                                  pausarRiego(grupo),
-                                              icon: const Icon(Icons.pause,
-                                                  size: 18),
-                                              label: Text(
-                                                'Pausar',
-                                                style: GoogleFonts.poppins(
-                                                    fontSize: 13),
-                                              ),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.orange,
-                                                foregroundColor: color0,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 16,
-                                                  vertical: 8,
+                                        const SizedBox(height: 16),
+                                      ],
+                                    );
+                                  }
+
+                                  // Mostrar botón de iniciar solo si no está en ejecución
+                                  final bool isExecuting =
+                                      eventoEstado != null &&
+                                          eventoEstado.isRunning;
+
+                                  return Column(
+                                    children: [
+                                      Center(
+                                        child: ElevatedButton.icon(
+                                          onPressed:
+                                              (riegoOnline && !isExecuting)
+                                                  ? () => activarRutinaRiego(
+                                                      eventoRiego)
+                                                  : null,
+                                          icon: isExecuting
+                                              ? const SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    valueColor:
+                                                        AlwaysStoppedAnimation<
+                                                            Color>(color0),
+                                                  ),
+                                                )
+                                              : Icon(
+                                                  HugeIcons.strokeRoundedPlay,
+                                                  color: riegoOnline
+                                                      ? color0
+                                                      : Colors.grey,
+                                                  size: 20,
                                                 ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                          ],
-                                          if (eventoEstado.isPaused) ...[
-                                            ElevatedButton.icon(
-                                              onPressed: () =>
-                                                  reanudarRiego(grupo),
-                                              icon: const Icon(Icons.play_arrow,
-                                                  size: 18),
-                                              label: Text(
-                                                'Reanudar',
-                                                style: GoogleFonts.poppins(
-                                                    fontSize: 13),
-                                              ),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.green,
-                                                foregroundColor: color0,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 16,
-                                                  vertical: 8,
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                          ],
-                                          ElevatedButton.icon(
-                                            onPressed: () =>
-                                                cancelarRiego(grupo),
-                                            icon: const Icon(Icons.cancel,
-                                                size: 18),
-                                            label: Text(
-                                              'Cancelar',
-                                              style: GoogleFonts.poppins(
-                                                  fontSize: 13),
-                                            ),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.red,
-                                              foregroundColor: color0,
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 16,
-                                                vertical: 8,
-                                              ),
+                                          label: Text(
+                                            isExecuting
+                                                ? 'Ejecutando Rutina...'
+                                                : 'Activar Rutina de Riego',
+                                            style: GoogleFonts.poppins(
+                                              color:
+                                                  (riegoOnline || isExecuting)
+                                                      ? color0
+                                                      : Colors.grey,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
                                             ),
                                           ),
-                                        ],
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                (riegoOnline || isExecuting)
+                                                    ? color4
+                                                    : Colors.grey
+                                                        .withValues(alpha: 0.3),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 24,
+                                              vertical: 12,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                            elevation:
+                                                (riegoOnline || isExecuting)
+                                                    ? 3
+                                                    : 0,
+                                          ),
+                                        ),
                                       ),
                                       const SizedBox(height: 16),
                                     ],
                                   );
-                                }
-
-                                // Mostrar botón de iniciar solo si no está en ejecución
-                                final bool isExecuting = eventoEstado != null &&
-                                    eventoEstado.isRunning;
-
-                                return Column(
-                                  children: [
-                                    Center(
-                                      child: ElevatedButton.icon(
-                                        onPressed: (riegoOnline && !isExecuting)
-                                            ? () =>
-                                                activarRutinaRiego(eventoRiego)
-                                            : null,
-                                        icon: isExecuting
-                                            ? const SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  valueColor:
-                                                      AlwaysStoppedAnimation<
-                                                          Color>(color0),
-                                                ),
-                                              )
-                                            : Icon(
-                                                HugeIcons.strokeRoundedPlay,
-                                                color: riegoOnline
-                                                    ? color0
-                                                    : Colors.grey,
-                                                size: 20,
-                                              ),
-                                        label: Text(
-                                          isExecuting
-                                              ? 'Ejecutando Rutina...'
-                                              : 'Activar Rutina de Riego',
-                                          style: GoogleFonts.poppins(
-                                            color: (riegoOnline || isExecuting)
-                                                ? color0
-                                                : Colors.grey,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                              (riegoOnline || isExecuting)
-                                                  ? color4
-                                                  : Colors.grey
-                                                      .withValues(alpha: 0.3),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 24,
-                                            vertical: 12,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                          ),
-                                          elevation:
-                                              (riegoOnline || isExecuting)
-                                                  ? 3
-                                                  : 0,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                  ],
-                                );
-                              },
-                            ),
-                            Text(
-                              'Zonas de riego:',
-                              style: GoogleFonts.poppins(
-                                color: color0,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            ...((eventoRiego['pasos'] ?? []) as List<dynamic>)
-                                .asMap()
-                                .entries
-                                .map((entry) {
-                              final paso = entry.value;
-                              final idx = entry.key + 1;
-
-                              // Validar que los campos requeridos existan
-                              if (paso == null ||
-                                  paso['device'] == null ||
-                                  paso['duration'] == null) {
-                                return const SizedBox.shrink();
-                              }
-
-                              final device = paso['device'].toString();
-                              final duration = paso['duration'];
-
-                              // Formatear nombre del dispositivo
-                              String displayName = '';
-                              if (device.contains('_')) {
-                                final parts = device.split('_');
-                                displayName = nicknamesMap[device] ??
-                                    '${nicknamesMap[parts[0]] ?? parts[0]} Zona ${parts[1]}';
-                              } else {
-                                displayName = nicknamesMap[device] ?? device;
-                              }
-
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: color0.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: color4.withValues(alpha: 0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 24,
-                                      height: 24,
-                                      decoration: const BoxDecoration(
-                                        color: color4,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          '$idx',
-                                          style: GoogleFonts.poppins(
-                                            color: color1,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        displayName,
-                                        style: GoogleFonts.poppins(
-                                          color: color0,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            Colors.blue.withValues(alpha: 0.2),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        '$duration min',
-                                        style: GoogleFonts.poppins(
-                                          color: Colors.blue,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: IconButton(
-                                icon: const Icon(
-                                  HugeIcons.strokeRoundedDelete02,
-                                  color: color0,
-                                ),
-                                tooltip: 'Eliminar rutina de riego',
-                                onPressed: () {
-                                  printLog.d('sexoooooooo $grupo');
-                                  showAlertDialog(
-                                    context,
-                                    false,
-                                    const Text(
-                                      '¿Eliminar esta rutina de riego?',
-                                      style: TextStyle(color: color0),
-                                    ),
-                                    const Text(
-                                      'Esta acción no se puede deshacer.',
-                                      style: TextStyle(color: color0),
-                                    ),
-                                    <Widget>[
-                                      TextButton(
-                                        style: ButtonStyle(
-                                          foregroundColor:
-                                              WidgetStateProperty.all(color0),
-                                        ),
-                                        child: const Text('Cancelar'),
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                        },
-                                      ),
-                                      TextButton(
-                                        style: ButtonStyle(
-                                          foregroundColor:
-                                              WidgetStateProperty.all(color0),
-                                        ),
-                                        child: const Text('Confirmar'),
-                                        onPressed: () {
-                                          setState(() {
-                                            printLog.d(
-                                                'se viene $eventosCreados',
-                                                color: 'naranja');
-                                            printLog.d(
-                                                'se viene $todosLosDispositivos',
-                                                color: 'naranja');
-                                            eventosCreados.removeWhere(
-                                                (evento) =>
-                                                    evento['title'] == grupo &&
-                                                    evento['evento'] ==
-                                                        'riego');
-                                            putEventos(currentUserEmail,
-                                                eventosCreados);
-                                            deleteEventoControlDeRiego(
-                                                currentUserEmail, grupo);
-                                            todosLosDispositivos.removeWhere(
-                                                (entry) => entry.key == grupo);
-                                            printLog.d(
-                                                'se viene $eventosCreados',
-                                                color: 'rosa');
-                                            printLog.d(
-                                                'se viene $todosLosDispositivos',
-                                                color: 'rosa');
-                                          });
-                                          _saveOrder();
-                                          Navigator.of(context).pop();
-                                          showToast('Rutina eliminada');
-                                        },
-                                      ),
-                                    ],
-                                  );
                                 },
                               ),
-                            ),
-                          ],
+                              Text(
+                                'Zonas de riego:',
+                                style: GoogleFonts.poppins(
+                                  color: color0,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              ...((eventoRiego['pasos'] ?? []) as List<dynamic>)
+                                  .asMap()
+                                  .entries
+                                  .map((entry) {
+                                final paso = entry.value;
+
+                                // Validar que los campos requeridos existan
+                                if (paso == null ||
+                                    paso['device'] == null ||
+                                    paso['duration'] == null) {
+                                  return const SizedBox.shrink();
+                                }
+
+                                final deviceString = paso['device'].toString();
+                                final duration = paso['duration'];
+
+                                // Formatear nombre del dispositivo
+                                String displayName = '';
+                                int zonaNumber = 0;
+
+                                if (deviceString.contains('_')) {
+                                  final parts = deviceString.split('_');
+                                  String devName = parts[0];
+
+                                  if (zonaMap.containsKey(deviceString)) {
+                                    zonaNumber = zonaMap[deviceString]!;
+                                  } else {
+                                    zonaNumber = 0;
+                                  }
+
+                                  displayName = nicknamesMap[deviceString] ??
+                                      '${nicknamesMap[devName] ?? devName} Zona $zonaNumber';
+                                } else {
+                                  displayName = nicknamesMap[deviceString] ??
+                                      deviceString;
+                                }
+
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: color0.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: color4.withValues(alpha: 0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 24,
+                                        height: 24,
+                                        decoration: const BoxDecoration(
+                                          color: color4,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            zonaNumber > 0
+                                                ? '$zonaNumber'
+                                                : '-',
+                                            style: GoogleFonts.poppins(
+                                              color: color1,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          displayName,
+                                          style: GoogleFonts.poppins(
+                                            color: color0,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue
+                                              .withValues(alpha: 0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          '$duration min',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.blue,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    HugeIcons.strokeRoundedDelete02,
+                                    color: color0,
+                                  ),
+                                  tooltip: 'Eliminar rutina de riego',
+                                  onPressed: () {
+                                    printLog.d('sexoooooooo $grupo');
+                                    showAlertDialog(
+                                      context,
+                                      false,
+                                      const Text(
+                                        '¿Eliminar esta rutina de riego?',
+                                        style: TextStyle(color: color0),
+                                      ),
+                                      const Text(
+                                        'Esta acción no se puede deshacer.',
+                                        style: TextStyle(color: color0),
+                                      ),
+                                      <Widget>[
+                                        TextButton(
+                                          style: ButtonStyle(
+                                            foregroundColor:
+                                                WidgetStateProperty.all(color0),
+                                          ),
+                                          child: const Text('Cancelar'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                        TextButton(
+                                          style: ButtonStyle(
+                                            foregroundColor:
+                                                WidgetStateProperty.all(color0),
+                                          ),
+                                          child: const Text('Confirmar'),
+                                          onPressed: () {
+                                            setState(() {
+                                              printLog.d(
+                                                  'se viene $eventosCreados',
+                                                  color: 'naranja');
+                                              printLog.d(
+                                                  'se viene $todosLosDispositivos',
+                                                  color: 'naranja');
+                                              eventosCreados.removeWhere(
+                                                  (evento) =>
+                                                      evento['title'] ==
+                                                          grupo &&
+                                                      evento['evento'] ==
+                                                          'riego');
+                                              putEventos(currentUserEmail,
+                                                  eventosCreados);
+                                              deleteEventoControlDeRiego(
+                                                  currentUserEmail, grupo);
+                                              todosLosDispositivos.removeWhere(
+                                                  (entry) =>
+                                                      entry.key == grupo);
+                                              printLog.d(
+                                                  'se viene $eventosCreados',
+                                                  color: 'rosa');
+                                              printLog.d(
+                                                  'se viene $todosLosDispositivos',
+                                                  color: 'rosa');
+                                            });
+                                            _saveOrder();
+                                            Navigator.of(context).pop();
+                                            showToast('Rutina eliminada');
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
             } catch (e) {
               printLog.e('Error al procesar el evento de riego $grupo: $e');
-              return Card(
+              return RepaintBoundary(
                 key: ValueKey('riego_error_$grupo'),
-                color: color1,
-                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                elevation: 2,
-                child: Theme(
-                  data: Theme.of(context)
-                      .copyWith(dividerColor: Colors.transparent),
-                  child: ListTile(
-                    title: Text(
-                      'Error al cargar el evento de riego $grupo',
-                      style: GoogleFonts.poppins(
-                        color: color0,
-                        fontWeight: FontWeight.bold,
+                child: Card(
+                  color: color1,
+                  margin:
+                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                  elevation: 2,
+                  child: Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: ListTile(
+                      title: Text(
+                        'Error al cargar el evento de riego $grupo',
+                        style: GoogleFonts.poppins(
+                          color: color0,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    subtitle: Text(
-                      'Por favor, elimine el evento y vuelva a crearlo.',
-                      style: GoogleFonts.poppins(
-                        color: color0,
-                        fontSize: 15,
+                      subtitle: Text(
+                        'Por favor, elimine el evento y vuelva a crearlo.',
+                        style: GoogleFonts.poppins(
+                          color: color0,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                   ),
@@ -5726,316 +6025,335 @@ class WifiPageState extends ConsumerState<WifiPage>
                   climaIcon = HugeIcons.strokeRoundedCloudSnow;
               }
 
-              return Card(
+              return RepaintBoundary(
                 key: ValueKey('clima_$grupo'),
-                color: color1,
-                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                elevation: 2,
-                child: Theme(
-                  data: Theme.of(context)
-                      .copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    iconColor: color4,
-                    collapsedIconColor: color4,
-                    onExpansionChanged: (bool expanded) {
-                      setState(() {
-                        _expandedStates[deviceName] = expanded;
-                      });
-                    },
-                    title: Row(
-                      children: [
-                        const Icon(HugeIcons.strokeRoundedCloudAngledRainZap,
-                            color: color4),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            grupo,
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
+                child: Card(
+                  color: color1,
+                  margin:
+                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                  elevation: 2,
+                  child: Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      iconColor: color4,
+                      collapsedIconColor: color4,
+                      onExpansionChanged: (bool expanded) {
+                        setState(() {
+                          _expandedStates[deviceName] = expanded;
+                        });
+                      },
+                      title: Row(
+                        children: [
+                          ReorderableDragStartListener(
+                            index: index,
+                            child: const Icon(
+                                HugeIcons.strokeRoundedDragDropVertical,
+                                color: Colors.grey),
                           ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: color0.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            'CLIMA',
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Información de condición climática (simplificado)
-                            Row(
-                              children: [
-                                Icon(climaIcon, color: color4, size: 20),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Condición',
-                                        style: GoogleFonts.poppins(
-                                          color: color0.withValues(alpha: 0.7),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      Text(
-                                        condition,
-                                        style: GoogleFonts.poppins(
-                                          color: color0,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            // Dispositivos afectados
-                            Text(
-                              'Dispositivos afectados:',
+                          const SizedBox(width: 8),
+                          const Icon(HugeIcons.strokeRoundedCloudAngledRainZap,
+                              color: color4),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              grupo,
                               style: GoogleFonts.poppins(
                                 color: color0,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                                fontSize: 16,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            ...climaNicksList.asMap().entries.map((entry) {
-                              final idx = entry.key + 1;
-                              String deviceNick = entry.value;
-                              final equipo = deviceList[entry.key].trim();
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: color0.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'CLIMA',
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Información de condición climática (simplificado)
+                              Row(
+                                children: [
+                                  Icon(climaIcon, color: color4, size: 20),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Condición',
+                                          style: GoogleFonts.poppins(
+                                            color:
+                                                color0.withValues(alpha: 0.7),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          condition,
+                                          style: GoogleFonts.poppins(
+                                            color: color0,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                              // Dispositivos afectados
+                              Text(
+                                'Dispositivos afectados:',
+                                style: GoogleFonts.poppins(
+                                  color: color0,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              ...climaNicksList.asMap().entries.map((entry) {
+                                final idx = entry.key + 1;
+                                String deviceNick = entry.value;
+                                final equipo = deviceList[entry.key].trim();
 
-                              // Verificar si es un evento buscando en eventosCreados
-                              bool isEvento = false;
-                              bool isCadena = false;
-                              bool isRiego = false;
-                              bool isGrupo = false;
+                                // Verificar si es un evento buscando en eventosCreados
+                                bool isEvento = false;
+                                bool isCadena = false;
+                                bool isRiego = false;
+                                bool isGrupo = false;
 
-                              final eventoEncontrado =
-                                  eventosCreados.firstWhere(
-                                (evento) => evento['title'] == equipo,
-                                orElse: () => <String, dynamic>{},
-                              );
+                                final eventoEncontrado =
+                                    eventosCreados.firstWhere(
+                                  (evento) => evento['title'] == equipo,
+                                  orElse: () => <String, dynamic>{},
+                                );
 
-                              if (eventoEncontrado.isNotEmpty) {
-                                // Es un evento (grupo, cadena o riego)
-                                final eventoType =
-                                    eventoEncontrado['evento'] as String;
-                                deviceNick = equipo;
-                                isEvento = true;
-                                isCadena = eventoType == 'cadena';
-                                isRiego = eventoType == 'riego';
-                                isGrupo = eventoType == 'grupo';
-                              }
+                                if (eventoEncontrado.isNotEmpty) {
+                                  // Es un evento (grupo, cadena o riego)
+                                  final eventoType =
+                                      eventoEncontrado['evento'] as String;
+                                  deviceNick = equipo;
+                                  isEvento = true;
+                                  isCadena = eventoType == 'cadena';
+                                  isRiego = eventoType == 'riego';
+                                  isGrupo = eventoType == 'grupo';
+                                }
 
-                              // Definir acción, ícono y color según el tipo
-                              String actionText = '';
-                              IconData actionIcon =
-                                  HugeIcons.strokeRoundedSettings02;
-                              Color actionColor = color0;
+                                // Definir acción, ícono y color según el tipo
+                                String actionText = '';
+                                IconData actionIcon =
+                                    HugeIcons.strokeRoundedSettings02;
+                                Color actionColor = color0;
 
-                              if (isEvento) {
-                                // Manejo especial para eventos
-                                if (isCadena) {
-                                  actionText = 'Se ejecutará';
-                                  actionIcon =
-                                      HugeIcons.strokeRoundedPlayCircle;
-                                  actionColor = Colors.orange;
-                                } else if (isRiego) {
-                                  actionText = 'Se ejecutará';
-                                  actionIcon = HugeIcons.strokeRoundedLeaf01;
-                                  actionColor = Colors.blue;
-                                } else if (isGrupo) {
-                                  // Es un grupo
+                                if (isEvento) {
+                                  // Manejo especial para eventos
+                                  if (isCadena) {
+                                    actionText = 'Se ejecutará';
+                                    actionIcon =
+                                        HugeIcons.strokeRoundedPlayCircle;
+                                    actionColor = Colors.orange;
+                                  } else if (isRiego) {
+                                    actionText = 'Se ejecutará';
+                                    actionIcon = HugeIcons.strokeRoundedLeaf01;
+                                    actionColor = Colors.blue;
+                                  } else if (isGrupo) {
+                                    // Es un grupo
+                                    final action =
+                                        devicesActions['$equipo:grupo'] ??
+                                            false;
+                                    actionText =
+                                        action ? "Encenderá" : "Apagará";
+                                    actionIcon = action
+                                        ? HugeIcons.strokeRoundedPlug01
+                                        : HugeIcons.strokeRoundedPlugSocket;
+                                    actionColor =
+                                        action ? Colors.green : Colors.red;
+                                  } else {
+                                    // Evento desconocido
+                                    actionText = 'Se ejecutará';
+                                    actionIcon =
+                                        HugeIcons.strokeRoundedSettings02;
+                                    actionColor = color4;
+                                  }
+                                } else {
+                                  // Es un dispositivo individual
                                   final action =
-                                      devicesActions['$equipo:grupo'] ?? false;
+                                      devicesActions[equipo] ?? false;
                                   actionText = action ? "Encenderá" : "Apagará";
                                   actionIcon = action
                                       ? HugeIcons.strokeRoundedPlug01
                                       : HugeIcons.strokeRoundedPlugSocket;
                                   actionColor =
                                       action ? Colors.green : Colors.red;
-                                } else {
-                                  // Evento desconocido
-                                  actionText = 'Se ejecutará';
-                                  actionIcon =
-                                      HugeIcons.strokeRoundedSettings02;
-                                  actionColor = color4;
                                 }
-                              } else {
-                                // Es un dispositivo individual
-                                final action = devicesActions[equipo] ?? false;
-                                actionText = action ? "Encenderá" : "Apagará";
-                                actionIcon = action
-                                    ? HugeIcons.strokeRoundedPlug01
-                                    : HugeIcons.strokeRoundedPlugSocket;
-                                actionColor =
-                                    action ? Colors.green : Colors.red;
-                              }
 
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 24,
-                                      height: 24,
-                                      decoration: const BoxDecoration(
-                                        color: color4,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          '$idx',
-                                          style: GoogleFonts.poppins(
-                                            color: color1,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 24,
+                                        height: 24,
+                                        decoration: const BoxDecoration(
+                                          color: color4,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            '$idx',
+                                            style: GoogleFonts.poppins(
+                                              color: color1,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        deviceNick,
-                                        style: GoogleFonts.poppins(
-                                          color: color0,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          deviceNick,
+                                          style: GoogleFonts.poppins(
+                                            color: color0,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    Icon(
-                                      actionIcon,
-                                      color: actionColor,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      actionText,
-                                      style: GoogleFonts.poppins(
+                                      Icon(
+                                        actionIcon,
                                         color: actionColor,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
+                                        size: 18,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-                            const SizedBox(height: 10),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: IconButton(
-                                icon: const Icon(
-                                  HugeIcons.strokeRoundedDelete02,
-                                  color: color0,
-                                ),
-                                tooltip: 'Eliminar evento de clima',
-                                onPressed: () {
-                                  showAlertDialog(
-                                    context,
-                                    false,
-                                    const Text(
-                                      '¿Eliminar este evento clima?',
-                                      style: TextStyle(color: color0),
-                                    ),
-                                    const Text(
-                                      'Esta acción no se puede deshacer.',
-                                      style: TextStyle(color: color0),
-                                    ),
-                                    <Widget>[
-                                      TextButton(
-                                        style: ButtonStyle(
-                                          foregroundColor:
-                                              WidgetStateProperty.all(color0),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        actionText,
+                                        style: GoogleFonts.poppins(
+                                          color: actionColor,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
                                         ),
-                                        child: const Text('Cancelar'),
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                        },
-                                      ),
-                                      TextButton(
-                                        style: ButtonStyle(
-                                          foregroundColor:
-                                              WidgetStateProperty.all(color0),
-                                        ),
-                                        child: const Text('Confirmar'),
-                                        onPressed: () {
-                                          setState(() {
-                                            eventosCreados.removeAt(index);
-                                            putEventos(currentUserEmail,
-                                                eventosCreados);
-                                            printLog.d(grupo, color: 'naranja');
-                                            deleteEventoControlPorGrupos(
-                                                currentUserEmail, grupo);
-                                            todosLosDispositivos.removeWhere(
-                                                (entry) => entry.key == grupo);
-                                          });
-                                          _saveOrder();
-                                          Navigator.of(context).pop();
-                                        },
                                       ),
                                     ],
-                                  );
-                                },
+                                  ),
+                                );
+                              }),
+                              const SizedBox(height: 10),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    HugeIcons.strokeRoundedDelete02,
+                                    color: color0,
+                                  ),
+                                  tooltip: 'Eliminar evento de clima',
+                                  onPressed: () {
+                                    showAlertDialog(
+                                      context,
+                                      false,
+                                      const Text(
+                                        '¿Eliminar este evento clima?',
+                                        style: TextStyle(color: color0),
+                                      ),
+                                      const Text(
+                                        'Esta acción no se puede deshacer.',
+                                        style: TextStyle(color: color0),
+                                      ),
+                                      <Widget>[
+                                        TextButton(
+                                          style: ButtonStyle(
+                                            foregroundColor:
+                                                WidgetStateProperty.all(color0),
+                                          ),
+                                          child: const Text('Cancelar'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                        TextButton(
+                                          style: ButtonStyle(
+                                            foregroundColor:
+                                                WidgetStateProperty.all(color0),
+                                          ),
+                                          child: const Text('Confirmar'),
+                                          onPressed: () {
+                                            setState(() {
+                                              eventosCreados.removeAt(index);
+                                              putEventos(currentUserEmail,
+                                                  eventosCreados);
+                                              printLog.d(grupo,
+                                                  color: 'naranja');
+                                              deleteEventoControlPorGrupos(
+                                                  currentUserEmail, grupo);
+                                              todosLosDispositivos.removeWhere(
+                                                  (entry) =>
+                                                      entry.key == grupo);
+                                            });
+                                            _saveOrder();
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
             } catch (e) {
               printLog.e('Error al procesar el evento de clima $grupo: $e');
-              return Card(
+              return RepaintBoundary(
                 key: ValueKey('clima_error_$grupo'),
-                color: color1,
-                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                elevation: 2,
-                child: Theme(
-                  data: Theme.of(context)
-                      .copyWith(dividerColor: Colors.transparent),
-                  child: ListTile(
-                    title: Text(
-                      'Error al cargar el evento de clima $grupo',
-                      style: GoogleFonts.poppins(
-                        color: color0,
-                        fontWeight: FontWeight.bold,
+                child: Card(
+                  color: color1,
+                  margin:
+                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                  elevation: 2,
+                  child: Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: ListTile(
+                      title: Text(
+                        'Error al cargar el evento de clima $grupo',
+                        style: GoogleFonts.poppins(
+                          color: color0,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    subtitle: Text(
-                      'Por favor, elimine el evento y vuelva a crearlo.',
-                      style: GoogleFonts.poppins(
-                        color: color0,
-                        fontSize: 15,
+                      subtitle: Text(
+                        'Por favor, elimine el evento y vuelva a crearlo.',
+                        style: GoogleFonts.poppins(
+                          color: color0,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                   ),
@@ -6090,513 +6408,547 @@ class WifiPageState extends ConsumerState<WifiPage>
               String? estadoTermometro =
                   eventoDisparador['estadoTermometro']?.toString();
 
-              return Card(
-                key: ValueKey('disparador_$grupo'),
-                color: color1,
-                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                elevation: 2,
-                child: Theme(
-                  data: Theme.of(context)
-                      .copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    iconColor: color4,
-                    collapsedIconColor: color4,
-                    onExpansionChanged: (bool expanded) {
-                      setState(() {
-                        _expandedStates[deviceName] = expanded;
-                      });
-                    },
-                    title: Row(
-                      children: [
-                        const Icon(HugeIcons.strokeRoundedPlayCircle,
-                            color: color4),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            grupo,
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: color0.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            'DISPARADOR',
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+              return RepaintBoundary(
+                  key: ValueKey('disparador_error_$grupo'),
+                  child: Card(
+                    color: color1,
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                    elevation: 2,
+                    child: Theme(
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding:
+                            const EdgeInsets.symmetric(horizontal: 16.0),
+                        iconColor: color4,
+                        collapsedIconColor: color4,
+                        onExpansionChanged: (bool expanded) {
+                          setState(() {
+                            _expandedStates[deviceName] = expanded;
+                          });
+                        },
+                        title: Row(
                           children: [
-                            // Sección Activador
-                            Row(
-                              children: [
-                                const Icon(
-                                    HugeIcons.strokeRoundedTouchInteraction02,
-                                    color: color4,
-                                    size: 20),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'ACTIVADOR',
-                                  style: GoogleFonts.poppins(
-                                    color: color4,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                              ],
+                            ReorderableDragStartListener(
+                              index: index,
+                              child: const Icon(
+                                  HugeIcons.strokeRoundedDragDropVertical,
+                                  color: Colors.grey),
                             ),
-                            const SizedBox(height: 12),
-                            if (activador.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Row(
+                            const SizedBox(width: 8),
+                            const Icon(HugeIcons.strokeRoundedPlayCircle,
+                                color: color4),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                grupo,
+                                style: GoogleFonts.poppins(
+                                  color: color0,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: color0.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'DISPARADOR',
+                                style: GoogleFonts.poppins(
+                                  color: color0,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Sección Activador
+                                Row(
                                   children: [
-                                    Icon(
-                                      isTermometro
-                                          ? HugeIcons.strokeRoundedThermometer
-                                          : HugeIcons.strokeRoundedAlert01,
-                                      color: color4,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        activador,
-                                        style: GoogleFonts.poppins(
-                                          color: color0,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                    const Icon(
+                                        HugeIcons
+                                            .strokeRoundedTouchInteraction02,
+                                        color: color4,
+                                        size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'ACTIVADOR',
+                                      style: GoogleFonts.poppins(
+                                        color: color4,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1,
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            const SizedBox(height: 12),
-                            // Condiciones del disparador
-                            if (estadoAlerta != null)
-                              Card(
-                                color: Colors.transparent,
-                                elevation: 0,
-                                margin: const EdgeInsets.only(bottom: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  side: BorderSide(
-                                    color: (estadoAlerta == "1"
-                                            ? Colors.orange
-                                            : Colors.blueGrey)
-                                        .withValues(alpha: 0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Icon(
-                                        estadoAlerta == "1"
-                                            ? HugeIcons.strokeRoundedAlert02
-                                            : HugeIcons
-                                                .strokeRoundedCheckmarkCircle02,
-                                        color: estadoAlerta == "1"
-                                            ? Colors.orange
-                                            : Colors.blueGrey,
-                                        size: 18,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text.rich(
-                                          TextSpan(
-                                            children: [
-                                              const TextSpan(
-                                                  text:
-                                                      "El evento se accionará cuando el activador esté en "),
-                                              TextSpan(
-                                                text: estadoAlerta == "1"
-                                                    ? "ALERTA"
-                                                    : "REPOSO",
-                                                style: GoogleFonts.poppins(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: estadoAlerta == "1"
-                                                      ? Colors.orange
-                                                      : Colors.blueGrey,
-                                                  letterSpacing: 0.5,
-                                                ),
-                                              ),
-                                              const TextSpan(text: "."),
-                                            ],
-                                          ),
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 13,
-                                            color:
-                                                color0.withValues(alpha: 0.85),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            if (isTermometro && estadoTermometro != null)
-                              Card(
-                                color: Colors.transparent,
-                                elevation: 0,
-                                margin: const EdgeInsets.only(bottom: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  side: BorderSide(
-                                    color: (estadoTermometro == "1"
-                                            ? Colors.red
-                                            : Colors.lightBlue)
-                                        .withValues(alpha: 0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Icon(
-                                        Icons.thermostat,
-                                        color: estadoTermometro == "1"
-                                            ? Colors.red
-                                            : Colors.lightBlue,
-                                        size: 18,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text.rich(
-                                          TextSpan(
-                                            children: [
-                                              const TextSpan(
-                                                  text:
-                                                      "Condición usada: Temperatura "),
-                                              TextSpan(
-                                                text: estadoTermometro == "1"
-                                                    ? "MÁXIMA"
-                                                    : "MÍNIMA",
-                                                style: GoogleFonts.poppins(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: estadoTermometro == "1"
-                                                      ? Colors.red
-                                                      : Colors.lightBlue,
-                                                  letterSpacing: 0.5,
-                                                ),
-                                              ),
-                                              const TextSpan(
-                                                  text: " del termómetro."),
-                                            ],
-                                          ),
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 13,
-                                            color:
-                                                color0.withValues(alpha: 0.85),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            const SizedBox(height: 16),
-                            // Sección Ejecutores
-                            if (ejecutores.isNotEmpty) ...[
-                              Row(
-                                children: [
-                                  const Icon(HugeIcons.strokeRoundedSettings02,
-                                      color: color4, size: 20),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'EJECUTORES',
-                                    style: GoogleFonts.poppins(
-                                      color: color4,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              ...ejecutores.asMap().entries.map((entry) {
-                                final idx = entry.key + 1;
-                                String ejecutorName = entry.value;
-                                // +1 porque el índice 0 es el activador
-                                final equipoOriginal =
-                                    deviceList[entry.key + 1].trim();
-
-                                // Verificar si es un evento buscando en eventosCreados
-                                bool isEvento = false;
-                                bool isCadena = false;
-                                bool isRiego = false;
-                                bool isGrupo = false;
-
-                                final eventoEncontrado =
-                                    eventosCreados.firstWhere(
-                                  (evento) => evento['title'] == equipoOriginal,
-                                  orElse: () => <String, dynamic>{},
-                                );
-
-                                if (eventoEncontrado.isNotEmpty) {
-                                  // Es un evento (grupo, cadena o riego)
-                                  final eventoType =
-                                      eventoEncontrado['evento'] as String;
-                                  ejecutorName = equipoOriginal;
-                                  isEvento = true;
-                                  isCadena = eventoType == 'cadena';
-                                  isRiego = eventoType == 'riego';
-                                  isGrupo = eventoType == 'grupo';
-                                }
-
-                                // Definir acción, ícono y color según el tipo
-                                String actionText = '';
-                                IconData actionIcon =
-                                    HugeIcons.strokeRoundedSettings02;
-                                Color actionColor = color0;
-                                String fullActionText = '';
-
-                                if (isEvento) {
-                                  // Manejo especial para eventos
-                                  if (isCadena) {
-                                    actionText = 'ejecutará';
-                                    fullActionText = 'Se ejecutará';
-                                    actionIcon =
-                                        HugeIcons.strokeRoundedPlayCircle;
-                                    actionColor = Colors.orange;
-                                  } else if (isRiego) {
-                                    actionText = 'ejecutará';
-                                    fullActionText = 'Se ejecutará';
-                                    actionIcon = HugeIcons.strokeRoundedLeaf01;
-                                    actionColor = Colors.blue;
-                                  } else if (isGrupo) {
-                                    // Es un grupo
-                                    final action = devicesActions[
-                                            '$equipoOriginal:grupo'] ??
-                                        false;
-                                    actionText =
-                                        action ? "Encenderá" : "Apagará";
-                                    fullActionText = 'Se $actionText';
-                                    actionIcon = action
-                                        ? HugeIcons.strokeRoundedPlug01
-                                        : HugeIcons.strokeRoundedPlugSocket;
-                                    actionColor =
-                                        action ? Colors.green : Colors.red;
-                                  } else {
-                                    // Evento desconocido
-                                    actionText = 'ejecutará';
-                                    fullActionText = 'Se ejecutará';
-                                    actionIcon =
-                                        HugeIcons.strokeRoundedSettings02;
-                                    actionColor = color4;
-                                  }
-                                } else {
-                                  // Es un dispositivo individual
-                                  final action =
-                                      devicesActions[equipoOriginal] ?? false;
-                                  actionText = action ? "Encenderá" : "Apagará";
-                                  fullActionText = 'Se $actionText';
-                                  actionIcon = action
-                                      ? HugeIcons.strokeRoundedPlug01
-                                      : HugeIcons.strokeRoundedPlugSocket;
-                                  actionColor = action ? Colors.green : color4;
-                                }
-
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: actionColor.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: actionColor.withValues(alpha: 0.3),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 24,
-                                        height: 24,
-                                        decoration: const BoxDecoration(
+                                const SizedBox(height: 12),
+                                if (activador.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          isTermometro
+                                              ? HugeIcons
+                                                  .strokeRoundedThermometer
+                                              : HugeIcons.strokeRoundedAlert01,
                                           color: color4,
-                                          shape: BoxShape.circle,
+                                          size: 20,
                                         ),
-                                        child: Center(
+                                        const SizedBox(width: 12),
+                                        Expanded(
                                           child: Text(
-                                            '$idx',
+                                            activador,
                                             style: GoogleFonts.poppins(
-                                              color: color1,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 12,
+                                              color: color0,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
                                             ),
                                           ),
                                         ),
+                                      ],
+                                    ),
+                                  ),
+                                const SizedBox(height: 12),
+                                // Condiciones del disparador
+                                if (estadoAlerta != null)
+                                  Card(
+                                    color: Colors.transparent,
+                                    elevation: 0,
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      side: BorderSide(
+                                        color: (estadoAlerta == "1"
+                                                ? Colors.orange
+                                                : Colors.blueGrey)
+                                            .withValues(alpha: 0.3),
+                                        width: 1,
                                       ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              ejecutorName,
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Icon(
+                                            estadoAlerta == "1"
+                                                ? HugeIcons.strokeRoundedAlert02
+                                                : HugeIcons
+                                                    .strokeRoundedCheckmarkCircle02,
+                                            color: estadoAlerta == "1"
+                                                ? Colors.orange
+                                                : Colors.blueGrey,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text.rich(
+                                              TextSpan(
+                                                children: [
+                                                  const TextSpan(
+                                                      text:
+                                                          "El evento se accionará cuando el activador esté en "),
+                                                  TextSpan(
+                                                    text: estadoAlerta == "1"
+                                                        ? "ALERTA"
+                                                        : "REPOSO",
+                                                    style: GoogleFonts.poppins(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: estadoAlerta == "1"
+                                                          ? Colors.orange
+                                                          : Colors.blueGrey,
+                                                      letterSpacing: 0.5,
+                                                    ),
+                                                  ),
+                                                  const TextSpan(text: "."),
+                                                ],
+                                              ),
                                               style: GoogleFonts.poppins(
-                                                color: color0,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
+                                                fontSize: 13,
+                                                color: color0.withValues(
+                                                    alpha: 0.85),
                                               ),
                                             ),
-                                            const SizedBox(height: 4),
-                                            Row(
-                                              children: [
-                                                Icon(
-                                                  actionIcon,
-                                                  color: actionColor,
-                                                  size: 14,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  fullActionText,
-                                                  style: GoogleFonts.poppins(
-                                                    color: actionColor,
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w600,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                if (isTermometro && estadoTermometro != null)
+                                  Card(
+                                    color: Colors.transparent,
+                                    elevation: 0,
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      side: BorderSide(
+                                        color: (estadoTermometro == "1"
+                                                ? Colors.red
+                                                : Colors.lightBlue)
+                                            .withValues(alpha: 0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Icon(
+                                            Icons.thermostat,
+                                            color: estadoTermometro == "1"
+                                                ? Colors.red
+                                                : Colors.lightBlue,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text.rich(
+                                              TextSpan(
+                                                children: [
+                                                  const TextSpan(
+                                                      text:
+                                                          "Condición usada: Temperatura "),
+                                                  TextSpan(
+                                                    text:
+                                                        estadoTermometro == "1"
+                                                            ? "MÁXIMA"
+                                                            : "MÍNIMA",
+                                                    style: GoogleFonts.poppins(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: estadoTermometro ==
+                                                              "1"
+                                                          ? Colors.red
+                                                          : Colors.lightBlue,
+                                                      letterSpacing: 0.5,
+                                                    ),
                                                   ),
+                                                  const TextSpan(
+                                                      text: " del termómetro."),
+                                                ],
+                                              ),
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 13,
+                                                color: color0.withValues(
+                                                    alpha: 0.85),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(height: 16),
+                                // Sección Ejecutores
+                                if (ejecutores.isNotEmpty) ...[
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                          HugeIcons.strokeRoundedSettings02,
+                                          color: color4,
+                                          size: 20),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'EJECUTORES',
+                                        style: GoogleFonts.poppins(
+                                          color: color4,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ...ejecutores.asMap().entries.map((entry) {
+                                    final idx = entry.key + 1;
+                                    String ejecutorName = entry.value;
+                                    // +1 porque el índice 0 es el activador
+                                    final equipoOriginal =
+                                        deviceList[entry.key + 1].trim();
+
+                                    // Verificar si es un evento buscando en eventosCreados
+                                    bool isEvento = false;
+                                    bool isCadena = false;
+                                    bool isRiego = false;
+                                    bool isGrupo = false;
+
+                                    final eventoEncontrado =
+                                        eventosCreados.firstWhere(
+                                      (evento) =>
+                                          evento['title'] == equipoOriginal,
+                                      orElse: () => <String, dynamic>{},
+                                    );
+
+                                    if (eventoEncontrado.isNotEmpty) {
+                                      // Es un evento (grupo, cadena o riego)
+                                      final eventoType =
+                                          eventoEncontrado['evento'] as String;
+                                      ejecutorName = equipoOriginal;
+                                      isEvento = true;
+                                      isCadena = eventoType == 'cadena';
+                                      isRiego = eventoType == 'riego';
+                                      isGrupo = eventoType == 'grupo';
+                                    }
+
+                                    // Definir acción, ícono y color según el tipo
+                                    String actionText = '';
+                                    IconData actionIcon =
+                                        HugeIcons.strokeRoundedSettings02;
+                                    Color actionColor = color0;
+                                    String fullActionText = '';
+
+                                    if (isEvento) {
+                                      // Manejo especial para eventos
+                                      if (isCadena) {
+                                        actionText = 'ejecutará';
+                                        fullActionText = 'Se ejecutará';
+                                        actionIcon =
+                                            HugeIcons.strokeRoundedPlayCircle;
+                                        actionColor = Colors.orange;
+                                      } else if (isRiego) {
+                                        actionText = 'ejecutará';
+                                        fullActionText = 'Se ejecutará';
+                                        actionIcon =
+                                            HugeIcons.strokeRoundedLeaf01;
+                                        actionColor = Colors.blue;
+                                      } else if (isGrupo) {
+                                        // Es un grupo
+                                        final action = devicesActions[
+                                                '$equipoOriginal:grupo'] ??
+                                            false;
+                                        actionText =
+                                            action ? "Encenderá" : "Apagará";
+                                        fullActionText = 'Se $actionText';
+                                        actionIcon = action
+                                            ? HugeIcons.strokeRoundedPlug01
+                                            : HugeIcons.strokeRoundedPlugSocket;
+                                        actionColor =
+                                            action ? Colors.green : Colors.red;
+                                      } else {
+                                        // Evento desconocido
+                                        actionText = 'ejecutará';
+                                        fullActionText = 'Se ejecutará';
+                                        actionIcon =
+                                            HugeIcons.strokeRoundedSettings02;
+                                        actionColor = color4;
+                                      }
+                                    } else {
+                                      // Es un dispositivo individual
+                                      final action =
+                                          devicesActions[equipoOriginal] ??
+                                              false;
+                                      actionText =
+                                          action ? "Encenderá" : "Apagará";
+                                      fullActionText = 'Se $actionText';
+                                      actionIcon = action
+                                          ? HugeIcons.strokeRoundedPlug01
+                                          : HugeIcons.strokeRoundedPlugSocket;
+                                      actionColor =
+                                          action ? Colors.green : color4;
+                                    }
+
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            actionColor.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: actionColor.withValues(
+                                              alpha: 0.3),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 24,
+                                            height: 24,
+                                            decoration: const BoxDecoration(
+                                              color: color4,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                '$idx',
+                                                style: GoogleFonts.poppins(
+                                                  color: color1,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  ejecutorName,
+                                                  style: GoogleFonts.poppins(
+                                                    color: color0,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  children: [
+                                                    Icon(
+                                                      actionIcon,
+                                                      color: actionColor,
+                                                      size: 14,
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      fullActionText,
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        color: actionColor,
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
                                             ),
-                                          ],
-                                        ),
-                                      ),
-                                      Icon(
-                                        actionIcon,
-                                        color: actionColor,
-                                        size: 20,
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }),
-                              const SizedBox(height: 10),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: IconButton(
-                                  icon: const Icon(
-                                    HugeIcons.strokeRoundedDelete02,
-                                    color: color0,
-                                  ),
-                                  tooltip: 'Eliminar evento de disparadores',
-                                  onPressed: () {
-                                    showAlertDialog(
-                                      context,
-                                      false,
-                                      const Text(
-                                        '¿Eliminar este evento de control por disparador?',
-                                        style: TextStyle(color: color0),
-                                      ),
-                                      const Text(
-                                        'Esta acción no se puede deshacer.',
-                                        style: TextStyle(color: color0),
-                                      ),
-                                      <Widget>[
-                                        TextButton(
-                                          style: ButtonStyle(
-                                            foregroundColor:
-                                                WidgetStateProperty.all(color0),
                                           ),
-                                          child: const Text('Cancelar'),
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                        ),
-                                        TextButton(
-                                          style: ButtonStyle(
-                                            foregroundColor:
-                                                WidgetStateProperty.all(color0),
+                                          Icon(
+                                            actionIcon,
+                                            color: actionColor,
+                                            size: 20,
                                           ),
-                                          child: const Text('Confirmar'),
-                                          onPressed: () {
-                                            setState(() {
-                                              eventosCreados.removeAt(index);
-                                              putEventos(currentUserEmail,
-                                                  eventosCreados);
-                                              printLog.d(grupo,
-                                                  color: 'naranja');
-
-                                              String sortKey =
-                                                  '$currentUserEmail:$grupo';
-
-                                              removeEjecutoresFromDisparador(
-                                                  activador, sortKey);
-                                              todosLosDispositivos.removeWhere(
-                                                  (entry) =>
-                                                      entry.key == grupo);
-                                            });
-                                            _saveOrder();
-                                            Navigator.of(context).pop();
-                                          },
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
+                                  }),
+                                  const SizedBox(height: 10),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: IconButton(
+                                      icon: const Icon(
+                                        HugeIcons.strokeRoundedDelete02,
+                                        color: color0,
+                                      ),
+                                      tooltip:
+                                          'Eliminar evento de disparadores',
+                                      onPressed: () {
+                                        showAlertDialog(
+                                          context,
+                                          false,
+                                          const Text(
+                                            '¿Eliminar este evento de control por disparador?',
+                                            style: TextStyle(color: color0),
+                                          ),
+                                          const Text(
+                                            'Esta acción no se puede deshacer.',
+                                            style: TextStyle(color: color0),
+                                          ),
+                                          <Widget>[
+                                            TextButton(
+                                              style: ButtonStyle(
+                                                foregroundColor:
+                                                    WidgetStateProperty.all(
+                                                        color0),
+                                              ),
+                                              child: const Text('Cancelar'),
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                            ),
+                                            TextButton(
+                                              style: ButtonStyle(
+                                                foregroundColor:
+                                                    WidgetStateProperty.all(
+                                                        color0),
+                                              ),
+                                              child: const Text('Confirmar'),
+                                              onPressed: () {
+                                                setState(() {
+                                                  eventosCreados
+                                                      .removeAt(index);
+                                                  putEventos(currentUserEmail,
+                                                      eventosCreados);
+                                                  printLog.d(grupo,
+                                                      color: 'naranja');
+
+                                                  String sortKey =
+                                                      '$currentUserEmail:$grupo';
+
+                                                  removeEjecutoresFromDisparador(
+                                                      activador, sortKey);
+                                                  todosLosDispositivos
+                                                      .removeWhere((entry) =>
+                                                          entry.key == grupo);
+                                                });
+                                                _saveOrder();
+                                                Navigator.of(context).pop();
+                                              },
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              );
+                    ),
+                  ));
             } catch (e) {
               printLog
                   .e('Error al procesar el evento de disparador $grupo: $e');
-              return Card(
+              return RepaintBoundary(
                 key: ValueKey('disparador_error_$grupo'),
-                color: color1,
-                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                elevation: 2,
-                child: Theme(
-                  data: Theme.of(context)
-                      .copyWith(dividerColor: Colors.transparent),
-                  child: ListTile(
-                    title: Text(
-                      'Error al cargar el evento de disparador $grupo',
-                      style: GoogleFonts.poppins(
-                        color: color0,
-                        fontWeight: FontWeight.bold,
+                child: Card(
+                  color: color1,
+                  margin:
+                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                  elevation: 2,
+                  child: Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: ListTile(
+                      title: Text(
+                        'Error al cargar el evento de disparador $grupo',
+                        style: GoogleFonts.poppins(
+                          color: color0,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    subtitle: Text(
-                      'Por favor, elimine el evento y vuelva a crearlo.',
-                      style: GoogleFonts.poppins(
-                        color: color0,
-                        fontSize: 15,
+                      subtitle: Text(
+                        'Por favor, elimine el evento y vuelva a crearlo.',
+                        style: GoogleFonts.poppins(
+                          color: color0,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                   ),
@@ -6642,360 +6994,378 @@ class WifiPageState extends ConsumerState<WifiPage>
                 return '${primeros.join(', ')} y ${days.last}';
               }
 
-              return Card(
+              return RepaintBoundary(
                 key: ValueKey('horario_$grupo'),
-                color: color1,
-                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                elevation: 2,
-                child: Theme(
-                  data: Theme.of(context)
-                      .copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    iconColor: color4,
-                    collapsedIconColor: color4,
-                    onExpansionChanged: (bool expanded) {
-                      setState(() {
-                        _expandedStates[deviceName] = expanded;
-                      });
-                    },
-                    title: Row(
-                      children: [
-                        const Icon(HugeIcons.strokeRoundedClock01,
-                            color: color4),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            grupo,
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
+                child: Card(
+                  color: color1,
+                  margin:
+                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                  elevation: 2,
+                  child: Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      iconColor: color4,
+                      collapsedIconColor: color4,
+                      onExpansionChanged: (bool expanded) {
+                        setState(() {
+                          _expandedStates[deviceName] = expanded;
+                        });
+                      },
+                      title: Row(
+                        children: [
+                          ReorderableDragStartListener(
+                            index: index,
+                            child: const Icon(
+                                HugeIcons.strokeRoundedDragDropVertical,
+                                color: Colors.grey),
                           ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: color0.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            'HORARIO',
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Información de días y hora (simplificado)
-                            Row(
-                              children: [
-                                const Icon(
-                                  HugeIcons.strokeRoundedCalendar01,
-                                  color: color4,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Días',
-                                        style: GoogleFonts.poppins(
-                                          color: color0.withValues(alpha: 0.7),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      Text(
-                                        formatDays(selectedDays),
-                                        style: GoogleFonts.poppins(
-                                          color: color0,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                const Icon(
-                                  HugeIcons.strokeRoundedTime01,
-                                  color: color4,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Hora',
-                                        style: GoogleFonts.poppins(
-                                          color: color0.withValues(alpha: 0.7),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      Text(
-                                        selectedTime.isNotEmpty
-                                            ? selectedTime
-                                            : 'No especificada',
-                                        style: GoogleFonts.poppins(
-                                          color: color0,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            // Dispositivos afectados
-                            Text(
-                              'Dispositivos afectados:',
+                          const SizedBox(width: 8),
+                          const Icon(HugeIcons.strokeRoundedClock01,
+                              color: color4),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              grupo,
                               style: GoogleFonts.poppins(
                                 color: color0,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                                fontSize: 16,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            ...horarioNicksList.asMap().entries.map((entry) {
-                              final idx = entry.key + 1;
-                              String deviceNick = entry.value;
-                              final equipo = deviceList[entry.key].trim();
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: color0.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'HORARIO',
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Información de días y hora (simplificado)
+                              Row(
+                                children: [
+                                  const Icon(
+                                    HugeIcons.strokeRoundedCalendar01,
+                                    color: color4,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Días',
+                                          style: GoogleFonts.poppins(
+                                            color:
+                                                color0.withValues(alpha: 0.7),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          formatDays(selectedDays),
+                                          style: GoogleFonts.poppins(
+                                            color: color0,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    HugeIcons.strokeRoundedTime01,
+                                    color: color4,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Hora',
+                                          style: GoogleFonts.poppins(
+                                            color:
+                                                color0.withValues(alpha: 0.7),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          selectedTime.isNotEmpty
+                                              ? selectedTime
+                                              : 'No especificada',
+                                          style: GoogleFonts.poppins(
+                                            color: color0,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                              // Dispositivos afectados
+                              Text(
+                                'Dispositivos afectados:',
+                                style: GoogleFonts.poppins(
+                                  color: color0,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              ...horarioNicksList.asMap().entries.map((entry) {
+                                final idx = entry.key + 1;
+                                String deviceNick = entry.value;
+                                final equipo = deviceList[entry.key].trim();
 
-                              // Verificar si es un evento buscando en eventosCreados
-                              bool isEvento = false;
-                              bool isCadena = false;
-                              bool isRiego = false;
-                              bool isGrupo = false;
+                                // Verificar si es un evento buscando en eventosCreados
+                                bool isEvento = false;
+                                bool isCadena = false;
+                                bool isRiego = false;
+                                bool isGrupo = false;
 
-                              final eventoEncontrado =
-                                  eventosCreados.firstWhere(
-                                (evento) => evento['title'] == equipo,
-                                orElse: () => <String, dynamic>{},
-                              );
+                                final eventoEncontrado =
+                                    eventosCreados.firstWhere(
+                                  (evento) => evento['title'] == equipo,
+                                  orElse: () => <String, dynamic>{},
+                                );
 
-                              if (eventoEncontrado.isNotEmpty) {
-                                // Es un evento (grupo, cadena o riego)
-                                final eventoType =
-                                    eventoEncontrado['evento'] as String;
-                                deviceNick = equipo;
-                                isEvento = true;
-                                isCadena = eventoType == 'cadena';
-                                isRiego = eventoType == 'riego';
-                                isGrupo = eventoType == 'grupo';
-                              }
+                                if (eventoEncontrado.isNotEmpty) {
+                                  // Es un evento (grupo, cadena o riego)
+                                  final eventoType =
+                                      eventoEncontrado['evento'] as String;
+                                  deviceNick = equipo;
+                                  isEvento = true;
+                                  isCadena = eventoType == 'cadena';
+                                  isRiego = eventoType == 'riego';
+                                  isGrupo = eventoType == 'grupo';
+                                }
 
-                              // Definir acción, ícono y color según el tipo
-                              String actionText = '';
-                              IconData actionIcon =
-                                  HugeIcons.strokeRoundedSettings02;
-                              Color actionColor = color0;
+                                // Definir acción, ícono y color según el tipo
+                                String actionText = '';
+                                IconData actionIcon =
+                                    HugeIcons.strokeRoundedSettings02;
+                                Color actionColor = color0;
 
-                              if (isEvento) {
-                                // Manejo especial para eventos
-                                if (isCadena) {
-                                  actionText = 'Se ejecutará';
-                                  actionIcon =
-                                      HugeIcons.strokeRoundedPlayCircle;
-                                  actionColor = Colors.orange;
-                                } else if (isRiego) {
-                                  actionText = 'Se ejecutará';
-                                  actionIcon = HugeIcons.strokeRoundedLeaf01;
-                                  actionColor = Colors.blue;
-                                } else if (isGrupo) {
-                                  // Es un grupo
+                                if (isEvento) {
+                                  // Manejo especial para eventos
+                                  if (isCadena) {
+                                    actionText = 'Se ejecutará';
+                                    actionIcon =
+                                        HugeIcons.strokeRoundedPlayCircle;
+                                    actionColor = Colors.orange;
+                                  } else if (isRiego) {
+                                    actionText = 'Se ejecutará';
+                                    actionIcon = HugeIcons.strokeRoundedLeaf01;
+                                    actionColor = Colors.blue;
+                                  } else if (isGrupo) {
+                                    // Es un grupo
+                                    final action =
+                                        devicesActions['$equipo:grupo'] ??
+                                            false;
+                                    actionText =
+                                        action ? "Encenderá" : "Apagará";
+                                    actionIcon = action
+                                        ? HugeIcons.strokeRoundedPlug01
+                                        : HugeIcons.strokeRoundedPlugSocket;
+                                    actionColor =
+                                        action ? Colors.green : Colors.red;
+                                  } else {
+                                    // Evento desconocido
+                                    actionText = 'Se ejecutará';
+                                    actionIcon =
+                                        HugeIcons.strokeRoundedSettings02;
+                                    actionColor = color4;
+                                  }
+                                } else {
+                                  // Es un dispositivo individual
                                   final action =
-                                      devicesActions['$equipo:grupo'] ?? false;
+                                      devicesActions['$equipo:dispositivo'] ??
+                                          false;
                                   actionText = action ? "Encenderá" : "Apagará";
                                   actionIcon = action
                                       ? HugeIcons.strokeRoundedPlug01
                                       : HugeIcons.strokeRoundedPlugSocket;
                                   actionColor =
                                       action ? Colors.green : Colors.red;
-                                } else {
-                                  // Evento desconocido
-                                  actionText = 'Se ejecutará';
-                                  actionIcon =
-                                      HugeIcons.strokeRoundedSettings02;
-                                  actionColor = color4;
                                 }
-                              } else {
-                                // Es un dispositivo individual
-                                final action =
-                                    devicesActions['$equipo:dispositivo'] ??
-                                        false;
-                                actionText = action ? "Encenderá" : "Apagará";
-                                actionIcon = action
-                                    ? HugeIcons.strokeRoundedPlug01
-                                    : HugeIcons.strokeRoundedPlugSocket;
-                                actionColor =
-                                    action ? Colors.green : Colors.red;
-                              }
 
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 24,
-                                      height: 24,
-                                      decoration: const BoxDecoration(
-                                        color: color4,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          '$idx',
-                                          style: GoogleFonts.poppins(
-                                            color: color1,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 24,
+                                        height: 24,
+                                        decoration: const BoxDecoration(
+                                          color: color4,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            '$idx',
+                                            style: GoogleFonts.poppins(
+                                              color: color1,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        deviceNick,
-                                        style: GoogleFonts.poppins(
-                                          color: color0,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          deviceNick,
+                                          style: GoogleFonts.poppins(
+                                            color: color0,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    Icon(
-                                      actionIcon,
-                                      color: actionColor,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      actionText,
-                                      style: GoogleFonts.poppins(
+                                      Icon(
+                                        actionIcon,
                                         color: actionColor,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
+                                        size: 18,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-                            const SizedBox(height: 10),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: IconButton(
-                                icon: const Icon(
-                                  HugeIcons.strokeRoundedDelete02,
-                                  color: color0,
-                                ),
-                                tooltip: 'Eliminar evento de horario',
-                                onPressed: () {
-                                  showAlertDialog(
-                                    context,
-                                    false,
-                                    const Text(
-                                      '¿Eliminar este evento de control por horario?',
-                                      style: TextStyle(color: color0),
-                                    ),
-                                    const Text(
-                                      'Esta acción no se puede deshacer.',
-                                      style: TextStyle(color: color0),
-                                    ),
-                                    <Widget>[
-                                      TextButton(
-                                        style: ButtonStyle(
-                                          foregroundColor:
-                                              WidgetStateProperty.all(color0),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        actionText,
+                                        style: GoogleFonts.poppins(
+                                          color: actionColor,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
                                         ),
-                                        child: const Text('Cancelar'),
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                        },
-                                      ),
-                                      TextButton(
-                                        style: ButtonStyle(
-                                          foregroundColor:
-                                              WidgetStateProperty.all(color0),
-                                        ),
-                                        child: const Text('Confirmar'),
-                                        onPressed: () {
-                                          setState(() {
-                                            eventosCreados.removeAt(index);
-                                            putEventos(currentUserEmail,
-                                                eventosCreados);
-                                            deleteEventoControlPorHorarios(
-                                                selectedTime,
-                                                currentUserEmail,
-                                                grupo);
-                                            todosLosDispositivos.removeWhere(
-                                                (entry) => entry.key == grupo);
-                                          });
-                                          _saveOrder();
-                                          Navigator.of(context).pop();
-                                        },
                                       ),
                                     ],
-                                  );
-                                },
+                                  ),
+                                );
+                              }),
+                              const SizedBox(height: 10),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    HugeIcons.strokeRoundedDelete02,
+                                    color: color0,
+                                  ),
+                                  tooltip: 'Eliminar evento de horario',
+                                  onPressed: () {
+                                    showAlertDialog(
+                                      context,
+                                      false,
+                                      const Text(
+                                        '¿Eliminar este evento de control por horario?',
+                                        style: TextStyle(color: color0),
+                                      ),
+                                      const Text(
+                                        'Esta acción no se puede deshacer.',
+                                        style: TextStyle(color: color0),
+                                      ),
+                                      <Widget>[
+                                        TextButton(
+                                          style: ButtonStyle(
+                                            foregroundColor:
+                                                WidgetStateProperty.all(color0),
+                                          ),
+                                          child: const Text('Cancelar'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                        TextButton(
+                                          style: ButtonStyle(
+                                            foregroundColor:
+                                                WidgetStateProperty.all(color0),
+                                          ),
+                                          child: const Text('Confirmar'),
+                                          onPressed: () {
+                                            setState(() {
+                                              eventosCreados.removeAt(index);
+                                              putEventos(currentUserEmail,
+                                                  eventosCreados);
+                                              deleteEventoControlPorHorarios(
+                                                  selectedTime,
+                                                  currentUserEmail,
+                                                  grupo);
+                                              todosLosDispositivos.removeWhere(
+                                                  (entry) =>
+                                                      entry.key == grupo);
+                                            });
+                                            _saveOrder();
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
             } catch (e) {
               printLog.e('Error al procesar el evento de horario $grupo: $e');
-              return Card(
-                key: ValueKey('horario_error_$grupo'),
-                color: color1,
-                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                elevation: 2,
-                child: Theme(
-                  data: Theme.of(context)
-                      .copyWith(dividerColor: Colors.transparent),
-                  child: ListTile(
-                    title: Text(
-                      'Error al cargar el evento de horario $grupo',
-                      style: GoogleFonts.poppins(
-                        color: color0,
-                        fontWeight: FontWeight.bold,
+              return RepaintBoundary(
+                key: ValueKey('horario_$grupo'),
+                child: Card(
+                  color: color1,
+                  margin:
+                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                  elevation: 2,
+                  child: Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: ListTile(
+                      title: Text(
+                        'Error al cargar el evento de horario $grupo',
+                        style: GoogleFonts.poppins(
+                          color: color0,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    subtitle: Text(
-                      'Por favor, elimine el evento y vuelva a crearlo.',
-                      style: GoogleFonts.poppins(
-                        color: color0,
-                        fontSize: 15,
+                      subtitle: Text(
+                        'Por favor, elimine el evento y vuelva a crearlo.',
+                        style: GoogleFonts.poppins(
+                          color: color0,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                   ),
@@ -7043,295 +7413,306 @@ class WifiPageState extends ConsumerState<WifiPage>
           bool owner = canControlGroup(devicesInGroup);
 
           try {
-            return Card(
+            return RepaintBoundary(
               key: ValueKey('grupo_$grupo'),
-              color: color1,
-              margin: const EdgeInsets.symmetric(
-                vertical: 5,
-                horizontal: 10,
-              ),
-              elevation: 2,
-              child: Theme(
-                data: Theme.of(
-                  context,
-                ).copyWith(dividerColor: Colors.transparent),
-                child: ExpansionTile(
-                  tilePadding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                  ),
-                  iconColor: color4,
-                  collapsedIconColor: color4,
-                  onExpansionChanged: (bool expanded) {
-                    setState(() {
-                      _expandedStates[deviceName] = expanded;
-                    });
-                  },
-                  title: Row(
-                    children: [
-                      const Icon(HugeIcons.strokeRoundedUserGroup,
-                          color: color4),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          grupo[0].toUpperCase() + grupo.substring(1),
-                          style: GoogleFonts.poppins(
-                            color: color0,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+              child: Card(
+                color: color1,
+                margin: const EdgeInsets.symmetric(
+                  vertical: 5,
+                  horizontal: 10,
+                ),
+                elevation: 2,
+                child: Theme(
+                  data: Theme.of(
+                    context,
+                  ).copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    tilePadding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                    ),
+                    iconColor: color4,
+                    collapsedIconColor: color4,
+                    onExpansionChanged: (bool expanded) {
+                      setState(() {
+                        _expandedStates[deviceName] = expanded;
+                      });
+                    },
+                    title: Row(
+                      children: [
+                        ReorderableDragStartListener(
+                          index: index,
+                          child: const Icon(
+                              HugeIcons.strokeRoundedDragDropVertical,
+                              color: Colors.grey),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(HugeIcons.strokeRoundedUserGroup,
+                            color: color4),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            grupo[0].toUpperCase() + grupo.substring(1),
+                            style: GoogleFonts.poppins(
+                              color: color0,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: color0.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          'GRUPO',
-                          style: GoogleFonts.poppins(
-                            color: color0,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: color0.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          child: Text(
+                            'GRUPO',
+                            style: GoogleFonts.poppins(
+                              color: color0,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (!online) ...[
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.red.withValues(alpha: 0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.wifi_off,
+                                      color: Colors.red,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Todos los equipos deben estar conectados para su uso',
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.red,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ] else ...[
+                              // Control del grupo cuando está online
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: estado
+                                      ? color0.withValues(alpha: 0.1)
+                                      : color0.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: color0,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      estado ? Icons.power : Icons.power_off,
+                                      color: estado ? Colors.green : Colors.red,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        estado
+                                            ? 'Grupo encendido'
+                                            : 'Grupo apagado',
+                                        style: GoogleFonts.poppins(
+                                          color: estado ? Colors.green : color4,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    if (owner)
+                                      Switch(
+                                        activeThumbColor: Colors.green,
+                                        activeTrackColor:
+                                            Colors.green.withValues(alpha: 0.3),
+                                        inactiveThumbColor: color4,
+                                        inactiveTrackColor:
+                                            color4.withValues(alpha: 0.3),
+                                        value: estado,
+                                        onChanged: (newValue) {
+                                          controlGroup(
+                                            currentUserEmail,
+                                            newValue,
+                                            grupo,
+                                          );
+                                        },
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            Text(
+                              'Dispositivos en el grupo:',
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            ...nicksList.map((deviceDisplayName) {
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: color1.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: color0.withValues(alpha: 0.1),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.green,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        deviceDisplayName,
+                                        style: GoogleFonts.poppins(
+                                          color: color0,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: IconButton(
+                                icon: const Icon(
+                                  HugeIcons.strokeRoundedDelete02,
+                                  color: color0,
+                                ),
+                                tooltip: 'Eliminar evento de grupos',
+                                onPressed: () {
+                                  showAlertDialog(
+                                    context,
+                                    false,
+                                    const Text(
+                                      '¿Eliminar este evento de control por grupos?',
+                                      style: TextStyle(color: color0),
+                                    ),
+                                    const Text(
+                                      'Esta acción no se puede deshacer.',
+                                      style: TextStyle(color: color0),
+                                    ),
+                                    <Widget>[
+                                      TextButton(
+                                        style: ButtonStyle(
+                                          foregroundColor:
+                                              WidgetStateProperty.all(color0),
+                                        ),
+                                        child: const Text('Cancelar'),
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                      TextButton(
+                                        style: ButtonStyle(
+                                          foregroundColor:
+                                              WidgetStateProperty.all(color0),
+                                        ),
+                                        child: const Text('Confirmar'),
+                                        onPressed: () {
+                                          setState(() {
+                                            eventosCreados.removeAt(index);
+                                            putEventos(currentUserEmail,
+                                                eventosCreados);
+                                            printLog.d(grupo, color: 'naranja');
+                                            deleteEventoControlPorGrupos(
+                                                currentUserEmail, grupo);
+                                            todosLosDispositivos.removeWhere(
+                                                (entry) => entry.key == grupo);
+                                          });
+                                          _saveOrder();
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  children: <Widget>[
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (!online) ...[
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.red.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: Colors.red.withValues(alpha: 0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.wifi_off,
-                                    color: Colors.red,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Todos los equipos deben estar conectados para su uso',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.red,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                          ] else ...[
-                            // Control del grupo cuando está online
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: estado
-                                    ? color0.withValues(alpha: 0.1)
-                                    : color0.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: color0,
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    estado ? Icons.power : Icons.power_off,
-                                    color: estado ? Colors.green : Colors.red,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      estado
-                                          ? 'Grupo encendido'
-                                          : 'Grupo apagado',
-                                      style: GoogleFonts.poppins(
-                                        color: estado ? Colors.green : color4,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  if (owner)
-                                    Switch(
-                                      activeThumbColor: Colors.green,
-                                      activeTrackColor:
-                                          Colors.green.withValues(alpha: 0.3),
-                                      inactiveThumbColor: color4,
-                                      inactiveTrackColor:
-                                          color4.withValues(alpha: 0.3),
-                                      value: estado,
-                                      onChanged: (newValue) {
-                                        controlGroup(
-                                          currentUserEmail,
-                                          newValue,
-                                          grupo,
-                                        );
-                                      },
-                                    ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                          Text(
-                            'Dispositivos en el grupo:',
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          ...nicksList.map((deviceDisplayName) {
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 4),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: color1.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: color0.withValues(alpha: 0.1),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: const BoxDecoration(
-                                      color: Colors.green,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      deviceDisplayName,
-                                      style: GoogleFonts.poppins(
-                                        color: color0,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }),
-                          const SizedBox(height: 10),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: IconButton(
-                              icon: const Icon(
-                                HugeIcons.strokeRoundedDelete02,
-                                color: color0,
-                              ),
-                              tooltip: 'Eliminar evento de grupos',
-                              onPressed: () {
-                                showAlertDialog(
-                                  context,
-                                  false,
-                                  const Text(
-                                    '¿Eliminar este evento de control por grupos?',
-                                    style: TextStyle(color: color0),
-                                  ),
-                                  const Text(
-                                    'Esta acción no se puede deshacer.',
-                                    style: TextStyle(color: color0),
-                                  ),
-                                  <Widget>[
-                                    TextButton(
-                                      style: ButtonStyle(
-                                        foregroundColor:
-                                            WidgetStateProperty.all(color0),
-                                      ),
-                                      child: const Text('Cancelar'),
-                                      onPressed: () {
-                                        Navigator.of(context).pop();
-                                      },
-                                    ),
-                                    TextButton(
-                                      style: ButtonStyle(
-                                        foregroundColor:
-                                            WidgetStateProperty.all(color0),
-                                      ),
-                                      child: const Text('Confirmar'),
-                                      onPressed: () {
-                                        setState(() {
-                                          eventosCreados.removeAt(index);
-                                          putEventos(
-                                              currentUserEmail, eventosCreados);
-                                          printLog.d(grupo, color: 'naranja');
-                                          deleteEventoControlPorGrupos(
-                                              currentUserEmail, grupo);
-                                          todosLosDispositivos.removeWhere(
-                                              (entry) => entry.key == grupo);
-                                        });
-                                        _saveOrder();
-                                        Navigator.of(context).pop();
-                                      },
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
                 ),
               ),
             );
           } catch (e) {
             printLog.e('Error al procesar el grupo $grupo: $e');
-            return Card(
+            return RepaintBoundary(
               key: ValueKey('grupo_error_$grupo'),
-              color: color1,
-              margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-              elevation: 2,
-              child: Theme(
-                data: Theme.of(context)
-                    .copyWith(dividerColor: Colors.transparent),
-                child: ListTile(
-                  title: Text(
-                    'Error al cargar el grupo $grupo',
-                    style: GoogleFonts.poppins(
-                      color: color0,
-                      fontWeight: FontWeight.bold,
+              child: Card(
+                color: color1,
+                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                elevation: 2,
+                child: Theme(
+                  data: Theme.of(context)
+                      .copyWith(dividerColor: Colors.transparent),
+                  child: ListTile(
+                    title: Text(
+                      'Error al cargar el grupo $grupo',
+                      style: GoogleFonts.poppins(
+                        color: color0,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  subtitle: Text(
-                    'Por favor, elimine el evento y vuelva a crearlo.',
-                    style: GoogleFonts.poppins(
-                      color: color0,
-                      fontSize: 15,
+                    subtitle: Text(
+                      'Por favor, elimine el evento y vuelva a crearlo.',
+                      style: GoogleFonts.poppins(
+                        color: color0,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
                 ),
@@ -7356,7 +7737,8 @@ class WifiPageState extends ConsumerState<WifiPage>
       String serialNumber,
       Map<String, dynamic> deviceDATA,
       bool online,
-      bool owner) {
+      bool owner,
+      int index) {
     // Verificar si es un equipo maestro (riegoActive = true) o extensión
     bool isRiegoActive = deviceDATA['riegoActive'] == true;
 
@@ -7376,157 +7758,173 @@ class WifiPageState extends ConsumerState<WifiPage>
         String sn = key.split('/')[1];
         String extensionName = DeviceManager.recoverDeviceName(pc, sn);
         extensionesVinculadas.add(extensionName);
+        extensionesVinculadas.sort();
       }
     });
 
-    return Card(
+    return RepaintBoundary(
       key: ValueKey(deviceName),
-      color: color1,
-      margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-      elevation: 2,
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-          iconColor: color4,
-          collapsedIconColor: color4,
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.7,
-                    child: Text(
-                      nicknamesMap[deviceName] ?? deviceName,
-                      style: GoogleFonts.poppins(
-                        color: color0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    spacing: 10,
+      child: Card(
+        color: color1,
+        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+        elevation: 2,
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+            iconColor: color4,
+            collapsedIconColor: color4,
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ReorderableDragStartListener(
+                  index: index,
+                  child: const Icon(HugeIcons.strokeRoundedDragDropVertical,
+                      color: Colors.grey),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        online ? '● CONECTADO' : '● DESCONECTADO',
+                        nicknamesMap[deviceName] ?? deviceName,
                         style: GoogleFonts.poppins(
-                          color: online ? Colors.green : color3,
-                          fontSize: 15,
+                          color: color0,
+                          fontWeight: FontWeight.bold,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
-                      Icon(
-                        online ? Icons.cloud : Icons.cloud_off,
-                        color: online ? Colors.green : color3,
-                        size: 15,
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          'RIEGO',
-                          style: GoogleFonts.poppins(
-                            color: const Color(0xFF4CAF50),
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        spacing: 10,
+                        children: [
+                          Text(
+                            online ? '● CONECTADO' : '● DESCONECTADO',
+                            style: GoogleFonts.poppins(
+                              color: online ? Colors.green : color3,
+                              fontSize: 15,
+                            ),
                           ),
-                        ),
+                          Icon(
+                            online ? Icons.cloud : Icons.cloud_off,
+                            color: online ? Colors.green : color3,
+                            size: 15,
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4CAF50)
+                                  .withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'RIEGO',
+                              style: GoogleFonts.poppins(
+                                color: const Color(0xFF4CAF50),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ],
-          ),
-          children: <Widget>[
-            if (online) ...[
-              // Mostrar salidas del equipo principal (solo salidas, no entradas)
-              ...(deviceDATA.keys
-                      .where((key) =>
-                          key.startsWith('io') &&
-                          RegExp(r'^io\d+$').hasMatch(key))
-                      .where((ioKey) {
-                if (deviceDATA[ioKey] == null) return false;
-                try {
-                  var ioData = deviceDATA[ioKey] is String
-                      ? jsonDecode(deviceDATA[ioKey])
-                      : deviceDATA[ioKey];
-                  // pinType puede ser '0', 0, "0"
-                  var pinTypeStr = ioData['pinType'].toString();
-                  bool isOutput = pinTypeStr == '0';
-                  printLog.i(
-                      'Riego $deviceName - $ioKey: pinType=$pinTypeStr, isOutput=$isOutput');
-                  return isOutput;
-                } catch (e) {
-                  printLog.e('Error parseando $ioKey: $e');
-                  return false;
-                }
-              }).toList()
-                    ..sort((a, b) {
-                      int indexA = int.parse(a.substring(2));
-                      int indexB = int.parse(b.substring(2));
-                      return indexA.compareTo(indexB);
-                    }))
-                  .map((ioKey) => _buildRiegoOutput(deviceName, productCode,
-                      serialNumber, ioKey, deviceDATA, owner)),
+                ),
+              ],
+            ),
+            children: <Widget>[
+              if (online) ...[
+                // Mostrar salidas del equipo principal (solo salidas, no entradas)
+                ...(deviceDATA.keys
+                        .where((key) =>
+                            key.startsWith('io') &&
+                            RegExp(r'^io\d+$').hasMatch(key))
+                        .where((ioKey) {
+                  if (deviceDATA[ioKey] == null) return false;
+                  try {
+                    var ioData = deviceDATA[ioKey] is String
+                        ? jsonDecode(deviceDATA[ioKey])
+                        : deviceDATA[ioKey];
+                    // pinType puede ser '0', 0, "0"
+                    var pinTypeStr = ioData['pinType'].toString();
+                    bool isOutput = pinTypeStr == '0';
+                    // printLog.i(
+                    //     'Riego $deviceName - $ioKey: pinType=$pinTypeStr, isOutput=$isOutput');
+                    return isOutput;
+                  } catch (e) {
+                    printLog.e('Error parseando $ioKey: $e');
+                    return false;
+                  }
+                }).toList()
+                      ..sort((a, b) {
+                        int indexA = int.parse(a.substring(2));
+                        int indexB = int.parse(b.substring(2));
+                        return indexA.compareTo(indexB);
+                      }))
+                    .map((ioKey) => _buildRiegoOutput(deviceName, productCode,
+                        serialNumber, ioKey, deviceDATA, owner)),
 
-              // Mostrar extensiones si las hay
-              if (extensionesVinculadas.isNotEmpty) ...[
-                const Divider(color: color0, thickness: 1),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 8.0),
-                  child: Text(
-                    'Extensiones Vinculadas',
-                    style: GoogleFonts.poppins(
-                      color: color0,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                // Mostrar extensiones si las hay
+                if (extensionesVinculadas.isNotEmpty) ...[
+                  const Divider(color: color0, thickness: 1),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
+                    child: Text(
+                      'Extensiones Vinculadas',
+                      style: GoogleFonts.poppins(
+                        color: color0,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
+                  ...extensionesVinculadas.map((extension) =>
+                      _buildExtensionCard(extension, deviceName, owner)),
+                ],
+              ] else ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding:
+                            const EdgeInsets.only(left: 20.0, bottom: 16.0),
+                        child: !online
+                            ? Text(
+                                'El equipo debe estar\nconectado para su uso',
+                                style: GoogleFonts.poppins(
+                                  color: color3,
+                                  fontSize: 15,
+                                ),
+                              )
+                            : const SizedBox(height: 0),
+                      ),
+                    ),
+                    if (!online) ...{
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
+                        child: IconButton(
+                          icon: const Icon(
+                            HugeIcons.strokeRoundedDelete02,
+                            color: color0,
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            _confirmDelete(deviceName, productCode);
+                          },
+                        ),
+                      ),
+                    }
+                  ],
                 ),
-                ...extensionesVinculadas.map((extension) =>
-                    _buildExtensionCard(extension, deviceName, owner)),
-              ],
-            ] else ...[
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  'El equipo debe estar conectado para su uso',
-                  style: GoogleFonts.poppins(
-                    color: color3,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
+              ]
             ],
-
-            // Botón de eliminar
-            Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
-                child: IconButton(
-                  icon: const Icon(
-                    HugeIcons.strokeRoundedDelete02,
-                    color: color0,
-                    size: 20,
-                  ),
-                  onPressed: () {
-                    _confirmDelete(deviceName, productCode);
-                  },
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

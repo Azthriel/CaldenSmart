@@ -57,6 +57,7 @@ class ManagerScreenState extends State<ManagerScreen> {
   @override
   void initState() {
     super.initState();
+    discNotfActivated = configNotiDsc.keys.toList().contains(widget.deviceName);
     _loadUsageHistory();
     _loadTimeRestrictions();
     _loadWifiRestrictions();
@@ -885,7 +886,6 @@ class ManagerScreenState extends State<ManagerScreen> {
                                   deviceOwner = false;
                                   globalDATA['$pc/$sn']?['owner'] = '';
                                 });
-                                
                               } catch (e, s) {
                                 printLog
                                     .e('Error al borrar owner $e Trace: $s');
@@ -908,7 +908,6 @@ class ManagerScreenState extends State<ManagerScreen> {
                           deviceOwner = true;
                         });
                         showToast('Ahora eres el propietario del equipo');
-                        
                       } catch (e, s) {
                         printLog.e('Error al agregar owner $e Trace: $s');
                         showToast('Error al agregar el administrador.');
@@ -2733,7 +2732,6 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                       newStatus;
 
                                                   // Guardar los datos localmente
-                                                  
 
                                                   setState(() {});
 

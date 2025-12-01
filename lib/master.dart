@@ -1797,7 +1797,7 @@ bool isWifiNetworkUnstable(String pc, String sn) {
     List<dynamic>? discTimeList = globalDATA['$pc/$sn']?['discTime'];
 
     printLog.d("Verificando estabilidad de red para $pc/$sn");
-    printLog.d("Lista de discTime: $discTimeList");
+    // printLog.d("Lista de discTime: $discTimeList");
 
     if (discTimeList == null || discTimeList.isEmpty) {
       return false;

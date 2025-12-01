@@ -750,7 +750,6 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
     });
 
     globalDATA.putIfAbsent(key, () => {}).addAll({'io$outputIndex': message});
-    
 
     // Enviar comando MQTT si la extensión está conectada
     String extensionPc = DeviceManager.getProductCode(extension);
@@ -810,8 +809,6 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
     sendMessagemqtt(topic2, message);
 
     globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({'io$index': message});
-
-    
 
     // Registrar uso si es administrador secundario
     String action;
@@ -1023,8 +1020,6 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
         });
       }
     }
-
-    
 
     for (int i = 0; i < parts.length; i++) {
       if (tipo[i] == 'Salida') {
@@ -1954,7 +1949,6 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                                     List<String>.from(
                                                         extensionesVinculadas)
                                               });
-                                              
 
                                               // Actualizar la lista de extensiones disponibles
                                               searchExtensions();
@@ -2020,7 +2014,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                         }
                                       } catch (e) {
                                         // Error handling
-                                        printLog.e('Error al procesar la extensión $prevExtension: $e');
+                                        printLog.e(
+                                            'Error al procesar la extensión $prevExtension: $e');
                                       }
                                     }
                                   });
@@ -2277,7 +2272,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                                             }
                                                           } catch (e) {
                                                             // Error handling
-                                                            printLog.e('Error al procesar la extensión $extension: $e');
+                                                            printLog.e(
+                                                                'Error al procesar la extensión $extension: $e');
                                                           }
                                                         }
 
@@ -3364,11 +3360,21 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                           'Por favor, asigna un nombre a la rutina');
                                       return;
                                     }
-
+                                    final pasos = <Map<String, dynamic>>[];
                                     final enabledZones = <String>[];
+
                                     for (int i = 0; i < zoneOrder.length; i++) {
                                       if (zoneEnabled[i]) {
                                         enabledZones.add(zoneOrder[i]);
+
+                                        final minutes = int.tryParse(
+                                                minutesControllers[i].text) ??
+                                            5;
+
+                                        pasos.add({
+                                          'device': zoneOrder[i],
+                                          'duration': minutes,
+                                        });
                                       }
                                     }
 
@@ -3377,17 +3383,6 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                           'Debe habilitar al menos una zona');
                                       return;
                                     }
-
-                                    final pasos = enabledZones.map((zone) {
-                                      final index = enabledZones.indexOf(zone);
-                                      final minutes = int.tryParse(
-                                              minutesControllers[index].text) ??
-                                          5;
-                                      return {
-                                        'device': zone,
-                                        'duration': minutes,
-                                      };
-                                    }).toList();
 
                                     final riegoEvent = {
                                       'evento': 'riego',
@@ -3652,6 +3647,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                             .contains(extension)) {
                                           extensionesVinculadas.add(extension);
 
+                                          extensionesVinculadas.sort();
+
                                           // Establecer riegoMaster en la extensión
                                           String extensionPc =
                                               DeviceManager.getProductCode(
@@ -3683,7 +3680,6 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                         'riegoExtensions': List<String>.from(
                                             extensionesVinculadas)
                                       });
-                                      
 
                                       setState(() {
                                         isExtension = false;
