@@ -107,12 +107,12 @@ Widget buildLoginForm(WelcomePageState state) {
                         },
                         child: state.obscurePassword
                             ? const Icon(
-                                Icons.visibility_off,
+                                HugeIcons.strokeRoundedViewOff,
                                 key: ValueKey('icon1'),
                                 color: color1,
                               )
                             : const Icon(
-                                Icons.visibility,
+                                HugeIcons.strokeRoundedView,
                                 key: ValueKey('icon2'),
                                 color: color1,
                               ),

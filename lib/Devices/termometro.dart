@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class TermometroPage extends ConsumerStatefulWidget {
   const TermometroPage({super.key});
@@ -426,12 +427,12 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
       nameOfWifi = '';
 
       wifiNotifier.updateStatus(
-          'DESCONECTADO', Colors.red, Icons.signal_wifi_off);
+          'DESCONECTADO', Colors.red, HugeIcons.strokeRoundedWifiOff02);
 
       if (atemp) {
         setState(() {
           wifiNotifier.updateStatus(
-              'DESCONECTADO', Colors.red, Icons.warning_amber_rounded);
+              'DESCONECTADO', Colors.red, HugeIcons.strokeRoundedAlert02);
           werror = true;
           if (parts[1] == '202' || parts[1] == '15') {
             errorMessage = 'Contraseña incorrecta';
@@ -672,7 +673,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.info_outline,
+              Icon(HugeIcons.strokeRoundedInformationCircle,
                   size: 80, color: color1.withValues(alpha: 0.5)),
               const SizedBox(height: 20),
               Text(
@@ -758,7 +759,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Icon(
-                              Icons.thermostat_rounded,
+                              HugeIcons.strokeRoundedTemperature,
                               color: color4,
                               size: 80,
                             ),
@@ -831,8 +832,8 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                     },
                                     child: Icon(
                                       alertMinFlag
-                                          ? Icons.warning_amber_rounded
-                                          : Icons.keyboard_arrow_down_rounded,
+                                          ? HugeIcons.strokeRoundedAlert02
+                                          : HugeIcons.strokeRoundedArrowDown02,
                                       key: ValueKey<bool>(alertMinFlag),
                                       color: alertMinFlag ? color4 : color0,
                                       size: 32,
@@ -905,8 +906,8 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                     },
                                     child: Icon(
                                       alertMaxFlag
-                                          ? Icons.warning_amber_rounded
-                                          : Icons.keyboard_arrow_up_rounded,
+                                          ? HugeIcons.strokeRoundedAlert02
+                                          : HugeIcons.strokeRoundedArrowUp02,
                                       key: ValueKey<bool>(alertMaxFlag),
                                       color: alertMaxFlag ? color3 : color0,
                                       size: 32,
@@ -1003,8 +1004,8 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                 },
                                 child: Icon(
                                   alertMaxFlag
-                                      ? Icons.warning_amber_rounded
-                                      : Icons.keyboard_arrow_up_rounded,
+                                      ? HugeIcons.strokeRoundedAlert02
+                                      : HugeIcons.strokeRoundedArrowUp02,
                                   key: ValueKey<bool>(alertMaxFlag),
                                   color: alertMaxFlag ? color3 : color0,
                                   size: 50,
@@ -1030,7 +1031,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                         ),
                                         const SizedBox(width: 8),
                                         Icon(
-                                          Icons.edit,
+                                          HugeIcons.strokeRoundedPen01,
                                           color: color0.withValues(alpha: 0.6),
                                           size: 16,
                                         ),
@@ -1098,8 +1099,8 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                 },
                                 child: Icon(
                                   alertMinFlag
-                                      ? Icons.warning_amber_rounded
-                                      : Icons.keyboard_arrow_down_rounded,
+                                      ? HugeIcons.strokeRoundedAlert02
+                                      : HugeIcons.strokeRoundedArrowDown02,
                                   key: ValueKey<bool>(alertMinFlag),
                                   color: alertMinFlag ? color4 : color0,
                                   size: 50,
@@ -1125,7 +1126,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                         ),
                                         const SizedBox(width: 8),
                                         Icon(
-                                          Icons.edit,
+                                          HugeIcons.strokeRoundedPen01,
                                           color: color0.withValues(alpha: 0.6),
                                           size: 16,
                                         ),
@@ -1259,12 +1260,13 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                   ),
                 ),
                 const SizedBox(width: 3),
-                const Icon(Icons.edit, size: 20, color: color0)
+                const Icon(HugeIcons.strokeRoundedPen01,
+                    size: 20, color: color0)
               ],
             ),
           ),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new),
+            icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
             color: color0,
             onPressed: () {
               if (_isTutorialActive) return;
@@ -1283,7 +1285,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
             Icon(
               //key: keys['termometros:servidor']!,
               globalDATA['$pc/$sn']?['cstate'] ?? false
-                  ? Icons.cloud
+                  ? HugeIcons.strokeRoundedCloud
                   : Icons.cloud_off,
               color: color0,
             ),
@@ -1322,10 +1324,14 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                       index: _selectedIndex,
                       height: 75.0,
                       items: const <Widget>[
-                        Icon(Icons.thermostat, size: 30, color: color0),
-                        Icon(Icons.tune, size: 30, color: color0),
-                        Icon(Icons.show_chart, size: 30, color: color0),
-                        Icon(Icons.settings, size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedTemperature,
+                            size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedSlidersHorizontal,
+                            size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedChartLineData01,
+                            size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedSettings02,
+                            size: 30, color: color0),
                       ],
                       color: color1,
                       buttonBackgroundColor: color1,
@@ -1394,7 +1400,8 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                 },
                 backgroundColor: color4,
                 shape: const CircleBorder(),
-                child: const Icon(Icons.help, size: 30, color: color0),
+                child: const Icon(HugeIcons.strokeRoundedHelpCircle,
+                    size: 30, color: color0),
               ),
             ),
           ),

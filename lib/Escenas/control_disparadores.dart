@@ -5,6 +5,7 @@ import 'package:caldensmart/logger.dart';
 import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class ControlDisparadorWidget extends StatefulWidget {
   final VoidCallback? onBackToMain;
@@ -330,10 +331,10 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
             child: ListTile(
               leading: Icon(
                 eventoType == 'grupo'
-                    ? Icons.group_work_outlined
+                    ? HugeIcons.strokeRoundedSmartPhone01
                     : eventoType == 'riego'
-                        ? Icons.grass
-                        : Icons.link,
+                        ? HugeIcons.strokeRoundedPlant03
+                        : HugeIcons.strokeRoundedLink05,
                 color: eventoType == 'grupo'
                     ? color4
                     : eventoType == 'riego'
@@ -572,7 +573,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
               final isOn = deviceActions[device] ?? false;
               String displayName = device;
               String deviceType = 'Dispositivo';
-              IconData iconData = Icons.devices_other;
+              IconData iconData = HugeIcons.strokeRoundedLaptopPhoneSync;
               bool isCadena = false;
               bool isRiego = false;
 
@@ -589,11 +590,11 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                     : eventoType == 'riego'
                         ? 'Riego'
                         : 'Cadena';
-                iconData = eventoType == 'grupo'
-                    ? Icons.group_work_outlined
+                iconData = (eventoType == 'grupo'
+                    ? HugeIcons.strokeRoundedSmartPhone01
                     : eventoType == 'riego'
-                        ? Icons.grass
-                        : Icons.link;
+                        ? HugeIcons.strokeRoundedPlant03
+                        : HugeIcons.strokeRoundedLink05);
                 isCadena = eventoType == 'cadena';
                 isRiego = eventoType == 'riego';
               } else {
@@ -669,7 +670,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                           child: Row(
                             children: [
                               const Icon(
-                                Icons.play_arrow,
+                                HugeIcons.strokeRoundedPlay,
                                 color: Colors.orange,
                                 size: 20,
                               ),
@@ -759,7 +760,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                   Opacity(
                     opacity: currentStep == 0 ? 1.0 : 0.0,
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back),
+                      icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
                       color: color0,
                       onPressed: currentStep == 0
                           ? () {
@@ -853,8 +854,8 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                       padding: EdgeInsets.only(left: currentStep > 0 ? 8.0 : 0),
                       child: ElevatedButton.icon(
                         icon: Icon(currentStep == 4
-                            ? Icons.check
-                            : Icons.arrow_forward),
+                            ? HugeIcons.strokeRoundedTick02
+                            : HugeIcons.strokeRoundedArrowRight02),
                         label:
                             Text(currentStep == 4 ? 'Confirmar' : 'Continuar'),
                         onPressed:

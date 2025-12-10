@@ -40,7 +40,7 @@ Widget buildForgotPasswordForm(WelcomePageState state) {
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(HugeIcons.strokeRoundedArrowLeft01,
+                      icon: const Icon(HugeIcons.strokeRoundedArrowLeft02,
                           color: color1),
                       onPressed: () {
                         state.switchForm(FormType.login);

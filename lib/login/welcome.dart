@@ -311,8 +311,10 @@ class WelcomePageState extends State<WelcomePage>
       ),
     );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      checkForUpdate(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (mounted) {
+        checkForUpdate(context);
+      }
     });
 
     fToast.init(navigatorKey.currentState!.context);

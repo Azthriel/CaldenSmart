@@ -1150,7 +1150,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
-                    HugeIcons.strokeRoundedAdd01,
+                    HugeIcons.strokeRoundedPlusSign,
                     color: color0,
                     size: 20,
                   ),
@@ -1212,6 +1212,8 @@ class WifiPageState extends ConsumerState<WifiPage>
                   color: color1.withValues(alpha: 0.7),
                 ),
               ),
+              const SizedBox(height: 20),
+              _buildConfigButton()
             ],
           ),
         ),
@@ -1331,87 +1333,76 @@ class WifiPageState extends ConsumerState<WifiPage>
                         title: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ReorderableDragStartListener(
-                                  index: index,
-                                  child: const Icon(
-                                      HugeIcons.strokeRoundedDragDropVertical,
-                                      color: Colors.grey),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                            ReorderableDragStartListener(
+                              index: index,
+                              child: const Icon(HugeIcons.strokeRoundedMenu01,
+                                  color: Colors.grey),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    nicknamesMap[deviceName] ?? deviceName,
+                                    style: GoogleFonts.poppins(
+                                      color: color0,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    spacing: 10,
                                     children: [
                                       Text(
-                                        nicknamesMap[deviceName] ?? deviceName,
+                                        online
+                                            ? '● CONECTADO'
+                                            : '● DESCONECTADO',
                                         style: GoogleFonts.poppins(
-                                          color: color0,
-                                          fontWeight: FontWeight.bold,
+                                          color: online ? Colors.green : color3,
+                                          fontSize: 15,
                                         ),
-                                        overflow: TextOverflow.ellipsis,
-                                        maxLines: 1,
                                       ),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        spacing: 10,
-                                        children: [
-                                          Text(
-                                            online
-                                                ? '● CONECTADO'
-                                                : '● DESCONECTADO',
-                                            style: GoogleFonts.poppins(
-                                              color: online
-                                                  ? Colors.green
-                                                  : color3,
-                                              fontSize: 15,
-                                            ),
-                                          ),
-                                          Icon(
-                                            online
-                                                ? Icons.cloud
-                                                : Icons.cloud_off,
-                                            color:
-                                                online ? Colors.green : color3,
-                                            size: 15,
-                                          ),
-                                        ],
+                                      Icon(
+                                        online
+                                            ? HugeIcons.strokeRoundedCloud
+                                            : Icons.cloud_off,
+                                        color: online ? Colors.green : color3,
+                                        size: 15,
                                       ),
-                                      if (online && networkUnstable) ...[
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(
-                                              Icons.warning_amber_rounded,
-                                              color: Colors.orange,
-                                              size: 18,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'Red inestable',
-                                              style: GoogleFonts.poppins(
-                                                color: Colors.orange,
-                                                fontSize: 15,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            const Icon(
-                                              Icons.warning_amber_rounded,
-                                              color: Colors.orange,
-                                              size: 18,
-                                            ),
-                                          ],
-                                        )
-                                      ],
                                     ],
                                   ),
-                                ),
-                              ],
+                                  if (online && networkUnstable) ...[
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          HugeIcons.strokeRoundedAlert02,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Red inestable',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.orange,
+                                            fontSize: 15,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(
+                                          HugeIcons.strokeRoundedAlert02,
+                                          color: Colors.orange,
+                                          size: 18,
+                                        ),
+                                      ],
+                                    )
+                                  ],
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -1523,8 +1514,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                           children: [
                             ReorderableDragStartListener(
                               index: index,
-                              child: const Icon(
-                                  HugeIcons.strokeRoundedDragDropVertical,
+                              child: const Icon(HugeIcons.strokeRoundedMenu01,
                                   color: Colors.grey),
                             ),
                             const SizedBox(width: 10),
@@ -1555,7 +1545,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                       ),
                                       Icon(
-                                        online ? Icons.cloud : Icons.cloud_off,
+                                        online
+                                            ? HugeIcons.strokeRoundedCloud
+                                            : Icons.cloud_off,
                                         color: online ? Colors.green : color3,
                                         size: 15,
                                       ),
@@ -1566,7 +1558,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -1581,7 +1573,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                         const SizedBox(width: 4),
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -1749,8 +1741,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                           children: [
                             ReorderableDragStartListener(
                               index: index,
-                              child: const Icon(
-                                  HugeIcons.strokeRoundedDragDropVertical,
+                              child: const Icon(HugeIcons.strokeRoundedMenu01,
                                   color: Colors.grey),
                             ),
                             const SizedBox(width: 10),
@@ -1781,7 +1772,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                       ),
                                       Icon(
-                                        online ? Icons.cloud : Icons.cloud_off,
+                                        online
+                                            ? HugeIcons.strokeRoundedCloud
+                                            : Icons.cloud_off,
                                         color: online ? Colors.green : color3,
                                         size: 15,
                                       ),
@@ -1792,7 +1785,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -1807,7 +1800,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                         const SizedBox(width: 4),
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -1990,8 +1983,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                           children: [
                             ReorderableDragStartListener(
                               index: index,
-                              child: const Icon(
-                                  HugeIcons.strokeRoundedDragDropVertical,
+                              child: const Icon(HugeIcons.strokeRoundedMenu01,
                                   color: Colors.grey),
                             ),
                             const SizedBox(width: 10),
@@ -2022,7 +2014,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                       ),
                                       Icon(
-                                        online ? Icons.cloud : Icons.cloud_off,
+                                        online
+                                            ? HugeIcons.strokeRoundedCloud
+                                            : Icons.cloud_off,
                                         color: online ? Colors.green : color3,
                                         size: 15,
                                       ),
@@ -2033,7 +2027,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -2048,7 +2042,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                         const SizedBox(width: 4),
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -2226,26 +2220,26 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                     ? estadoWifi
                                                         ? comunWifi == '1'
                                                             ? const Icon(
-                                                                Icons
-                                                                    .new_releases,
+                                                                HugeIcons
+                                                                    .strokeRoundedAlertDiamond,
                                                                 color: Color(
                                                                   0xff9b9b9b,
                                                                 ),
                                                               )
                                                             : const Icon(
-                                                                Icons
-                                                                    .new_releases,
+                                                                HugeIcons
+                                                                    .strokeRoundedAlertDiamond,
                                                                 color: color4,
                                                               )
                                                         : comunWifi == '1'
                                                             ? const Icon(
-                                                                Icons
-                                                                    .new_releases,
+                                                                HugeIcons
+                                                                    .strokeRoundedAlertDiamond,
                                                                 color: color4,
                                                               )
                                                             : const Icon(
-                                                                Icons
-                                                                    .new_releases,
+                                                                HugeIcons
+                                                                    .strokeRoundedAlertDiamond,
                                                                 color: Color(
                                                                   0xff9b9b9b,
                                                                 ),
@@ -2416,8 +2410,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                           children: [
                             ReorderableDragStartListener(
                               index: index,
-                              child: const Icon(
-                                  HugeIcons.strokeRoundedDragDropVertical,
+                              child: const Icon(HugeIcons.strokeRoundedMenu01,
                                   color: Colors.grey),
                             ),
                             const SizedBox(width: 10),
@@ -2448,7 +2441,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                       ),
                                       Icon(
-                                        online ? Icons.cloud : Icons.cloud_off,
+                                        online
+                                            ? HugeIcons.strokeRoundedCloud
+                                            : Icons.cloud_off,
                                         color: online ? Colors.green : color3,
                                         size: 15,
                                       ),
@@ -2459,7 +2454,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -2474,7 +2469,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                         const SizedBox(width: 4),
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -2883,7 +2878,8 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                   ),
                                                 ),
                                                 trailing: Icon(
-                                                  Icons.new_releases,
+                                                  HugeIcons
+                                                      .strokeRoundedAlertCircle,
                                                   color: (() {
                                                     final io1 = jsonDecode(
                                                         deviceDATA['io1']);
@@ -2986,8 +2982,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                           children: [
                             ReorderableDragStartListener(
                               index: index,
-                              child: const Icon(
-                                  HugeIcons.strokeRoundedDragDropVertical,
+                              child: const Icon(HugeIcons.strokeRoundedMenu01,
                                   color: Colors.grey),
                             ),
                             const SizedBox(width: 10),
@@ -3018,7 +3013,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                       ),
                                       Icon(
-                                        online ? Icons.cloud : Icons.cloud_off,
+                                        online
+                                            ? HugeIcons.strokeRoundedCloud
+                                            : Icons.cloud_off,
                                         color: online ? Colors.green : color3,
                                         size: 15,
                                       ),
@@ -3029,7 +3026,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -3044,7 +3041,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                         const SizedBox(width: 4),
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -3101,8 +3098,8 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                                 ),
                                                               ),
                                                               Icon(
-                                                                Icons
-                                                                    .water_drop,
+                                                                HugeIcons
+                                                                    .strokeRoundedRainDrop,
                                                                 size: 15,
                                                                 color: Colors
                                                                     .amber[800],
@@ -3222,8 +3219,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                           children: [
                             ReorderableDragStartListener(
                               index: index,
-                              child: const Icon(
-                                  HugeIcons.strokeRoundedDragDropVertical,
+                              child: const Icon(HugeIcons.strokeRoundedMenu01,
                                   color: Colors.grey),
                             ),
                             const SizedBox(width: 10),
@@ -3254,7 +3250,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                       ),
                                       Icon(
-                                        online ? Icons.cloud : Icons.cloud_off,
+                                        online
+                                            ? HugeIcons.strokeRoundedCloud
+                                            : Icons.cloud_off,
                                         color: online ? Colors.green : color3,
                                         size: 15,
                                       ),
@@ -3265,7 +3263,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -3280,7 +3278,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                         const SizedBox(width: 4),
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -3458,26 +3456,26 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                     ? estadoWifi
                                                         ? comunWifi == '1'
                                                             ? const Icon(
-                                                                Icons
-                                                                    .new_releases,
+                                                                HugeIcons
+                                                                    .strokeRoundedAlertDiamond,
                                                                 color: Color(
                                                                   0xff9b9b9b,
                                                                 ),
                                                               )
                                                             : const Icon(
-                                                                Icons
-                                                                    .new_releases,
+                                                                HugeIcons
+                                                                    .strokeRoundedAlertDiamond,
                                                                 color: color4,
                                                               )
                                                         : comunWifi == '1'
                                                             ? const Icon(
-                                                                Icons
-                                                                    .new_releases,
+                                                                HugeIcons
+                                                                    .strokeRoundedAlertDiamond,
                                                                 color: color4,
                                                               )
                                                             : const Icon(
-                                                                Icons
-                                                                    .new_releases,
+                                                                HugeIcons
+                                                                    .strokeRoundedAlertDiamond,
                                                                 color: Color(
                                                                   0xff9b9b9b,
                                                                 ),
@@ -3634,8 +3632,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                           children: [
                             ReorderableDragStartListener(
                               index: index,
-                              child: const Icon(
-                                  HugeIcons.strokeRoundedDragDropVertical,
+                              child: const Icon(HugeIcons.strokeRoundedMenu01,
                                   color: Colors.grey),
                             ),
                             const SizedBox(width: 10),
@@ -3666,7 +3663,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                       ),
                                       Icon(
-                                        online ? Icons.cloud : Icons.cloud_off,
+                                        online
+                                            ? HugeIcons.strokeRoundedCloud
+                                            : Icons.cloud_off,
                                         color: online ? Colors.green : color3,
                                         size: 15,
                                       ),
@@ -3677,7 +3676,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -3692,7 +3691,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                         const SizedBox(width: 4),
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -3864,8 +3863,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                           children: [
                             ReorderableDragStartListener(
                               index: index,
-                              child: const Icon(
-                                  HugeIcons.strokeRoundedDragDropVertical,
+                              child: const Icon(HugeIcons.strokeRoundedMenu01,
                                   color: Colors.grey),
                             ),
                             const SizedBox(width: 10),
@@ -3896,7 +3894,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                       ),
                                       Icon(
-                                        online ? Icons.cloud : Icons.cloud_off,
+                                        online
+                                            ? HugeIcons.strokeRoundedCloud
+                                            : Icons.cloud_off,
                                         color: online ? Colors.green : color3,
                                         size: 15,
                                       ),
@@ -3907,7 +3907,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -3922,7 +3922,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                         const SizedBox(width: 4),
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -4095,8 +4095,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                           children: [
                             ReorderableDragStartListener(
                               index: index,
-                              child: const Icon(
-                                  HugeIcons.strokeRoundedDragDropVertical,
+                              child: const Icon(HugeIcons.strokeRoundedMenu01,
                                   color: Colors.grey),
                             ),
                             const SizedBox(width: 10),
@@ -4127,7 +4126,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                       ),
                                       Icon(
-                                        online ? Icons.cloud : Icons.cloud_off,
+                                        online
+                                            ? HugeIcons.strokeRoundedCloud
+                                            : Icons.cloud_off,
                                         color: online ? Colors.green : color3,
                                         size: 15,
                                       ),
@@ -4138,7 +4139,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -4153,7 +4154,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                         const SizedBox(width: 4),
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -4319,8 +4320,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                           children: [
                             ReorderableDragStartListener(
                               index: index,
-                              child: const Icon(
-                                  HugeIcons.strokeRoundedDragDropVertical,
+                              child: const Icon(HugeIcons.strokeRoundedMenu01,
                                   color: Colors.grey),
                             ),
                             const SizedBox(width: 10),
@@ -4351,7 +4351,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                       ),
                                       Icon(
-                                        online ? Icons.cloud : Icons.cloud_off,
+                                        online
+                                            ? HugeIcons.strokeRoundedCloud
+                                            : Icons.cloud_off,
                                         color: online ? Colors.green : color3,
                                         size: 15,
                                       ),
@@ -4362,7 +4364,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -4377,7 +4379,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         ),
                                         const SizedBox(width: 4),
                                         const Icon(
-                                          Icons.warning_amber_rounded,
+                                          HugeIcons.strokeRoundedAlert02,
                                           color: Colors.orange,
                                           size: 18,
                                         ),
@@ -4434,8 +4436,8 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                                 ),
                                                               ),
                                                               Icon(
-                                                                Icons
-                                                                    .water_drop,
+                                                                HugeIcons
+                                                                    .strokeRoundedRainDrop,
                                                                 size: 15,
                                                                 color: Colors
                                                                     .amber[800],
@@ -4692,8 +4694,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                         children: [
                           ReorderableDragStartListener(
                             index: index,
-                            child: const Icon(
-                                HugeIcons.strokeRoundedDragDropVertical,
+                            child: const Icon(HugeIcons.strokeRoundedMenu01,
                                 color: Colors.grey),
                           ),
                           const SizedBox(width: 8),
@@ -4749,7 +4750,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   child: Row(
                                     children: [
                                       const Icon(
-                                        Icons.wifi_off,
+                                        HugeIcons.strokeRoundedWifiOff02,
                                         color: Colors.red,
                                         size: 16,
                                       ),
@@ -4805,8 +4806,10 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                 children: [
                                                   Icon(
                                                     eventoEstado.isPaused
-                                                        ? Icons.pause_circle
-                                                        : Icons.play_circle,
+                                                        ? HugeIcons
+                                                            .strokeRoundedPauseCircle
+                                                        : HugeIcons
+                                                            .strokeRoundedPlayCircle,
                                                     color: eventoEstado.isPaused
                                                         ? Colors.orange
                                                         : Colors.blue,
@@ -4883,7 +4886,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                               ElevatedButton.icon(
                                                 onPressed: () =>
                                                     pausarCadena(grupo),
-                                                icon: const Icon(Icons.pause,
+                                                icon: const Icon(
+                                                    HugeIcons
+                                                        .strokeRoundedPause,
                                                     size: 18),
                                                 label: Text(
                                                   'Pausar',
@@ -4908,7 +4913,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                 onPressed: () =>
                                                     reanudarCadena(grupo),
                                                 icon: const Icon(
-                                                    Icons.play_arrow,
+                                                    HugeIcons.strokeRoundedPlay,
                                                     size: 18),
                                                 label: Text(
                                                   'Reanudar',
@@ -4930,7 +4935,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             ElevatedButton.icon(
                                               onPressed: () =>
                                                   cancelarCadena(grupo),
-                                              icon: const Icon(Icons.cancel,
+                                              icon: const Icon(
+                                                  HugeIcons
+                                                      .strokeRoundedCancel01,
                                                   size: 18),
                                               label: Text(
                                                 'Cancelar',
@@ -5271,7 +5278,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           child: const Text('Confirmar'),
                                           onPressed: () {
                                             setState(() {
-                                              eventosCreados.removeAt(index);
+                                              eventosCreados.removeWhere((e) =>
+                                                  e['title'] == grupo &&
+                                                  e['evento'] == 'cadena');
                                               putEventos(currentUserEmail,
                                                   eventosCreados);
                                               printLog.d(grupo,
@@ -5281,6 +5290,10 @@ class WifiPageState extends ConsumerState<WifiPage>
                                               todosLosDispositivos.removeWhere(
                                                   (entry) =>
                                                       entry.key == grupo);
+                                              savedOrder.removeWhere((item) =>
+                                                  item['key'] == grupo);
+
+                                              _actualizarListasUI();
                                             });
                                             _saveOrder();
                                             Navigator.of(context).pop();
@@ -5414,8 +5427,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                         children: [
                           ReorderableDragStartListener(
                             index: index,
-                            child: const Icon(
-                                HugeIcons.strokeRoundedDragDropVertical,
+                            child: const Icon(HugeIcons.strokeRoundedMenu01,
                                 color: Colors.grey),
                           ),
                           const SizedBox(width: 8),
@@ -5471,7 +5483,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   child: Row(
                                     children: [
                                       const Icon(
-                                        Icons.wifi_off,
+                                        HugeIcons.strokeRoundedWifiOff02,
                                         color: Colors.red,
                                         size: 16,
                                       ),
@@ -5527,8 +5539,10 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                 children: [
                                                   Icon(
                                                     eventoEstado.isPaused
-                                                        ? Icons.pause_circle
-                                                        : Icons.water_drop,
+                                                        ? HugeIcons
+                                                            .strokeRoundedPauseCircle
+                                                        : HugeIcons
+                                                            .strokeRoundedRainDrop,
                                                     color: eventoEstado.isPaused
                                                         ? Colors.orange
                                                         : Colors.green,
@@ -5605,7 +5619,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                               ElevatedButton.icon(
                                                 onPressed: () =>
                                                     pausarRiego(grupo),
-                                                icon: const Icon(Icons.pause,
+                                                icon: const Icon(
+                                                    HugeIcons
+                                                        .strokeRoundedPause,
                                                     size: 18),
                                                 label: Text(
                                                   'Pausar',
@@ -5630,7 +5646,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                 onPressed: () =>
                                                     reanudarRiego(grupo),
                                                 icon: const Icon(
-                                                    Icons.play_arrow,
+                                                    HugeIcons.strokeRoundedPlay,
                                                     size: 18),
                                                 label: Text(
                                                   'Reanudar',
@@ -5652,7 +5668,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             ElevatedButton.icon(
                                               onPressed: () =>
                                                   cancelarRiego(grupo),
-                                              icon: const Icon(Icons.cancel,
+                                              icon: const Icon(
+                                                  HugeIcons
+                                                      .strokeRoundedCancel01,
                                                   size: 18),
                                               label: Text(
                                                 'Cancelar',
@@ -5900,31 +5918,26 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           child: const Text('Confirmar'),
                                           onPressed: () {
                                             setState(() {
-                                              printLog.d(
-                                                  'se viene $eventosCreados',
-                                                  color: 'naranja');
-                                              printLog.d(
-                                                  'se viene $todosLosDispositivos',
-                                                  color: 'naranja');
                                               eventosCreados.removeWhere(
                                                   (evento) =>
                                                       evento['title'] ==
                                                           grupo &&
                                                       evento['evento'] ==
                                                           'riego');
+
                                               putEventos(currentUserEmail,
                                                   eventosCreados);
                                               deleteEventoControlDeRiego(
                                                   currentUserEmail, grupo);
+
                                               todosLosDispositivos.removeWhere(
                                                   (entry) =>
                                                       entry.key == grupo);
-                                              printLog.d(
-                                                  'se viene $eventosCreados',
-                                                  color: 'rosa');
-                                              printLog.d(
-                                                  'se viene $todosLosDispositivos',
-                                                  color: 'rosa');
+
+                                              savedOrder.removeWhere((item) =>
+                                                  item['key'] == grupo);
+
+                                              _actualizarListasUI();
                                             });
                                             _saveOrder();
                                             Navigator.of(context).pop();
@@ -6013,16 +6026,16 @@ class WifiPageState extends ConsumerState<WifiPage>
                   climaIcon = HugeIcons.strokeRoundedCloudAngledRain;
                   break;
                 case 'Nublado':
-                  climaIcon = HugeIcons.strokeRoundedSunCloud02;
+                  climaIcon = HugeIcons.strokeRoundedSunCloud01;
                   break;
                 case 'Viento Fuerte':
-                  climaIcon = HugeIcons.strokeRoundedFastWind;
+                  climaIcon = HugeIcons.strokeRoundedSunCloudFastWind02;
                   break;
                 case 'Soleado':
                   climaIcon = HugeIcons.strokeRoundedSun03;
                   break;
                 default:
-                  climaIcon = HugeIcons.strokeRoundedCloudSnow;
+                  climaIcon = HugeIcons.strokeRoundedSunCloudLittleSnow01;
               }
 
               return RepaintBoundary(
@@ -6048,8 +6061,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                         children: [
                           ReorderableDragStartListener(
                             index: index,
-                            child: const Icon(
-                                HugeIcons.strokeRoundedDragDropVertical,
+                            child: const Icon(HugeIcons.strokeRoundedMenu01,
                                 color: Colors.grey),
                           ),
                           const SizedBox(width: 8),
@@ -6185,9 +6197,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             false;
                                     actionText =
                                         action ? "Encenderá" : "Apagará";
-                                    actionIcon = action
+                                    actionIcon = (action
                                         ? HugeIcons.strokeRoundedPlug01
-                                        : HugeIcons.strokeRoundedPlugSocket;
+                                        : HugeIcons.strokeRoundedPlugSocket);
                                     actionColor =
                                         action ? Colors.green : Colors.red;
                                   } else {
@@ -6202,9 +6214,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   final action =
                                       devicesActions[equipo] ?? false;
                                   actionText = action ? "Encenderá" : "Apagará";
-                                  actionIcon = action
+                                  actionIcon = (action
                                       ? HugeIcons.strokeRoundedPlug01
-                                      : HugeIcons.strokeRoundedPlugSocket;
+                                      : HugeIcons.strokeRoundedPlugSocket);
                                   actionColor =
                                       action ? Colors.green : Colors.red;
                                 }
@@ -6300,7 +6312,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           child: const Text('Confirmar'),
                                           onPressed: () {
                                             setState(() {
-                                              eventosCreados.removeAt(index);
+                                              eventosCreados.removeWhere((e) =>
+                                                  e['title'] == grupo &&
+                                                  e['evento'] == 'clima');
                                               putEventos(currentUserEmail,
                                                   eventosCreados);
                                               printLog.d(grupo,
@@ -6310,6 +6324,10 @@ class WifiPageState extends ConsumerState<WifiPage>
                                               todosLosDispositivos.removeWhere(
                                                   (entry) =>
                                                       entry.key == grupo);
+                                              savedOrder.removeWhere((item) =>
+                                                  item['key'] == grupo);
+
+                                              _actualizarListasUI();
                                             });
                                             _saveOrder();
                                             Navigator.of(context).pop();
@@ -6432,8 +6450,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                           children: [
                             ReorderableDragStartListener(
                               index: index,
-                              child: const Icon(
-                                  HugeIcons.strokeRoundedDragDropVertical,
+                              child: const Icon(HugeIcons.strokeRoundedMenu01,
                                   color: Colors.grey),
                             ),
                             const SizedBox(width: 8),
@@ -6477,11 +6494,8 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 // Sección Activador
                                 Row(
                                   children: [
-                                    const Icon(
-                                        HugeIcons
-                                            .strokeRoundedTouchInteraction02,
-                                        color: color4,
-                                        size: 20),
+                                    const Icon(HugeIcons.strokeRoundedTap05,
+                                        color: color4, size: 20),
                                     const SizedBox(width: 8),
                                     Text(
                                       'ACTIVADOR',
@@ -6503,8 +6517,8 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         Icon(
                                           isTermometro
                                               ? HugeIcons
-                                                  .strokeRoundedThermometer
-                                              : HugeIcons.strokeRoundedAlert01,
+                                                  .strokeRoundedTemperature
+                                              : HugeIcons.strokeRoundedAlert02,
                                           color: color4,
                                           size: 20,
                                         ),
@@ -6612,7 +6626,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             CrossAxisAlignment.start,
                                         children: [
                                           Icon(
-                                            Icons.thermostat,
+                                            HugeIcons.strokeRoundedTemperature,
                                             color: estadoTermometro == "1"
                                                 ? Colors.red
                                                 : Colors.lightBlue,
@@ -6738,9 +6752,10 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         actionText =
                                             action ? "Encenderá" : "Apagará";
                                         fullActionText = 'Se $actionText';
-                                        actionIcon = action
+                                        actionIcon = (action
                                             ? HugeIcons.strokeRoundedPlug01
-                                            : HugeIcons.strokeRoundedPlugSocket;
+                                            : HugeIcons
+                                                .strokeRoundedPlugSocket);
                                         actionColor =
                                             action ? Colors.green : Colors.red;
                                       } else {
@@ -6759,9 +6774,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       actionText =
                                           action ? "Encenderá" : "Apagará";
                                       fullActionText = 'Se $actionText';
-                                      actionIcon = action
+                                      actionIcon = (action
                                           ? HugeIcons.strokeRoundedPlug01
-                                          : HugeIcons.strokeRoundedPlugSocket;
+                                          : HugeIcons.strokeRoundedPlugSocket);
                                       actionColor =
                                           action ? Colors.green : color4;
                                     }
@@ -6889,12 +6904,13 @@ class WifiPageState extends ConsumerState<WifiPage>
                                               child: const Text('Confirmar'),
                                               onPressed: () {
                                                 setState(() {
-                                                  eventosCreados
-                                                      .removeAt(index);
+                                                  eventosCreados.removeWhere(
+                                                      (e) =>
+                                                          e['title'] == grupo &&
+                                                          e['evento'] ==
+                                                              'disparador');
                                                   putEventos(currentUserEmail,
                                                       eventosCreados);
-                                                  printLog.d(grupo,
-                                                      color: 'naranja');
 
                                                   String sortKey =
                                                       '$currentUserEmail:$grupo';
@@ -6904,6 +6920,11 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                   todosLosDispositivos
                                                       .removeWhere((entry) =>
                                                           entry.key == grupo);
+                                                  savedOrder.removeWhere(
+                                                      (item) =>
+                                                          item['key'] == grupo);
+
+                                                  _actualizarListasUI();
                                                 });
                                                 _saveOrder();
                                                 Navigator.of(context).pop();
@@ -7017,8 +7038,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                         children: [
                           ReorderableDragStartListener(
                             index: index,
-                            child: const Icon(
-                                HugeIcons.strokeRoundedDragDropVertical,
+                            child: const Icon(HugeIcons.strokeRoundedMenu01,
                                 color: Colors.grey),
                           ),
                           const SizedBox(width: 8),
@@ -7099,7 +7119,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                               Row(
                                 children: [
                                   const Icon(
-                                    HugeIcons.strokeRoundedTime01,
+                                    HugeIcons.strokeRoundedClock01,
                                     color: color4,
                                     size: 20,
                                   ),
@@ -7196,9 +7216,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             false;
                                     actionText =
                                         action ? "Encenderá" : "Apagará";
-                                    actionIcon = action
+                                    actionIcon = (action
                                         ? HugeIcons.strokeRoundedPlug01
-                                        : HugeIcons.strokeRoundedPlugSocket;
+                                        : HugeIcons.strokeRoundedPlugSocket);
                                     actionColor =
                                         action ? Colors.green : Colors.red;
                                   } else {
@@ -7214,9 +7234,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       devicesActions['$equipo:dispositivo'] ??
                                           false;
                                   actionText = action ? "Encenderá" : "Apagará";
-                                  actionIcon = action
+                                  actionIcon = (action
                                       ? HugeIcons.strokeRoundedPlug01
-                                      : HugeIcons.strokeRoundedPlugSocket;
+                                      : HugeIcons.strokeRoundedPlugSocket);
                                   actionColor =
                                       action ? Colors.green : Colors.red;
                                 }
@@ -7312,7 +7332,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           child: const Text('Confirmar'),
                                           onPressed: () {
                                             setState(() {
-                                              eventosCreados.removeAt(index);
+                                              eventosCreados.removeWhere((e) =>
+                                                  e['title'] == grupo &&
+                                                  e['evento'] == 'horario');
                                               putEventos(currentUserEmail,
                                                   eventosCreados);
                                               deleteEventoControlPorHorarios(
@@ -7322,6 +7344,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                               todosLosDispositivos.removeWhere(
                                                   (entry) =>
                                                       entry.key == grupo);
+                                              savedOrder.removeWhere((item) =>
+                                                  item['key'] == grupo);
+                                              _actualizarListasUI();
                                             });
                                             _saveOrder();
                                             Navigator.of(context).pop();
@@ -7441,8 +7466,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                       children: [
                         ReorderableDragStartListener(
                           index: index,
-                          child: const Icon(
-                              HugeIcons.strokeRoundedDragDropVertical,
+                          child: const Icon(HugeIcons.strokeRoundedMenu01,
                               color: Colors.grey),
                         ),
                         const SizedBox(width: 8),
@@ -7498,7 +7522,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 child: Row(
                                   children: [
                                     const Icon(
-                                      Icons.wifi_off,
+                                      HugeIcons.strokeRoundedWifiOff02,
                                       color: Colors.red,
                                       size: 16,
                                     ),
@@ -7536,7 +7560,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 child: Row(
                                   children: [
                                     Icon(
-                                      estado ? Icons.power : Icons.power_off,
+                                      estado
+                                          ? HugeIcons.strokeRoundedPlug01
+                                          : HugeIcons.strokeRoundedPlugSocket,
                                       color: estado ? Colors.green : Colors.red,
                                       size: 20,
                                     ),
@@ -7662,7 +7688,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         child: const Text('Confirmar'),
                                         onPressed: () {
                                           setState(() {
-                                            eventosCreados.removeAt(index);
+                                            eventosCreados.removeWhere((e) =>
+                                                e['title'] == grupo &&
+                                                e['evento'] == 'grupo');
                                             putEventos(currentUserEmail,
                                                 eventosCreados);
                                             printLog.d(grupo, color: 'naranja');
@@ -7670,6 +7698,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                 currentUserEmail, grupo);
                                             todosLosDispositivos.removeWhere(
                                                 (entry) => entry.key == grupo);
+                                            savedOrder.removeWhere(
+                                                (item) => item['key'] == grupo);
+                                            _actualizarListasUI();
                                           });
                                           _saveOrder();
                                           Navigator.of(context).pop();
@@ -7779,7 +7810,7 @@ class WifiPageState extends ConsumerState<WifiPage>
               children: [
                 ReorderableDragStartListener(
                   index: index,
-                  child: const Icon(HugeIcons.strokeRoundedDragDropVertical,
+                  child: const Icon(HugeIcons.strokeRoundedMenu01,
                       color: Colors.grey),
                 ),
                 const SizedBox(width: 10),
@@ -7808,7 +7839,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                             ),
                           ),
                           Icon(
-                            online ? Icons.cloud : Icons.cloud_off,
+                            online
+                                ? HugeIcons.strokeRoundedCloud
+                                : Icons.cloud_off,
                             color: online ? Colors.green : color3,
                             size: 15,
                           ),
@@ -7886,6 +7919,26 @@ class WifiPageState extends ConsumerState<WifiPage>
                   ...extensionesVinculadas.map((extension) =>
                       _buildExtensionCard(extension, deviceName, owner)),
                 ],
+
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Spacer(),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
+                      child: IconButton(
+                        icon: const Icon(
+                          HugeIcons.strokeRoundedDelete02,
+                          color: color0,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          _confirmDelete(deviceName, productCode);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ] else ...[
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -7993,7 +8046,7 @@ class WifiPageState extends ConsumerState<WifiPage>
           : isOutput
               ? null
               : Icon(
-                  Icons.sensors,
+                  HugeIcons.strokeRoundedInternetAntenna02,
                   color: _getRiegoStatusColor(
                       currentStatus, isOutput, isBomb, rState),
                 ),
@@ -8042,7 +8095,9 @@ class WifiPageState extends ConsumerState<WifiPage>
             Row(
               children: [
                 Icon(
-                  isExtensionOnline ? Icons.cloud : Icons.cloud_off,
+                  isExtensionOnline
+                      ? HugeIcons.strokeRoundedCloud
+                      : Icons.cloud_off,
                   color: isExtensionOnline ? Colors.green : Colors.red,
                   size: 20,
                 ),

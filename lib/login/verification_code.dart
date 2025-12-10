@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:caldensmart/master.dart';
-import 'welcome.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'welcome.dart';
 
 ///-* widget para ingresar código y nueva contraseña cuando olvidas la contraseña *-\\\
 Widget buildEnterCodeForm(WelcomePageState state) {
@@ -34,7 +34,7 @@ Widget buildEnterCodeForm(WelcomePageState state) {
                 state.buildTextFormField(
                   controller: state.enterCodeController,
                   hintText: 'Código',
-                  icon: HugeIcons.strokeRoundedSmsCode,
+                  icon: HugeIcons.strokeRoundedMessage02,
                   obscureText: false,
                   keyboardType: TextInputType.number,
                   validator: (value) {
@@ -68,9 +68,9 @@ Widget buildEnterCodeForm(WelcomePageState state) {
                         );
                       },
                       child: state.obscurePassword
-                          ? const Icon(Icons.visibility_off,
+                          ? const Icon(HugeIcons.strokeRoundedViewOff,
                               key: ValueKey('icon1'), color: color1)
-                          : const Icon(Icons.visibility,
+                          : const Icon(HugeIcons.strokeRoundedView,
                               key: ValueKey('icon2'), color: color1),
                     ),
                   ),
@@ -163,7 +163,7 @@ Widget buildRegisterVerificationCodeForm(WelcomePageState state) {
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(HugeIcons.strokeRoundedArrowLeft01,
+                      icon: const Icon(HugeIcons.strokeRoundedArrowLeft02,
                           color: color1),
                       onPressed: () {
                         state.switchForm(FormType.register);
@@ -195,7 +195,7 @@ Widget buildRegisterVerificationCodeForm(WelcomePageState state) {
                 state.buildTextFormField(
                   controller: state.enterCodeController,
                   hintText: 'Código',
-                  icon: HugeIcons.strokeRoundedSmsCode,
+                  icon: HugeIcons.strokeRoundedMessage02,
                   obscureText: false,
                   keyboardType: TextInputType.number,
                   validator: (value) {

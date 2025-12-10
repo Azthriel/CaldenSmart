@@ -5,11 +5,11 @@ import 'package:caldensmart/Global/qr_scanner_screen.dart';
 import 'package:caldensmart/login/welcome.dart';
 import 'package:flutter/material.dart';
 import 'package:caldensmart/master.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:caldensmart/aws/mqtt/mqtt.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:caldensmart/logger.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -19,6 +19,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class ProfilePageState extends State<ProfilePage> {
+  int counter = 0;
   final List<String> alarmSounds = [
     "Sonido 1",
     "Sonido 2",
@@ -40,6 +41,7 @@ class ProfilePageState extends State<ProfilePage> {
   @override
   void dispose() {
     NativeService.stopNativeSound();
+    counter = 0;
     super.dispose();
   }
 
@@ -121,24 +123,32 @@ class ProfilePageState extends State<ProfilePage> {
                       padding: const EdgeInsets.only(left: 16.0),
                       child: Column(
                         children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: color1,
-                              borderRadius: BorderRadius.circular(8.0),
-                              border: Border.all(color: color0),
-                            ),
-                            padding: const EdgeInsets.all(16.0),
-                            child: Text(
-                              currentUserEmail,
-                              style: GoogleFonts.poppins(
-                                color: color0,
+                          GestureDetector(
+                            onTap: () {
+                              if (counter < 20) {
+                                counter++;
+                              } else {
+                                navigatorKey.currentState?.pushNamed('/eg');
+                              }
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: color1,
+                                borderRadius: BorderRadius.circular(8.0),
+                                border: Border.all(color: color0),
+                              ),
+                              padding: const EdgeInsets.all(16.0),
+                              child: Text(
+                                currentUserEmail,
+                                style: GoogleFonts.poppins(
+                                  color: color0,
+                                ),
                               ),
                             ),
                           ),
                           const Divider(color: Colors.transparent),
                           TextButton(
                             onPressed: () {
-                              printLog.i('Hora: ${DateTime.now()}');
                               showAlertDialog(
                                 context,
                                 false,
@@ -273,9 +283,11 @@ class ProfilePageState extends State<ProfilePage> {
                                                 color: color1,
                                                 borderRadius:
                                                     BorderRadius.circular(8.0),
-                                                border: Border.all(color: color0),
+                                                border:
+                                                    Border.all(color: color0),
                                               ),
-                                              padding: const EdgeInsets.all(16.0),
+                                              padding:
+                                                  const EdgeInsets.all(16.0),
                                               child: Row(
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
@@ -283,7 +295,8 @@ class ProfilePageState extends State<ProfilePage> {
                                                     child: Text(
                                                       nicknamesMap[device] ??
                                                           device,
-                                                      style: GoogleFonts.poppins(
+                                                      style:
+                                                          GoogleFonts.poppins(
                                                         color: color0,
                                                         fontSize: 15,
                                                       ),
@@ -310,8 +323,8 @@ class ProfilePageState extends State<ProfilePage> {
                                                           ),
                                                         ),
                                                       ),
-                                                      icon: const HugeIcon(
-                                                        icon: HugeIcons
+                                                      icon: const Icon(
+                                                        HugeIcons
                                                             .strokeRoundedSettings01,
                                                         color: color0,
                                                         size: 24,
@@ -332,8 +345,8 @@ class ProfilePageState extends State<ProfilePage> {
                                   builder: (context) => const QRScannerScreen(),
                                 ),
                               ),
-                              icon: const HugeIcon(
-                                icon: HugeIcons.strokeRoundedAdd01,
+                              icon: const Icon(
+                                HugeIcons.strokeRoundedAdd01,
                                 color: color0,
                                 size: 20,
                               ),
@@ -539,7 +552,7 @@ class ProfilePageState extends State<ProfilePage> {
                   const Divider(color: color1),
                   ListTile(
                     leading: const Icon(
-                      HugeIcons.strokeRoundedTemperature,
+                      HugeIcons.strokeRoundedThermometer,
                       color: color1,
                     ),
                     title: Text(
@@ -695,101 +708,6 @@ class ProfilePageState extends State<ProfilePage> {
                         : CrossFadeState.showFirst,
                   ),
                   const Divider(color: color1),
-                  // ListTile(
-                  //   leading: const Icon(
-                  //     HugeIcons.strokeRoundedVoice,
-                  //     color: color1,
-                  //   ),
-                  //   title: Text(
-                  //     "Asistentes por voz",
-                  //     style: GoogleFonts.poppins(
-                  //       color: color1,
-                  //       fontWeight: FontWeight.bold,
-                  //     ),
-                  //   ),
-                  //   subtitle: Text(
-                  //     "VIncular Asistentes por voz",
-                  //     style: GoogleFonts.poppins(
-                  //       color: color1,
-                  //     ),
-                  //   ),
-                  //   onTap: () {
-                  //     setState(() {
-                  //       isAssistantOpen = !isAssistantOpen;
-                  //     });
-                  //   },
-                  //   trailing: Icon(
-                  //     isAssistantOpen
-                  //         ? HugeIcons.strokeRoundedArrowUp01
-                  //         : HugeIcons.strokeRoundedArrowDown01,
-                  //     color: color1,
-                  //   ),
-                  // ),
-                  // AnimatedCrossFade(
-                  //   duration: const Duration(milliseconds: 300),
-                  //   firstChild: const SizedBox.shrink(),
-                  //   secondChild: Padding(
-                  //     padding: const EdgeInsets.only(left: 16.0),
-                  //     child: Column(
-                  //       crossAxisAlignment: CrossAxisAlignment.start,
-                  //       children: [
-                  //         ListTile(
-                  //           leading: const Image(
-                  //             image: AssetImage('assets/misc/Alexa.png'),
-                  //             width: 30,
-                  //             height: 30,
-                  //           ),
-                  //           title: Text(
-                  //             'Alexa',
-                  //             style: GoogleFonts.poppins(
-                  //               color: color1,
-                  //             ),
-                  //           ),
-                  //           onTap: () {
-                  //             launchWebURL(linksOfApp(app, 'Alexa'));
-                  //           },
-                  //         ),
-                  //         ListTile(
-                  //           leading: const Image(
-                  //             image: AssetImage('assets/misc/GoogleHome.png'),
-                  //             width: 30,
-                  //             height: 30,
-                  //           ),
-                  //           title: Text(
-                  //             'Google Home',
-                  //             style: GoogleFonts.poppins(
-                  //               color: color1,
-                  //             ),
-                  //           ),
-                  //           onTap: () {
-                  //             launchWebURL(linksOfApp(app, 'GoogleHome'));
-                  //           },
-                  //         ),
-                  //         ListTile(
-                  //           leading: const Image(
-                  //             image: AssetImage('assets/misc/Siri.webp'),
-                  //             width: 30,
-                  //             height: 30,
-                  //           ),
-                  //           title: Text(
-                  //             'Siri',
-                  //             style: GoogleFonts.poppins(
-                  //               color: color1,
-                  //             ),
-                  //           ),
-                  //           onTap: () {
-                  //             showToast('Próximamente');
-                  //             // launchWebURL(linksOfApp(app, 'Siri'));
-                  //           },
-                  //         ),
-                  //       ],
-                  //     ),
-                  //   ),
-                  //   crossFadeState: isAssistantOpen
-                  //       ? CrossFadeState.showSecond
-                  //       : CrossFadeState.showFirst,
-                  // ),
-                  // const Divider(color: color1),
                   ListTile(
                     leading: const Icon(
                       HugeIcons.strokeRoundedContactBook,
@@ -883,9 +801,7 @@ class ProfilePageState extends State<ProfilePage> {
                             },
                           ),
                           ListTile(
-                            leading: const Icon(
-                                HugeIcons.strokeRoundedFacebook01,
-                                color: color1),
+                            leading: const Icon(HugeIcons.strokeRoundedFacebook01, color: color1),
                             title: Text(
                               'Facebook',
                               style: GoogleFonts.poppins(
@@ -897,8 +813,7 @@ class ProfilePageState extends State<ProfilePage> {
                             },
                           ),
                           ListTile(
-                            leading: const Icon(HugeIcons.strokeRoundedInternet,
-                                color: color1),
+                            leading: const Icon(HugeIcons.strokeRoundedInternet, color: color1),
                             title: Text(
                               'Sitio web',
                               style: GoogleFonts.poppins(

@@ -12,11 +12,11 @@ import 'package:caldensmart/Devices/termometro.dart';
 import 'package:caldensmart/Devices/termotanques.dart';
 import 'package:caldensmart/Escenas/escenas.dart';
 import 'package:caldensmart/Global/profile.dart';
-// import 'package:caldensmart/widget/select_device.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:upgrader/upgrader.dart';
 import 'Devices/domotica.dart';
 import 'Devices/detectores.dart';
@@ -36,6 +36,7 @@ import 'login/welcome.dart';
 import 'master.dart';
 import 'Global/stored_data.dart';
 import 'package:caldensmart/logger.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -109,15 +110,18 @@ class MyApp extends StatefulWidget {
 }
 
 class MyAppState extends State<MyApp> {
+  bool _isInitialized = false;
+  bool _hasInternet = true;
+  bool _isCheckingInternet = true;
+
   @override
   void initState() {
     super.initState();
 
-    initAsync();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       fToast = FToast();
       fToast.init(context);
+      _initializeApp();
     });
 
     printLog.i('Empezamos');
@@ -129,15 +133,224 @@ class MyAppState extends State<MyApp> {
     super.dispose();
   }
 
-  void initAsync() async {
+  Future<void> _initializeApp() async {
+    // Verificar conexión a internet
+    setState(() {
+      _isCheckingInternet = true;
+    });
+
+    bool hasInternet = await checkInternetConnection();
+
+    if (!hasInternet) {
+      setState(() {
+        _hasInternet = false;
+        _isCheckingInternet = false;
+      });
+      return;
+    }
+
+    // Si hay internet, cargar datos
+    setState(() {
+      _hasInternet = true;
+      _isCheckingInternet = false;
+    });
+
+    // Reinicializar servicios que requieren internet
+    try {
+      // Reinicializar Firebase (por si falló en el arranque sin internet)
+      if (!Firebase.apps.isNotEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        printLog.i('Firebase reinicializado');
+      }
+
+      // Reinicializar notificaciones
+      await initNotifications();
+      printLog.i('Notificaciones reinicializadas');
+
+      // Reinicializar DeviceManager (carga dbData de DynamoDB)
+      await DeviceManager.init();
+      printLog.i('DeviceManager reinicializado');
+
+      // Verificar actualizaciones de la app
+      final upgrader = Upgrader(debugLogging: false);
+      await upgrader.initialize();
+      appVersionNumber = upgrader.currentInstalledVersion ?? appVersionNumber;
+      printLog.i('Upgrader reinicializado');
+    } catch (e) {
+      printLog.e('Error reinicializando servicios: $e');
+    }
+
     await loadValues();
     printLog.i('Valores cargados');
     await setupMqtt();
     listenToTopics();
+
+    setState(() {
+      _isInitialized = true;
+    });
+  }
+
+  Future<void> _retryConnection() async {
+    setState(() {
+      _isCheckingInternet = true;
+    });
+
+    bool hasInternet = await checkInternetConnection();
+
+    if (hasInternet) {
+      setState(() {
+        _hasInternet = true;
+      });
+      await _initializeApp();
+    } else {
+      setState(() {
+        _isCheckingInternet = false;
+        _hasInternet = false;
+      });
+    }
+  }
+
+  /// Construye la pantalla de sin internet
+  Widget _buildNoInternetScreen() {
+    return Scaffold(
+      backgroundColor: color1,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(30.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Icono de sin internet
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: color4.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    HugeIcons.strokeRoundedWifiOff02,
+                    size: 80,
+                    color: color3,
+                  ),
+                ),
+                const SizedBox(height: 30),
+                // Título
+                Text(
+                  'Sin conexión a Internet',
+                  style: GoogleFonts.poppins(
+                    color: color0,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                // Descripción
+                Text(
+                  'Para usar la aplicación necesitas estar conectado a Internet.\n\nPor favor, activa los datos móviles o conéctate a una red WiFi.',
+                  style: GoogleFonts.poppins(
+                    color: color0.withValues(alpha: 0.8),
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 40),
+                // Botón de reintentar
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: color1,
+                      backgroundColor: color0,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 15,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                    ),
+                    icon: const Icon(HugeIcons.strokeRoundedReload, size: 22),
+                    label: Text(
+                      'Reintentar',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    onPressed: _retryConnection,
+                  ),
+                ),
+                const SizedBox(height: 15),
+                // Botón de configuración
+                TextButton.icon(
+                  style: TextButton.styleFrom(
+                    foregroundColor: color0,
+                  ),
+                  icon: const Icon(HugeIcons.strokeRoundedSettings02, size: 20),
+                  label: Text(
+                    'Abrir ajustes',
+                    style: GoogleFonts.poppins(fontSize: 14),
+                  ),
+                  onPressed: () async {
+                    await openAppSettings();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    // Si no hay internet, mostrar pantalla de sin conexión
+    if (!_hasInternet && !_isCheckingInternet) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          textTheme: GoogleFonts.poppinsTextTheme(),
+          colorScheme: ColorScheme.fromSeed(seedColor: color3),
+          useMaterial3: true,
+        ),
+        home: _buildNoInternetScreen(),
+      );
+    }
+
+    // Si está verificando o cargando, mostrar splash
+    if (_isCheckingInternet || !_isInitialized) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          textTheme: GoogleFonts.poppinsTextTheme(),
+          colorScheme: ColorScheme.fromSeed(seedColor: color3),
+          useMaterial3: true,
+        ),
+        home: Scaffold(
+          backgroundColor: Colors.black,
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/branch/dragon.png',
+                  width: 100,
+                  height: 100,
+                ),
+                const SizedBox(height: 20),
+                const CircularProgressIndicator(color: color3),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return MaterialApp(
       builder: FToastBuilder(),
       debugShowCheckedModeBanner: false,

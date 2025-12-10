@@ -4,6 +4,7 @@ import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
 import '../Global/manager_screen.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../Global/stored_data.dart';
@@ -38,7 +39,7 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
   String tiempo = '';
   String measure = 'KW/h';
 
-  IconData powerIconOn = Icons.water_drop;
+  IconData powerIconOn = HugeIcons.strokeRoundedRainDrop;
   IconData powerIconOff = Icons.format_color_reset;
 
   int _selectedIndex = 0;
@@ -576,12 +577,12 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
 
       nameOfWifi = '';
       wifiNotifier.updateStatus(
-          'DESCONECTADO', Colors.red, Icons.signal_wifi_off);
+          'DESCONECTADO', Colors.red, HugeIcons.strokeRoundedWifiOff02);
 
       if (atemp) {
         setState(() {
           wifiNotifier.updateStatus(
-              'DESCONECTADO', Colors.red, Icons.warning_amber_rounded);
+              'DESCONECTADO', Colors.red, HugeIcons.strokeRoundedAlert02);
           werror = true;
           if (parts[1] == '202' || parts[1] == '15') {
             errorMessage = 'Contraseña incorrecta';
@@ -813,7 +814,7 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
                     Column(
                       children: [
                         Icon(
-                          Icons.thermostat_rounded,
+                          HugeIcons.strokeRoundedTemperature,
                           size: MediaQuery.of(context).size.width * 0.5,
                           color: Color.lerp(
                             Colors.blueAccent,
@@ -1265,12 +1266,13 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
                   ),
                 ),
                 const SizedBox(width: 3),
-                const Icon(Icons.edit, size: 20, color: color0)
+                const Icon(HugeIcons.strokeRoundedPen01,
+                    size: 20, color: color0)
               ],
             ),
           ),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new),
+            icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
             color: color0,
             onPressed: () {
               if (_isTutorialActive) return;
@@ -1290,7 +1292,7 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
             Icon(
               key: keys['termotanque:servidor']!,
               globalDATA['$pc/$sn']?['cstate'] ?? false
-                  ? Icons.cloud
+                  ? HugeIcons.strokeRoundedCloud
                   : Icons.cloud_off,
               color: color0,
             ),
@@ -1329,10 +1331,14 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
                       index: _selectedIndex,
                       height: 75.0,
                       items: const <Widget>[
-                        Icon(Icons.home, size: 30, color: color0),
-                        Icon(Icons.thermostat, size: 30, color: color0),
-                        Icon(Icons.calculate, size: 30, color: color0),
-                        Icon(Icons.settings, size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedHome07,
+                            size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedTemperature,
+                            size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedCalculate,
+                            size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedSettings02,
+                            size: 30, color: color0),
                       ],
                       color: color1,
                       buttonBackgroundColor: color1,
@@ -1401,7 +1407,8 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
                 },
                 backgroundColor: color4,
                 shape: const CircleBorder(),
-                child: const Icon(Icons.help, size: 30, color: color0),
+                child: const Icon(HugeIcons.strokeRoundedHelpCircle,
+                    size: 30, color: color0),
               ),
             ),
           ),

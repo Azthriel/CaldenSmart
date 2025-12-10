@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
 import '../Global/manager_screen.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/mqtt/mqtt.dart';
@@ -858,12 +858,12 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
 
       nameOfWifi = '';
       wifiNotifier.updateStatus(
-          'DESCONECTADO', Colors.red, Icons.signal_wifi_off);
+          'DESCONECTADO', Colors.red, HugeIcons.strokeRoundedWifiOff02);
 
       if (atemp) {
         setState(() {
           wifiNotifier.updateStatus(
-              'DESCONECTADO', Colors.red, Icons.warning_amber_rounded);
+              'DESCONECTADO', Colors.red, HugeIcons.strokeRoundedAlert02);
           werror = true;
           if (parts[1] == '202' || parts[1] == '15') {
             errorMessage = 'Contraseña incorrecta';
@@ -1130,12 +1130,13 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                   ),
                 ),
                 const SizedBox(width: 3),
-                const Icon(Icons.edit, size: 20, color: color0)
+                const Icon(HugeIcons.strokeRoundedPen01,
+                    size: 20, color: color0)
               ],
             ),
           ),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new),
+            icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
             color: color0,
             onPressed: () {
               showDisconnectDialog(context);
@@ -1154,7 +1155,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
               globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
                           ?['cstate'] ??
                       false
-                  ? Icons.cloud
+                  ? HugeIcons.strokeRoundedCloud
                   : Icons.cloud_off,
               color: color0,
             ),
@@ -1182,7 +1183,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(
-                      Icons.extension,
+                      HugeIcons.strokeRoundedPuzzle,
                       size: 64,
                       color: color0,
                     ),
@@ -1216,7 +1217,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(
-                            Icons.router,
+                            HugeIcons.strokeRoundedRouter02,
                             color: color1,
                             size: 24,
                           ),
@@ -1363,7 +1364,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                             children: [
                               const Row(children: [
                                 Icon(
-                                  HugeIcons.strokeRoundedShutDown,
+                                  HugeIcons.strokeRoundedPlugSocket,
                                   color: color1,
                                   size: 25,
                                 ),
@@ -1481,7 +1482,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                       Row(
                                         children: [
                                           const Icon(
-                                            HugeIcons.strokeRoundedDroplet,
+                                            HugeIcons.strokeRoundedRainDrop,
                                             color: color1,
                                             size: 25,
                                           ),
@@ -1586,7 +1587,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                                     ),
                                                   ),
                                                   const Icon(
-                                                    Icons.edit,
+                                                    HugeIcons
+                                                        .strokeRoundedPen01,
                                                     size: 16,
                                                     color: color1,
                                                   ),
@@ -1776,7 +1778,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                       children: [
                                         Icon(
                                           isExtensionConnected
-                                              ? Icons.cloud
+                                              ? HugeIcons.strokeRoundedCloud
                                               : Icons.cloud_off,
                                           color: isExtensionConnected
                                               ? Colors.green
@@ -1973,7 +1975,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                     );
                                   },
                                   icon: const Icon(
-                                    Icons.delete_outline,
+                                    HugeIcons.strokeRoundedDelete02,
                                     color: Colors.red,
                                     size: 24,
                                   ),
@@ -2056,7 +2058,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                         Row(
                                           children: [
                                             const Icon(
-                                              HugeIcons.strokeRoundedDroplet,
+                                              HugeIcons.strokeRoundedRainDrop,
                                               color: color1,
                                               size: 25,
                                             ),
@@ -2164,7 +2166,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                                       ),
                                                     ),
                                                     const Icon(
-                                                      Icons.edit,
+                                                      HugeIcons
+                                                          .strokeRoundedPen01,
                                                       size: 16,
                                                       color: color1,
                                                     ),
@@ -2690,7 +2693,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                                 BorderRadius.circular(8),
                                           ),
                                           child: const Icon(
-                                            Icons.delete_outline,
+                                            HugeIcons.strokeRoundedDelete02,
                                             color: Colors.red,
                                             size: 20,
                                           ),
@@ -2722,8 +2725,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                       children: [
                                         Icon(
                                           isRain
-                                              ? Icons.water_drop_outlined
-                                              : Icons.wb_sunny_outlined,
+                                              ? HugeIcons.strokeRoundedRainDrop
+                                              : HugeIcons.strokeRoundedSun03,
                                           color: color1,
                                           size: 16,
                                         ),
@@ -2958,7 +2961,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                             child: Row(
                               children: [
                                 Icon(
-                                  Icons.water_drop_outlined,
+                                  HugeIcons.strokeRoundedRainDrop,
                                   color: isRain ? Colors.blue : color1,
                                   size: 20,
                                 ),
@@ -3091,7 +3094,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Icon(
-                                        Icons.drag_indicator,
+                                        HugeIcons.strokeRoundedMenu01,
                                         color: zoneEnabled[index]
                                             ? color1
                                             : Colors.white,
@@ -3160,7 +3163,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                                       BorderRadius.circular(6),
                                                 ),
                                                 child: const Icon(
-                                                  Icons.remove,
+                                                  HugeIcons
+                                                      .strokeRoundedPlugSocket,
                                                   size: 14,
                                                   color: color1,
                                                 ),
@@ -3228,7 +3232,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                                       BorderRadius.circular(6),
                                                 ),
                                                 child: const Icon(
-                                                  Icons.add,
+                                                  HugeIcons
+                                                      .strokeRoundedPlusSign,
                                                   size: 14,
                                                   color: color1,
                                                 ),
@@ -3263,8 +3268,10 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                         ),
                                         child: Icon(
                                           zoneEnabled[index]
-                                              ? Icons.check_circle
-                                              : Icons.cancel,
+                                              ? HugeIcons
+                                                  .strokeRoundedCheckmarkCircle02
+                                              : HugeIcons
+                                                  .strokeRoundedCancelCircle,
                                           color: zoneEnabled[index]
                                               ? Colors.green
                                               : Colors.red,
@@ -3297,7 +3304,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                               child: const Row(
                                 children: [
                                   Icon(
-                                    Icons.info_outline,
+                                    HugeIcons.strokeRoundedInformationCircle,
                                     color: Colors.orange,
                                     size: 18,
                                   ),
@@ -3441,7 +3448,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                   child: const Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.check, size: 18),
+                                      Icon(HugeIcons.strokeRoundedTick02,
+                                          size: 18),
                                       SizedBox(width: 6),
                                       Text(
                                         'Crear rutina',
@@ -3519,7 +3527,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    Icons.warning,
+                                    HugeIcons.strokeRoundedAlert02,
                                     color: Colors.red,
                                     size: 24,
                                   ),
@@ -3551,7 +3559,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                 bool isSelected =
                                     extensionesTemporales.contains(moduleName);
                                 return ListTile(
-                                  leading: const Icon(Icons.devices_other,
+                                  leading: const Icon(
+                                      HugeIcons.strokeRoundedLaptopPhoneSync,
                                       color: color0),
                                   title: Text(
                                     nicknamesMap[moduleName] ?? moduleName,
@@ -3825,13 +3834,14 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                   // ),
                 ),
                 const SizedBox(width: 3),
-                const Icon(Icons.edit, size: 20, color: color0)
+                const Icon(HugeIcons.strokeRoundedPen01,
+                    size: 20, color: color0)
               ],
             ),
           ),
           leading: IconButton(
             key: keys['riego:estado']!,
-            icon: const Icon(Icons.arrow_back_ios_new),
+            icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
             color: color0,
             onPressed: () {
               if (_isTutorialActive) return;
@@ -3850,7 +3860,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
             Icon(
               key: keys['riego:servidor']!,
               globalDATA['$pc/$sn']?['cstate'] ?? false
-                  ? Icons.cloud
+                  ? HugeIcons.strokeRoundedCloud
                   : Icons.cloud_off,
               color: color0,
             ),
@@ -3890,10 +3900,12 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                       index: _selectedIndex,
                       height: 75.0,
                       items: const <Widget>[
-                        Icon(Icons.home, size: 30, color: color0),
-                        //const Icon(Icons.bluetooth, size: 30, color: color0),
-                        Icon(Icons.input, size: 30, color: color0),
-                        Icon(Icons.settings, size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedHome07,
+                            size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedShare01,
+                            size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedSettings02,
+                            size: 30, color: color0),
                       ],
                       color: color1,
                       buttonBackgroundColor: color1,
@@ -3965,7 +3977,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                 },
                 backgroundColor: color4,
                 shape: const CircleBorder(),
-                child: const Icon(Icons.help, size: 30, color: color0),
+                child: const Icon(HugeIcons.strokeRoundedHelpCircle,
+                    size: 30, color: color0),
               ),
             ),
           ),

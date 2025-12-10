@@ -7,8 +7,8 @@
 // import 'package:flutter/material.dart';
 // import 'package:flutter/services.dart'; // Para MethodChannel
 // import 'package:google_fonts/google_fonts.dart';
-// import 'package:hugeicons/hugeicons.dart';
 // import 'package:home_widget/home_widget.dart';
+// import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 // class SelectDeviceScreen extends StatefulWidget {
 //   const SelectDeviceScreen({super.key});
@@ -222,7 +222,7 @@
 //               mainAxisAlignment: MainAxisAlignment.center,
 //               children: [
 //                 // Asegúrate de que esta imagen exista o usa un Icono por ahora
-//                 const Icon(Icons.downloading,
+//                 Icon(MdiIcons.progressDownload,
 //                     size: 100, color: color1), // Placeholder
 //                 const SizedBox(height: 20),
 //                 Text(
@@ -310,8 +310,8 @@
 //                                     children: [
 //                                       Icon(
 //                                         isOnline
-//                                             ? HugeIcons.strokeRoundedInternet
-//                                             : HugeIcons.strokeRoundedNoInternet,
+//                                             ? MdiIcons.web
+//                                             : MdiIcons.webOff,
 //                                         color: isOnline
 //                                             ? Colors.green
 //                                             : Colors.red,
@@ -341,8 +341,8 @@
 //                             const SizedBox(width: 8),
 //                             Icon(
 //                               device.value
-//                                   ? HugeIcons.strokeRoundedToggleOn
-//                                   : HugeIcons.strokeRoundedView,
+//                                   ? MdiIcons.toggleSwitch
+//                                   : MdiIcons.eyeOutline,
 //                               color: color0,
 //                               size: 30,
 //                             ),

@@ -90,7 +90,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                   Opacity(
                     opacity: currentStep == 0 ? 1.0 : 0.0,
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back),
+                      icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
                       color: color0,
                       onPressed: currentStep == 0
                           ? () {
@@ -183,8 +183,8 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                       padding: EdgeInsets.only(left: currentStep > 0 ? 8.0 : 0),
                       child: ElevatedButton.icon(
                         icon: Icon(currentStep == 3
-                            ? Icons.check
-                            : Icons.arrow_forward),
+                            ? HugeIcons.strokeRoundedTick02
+                            : HugeIcons.strokeRoundedArrowRight02),
                         label:
                             Text(currentStep == 3 ? 'Confirmar' : 'Continuar'),
                         onPressed:
@@ -294,7 +294,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                   value: selectedWeatherCondition,
                   isExpanded: true,
                   icon: const Icon(
-                    HugeIcons.strokeRoundedArrowDown01,
+                    HugeIcons.strokeRoundedArrowDown02,
                     color: color0,
                   ),
                   dropdownColor: color1,
@@ -417,7 +417,9 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
 
     final eventosDisponibles = eventosCreados.where((evento) {
       final eventoType = evento['evento'] as String;
-      return eventoType == 'grupo' || eventoType == 'cadena' || eventoType == 'riego';
+      return eventoType == 'grupo' ||
+          eventoType == 'cadena' ||
+          eventoType == 'riego';
     }).toList();
 
     if (validDevices.isEmpty && eventosDisponibles.isEmpty) {
@@ -477,8 +479,16 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
             ),
             child: ListTile(
               leading: Icon(
-                eventoType == 'grupo' ? Icons.group_work_outlined : eventoType == 'riego' ? Icons.grass : Icons.link,
-                color: eventoType == 'grupo' ? color4 : eventoType == 'riego' ? Colors.green : Colors.orange,
+                eventoType == 'grupo'
+                    ? HugeIcons.strokeRoundedSmartPhone01
+                    : eventoType == 'riego'
+                        ? HugeIcons.strokeRoundedPlant03
+                        : HugeIcons.strokeRoundedLink05,
+                color: eventoType == 'grupo'
+                    ? color4
+                    : eventoType == 'riego'
+                        ? Colors.green
+                        : Colors.orange,
               ),
               title: Text(
                 eventoTitle,
@@ -701,7 +711,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
 
               String displayName = device;
               String deviceType = 'Dispositivo';
-              IconData iconData = Icons.devices_other;
+              IconData iconData = HugeIcons.strokeRoundedLaptopPhoneSync;
               bool isCadena = false;
               bool isRiego = false;
 
@@ -713,10 +723,16 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
               if (eventoEncontrado.isNotEmpty) {
                 final eventoType = eventoEncontrado['evento'] as String;
                 displayName = device;
-                deviceType = eventoType == 'grupo' ? 'Grupo' : eventoType == 'riego' ? 'Riego' : 'Cadena';
-                iconData = eventoType == 'grupo'
-                    ? Icons.group_work_outlined
-                    : eventoType == 'riego' ? Icons.grass : Icons.link;
+                deviceType = eventoType == 'grupo'
+                    ? 'Grupo'
+                    : eventoType == 'riego'
+                        ? 'Riego'
+                        : 'Cadena';
+                iconData = (eventoType == 'grupo'
+                    ? HugeIcons.strokeRoundedSmartPhone01
+                    : eventoType == 'riego'
+                        ? HugeIcons.strokeRoundedPlant03
+                        : HugeIcons.strokeRoundedLink05);
                 isCadena = eventoType == 'cadena';
                 isRiego = eventoType == 'riego';
               } else {
@@ -790,7 +806,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.play_arrow,
+                              const Icon(HugeIcons.strokeRoundedPlay,
                                   color: Colors.orange, size: 20),
                               const SizedBox(width: 8),
                               Text(

@@ -5,6 +5,7 @@ import 'package:caldensmart/logger.dart';
 import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class ControlPorGrupoWidget extends StatefulWidget {
   final VoidCallback? onBackToMain;
@@ -260,7 +261,7 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
                   Opacity(
                     opacity: currentStep == 0 ? 1.0 : 0.0,
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back),
+                      icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
                       color: color0,
                       onPressed: currentStep == 0
                           ? () {
@@ -337,8 +338,8 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
                       padding: EdgeInsets.only(left: currentStep > 0 ? 8.0 : 0),
                       child: ElevatedButton.icon(
                         icon: Icon(currentStep == 1
-                            ? Icons.check
-                            : Icons.arrow_forward),
+                            ? HugeIcons.strokeRoundedTick02
+                            : HugeIcons.strokeRoundedArrowRight02),
                         label:
                             Text(currentStep == 1 ? 'Confirmar' : 'Continuar'),
                         onPressed:

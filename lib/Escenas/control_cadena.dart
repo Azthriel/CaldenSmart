@@ -8,6 +8,7 @@ import 'package:caldensmart/logger.dart';
 import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class ControlCadenaWidget extends StatefulWidget {
   final VoidCallback? onBackToMain;
@@ -99,7 +100,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                   Opacity(
                     opacity: currentStep == 0 ? 1.0 : 0.0,
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back),
+                      icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
                       color: color0,
                       onPressed: currentStep == 0
                           ? () {
@@ -188,7 +189,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                       child: Padding(
                         padding: const EdgeInsets.only(right: 8.0),
                         child: ElevatedButton.icon(
-                          icon: const Icon(Icons.add),
+                          icon: const Icon(HugeIcons.strokeRoundedPlusSign),
                           label: const Text('Agregar Paso'),
                           onPressed: _addNewStep,
                           style: ElevatedButton.styleFrom(
@@ -308,7 +309,8 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.schedule, color: color1, size: 20),
+                        const Icon(HugeIcons.strokeRoundedClock01,
+                            color: color1, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -443,7 +445,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.devices_other,
+                              const Icon(HugeIcons.strokeRoundedLaptopPhoneSync,
                                   color: color1, size: 20),
                               const SizedBox(width: 8),
                               Expanded(
@@ -664,7 +666,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       const Icon(
-                                        Icons.play_arrow,
+                                        HugeIcons.strokeRoundedPlay,
                                         color: color0,
                                         size: 16,
                                       ),
@@ -702,7 +704,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                                     child: const Padding(
                                       padding: EdgeInsets.all(6),
                                       child: Icon(
-                                        Icons.edit,
+                                        HugeIcons.strokeRoundedPen01,
                                         size: 16,
                                         color: color0,
                                       ),
@@ -729,7 +731,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                                     child: const Padding(
                                       padding: EdgeInsets.all(6),
                                       child: Icon(
-                                        Icons.delete,
+                                        HugeIcons.strokeRoundedDelete02,
                                         size: 16,
                                         color: Colors.white,
                                       ),
@@ -780,8 +782,8 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                                     ),
                                     child: Icon(
                                       stepDelay.inSeconds > 0
-                                          ? Icons.timer_outlined
-                                          : Icons.flash_on,
+                                          ? HugeIcons.strokeRoundedClock01
+                                          : HugeIcons.strokeRoundedFlash,
                                       size: 20,
                                       color: stepDelay.inSeconds > 0
                                           ? Colors.orange.shade700
@@ -899,8 +901,10 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                                         ),
                                         child: Icon(
                                           action
-                                              ? Icons.power_settings_new
-                                              : Icons.power_off,
+                                              ? HugeIcons
+                                                  .strokeRoundedPlugSocket
+                                              : HugeIcons
+                                                  .strokeRoundedPlugSocket,
                                           size: 16,
                                           color: actionColor,
                                         ),
@@ -1324,15 +1328,15 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
   IconData _getContinueIcon() {
     switch (currentStep) {
       case 0:
-        return Icons.arrow_forward;
+        return HugeIcons.strokeRoundedArrowRight02;
       case 1:
-        return Icons.arrow_forward;
+        return HugeIcons.strokeRoundedArrowRight02;
       case 2:
-        return Icons.arrow_forward;
+        return HugeIcons.strokeRoundedArrowRight02;
       case 3:
-        return Icons.check;
+        return HugeIcons.strokeRoundedTick02;
       default:
-        return Icons.arrow_forward;
+        return HugeIcons.strokeRoundedArrowRight02;
     }
   }
 

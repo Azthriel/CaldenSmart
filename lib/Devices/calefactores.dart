@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../Global/manager_screen.dart';
@@ -456,12 +456,12 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
     timeData();
 
     measure = pc == '022000_IOT' ? 'KW/h' : 'M³/h';
-    powerIconOn = pc == '022000_IOT'
-        ? Icons.flash_on_rounded
-        : HugeIcons.strokeRoundedFire;
-    powerIconOff = pc == '022000_IOT'
-        ? Icons.flash_off_rounded
-        : HugeIcons.strokeRoundedFire;
+    powerIconOn = (pc == '022000_IOT'
+        ? HugeIcons.strokeRoundedFlash
+        : HugeIcons.strokeRoundedFire);
+    powerIconOff = (pc == '022000_IOT'
+        ? HugeIcons.strokeRoundedFlashOff
+        : HugeIcons.strokeRoundedFire);
     hasSpark = globalDATA['$pc/$sn']?['hasSpark'] ?? false;
 
     _sparkAnimationController = AnimationController(
@@ -647,12 +647,12 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
       nameOfWifi = '';
 
       wifiNotifier.updateStatus(
-          'DESCONECTADO', Colors.red, Icons.signal_wifi_off);
+          'DESCONECTADO', Colors.red, HugeIcons.strokeRoundedWifiOff02);
 
       if (atemp) {
         setState(() {
           wifiNotifier.updateStatus(
-              'DESCONECTADO', Colors.red, Icons.warning_amber_rounded);
+              'DESCONECTADO', Colors.red, HugeIcons.strokeRoundedAlert02);
           werror = true;
           if (parts[1] == '202' || parts[1] == '15') {
             errorMessage = 'Contraseña incorrecta';
@@ -725,7 +725,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
     String data = '$pc[11]($fun)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
     globalDATA['$pc/$sn']!['w_status'] = on;
-    
+
     try {
       String topic = 'devices_rx/$pc/$sn';
       String topic2 = 'devices_tx/$pc/$sn';
@@ -944,9 +944,10 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                     child: turnOn
                         ? AnimatedIconWidget(
                             isHeating: trueStatus,
-                            icon: powerIconOn,
+                            icon: HugeIcons.strokeRoundedFlash,
                           )
-                        : Icon(powerIconOff, size: 80, color: Colors.white),
+                        : const Icon(HugeIcons.strokeRoundedFlashOff,
+                            size: 80, color: Colors.white),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -1036,20 +1037,10 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                                   ),
                                 ],
                               ),
-                              child: Icon(
-                                Icons.auto_awesome,
+                              child: const Icon(
+                                HugeIcons.strokeRoundedSparkles,
                                 size: 22,
                                 color: Colors.white,
-                                shadows: ignite
-                                    ? [
-                                        Shadow(
-                                          color: Colors.white
-                                              .withValues(alpha: 0.8),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 0),
-                                        ),
-                                      ]
-                                    : null,
                               ),
                             ),
                           ),
@@ -1115,7 +1106,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                     Column(
                       children: [
                         Icon(
-                          Icons.thermostat_rounded,
+                          HugeIcons.strokeRoundedTemperature,
                           size: MediaQuery.of(context).size.width * 0.5,
                           color: Color.lerp(
                             Colors.blueAccent,
@@ -1323,8 +1314,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                         ),
                         child: Icon(
                             distanceControlActive
-                                ? Icons.check_circle_outline_rounded
-                                : Icons.cancel_rounded,
+                                ? HugeIcons.strokeRoundedCheckmarkCircle02
+                                : HugeIcons.strokeRoundedCancelCircle,
                             size: 80,
                             color: Colors.white),
                       ),
@@ -1875,12 +1866,13 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                   ),
                 ),
                 const SizedBox(width: 3),
-                const Icon(Icons.edit, size: 20, color: color0)
+                const Icon(HugeIcons.strokeRoundedPen01,
+                    size: 20, color: color0)
               ],
             ),
           ),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new),
+            icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
             color: color0,
             onPressed: () {
               if (_isTutorialActive) return;
@@ -1897,11 +1889,11 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
           ),
           actions: [
             Icon(
-              key: keys['calefactores:servidor']!,
               globalDATA['$pc/$sn']?['cstate'] ?? false
-                  ? Icons.cloud
+                  ? HugeIcons.strokeRoundedCloud
                   : Icons.cloud_off,
               color: color0,
+              key: keys['calefactores:servidor']!,
             ),
             IconButton(
               key: keys['calefactores:wifi']!,
@@ -1938,11 +1930,16 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                       index: _selectedIndex,
                       height: 75.0,
                       items: const <Widget>[
-                        Icon(Icons.home, size: 30, color: color0),
-                        Icon(Icons.thermostat, size: 30, color: color0),
-                        Icon(Icons.location_on, size: 30, color: color0),
-                        Icon(Icons.calculate, size: 30, color: color0),
-                        Icon(Icons.settings, size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedHome07,
+                            size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedTemperature,
+                            size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedLocation06,
+                            size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedCalculate,
+                            size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedSettings02,
+                            size: 30, color: color0),
                       ],
                       color: color1,
                       buttonBackgroundColor: color1,
@@ -2011,7 +2008,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                 },
                 backgroundColor: color4,
                 shape: const CircleBorder(),
-                child: const Icon(Icons.help, size: 30, color: color0),
+                child: const Icon(HugeIcons.strokeRoundedHelpCircle,
+                    size: 30, color: color0),
               ),
             ),
           ),

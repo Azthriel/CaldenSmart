@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../master.dart';
 import 'stored_data.dart';
 import 'package:caldensmart/logger.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class ManagerScreen extends StatefulWidget {
   const ManagerScreen({
@@ -802,8 +802,8 @@ class ManagerScreenState extends State<ManagerScreen> {
               ),
               actions: [
                 IconButton(
-                  icon: const HugeIcon(
-                      icon: HugeIcons.strokeRoundedShare08, color: color0),
+                  icon:
+                      const Icon(HugeIcons.strokeRoundedShare08, color: color0),
                   onPressed: () {
                     _showDeviceQR();
                   },
@@ -1968,8 +1968,8 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                                       email);
                                                                 },
                                                                 icon:
-                                                                    const HugeIcon(
-                                                                  icon: HugeIcons
+                                                                    const Icon(
+                                                                  HugeIcons
                                                                       .strokeRoundedSettings01,
                                                                   color: color4,
                                                                 ))
@@ -2153,9 +2153,8 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                                       email);
                                                                 },
                                                                 icon:
-                                                                    const HugeIcon(
-                                                                  icon: HugeIcons
-                                                                      .strokeRoundedSettings01,
+                                                                    const Icon(
+                                                                  Icons.delete,
                                                                   color: color4,
                                                                 ))
                                                           ],
@@ -2872,6 +2871,30 @@ class ManagerScreenState extends State<ManagerScreen> {
                       color: color0,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () => launchWebURL(linksOfProducts(pc)),
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 1.5,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: color1,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'Visitar página web',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      textStyle: const TextStyle(
+                        color: color0,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),

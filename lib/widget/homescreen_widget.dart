@@ -1,4 +1,5 @@
 // import 'package:flutter/material.dart';
+// import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 // /// Esta clase define CÓMO se ve el widget en la pantalla de inicio.
 // /// Flutter le sacará una "foto" a esto.
@@ -59,8 +60,10 @@
 //                 children: [
 //                   Icon(
 //                     isControl
-//                         ? (isOn ? Icons.lightbulb : Icons.lightbulb_outline)
-//                         : Icons.thermostat,
+//                         ? (isOn
+//                             ? MdiIcons.lightbulb
+//                             : MdiIcons.lightbulbOutline)
+//                         : MdiIcons.thermostat,
 //                     size: 32,
 //                     color: iconColor,
 //                   ),

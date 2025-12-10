@@ -5,9 +5,9 @@ import 'package:caldensmart/logger.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:hugeicons/hugeicons.dart';
 import '/Global/scan.dart';
 import '/Global/wifi.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../master.dart';
 
@@ -21,7 +21,6 @@ class MenuPage extends StatefulWidget {
 class MenuPageState extends State<MenuPage> {
   PageController? _pageController;
   int _selectedIndex = 0;
-  int counter = 0;
   late Future<int> _initialPageFuture;
   bool _isLoading = true;
   static bool hasInitialized = false;
@@ -89,6 +88,23 @@ class MenuPageState extends State<MenuPage> {
         _isLoading = true;
       });
 
+      // Verificar conexión a internet antes de intentar cargar datos
+      bool hasInternet = await checkInternetConnection();
+
+      while (!hasInternet) {
+        if (!mounted) return;
+
+        // Mostrar diálogo de sin internet y esperar respuesta
+        bool retry = await showNoInternetDialog(context);
+
+        if (retry) {
+          hasInternet = true;
+        } else {
+          // El usuario presionó reintentar pero sigue sin internet
+          hasInternet = await checkInternetConnection();
+        }
+      }
+
       currentUserEmail = await getUserMail();
 
       _setupTokenManagement();
@@ -109,6 +125,20 @@ class MenuPageState extends State<MenuPage> {
       });
     } catch (e) {
       printLog.e('Error cargando datos iniciales: $e');
+
+      // Si hay error de conexión, mostrar el diálogo
+      if (mounted) {
+        bool hasInternet = await checkInternetConnection();
+        if (!hasInternet && mounted) {
+          bool retry = await showNoInternetDialog(context);
+          if (retry) {
+            // Reintentar la carga
+            await _loadInitialData();
+            return;
+          }
+        }
+      }
+
       setState(() {
         _isLoading = false;
       });
@@ -118,7 +148,6 @@ class MenuPageState extends State<MenuPage> {
   @override
   void dispose() {
     _pageController?.dispose();
-    counter = 0;
     super.dispose();
   }
 
@@ -224,52 +253,72 @@ class MenuPageState extends State<MenuPage> {
             ],
           ),
           bottomNavigationBar: SafeArea(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {},
-              child: SizedBox(
-                height: 60.0,
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(30.0),
-                    topRight: Radius.circular(30.0),
-                  ),
-                  child: BottomAppBar(
-                    color: color1,
-                    shape: const CircularNotchedRectangle(),
-                    notchMargin: 6.0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        const Spacer(flex: 1),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 1.0),
-                          child: IconButton(
-                            iconSize: _selectedIndex == 0 ? 35.0 : 30.0,
-                            icon: Icon(
-                              HugeIcons.strokeRoundedBluetoothSearch,
-                              color: _selectedIndex == 0 ? color3 : Colors.grey,
+            child: SizedBox(
+              height: 60.0,
+              child: Stack(
+                children: [
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {},
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(30.0),
+                        topRight: Radius.circular(30.0),
+                      ),
+                      child: BottomAppBar(
+                        color: color1,
+                        shape: const CircularNotchedRectangle(),
+                        notchMargin: 6.0,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: <Widget>[
+                            const Spacer(flex: 1),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 1.0),
+                              child: IconButton(
+                                iconSize: _selectedIndex == 0 ? 35.0 : 30.0,
+                                icon: Icon(
+                                  HugeIcons.strokeRoundedBluetoothSearch,
+                                  color: _selectedIndex == 0
+                                      ? color3
+                                      : Colors.grey,
+                                ),
+                                onPressed: () => _onItemTapped(0),
+                              ),
                             ),
-                            onPressed: () => _onItemTapped(0),
-                          ),
-                        ),
-                        const Spacer(flex: 6),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 1.0),
-                          child: IconButton(
-                            iconSize: _selectedIndex == 1 ? 35.0 : 30.0,
-                            icon: Icon(
-                              HugeIcons.strokeRoundedWifi02,
-                              color: _selectedIndex == 1 ? color3 : Colors.grey,
+                            const Spacer(flex: 6),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 1.0),
+                              child: IconButton(
+                                iconSize: _selectedIndex == 1 ? 35.0 : 30.0,
+                                icon: Icon(
+                                  HugeIcons.strokeRoundedWifi02,
+                                  color: _selectedIndex == 1
+                                      ? color3
+                                      : Colors.grey,
+                                ),
+                                onPressed: () => _onItemTapped(1),
+                              ),
                             ),
-                            onPressed: () => _onItemTapped(1),
-                          ),
+                            const Spacer(flex: 1),
+                          ],
                         ),
-                        const Spacer(flex: 1),
-                      ],
+                      ),
                     ),
                   ),
-                ),
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: PaintBottomAppBar(
+                          borderColor: Colors.red,
+                          width: 1.0,
+                          radius: 30.0,
+                          notchMargin: 6.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -277,15 +326,16 @@ class MenuPageState extends State<MenuPage> {
             padding: const EdgeInsets.only(bottom: 15.0),
             child: FloatingActionButton(
               onPressed: () {
-                if (counter < 10) {
-                  counter++;
-                } else {
-                  navigatorKey.currentState?.pushNamed('/eg');
-                }
+                launchWebURL('https://caldensmart.com');
               },
               backgroundColor: color1,
               elevation: 0,
-              shape: const CircleBorder(),
+              shape: const CircleBorder(
+                side: BorderSide(
+                  color: color2,
+                  width: 1.0,
+                ),
+              ),
               child: ClipOval(
                 child: Image.asset(
                   'assets/DragonForeground.png',

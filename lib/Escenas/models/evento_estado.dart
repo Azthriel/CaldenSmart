@@ -63,7 +63,7 @@ class EventoEstado {
   // Extrae los pasos completados del mensaje (fuente de verdad)
   // Formatos soportados:
   // - Cadena: "X pasos completados de Y"
-  // - Riego: "Ejecutando paso X de Y"
+  // - Riego: "Ejecutando paso X de Y" o "Regando - Paso X de Y"
   int get pasosCompletadosFromMensaje {
     if (mensaje.isEmpty) return 0;
     
@@ -74,11 +74,25 @@ class EventoEstado {
     if (isCancelled) return pasoActual;
     
     try {
-      // Formato Riego: "Ejecutando paso X de Y"
-      var match = RegExp(r'Ejecutando\s+paso\s+(\d+)\s+de\s+(\d+)').firstMatch(mensaje);
+      // Formato Riego: "Ejecutando paso X de Y" o "Riego reanudado - Ejecutando paso X de Y"
+      var match = RegExp(r'Ejecutando\s+paso\s+(\d+)\s+de\s+(\d+)', caseSensitive: false).firstMatch(mensaje);
       if (match != null && match.groupCount >= 1) {
         // En riego, si está ejecutando el paso X, el progreso es X (no X-1)
         // Porque está EN PROGRESO de ese paso
+        final pasoEnEjecucion = int.parse(match.group(1)!);
+        return pasoEnEjecucion;
+      }
+      
+      // Formato Riego alternativo: "Regando - Paso X de Y"
+      match = RegExp(r'Regando\s*-?\s*Paso\s+(\d+)\s+de\s+(\d+)', caseSensitive: false).firstMatch(mensaje);
+      if (match != null && match.groupCount >= 1) {
+        final pasoEnEjecucion = int.parse(match.group(1)!);
+        return pasoEnEjecucion;
+      }
+      
+      // Formato genérico: "Paso X de Y" (captura cualquier variante)
+      match = RegExp(r'[Pp]aso\s+(\d+)\s+de\s+(\d+)').firstMatch(mensaje);
+      if (match != null && match.groupCount >= 1) {
         final pasoEnEjecucion = int.parse(match.group(1)!);
         return pasoEnEjecucion;
       }

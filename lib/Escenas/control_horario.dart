@@ -5,6 +5,7 @@ import 'package:caldensmart/logger.dart';
 import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class ControlHorarioWidget extends StatefulWidget {
   final VoidCallback? onBackToMain;
@@ -156,10 +157,10 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
             child: ListTile(
               leading: Icon(
                 eventoType == 'grupo'
-                    ? Icons.group_work_outlined
+                    ? HugeIcons.strokeRoundedSmartPhone01
                     : eventoType == 'riego'
-                        ? Icons.grass
-                        : Icons.link,
+                        ? HugeIcons.strokeRoundedPlant03
+                        : HugeIcons.strokeRoundedLink05,
                 color: eventoType == 'grupo'
                     ? color4
                     : eventoType == 'riego'
@@ -469,7 +470,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
               final isOn = deviceActions[device] ?? false;
               String displayName = device;
               String deviceType = 'Dispositivo';
-              IconData iconData = Icons.devices_other;
+              IconData iconData = HugeIcons.strokeRoundedLaptopPhoneSync;
               bool isCadena = false;
               bool isRiego = false;
 
@@ -486,11 +487,11 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                     : eventoType == 'riego'
                         ? 'Riego'
                         : 'Cadena';
-                iconData = eventoType == 'grupo'
-                    ? Icons.group_work_outlined
+                iconData = (eventoType == 'grupo'
+                    ? HugeIcons.strokeRoundedSmartPhone01
                     : eventoType == 'riego'
-                        ? Icons.grass
-                        : Icons.link;
+                        ? HugeIcons.strokeRoundedPlant03
+                        : HugeIcons.strokeRoundedLink05);
                 isCadena = eventoType == 'cadena';
                 isRiego = eventoType == 'riego';
               } else {
@@ -544,7 +545,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                           child: Row(
                             children: [
                               const Icon(
-                                Icons.play_arrow,
+                                HugeIcons.strokeRoundedPlay,
                                 color: Colors.blue,
                                 size: 20,
                               ),
@@ -625,7 +626,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                   Opacity(
                     opacity: currentStep == 0 ? 1.0 : 0.0,
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back),
+                      icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
                       color: color0,
                       onPressed: currentStep == 0
                           ? () {
@@ -697,7 +698,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                       child: Padding(
                         padding: const EdgeInsets.only(right: 8.0),
                         child: ElevatedButton.icon(
-                          icon: const Icon(Icons.arrow_back),
+                          icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
                           label: const Text('Atrás'),
                           onPressed: () {
                             setState(() {
@@ -717,8 +718,8 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
                       padding: EdgeInsets.only(left: currentStep > 0 ? 8.0 : 0),
                       child: ElevatedButton.icon(
                         icon: Icon(currentStep < 3
-                            ? Icons.arrow_forward
-                            : Icons.check),
+                            ? HugeIcons.strokeRoundedArrowRight02
+                            : HugeIcons.strokeRoundedTick02),
                         label:
                             Text(currentStep < 3 ? 'Continuar' : 'Confirmar'),
                         onPressed: _canContinue() ? _handleContinue : null,

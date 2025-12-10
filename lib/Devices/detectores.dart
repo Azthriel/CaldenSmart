@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:caldensmart/Global/manager_screen.dart';
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
 import '../master.dart';
 import 'package:caldensmart/logger.dart';
 
@@ -321,12 +321,12 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
 
       nameOfWifi = '';
       wifiNotifier.updateStatus(
-          'DESCONECTADO', Colors.red, Icons.signal_wifi_off);
+          'DESCONECTADO', Colors.red, HugeIcons.strokeRoundedWifiOff02);
 
       if (atemp) {
         setState(() {
           wifiNotifier.updateStatus(
-              'DESCONECTADO', Colors.red, Icons.warning_amber_rounded);
+              'DESCONECTADO', Colors.red, HugeIcons.strokeRoundedAlert02);
           werror = true;
           if (parts[1] == '202' || parts[1] == '15') {
             errorMessage = 'Contraseña incorrecta';
@@ -506,8 +506,8 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                               },
                               child: Icon(
                                 _textToShow == 'PELIGRO'
-                                    ? Icons.warning_amber_rounded
-                                    : Icons.check_circle_rounded,
+                                    ? HugeIcons.strokeRoundedAlert02
+                                    : HugeIcons.strokeRoundedCheckmarkCircle02,
                                 key: ValueKey<String>(_textToShow),
                                 color: _textToShow == 'PELIGRO'
                                     ? Colors.red
@@ -582,8 +582,8 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                               },
                               child: Icon(
                                 onlineInCloud
-                                    ? Icons.wifi
-                                    : Icons.wifi_off_outlined,
+                                    ? HugeIcons.strokeRoundedWifi02
+                                    : HugeIcons.strokeRoundedWifiOff02,
                                 key: ValueKey<bool>(onlineInCloud),
                                 color: const Color(0xFF10BB96),
                                 size: 50,
@@ -647,7 +647,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                           child: Row(
                             children: [
                               const Icon(
-                                Icons.timer,
+                                HugeIcons.strokeRoundedClock01,
                                 color: Color(0xFF18B2C7),
                                 size: 50,
                               ),
@@ -991,7 +991,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     Icon(
-                                      Icons.trending_up,
+                                      HugeIcons.strokeRoundedTradeUp,
                                       color: Color(0xFF10BB96),
                                       size: 40,
                                     ),
@@ -1090,7 +1090,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     Icon(
-                                      Icons.trending_up,
+                                      HugeIcons.strokeRoundedTradeUp,
                                       color: Color(0xFF18B2C7),
                                       size: 40,
                                     ),
@@ -1213,7 +1213,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     Icon(
-                                      HugeIcons.strokeRoundedChartLineData03,
+                                      HugeIcons.strokeRoundedChart03,
                                       color: Color(0xFF10BB96),
                                       size: 40,
                                     ),
@@ -1312,7 +1312,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     Icon(
-                                      HugeIcons.strokeRoundedChartLineData03,
+                                      HugeIcons.strokeRoundedChart03,
                                       color: Color(0xFF18B2C7),
                                       size: 40,
                                     ),
@@ -1394,7 +1394,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Icon(
-                          Icons.lightbulb,
+                          HugeIcons.strokeRoundedBulb,
                           size: iconSize,
                           color: Colors.yellow
                               .withValues(alpha: (brightnessLevel + 20) / 120),
@@ -1574,12 +1574,13 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                   ),
                 ),
                 const SizedBox(width: 3),
-                const Icon(Icons.edit, size: 20, color: color0)
+                const Icon(HugeIcons.strokeRoundedPen01,
+                    size: 20, color: color0)
               ],
             ),
           ),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new),
+            icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
             color: color0,
             onPressed: () {
               if (_isTutorialActive) return;
@@ -1598,7 +1599,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
             Icon(
               key: keys['detectores:servidor']!,
               globalDATA['$pc/$sn']?['cstate'] ?? false
-                  ? Icons.cloud
+                  ? HugeIcons.strokeRoundedCloud
                   : Icons.cloud_off,
               color: color0,
             ),
@@ -1637,13 +1638,18 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                       index: _selectedIndex,
                       height: 75.0,
                       items: const <Widget>[
-                        Icon(Icons.eco, size: 30, color: color0),
-                        Icon(Icons.local_fire_department,
+                        Icon(HugeIcons.strokeRoundedLeaf01,
                             size: 30, color: color0),
-                        Icon(Icons.area_chart, size: 30, color: color0),
-                        Icon(Icons.bar_chart, size: 30, color: color0),
-                        Icon(Icons.lightbulb, size: 30, color: color0),
-                        Icon(Icons.settings, size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedFire,
+                            size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedChartIncrease,
+                            size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedChart01,
+                            size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedBulb,
+                            size: 30, color: color0),
+                        Icon(HugeIcons.strokeRoundedSettings02,
+                            size: 30, color: color0),
                       ],
                       color: color1,
                       buttonBackgroundColor: color1,
@@ -1712,7 +1718,8 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                 },
                 backgroundColor: color4,
                 shape: const CircleBorder(),
-                child: const Icon(Icons.help, size: 30, color: color0),
+                child: const Icon(HugeIcons.strokeRoundedHelpCircle,
+                    size: 30, color: color0),
               ),
             ),
           ),

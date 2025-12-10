@@ -5,9 +5,9 @@ import 'package:caldensmart/aws/mqtt/mqtt.dart';
 import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caldensmart/logger.dart';
+import 'package:hugeicons/hugeicons.dart';
 import '../Global/manager_screen.dart';
 
 class ModuloPage extends ConsumerStatefulWidget {
@@ -37,6 +37,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
   bool _isTutorialActive = false;
   bool isPinMode = false;
   late List<bool> _selectedPins;
+  bool _showPassword = false;
 
   TextEditingController emailController = TextEditingController();
   TextEditingController passController = TextEditingController();
@@ -433,8 +434,6 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
 
     globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({'io$index': message});
 
-    
-
     // Registrar uso si es administrador secundario
     String action = value ? 'Encendió salida $index' : 'Apagó salida $index';
     await registerAdminUsage(deviceName, action);
@@ -476,12 +475,12 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
 
       nameOfWifi = '';
       wifiNotifier.updateStatus(
-          'DESCONECTADO', Colors.red, Icons.signal_wifi_off);
+          'DESCONECTADO', Colors.red, HugeIcons.strokeRoundedWifiOff02);
 
       if (atemp) {
         setState(() {
           wifiNotifier.updateStatus(
-              'DESCONECTADO', Colors.red, Icons.warning_amber_rounded);
+              'DESCONECTADO', Colors.red, HugeIcons.strokeRoundedAlert02);
           werror = true;
           if (parts[1] == '202' || parts[1] == '15') {
             errorMessage = 'Contraseña incorrecta';
@@ -564,7 +563,6 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
       }
     }
 
-    
     setState(() {});
   }
 
@@ -726,7 +724,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                     ),
                                     IconButton(
                                       icon: const Icon(
-                                        Icons.edit,
+                                        HugeIcons.strokeRoundedPen01,
                                         size: 22,
                                         color: color0,
                                       ),
@@ -815,8 +813,8 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                             children: [
                               Icon(
                                 (estado[index] == '1')
-                                    ? Icons.check_circle
-                                    : Icons.cancel,
+                                    ? HugeIcons.strokeRoundedCheckmarkCircle02
+                                    : HugeIcons.strokeRoundedCancelCircle,
                                 color: (estado[index] == '1')
                                     ? Colors.green
                                     : Colors.red,
@@ -1009,7 +1007,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                   ),
                                 ),
                                 const Icon(
-                                  Icons.edit,
+                                  HugeIcons.strokeRoundedPen01,
                                   size: 22,
                                   color: color0,
                                 ),
@@ -1022,8 +1020,8 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                 Center(
                                   child: Icon(
                                     alertIO[index]
-                                        ? Icons.new_releases
-                                        : Icons.new_releases,
+                                        ? HugeIcons.strokeRoundedAlertCircle
+                                        : HugeIcons.strokeRoundedAlertCircle,
                                     color: alertIO[index]
                                         ? Colors.red
                                         : Colors.grey,
@@ -1058,11 +1056,13 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                       },
                                       icon: notificationMap['$pc/$sn']![index]
                                           ? const Icon(
-                                              Icons.notifications_off,
+                                              HugeIcons
+                                                  .strokeRoundedNotificationOff01,
                                               color: color4,
                                             )
                                           : const Icon(
-                                              Icons.notification_add_rounded,
+                                              HugeIcons
+                                                  .strokeRoundedNotification01,
                                               color: Colors.green,
                                             ),
                                     ),
@@ -1085,293 +1085,317 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
 
       //*- Página 2: Cambiar pines -*\\
 
-      Stack(
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20.0,
-              vertical: 30,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  key: keys['modulo:modoPines']!,
-                  'Cambio de Modo de Pines',
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
+      GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 30,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    key: keys['modulo:modoPines']!,
+                    'Cambio de Modo de Pines',
+                    style: GoogleFonts.poppins(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: color1,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 40),
+                  Card(
                     color: color1,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 40),
-                Card(
-                  color: color1,
-                  elevation: 8,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 500),
-                          child: isPasswordCorrect
-                              ? const Icon(
-                                  HugeIcons.strokeRoundedSquareUnlock02,
-                                  color: color0,
-                                  size: 40,
-                                  key: ValueKey('open_lock'),
-                                )
-                              : const Icon(
-                                  HugeIcons.strokeRoundedSquareLock02,
-                                  color: color0,
-                                  size: 40,
-                                  key: ValueKey('closed_lock'),
-                                ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'Ingresa la contraseña del módulo ubicada en el manual',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            color: color0,
-                            fontSize: 18,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        TextField(
-                          controller: modulePassController,
-                          style: const TextStyle(color: color0, fontSize: 16),
-                          cursorColor: color0,
-                          obscureText: true,
-                          onChanged: (value) {
-                            setState(() {
-                              isPasswordCorrect = value == '53494d45';
-                            });
-                          },
-                          decoration: InputDecoration(
-                            prefixIcon: Icon(
-                              Icons.key,
-                              color: color0.withValues(alpha: 0.7),
-                            ),
-                            hintText: "Contraseña",
-                            hintStyle: TextStyle(
-                              color: color0.withValues(alpha: 0.6),
-                            ),
-                            enabledBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(
-                                color: color0.withValues(alpha: 0.5),
-                              ),
-                            ),
-                            focusedBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(
-                                color: color0,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    elevation: 8,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 30),
-                if (isPasswordCorrect)
-                  FloatingActionButton.extended(
-                    onPressed: () {
-                      setState(() {
-                        isChangeModeVisible = !isChangeModeVisible;
-                      });
-                    },
-                    backgroundColor: color1,
-                    foregroundColor: color0,
-                    icon: const Icon(Icons.settings, color: color0),
-                    label: Text(
-                      'Cambiar modo de pines',
-                      style: GoogleFonts.poppins(
-                          fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                const SizedBox(height: 20),
-                if (isChangeModeVisible && isPasswordCorrect)
-                  Column(
-                    children: [
-                      for (var i = 0; i < parts.length; i++) ...[
-                        if (tipo[i] == 'Entrada') ...{
-                          Card(
-                            color: color1,
-                            elevation: 6,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16.0, vertical: 24.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    nicknamesMap['${deviceName}_${parts[i]}'] ??
-                                        '${tipo[i]} $i',
-                                    style: GoogleFonts.poppins(
-                                      color: color0,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 500),
+                            child: isPasswordCorrect
+                                ? const Icon(
+                                    Icons.lock_open,
+                                    color: color0,
+                                    size: 40,
+                                    key: ValueKey('open_lock'),
+                                  )
+                                : const Icon(
+                                    HugeIcons.strokeRoundedSquareLock01,
+                                    color: color0,
+                                    size: 40,
+                                    key: ValueKey('closed_lock'),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Puedes cambiar entre Normal Abierto (NA) y Normal Cerrado (NC). Selecciona una opción:',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 16,
-                                          color: color0,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      const SizedBox(height: 20),
-                                      Container(
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(30.0),
-                                          border: Border.all(
-                                            color: color0,
-                                            width: 2,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: GestureDetector(
-                                                onTap: () {
-                                                  setState(() {
-                                                    String data =
-                                                        '$pc[14]($i#0)';
-                                                    printLog.i(data);
-                                                    bluetoothManager.toolsUuid
-                                                        .write(data.codeUnits);
-                                                    common[i] = '0';
-                                                  });
-                                                },
-                                                child: Container(
-                                                  decoration: BoxDecoration(
-                                                    color: common[i] == '0'
-                                                        ? color0
-                                                        : Colors.transparent,
-                                                    borderRadius:
-                                                        const BorderRadius.only(
-                                                      topLeft:
-                                                          Radius.circular(28),
-                                                      bottomLeft:
-                                                          Radius.circular(28),
-                                                    ),
-                                                  ),
-                                                  child: Center(
-                                                    child: Text(
-                                                      'Normal Abierto',
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                        fontSize: 14,
-                                                        color: common[i] == '0'
-                                                            ? color1
-                                                            : color0,
-                                                      ),
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            Container(
-                                              width: 2,
-                                              color: color0,
-                                            ),
-                                            Expanded(
-                                              child: GestureDetector(
-                                                onTap: () {
-                                                  setState(() {
-                                                    String data =
-                                                        '$pc[14]($i#1)';
-                                                    printLog.i(data);
-                                                    bluetoothManager.toolsUuid
-                                                        .write(data.codeUnits);
-                                                    common[i] = '1';
-                                                  });
-                                                },
-                                                child: Container(
-                                                  decoration: BoxDecoration(
-                                                    color: common[i] == '1'
-                                                        ? color0
-                                                        : Colors.transparent,
-                                                    borderRadius:
-                                                        const BorderRadius.only(
-                                                      topRight:
-                                                          Radius.circular(28),
-                                                      bottomRight:
-                                                          Radius.circular(28),
-                                                    ),
-                                                  ),
-                                                  child: Center(
-                                                    child: Text(
-                                                      'Normal Cerrado',
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                        fontSize: 14,
-                                                        color: common[i] == '1'
-                                                            ? color1
-                                                            : color0,
-                                                      ),
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            'Ingresa la contraseña del módulo ubicada en el manual',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              color: color0,
+                              fontSize: 18,
                             ),
                           ),
                           const SizedBox(height: 20),
-                          if (i == parts.length - 1) ...{
-                            Padding(
-                              padding:
-                                  EdgeInsets.only(bottom: bottomBarHeight + 10),
+                          TextField(
+                            controller: modulePassController,
+                            style: const TextStyle(color: color0, fontSize: 16),
+                            cursorColor: color0,
+                            obscureText: !_showPassword,
+                            onChanged: (value) {
+                              setState(() {
+                                isPasswordCorrect = value == '53494d45';
+                              });
+                            },
+                            decoration: InputDecoration(
+                              prefixIcon: Icon(
+                                HugeIcons.strokeRoundedKey01,
+                                color: color0.withValues(alpha: 0.7),
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _showPassword
+                                      ? HugeIcons.strokeRoundedView
+                                      : HugeIcons.strokeRoundedViewOff,
+                                  color: color0.withValues(alpha: 0.7),
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _showPassword = !_showPassword;
+                                  });
+                                },
+                              ),
+                              hintText: "Contraseña",
+                              hintStyle: TextStyle(
+                                color: color0.withValues(alpha: 0.6),
+                              ),
+                              enabledBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: color0.withValues(alpha: 0.5),
+                                ),
+                              ),
+                              focusedBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: color0,
+                                ),
+                              ),
                             ),
-                          }
-                        },
-                      ],
-                    ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-              ],
-            ),
-          ),
-          if (!deviceOwner && owner != '')
-            Container(
-              color: Colors.black.withValues(alpha: 0.7),
-              child: const Center(
-                child: Text(
-                  'No tienes acceso a esta función',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
+                  const SizedBox(height: 30),
+                  if (isPasswordCorrect)
+                    FloatingActionButton.extended(
+                      onPressed: () {
+                        setState(() {
+                          isChangeModeVisible = !isChangeModeVisible;
+                        });
+                      },
+                      backgroundColor: color1,
+                      foregroundColor: color0,
+                      icon: const Icon(HugeIcons.strokeRoundedSettings02,
+                          color: color0),
+                      label: Text(
+                        'Cambiar modo de pines',
+                        style: GoogleFonts.poppins(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+                  if (isChangeModeVisible && isPasswordCorrect)
+                    Column(
+                      children: [
+                        for (var i = 0; i < parts.length; i++) ...[
+                          if (tipo[i] == 'Entrada') ...{
+                            Card(
+                              color: color1,
+                              elevation: 6,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0, vertical: 24.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      nicknamesMap[
+                                              '${deviceName}_${parts[i]}'] ??
+                                          '${tipo[i]} $i',
+                                      style: GoogleFonts.poppins(
+                                        color: color0,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Puedes cambiar entre Normal Abierto (NA) y Normal Cerrado (NC). Selecciona una opción:',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 16,
+                                            color: color0,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        const SizedBox(height: 20),
+                                        Container(
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(30.0),
+                                            border: Border.all(
+                                              color: color0,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: GestureDetector(
+                                                  onTap: () {
+                                                    setState(() {
+                                                      String data =
+                                                          '$pc[14]($i#0)';
+                                                      printLog.i(data);
+                                                      bluetoothManager.toolsUuid
+                                                          .write(
+                                                              data.codeUnits);
+                                                      common[i] = '0';
+                                                    });
+                                                  },
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      color: common[i] == '0'
+                                                          ? color0
+                                                          : Colors.transparent,
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .only(
+                                                        topLeft:
+                                                            Radius.circular(28),
+                                                        bottomLeft:
+                                                            Radius.circular(28),
+                                                      ),
+                                                    ),
+                                                    child: Center(
+                                                      child: Text(
+                                                        'Normal Abierto',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          fontSize: 14,
+                                                          color:
+                                                              common[i] == '0'
+                                                                  ? color1
+                                                                  : color0,
+                                                        ),
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              Container(
+                                                width: 2,
+                                                color: color0,
+                                              ),
+                                              Expanded(
+                                                child: GestureDetector(
+                                                  onTap: () {
+                                                    setState(() {
+                                                      String data =
+                                                          '$pc[14]($i#1)';
+                                                      printLog.i(data);
+                                                      bluetoothManager.toolsUuid
+                                                          .write(
+                                                              data.codeUnits);
+                                                      common[i] = '1';
+                                                    });
+                                                  },
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      color: common[i] == '1'
+                                                          ? color0
+                                                          : Colors.transparent,
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .only(
+                                                        topRight:
+                                                            Radius.circular(28),
+                                                        bottomRight:
+                                                            Radius.circular(28),
+                                                      ),
+                                                    ),
+                                                    child: Center(
+                                                      child: Text(
+                                                        'Normal Cerrado',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          fontSize: 14,
+                                                          color:
+                                                              common[i] == '1'
+                                                                  ? color1
+                                                                  : color0,
+                                                        ),
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            if (i == parts.length - 1) ...{
+                              Padding(
+                                padding: EdgeInsets.only(
+                                    bottom: bottomBarHeight + 10),
+                              ),
+                            }
+                          },
+                        ],
+                      ],
+                    ),
+                ],
               ),
             ),
-        ],
+            if (!deviceOwner && owner != '')
+              Container(
+                color: Colors.black.withValues(alpha: 0.7),
+                child: const Center(
+                  child: Text(
+                    'No tienes acceso a esta función',
+                    style: TextStyle(color: Colors.white, fontSize: 18),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
 
       //*- Página 3: Gestión del Equipo -*\\
@@ -1466,13 +1490,14 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                   ),
                 ),
                 const SizedBox(width: 3),
-                const Icon(Icons.edit, size: 20, color: color0)
+                const Icon(HugeIcons.strokeRoundedPen01,
+                    size: 20, color: color0)
               ],
             ),
           ),
           leading: IconButton(
             key: keys['modulo:estado']!,
-            icon: const Icon(Icons.arrow_back_ios_new),
+            icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
             color: color0,
             onPressed: () {
               if (_isTutorialActive) return;
@@ -1492,7 +1517,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
             Icon(
               key: keys['modulo:servidor']!,
               globalDATA['$pc/$sn']?['cstate'] ?? false
-                  ? Icons.cloud
+                  ? HugeIcons.strokeRoundedCloud
                   : Icons.cloud_off,
               color: color0,
             ),
@@ -1513,13 +1538,21 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
           ignoring: _isTutorialActive,
           child: Stack(
             children: [
-              PageView(
-                controller: _pageController,
-                physics: _isAnimating || _isTutorialActive
-                    ? const NeverScrollableScrollPhysics()
-                    : const BouncingScrollPhysics(),
-                onPageChanged: onItemChanged,
-                children: pages,
+              NotificationListener<ScrollNotification>(
+                onNotification: (scrollNotification) {
+                  if (scrollNotification is UserScrollNotification) {
+                    FocusScope.of(context).unfocus();
+                  }
+                  return false;
+                },
+                child: PageView(
+                  controller: _pageController,
+                  physics: _isAnimating || _isTutorialActive
+                      ? const NeverScrollableScrollPhysics()
+                      : const BouncingScrollPhysics(),
+                  onPageChanged: onItemChanged,
+                  children: pages,
+                ),
               ),
               Positioned(
                 left: 0,
@@ -1532,12 +1565,16 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                       index: _selectedIndex,
                       height: 75.0,
                       items: <Widget>[
-                        const Icon(Icons.home, size: 30, color: color0),
-                        const Icon(Icons.bluetooth, size: 30, color: color0),
+                        const Icon(HugeIcons.strokeRoundedHome07,
+                            size: 30, color: color0),
+                        const Icon(HugeIcons.strokeRoundedBluetooth,
+                            size: 30, color: color0),
                         if (hardwareVersion == '240422A') ...{
-                          const Icon(Icons.input, size: 30, color: color0),
+                          const Icon(HugeIcons.strokeRoundedShare01,
+                              size: 30, color: color0),
                         },
-                        const Icon(Icons.settings, size: 30, color: color0),
+                        const Icon(HugeIcons.strokeRoundedSettings02,
+                            size: 30, color: color0),
                       ],
                       color: color1,
                       buttonBackgroundColor: color1,
@@ -1606,7 +1643,8 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                 },
                 backgroundColor: color4,
                 shape: const CircleBorder(),
-                child: const Icon(Icons.help, size: 30, color: color0),
+                child: const Icon(HugeIcons.strokeRoundedHelpCircle,
+                    size: 30, color: color0),
               ),
             ),
           ),

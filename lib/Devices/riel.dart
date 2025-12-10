@@ -3,6 +3,7 @@ import 'package:caldensmart/aws/dynamo/dynamo.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
 import '../Global/manager_screen.dart';
 import '../master.dart';
 import 'package:caldensmart/logger.dart';
@@ -143,12 +144,12 @@ class RollerPageState extends ConsumerState<RollerPage> {
 
       nameOfWifi = '';
       wifiNotifier.updateStatus(
-          'DESCONECTADO', Colors.red, Icons.signal_wifi_off);
+          'DESCONECTADO', Colors.red, HugeIcons.strokeRoundedWifiOff02);
 
       if (atemp) {
         setState(() {
           wifiNotifier.updateStatus(
-              'DESCONECTADO', Colors.red, Icons.warning_amber_rounded);
+              'DESCONECTADO', Colors.red, HugeIcons.strokeRoundedAlert02);
           werror = true;
           if (parts[1] == '202' || parts[1] == '15') {
             errorMessage = 'Contraseña incorrecta';
@@ -368,7 +369,8 @@ class RollerPageState extends ConsumerState<RollerPage> {
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.arrow_upward, color: color0),
+                                Icon(HugeIcons.strokeRoundedArrowUp02,
+                                    color: color0),
                                 SizedBox(width: 8),
                                 Text(
                                   'Subir',
@@ -426,7 +428,8 @@ class RollerPageState extends ConsumerState<RollerPage> {
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.arrow_downward, color: color0),
+                                Icon(HugeIcons.strokeRoundedArrowDown02,
+                                    color: color0),
                                 SizedBox(width: 8),
                                 Text(
                                   'Bajar',
@@ -854,7 +857,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                 ),
                 const SizedBox(width: 3),
                 const Icon(
-                  Icons.edit,
+                  HugeIcons.strokeRoundedPen01,
                   size: 20,
                   color: color0,
                 )
@@ -862,7 +865,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
             ),
           ),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new),
+            icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
             color: color0,
             onPressed: () {
               showDisconnectDialog(context);
@@ -879,7 +882,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
           actions: [
             Icon(
               globalDATA['$pc/$sn']?['cstate'] ?? false
-                  ? Icons.cloud
+                  ? HugeIcons.strokeRoundedCloud
                   : Icons.cloud_off,
               color: color0,
             ),
@@ -911,9 +914,11 @@ class RollerPageState extends ConsumerState<RollerPage> {
                 index: _selectedIndex,
                 height: 75.0,
                 items: const <Widget>[
-                  Icon(Icons.home, size: 30, color: color0),
-                  Icon(Icons.bluetooth, size: 30, color: color0),
-                  Icon(Icons.settings, size: 30, color: color0),
+                  Icon(HugeIcons.strokeRoundedHome07, size: 30, color: color0),
+                  Icon(HugeIcons.strokeRoundedBluetooth,
+                      size: 30, color: color0),
+                  Icon(HugeIcons.strokeRoundedSettings02,
+                      size: 30, color: color0),
                 ],
                 color: color1,
                 buttonBackgroundColor: color1,

@@ -66,9 +66,9 @@ Widget buildRegisterForm(WelcomePageState state) {
                             );
                           },
                           child: state.obscurePassword
-                              ? const Icon(Icons.visibility_off,
+                              ? const Icon(HugeIcons.strokeRoundedViewOff,
                                   key: ValueKey('icon1'), color: color1)
-                              : const Icon(Icons.visibility,
+                              : const Icon(HugeIcons.strokeRoundedView,
                                   key: ValueKey('icon2'), color: color1),
                         ),
                       ),
@@ -112,9 +112,9 @@ Widget buildRegisterForm(WelcomePageState state) {
                             );
                           },
                           child: state.obscurePassword
-                              ? const Icon(Icons.visibility_off,
+                              ? const Icon(HugeIcons.strokeRoundedViewOff,
                                   key: ValueKey('icon1'), color: color1)
-                              : const Icon(Icons.visibility,
+                              : const Icon(HugeIcons.strokeRoundedView,
                                   key: ValueKey('icon2'), color: color1),
                         ),
                       ),

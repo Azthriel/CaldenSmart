@@ -40,7 +40,7 @@ class QRScannerScreenState extends State<QRScannerScreen> {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
+          icon: const Icon(HugeIcons.strokeRoundedArrowLeft02),
           color: color0,
           onPressed: () {
             Navigator.of(context).pop();
@@ -80,8 +80,8 @@ class QRScannerScreenState extends State<QRScannerScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const HugeIcon(
-                      icon: HugeIcons.strokeRoundedQrCode01,
+                    const Icon(
+                      HugeIcons.strokeRoundedQrCode,
                       color: color0,
                       size: 40,
                     ),
@@ -107,8 +107,8 @@ class QRScannerScreenState extends State<QRScannerScreen> {
                     const SizedBox(height: 15),
                     ElevatedButton.icon(
                       onPressed: () => _pickImageFromGallery(),
-                      icon: const HugeIcon(
-                        icon: HugeIcons.strokeRoundedImage01,
+                      icon: const Icon(
+                        HugeIcons.strokeRoundedImage02,
                         color: color1,
                         size: 20,
                       ),
@@ -173,8 +173,8 @@ class QRScannerScreenState extends State<QRScannerScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const HugeIcon(
-                icon: HugeIcons.strokeRoundedSmartPhone01,
+              const Icon(
+                HugeIcons.strokeRoundedSmartPhone01,
                 color: color0,
                 size: 60,
               ),
@@ -297,8 +297,8 @@ class QRScannerScreenState extends State<QRScannerScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const HugeIcon(
-                icon: HugeIcons.strokeRoundedCheckmarkCircle02,
+              const Icon(
+                HugeIcons.strokeRoundedCheckmarkCircle02,
                 color: Colors.green,
                 size: 60,
               ),
@@ -369,8 +369,8 @@ class QRScannerScreenState extends State<QRScannerScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const HugeIcon(
-                icon: HugeIcons.strokeRoundedAlert02,
+              const Icon(
+                HugeIcons.strokeRoundedAlert02,
                 color: Colors.red,
                 size: 60,
               ),

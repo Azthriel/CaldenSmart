@@ -6,7 +6,7 @@ import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hugeicons/hugeicons.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../master.dart';
 import '../aws/mqtt/mqtt.dart';
 import 'package:caldensmart/logger.dart';
@@ -31,6 +31,7 @@ class ScanPageState extends State<ScanPage>
   Timer? _updateTimer;
   bool _needsUpdate = false;
   Timer? _cleanupTimer;
+  String? _connectingDeviceId;
 
   int connectionTry = 0;
   final TextEditingController searchController = TextEditingController();
@@ -82,20 +83,17 @@ class ScanPageState extends State<ScanPage>
 
   Icon _signalIcon(int rssi, {bool isLost = false}) {
     if (isLost) {
-      return const Icon(HugeIcons.strokeRoundedSignalNo02,
-          color: Colors.white, size: 24);
+      return Icon(MdiIcons.signalCellular3, color: Colors.white, size: 24);
     }
     if (rssi >= -60) {
       // Mejor señal: FullSignalIconPlus
-      return const Icon(HugeIcons.strokeRoundedSignalFull02,
-          color: Colors.white, size: 24);
+      return Icon(MdiIcons.signalCellular2, color: Colors.white, size: 24);
     } else if (rssi >= -75) {
       // Señal media: MediumSignalIcon
-      return const Icon(HugeIcons.strokeRoundedSignalMedium02,
-          color: Colors.white, size: 24);
+      return Icon(MdiIcons.signalCellular1, color: Colors.white, size: 24);
     } else {
       // Señal baja: LowSignalIcon
-      return const Icon(HugeIcons.strokeRoundedSignalLow02,
+      return Icon(MdiIcons.signalCellularOutline,
           color: Colors.white, size: 24);
     }
   }
@@ -145,7 +143,7 @@ class ScanPageState extends State<ScanPage>
         hasChanges = true;
       }
 
-      lastSeenDevices[result.device.remoteId.toString()] = DateTime.now();
+      lastSeenDevices[result.device.remoteId.toString()] = result.timeStamp;
     }
 
     // Solo actualizar UI si hay cambios y usando debouncing
@@ -180,7 +178,7 @@ class ScanPageState extends State<ScanPage>
       String deviceId = device.remoteId.toString();
 
       if (lastSeen != null &&
-          now.difference(lastSeen).inSeconds > 8 &&
+          now.difference(lastSeen).inSeconds > 12 &&
           !lostDevices.contains(deviceId)) {
         devicesToMarkAsLost.add(deviceId);
         printLog.i('Marcando como perdido: ${device.platformName}');
@@ -197,6 +195,13 @@ class ScanPageState extends State<ScanPage>
   }
 
   void connectToDevice(BluetoothDevice device) async {
+    if (isConnecting) return;
+
+    setState(() {
+      isConnecting = true;
+      _connectingDeviceId = device.remoteId.toString();
+    });
+
     try {
       printLog.i('Marca de tiempo ${DateTime.now().toIso8601String()}');
       await device.connect(timeout: const Duration(seconds: 6));
@@ -228,6 +233,13 @@ class ScanPageState extends State<ScanPage>
                       navigatorKey.currentState
                           ?.pushReplacementNamed('/loading');
                     } else {
+                      if (mounted) {
+                        setState(() {
+                          isConnecting = false;
+                          _connectingDeviceId = null;
+                          connectionFlag = false;
+                        });
+                      }
                       connectionFlag = false;
                       printLog.i('Fallo en el setup');
                       showToast('Error en el dispositivo, intente nuevamente');
@@ -246,6 +258,12 @@ class ScanPageState extends State<ScanPage>
       });
       device.cancelWhenDisconnected(conenctionSub, delayed: true);
     } catch (e, stackTrace) {
+      if (mounted) {
+        setState(() {
+          isConnecting = false;
+          _connectingDeviceId = null;
+        });
+      }
       if (connectionTry < 3) {
         printLog.e('Retry');
         connectionTry++;
@@ -426,14 +444,12 @@ class ScanPageState extends State<ScanPage>
             globalDATA
                 .putIfAbsent('$productCode/$serialNumber', () => {})
                 .addAll({'io${pinQuickAccess[device.platformName]!}': message});
-
-            
           } else {
             int fun = newValue ? 1 : 0;
             String data = '$productCode[11]($fun)';
             bluetoothManager.toolsUuid.write(data.codeUnits);
             globalDATA['$productCode/$serialNumber']!['w_status'] = newValue;
-            
+
             try {
               String topic = 'devices_rx/$productCode/$serialNumber';
               String topic2 = 'devices_tx/$productCode/$serialNumber';
@@ -501,17 +517,17 @@ class ScanPageState extends State<ScanPage>
               rtl: false,
               autoFocus: true,
               helpText: "",
-              suffixIcon: const Icon(
-                Icons.clear,
+              suffixIcon: Icon(
+                MdiIcons.close,
                 color: color1,
               ),
               prefixIcon: toggle == 1
-                  ? const Icon(
-                      Icons.arrow_back_ios,
+                  ? Icon(
+                      MdiIcons.arrowLeft,
                       color: color1,
                     )
-                  : const Icon(
-                      Icons.search,
+                  : Icon(
+                      MdiIcons.magnify,
                       color: color1,
                     ),
               animationDurationInMilli: 400,
@@ -532,7 +548,7 @@ class ScanPageState extends State<ScanPage>
           ),
           actions: [
             IconButton(
-              icon: const Icon(HugeIcons.strokeRoundedUserCircle, size: 40.0),
+              icon: Icon(MdiIcons.accountCircleOutline, size: 40.0),
               color: color0,
               onPressed: () {
                 navigatorKey.currentState?.pushNamed('/profile');
@@ -565,8 +581,8 @@ class ScanPageState extends State<ScanPage>
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
-                              HugeIcons.strokeRoundedSearchRemove,
+                            Icon(
+                              MdiIcons.magnifyClose,
                               size: 80,
                               color: color1,
                             ),
@@ -599,16 +615,16 @@ class ScanPageState extends State<ScanPage>
                                 border: Border.all(
                                     color: color1.withValues(alpha: 0.3)),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    HugeIcons.strokeRoundedSwipeDown01,
+                                    MdiIcons.gestureSwipe,
                                     size: 24,
                                     color: color1,
                                   ),
-                                  SizedBox(width: 8),
-                                  Flexible(
+                                  const SizedBox(width: 8),
+                                  const Flexible(
                                     child: Text(
                                       'Desliza hacia abajo para escanear de nuevo',
                                       style: TextStyle(
@@ -632,22 +648,22 @@ class ScanPageState extends State<ScanPage>
                                 border: Border.all(
                                     color: color1.withValues(alpha: 0.2)),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    HugeIcons.strokeRoundedWifi01,
+                                    MdiIcons.wifi,
                                     size: 24,
                                     color: color1,
                                   ),
-                                  SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                                   Icon(
-                                    HugeIcons.strokeRoundedSwipeRight01,
+                                    MdiIcons.gestureSwipeRight,
                                     size: 20,
                                     color: color1,
                                   ),
-                                  SizedBox(width: 8),
-                                  Flexible(
+                                  const SizedBox(width: 8),
+                                  const Flexible(
                                     child: Text(
                                       'Desliza hacia la derecha para ir al menú WiFi',
                                       style: TextStyle(
@@ -728,6 +744,9 @@ class ScanPageState extends State<ScanPage>
                                   ?['w_status'] ??
                               false);
 
+                      bool isThisDeviceLoading =
+                          _connectingDeviceId == device.remoteId.toString();
+
                       return FadeTransition(
                         opacity: _animationController
                             .drive(CurveTween(curve: Curves.easeOut)),
@@ -735,7 +754,7 @@ class ScanPageState extends State<ScanPage>
                           scale: _animationController
                               .drive(CurveTween(curve: Curves.easeOut)),
                           child: GestureDetector(
-                            onTapDown: isLost
+                            onTapDown: (isLost || isConnecting)
                                 ? null
                                 : (_) {
                                     setState(() {
@@ -743,12 +762,12 @@ class ScanPageState extends State<ScanPage>
                                           device.remoteId.toString();
                                     });
                                   },
-                            onTap: isLost
-                                ? () {
-                                    showToast(
-                                      'Dispositivo fuera de alcance, no se puede conectar',
-                                    );
-                                  }
+                            onTap: (isLost || isConnecting)
+                                ? (isLost
+                                    ? () => showToast(
+                                        'Dispositivo fuera de alcance...')
+                                    : () => showToast(
+                                        'Actualmente estas intentando conectarte a un equipo'))
                                 : () {
                                     setState(() {
                                       _touchedDeviceId =
@@ -757,16 +776,18 @@ class ScanPageState extends State<ScanPage>
 
                                     Future.delayed(
                                         const Duration(milliseconds: 200), () {
-                                      setState(() {
-                                        _touchedDeviceId = null;
-                                      });
+                                      if (mounted) {
+                                        setState(() {
+                                          _touchedDeviceId = null;
+                                        });
+                                      }
                                     });
 
                                     showToast(
                                         'Intentando conectarse al equipo');
                                     connectToDevice(device);
                                   },
-                            onTapUp: isLost
+                            onTapUp: (isLost || isConnecting)
                                 ? null
                                 : (_) {
                                     Future.delayed(
@@ -776,7 +797,7 @@ class ScanPageState extends State<ScanPage>
                                       });
                                     });
                                   },
-                            onTapCancel: isLost
+                            onTapCancel: (isLost || isConnecting)
                                 ? null
                                 : () {
                                     setState(() {
@@ -914,9 +935,8 @@ class ScanPageState extends State<ScanPage>
                                                   mainAxisSize:
                                                       MainAxisSize.min,
                                                   children: [
-                                                    const Icon(
-                                                      HugeIcons
-                                                          .strokeRoundedBluetooth,
+                                                    Icon(
+                                                      MdiIcons.bluetooth,
                                                       size: 20,
                                                       color: Colors.white,
                                                     ),
@@ -952,6 +972,21 @@ class ScanPageState extends State<ScanPage>
                                                       height: 36,
                                                     ),
                                             ),
+                                            if (isThisDeviceLoading) ...{
+                                              Positioned.fill(
+                                                child: Container(
+                                                  color: Colors.black
+                                                      .withValues(alpha: 0.4),
+                                                  child: Center(
+                                                    child: Image.asset(
+                                                      'assets/branch/dragon.gif',
+                                                      width: 150,
+                                                      height: 150,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            }
                                           ],
                                         ),
                                       ),
