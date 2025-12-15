@@ -726,20 +726,28 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                 ],
                               ),
                               child: AnimatedCrossFade(
-                                firstChild: Icon(
-                                  isNC
-                                      ? Icons.lock_open
-                                      : HugeIcons.strokeRoundedSquareLock01,
-                                  size: 80,
-                                  color: Colors.white,
-                                ),
-                                secondChild: Icon(
-                                  isNC
-                                      ? HugeIcons.strokeRoundedSquareLock01
-                                      : Icons.lock_open,
-                                  size: 80,
-                                  color: Colors.white,
-                                ),
+                                firstChild: isNC
+                                    ? const ImageIcon(
+                                        AssetImage(CaldenIcons.unLock),
+                                        color: color0,
+                                        size: 80,
+                                      )
+                                    : const Icon(
+                                        HugeIcons.strokeRoundedSquareLock01,
+                                        size: 80,
+                                        color: Colors.white,
+                                      ),
+                                secondChild: isNC
+                                    ? const Icon(
+                                        HugeIcons.strokeRoundedSquareLock01,
+                                        color: color0,
+                                        size: 80,
+                                      )
+                                    : const ImageIcon(
+                                        AssetImage(CaldenIcons.unLock),
+                                        color: color0,
+                                        size: 80,
+                                      ),
                                 crossFadeState: turnOn
                                     ? CrossFadeState.showFirst
                                     : CrossFadeState.showSecond,
@@ -1261,8 +1269,8 @@ class RelayPageState extends ConsumerState<RelayPage> {
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 500),
                             child: isPasswordCorrect
-                                ? const Icon(
-                                    Icons.lock_open,
+                                ? const ImageIcon(
+                                    AssetImage(CaldenIcons.unLock),
                                     color: color0,
                                     size: 40,
                                     key: ValueKey('open_lock'),
@@ -1610,13 +1618,19 @@ class RelayPageState extends ConsumerState<RelayPage> {
             },
           ),
           actions: [
-            Icon(
-              key: keys['rele:servidor']!,
-              globalDATA['$pc/$sn']?['cstate'] ?? false
-                  ? HugeIcons.strokeRoundedCloud
-                  : Icons.cloud_off,
-              color: color0,
-            ),
+            globalDATA['$pc/$sn']?['cstate'] ?? false
+                ? ImageIcon(
+                    const AssetImage(CaldenIcons.cloud),
+                    color: color0,
+                    size: 35,
+                    key: keys['rele:servidor']!,
+                  )
+                : ImageIcon(
+                    const AssetImage(CaldenIcons.cloudOff),
+                    color: color0,
+                    size: 25,
+                    key: keys['rele:servidor']!,
+                  ),
             IconButton(
               key: keys['rele:wifi']!,
               icon: Icon(wifiState.wifiIcon, color: color0),

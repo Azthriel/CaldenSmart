@@ -875,12 +875,17 @@ class RollerPageState extends ConsumerState<RollerPage> {
             },
           ),
           actions: [
-            Icon(
-              globalDATA['$pc/$sn']?['cstate'] ?? false
-                  ? HugeIcons.strokeRoundedCloud
-                  : Icons.cloud_off,
-              color: color0,
-            ),
+                        globalDATA['$pc/$sn']?['cstate'] ?? false
+                ? const ImageIcon(
+                    AssetImage(CaldenIcons.cloud),
+                    size: 35,
+                    color: color0,
+                  )
+                : const ImageIcon(
+                    AssetImage(CaldenIcons.cloudOff),
+                    size: 25,
+                    color: color0,
+                  ),
             IconButton(
               icon: Icon(wifiState.wifiIcon, color: color0),
               onPressed: () {

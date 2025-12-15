@@ -1365,13 +1365,23 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           fontSize: 15,
                                         ),
                                       ),
-                                      Icon(
-                                        online
-                                            ? HugeIcons.strokeRoundedCloud
-                                            : Icons.cloud_off,
-                                        color: online ? Colors.green : color3,
-                                        size: 15,
-                                      ),
+                                      online
+                                          ? ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloud),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 25,
+                                            )
+                                          : ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloudOff),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 15,
+                                            ),
                                     ],
                                   ),
                                   if (online && networkUnstable) ...[
@@ -1544,13 +1554,23 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           fontSize: 15,
                                         ),
                                       ),
-                                      Icon(
-                                        online
-                                            ? HugeIcons.strokeRoundedCloud
-                                            : Icons.cloud_off,
-                                        color: online ? Colors.green : color3,
-                                        size: 15,
-                                      ),
+                                      online
+                                          ? ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloud),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 25,
+                                            )
+                                          : ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloudOff),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 15,
+                                            ),
                                     ],
                                   ),
                                   if (online && networkUnstable) ...[
@@ -1771,13 +1791,23 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           fontSize: 15,
                                         ),
                                       ),
-                                      Icon(
-                                        online
-                                            ? HugeIcons.strokeRoundedCloud
-                                            : Icons.cloud_off,
-                                        color: online ? Colors.green : color3,
-                                        size: 15,
-                                      ),
+                                      online
+                                          ? ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloud),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 25,
+                                            )
+                                          : ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloudOff),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 15,
+                                            ),
                                     ],
                                   ),
                                   if (online && networkUnstable) ...[
@@ -2013,13 +2043,23 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           fontSize: 15,
                                         ),
                                       ),
-                                      Icon(
-                                        online
-                                            ? HugeIcons.strokeRoundedCloud
-                                            : Icons.cloud_off,
-                                        color: online ? Colors.green : color3,
-                                        size: 15,
-                                      ),
+                                      online
+                                          ? ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloud),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 25,
+                                            )
+                                          : ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloudOff),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 15,
+                                            ),
                                     ],
                                   ),
                                   if (online && networkUnstable) ...[
@@ -2440,13 +2480,23 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           fontSize: 15,
                                         ),
                                       ),
-                                      Icon(
-                                        online
-                                            ? HugeIcons.strokeRoundedCloud
-                                            : Icons.cloud_off,
-                                        color: online ? Colors.green : color3,
-                                        size: 15,
-                                      ),
+                                      online
+                                          ? ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloud),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 25,
+                                            )
+                                          : ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloudOff),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 15,
+                                            ),
                                     ],
                                   ),
                                   if (online && networkUnstable) ...[
@@ -3012,13 +3062,23 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           fontSize: 15,
                                         ),
                                       ),
-                                      Icon(
-                                        online
-                                            ? HugeIcons.strokeRoundedCloud
-                                            : Icons.cloud_off,
-                                        color: online ? Colors.green : color3,
-                                        size: 15,
-                                      ),
+                                      online
+                                          ? ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloud),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 25,
+                                            )
+                                          : ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloudOff),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 15,
+                                            ),
                                     ],
                                   ),
                                   if (online && networkUnstable) ...[
@@ -3249,13 +3309,23 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           fontSize: 15,
                                         ),
                                       ),
-                                      Icon(
-                                        online
-                                            ? HugeIcons.strokeRoundedCloud
-                                            : Icons.cloud_off,
-                                        color: online ? Colors.green : color3,
-                                        size: 15,
-                                      ),
+                                      online
+                                          ? ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloud),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 25,
+                                            )
+                                          : ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloudOff),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 15,
+                                            ),
                                     ],
                                   ),
                                   if (online && networkUnstable) ...[
@@ -3662,13 +3732,23 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           fontSize: 15,
                                         ),
                                       ),
-                                      Icon(
-                                        online
-                                            ? HugeIcons.strokeRoundedCloud
-                                            : Icons.cloud_off,
-                                        color: online ? Colors.green : color3,
-                                        size: 15,
-                                      ),
+                                      online
+                                          ? ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloud),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 25,
+                                            )
+                                          : ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloudOff),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 15,
+                                            ),
                                     ],
                                   ),
                                   if (online && networkUnstable) ...[
@@ -3893,13 +3973,23 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           fontSize: 15,
                                         ),
                                       ),
-                                      Icon(
-                                        online
-                                            ? HugeIcons.strokeRoundedCloud
-                                            : Icons.cloud_off,
-                                        color: online ? Colors.green : color3,
-                                        size: 15,
-                                      ),
+                                      online
+                                          ? ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloud),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 25,
+                                            )
+                                          : ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloudOff),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 15,
+                                            ),
                                     ],
                                   ),
                                   if (online && networkUnstable) ...[
@@ -4125,13 +4215,23 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           fontSize: 15,
                                         ),
                                       ),
-                                      Icon(
-                                        online
-                                            ? HugeIcons.strokeRoundedCloud
-                                            : Icons.cloud_off,
-                                        color: online ? Colors.green : color3,
-                                        size: 15,
-                                      ),
+                                      online
+                                          ? ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloud),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 25,
+                                            )
+                                          : ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloudOff),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 15,
+                                            ),
                                     ],
                                   ),
                                   if (online && networkUnstable) ...[
@@ -4350,13 +4450,23 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           fontSize: 15,
                                         ),
                                       ),
-                                      Icon(
-                                        online
-                                            ? HugeIcons.strokeRoundedCloud
-                                            : Icons.cloud_off,
-                                        color: online ? Colors.green : color3,
-                                        size: 15,
-                                      ),
+                                      online
+                                          ? ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloud),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 25,
+                                            )
+                                          : ImageIcon(
+                                              const AssetImage(
+                                                  CaldenIcons.cloudOff),
+                                              color: online
+                                                  ? Colors.green
+                                                  : color3,
+                                              size: 15,
+                                            ),
                                     ],
                                   ),
                                   if (online && networkUnstable) ...[
@@ -6319,7 +6429,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                   eventosCreados);
                                               printLog.d(grupo,
                                                   color: 'naranja');
-                                              deleteEventoControlPorGrupos(
+                                              deleteEventoControlPorClima(
                                                   currentUserEmail, grupo);
                                               todosLosDispositivos.removeWhere(
                                                   (entry) =>
@@ -7838,13 +7948,17 @@ class WifiPageState extends ConsumerState<WifiPage>
                               fontSize: 15,
                             ),
                           ),
-                          Icon(
-                            online
-                                ? HugeIcons.strokeRoundedCloud
-                                : Icons.cloud_off,
-                            color: online ? Colors.green : color3,
-                            size: 15,
-                          ),
+                          online
+                              ? ImageIcon(
+                                  const AssetImage(CaldenIcons.cloud),
+                                  color: online ? Colors.green : color3,
+                                  size: 25,
+                                )
+                              : ImageIcon(
+                                  const AssetImage(CaldenIcons.cloudOff),
+                                  color: online ? Colors.green : color3,
+                                  size: 15,
+                                ),
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 2),
@@ -8094,13 +8208,17 @@ class WifiPageState extends ConsumerState<WifiPage>
           children: [
             Row(
               children: [
-                Icon(
-                  isExtensionOnline
-                      ? HugeIcons.strokeRoundedCloud
-                      : Icons.cloud_off,
-                  color: isExtensionOnline ? Colors.green : Colors.red,
-                  size: 20,
-                ),
+                isExtensionOnline
+                    ? ImageIcon(
+                        const AssetImage(CaldenIcons.cloud),
+                        color: isExtensionOnline ? Colors.green : Colors.red,
+                        size: 25,
+                      )
+                    : ImageIcon(
+                        const AssetImage(CaldenIcons.cloudOff),
+                        color: isExtensionOnline ? Colors.green : Colors.red,
+                        size: 20,
+                      ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(

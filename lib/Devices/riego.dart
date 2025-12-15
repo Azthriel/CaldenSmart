@@ -1151,14 +1151,19 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
             },
           ),
           actions: [
-            Icon(
-              globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
-                          ?['cstate'] ??
-                      false
-                  ? HugeIcons.strokeRoundedCloud
-                  : Icons.cloud_off,
-              color: color0,
-            ),
+            globalDATA['${DeviceManager.getProductCode(deviceName)}/${DeviceManager.extractSerialNumber(deviceName)}']
+                        ?['cstate'] ??
+                    false
+                ? const ImageIcon(
+                    AssetImage(CaldenIcons.cloud),
+                    color: color0,
+                    size: 35,
+                  )
+                : const ImageIcon(
+                    AssetImage(CaldenIcons.cloudOff),
+                    color: color0,
+                    size: 25,
+                  ),
             IconButton(
               icon: Icon(wifiState.wifiIcon, color: color0),
               onPressed: () {
@@ -1776,15 +1781,23 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
-                                        Icon(
-                                          isExtensionConnected
-                                              ? HugeIcons.strokeRoundedCloud
-                                              : Icons.cloud_off,
-                                          color: isExtensionConnected
-                                              ? Colors.green
-                                              : Colors.red,
-                                          size: 20,
-                                        ),
+                                        isExtensionConnected
+                                            ? ImageIcon(
+                                                const AssetImage(
+                                                    CaldenIcons.cloud),
+                                                color: isExtensionConnected
+                                                    ? Colors.green
+                                                    : Colors.red,
+                                                size: 30,
+                                              )
+                                            : ImageIcon(
+                                                const AssetImage(
+                                                    CaldenIcons.cloudOff),
+                                                color: isExtensionConnected
+                                                    ? Colors.green
+                                                    : Colors.red,
+                                                size: 20,
+                                              ),
                                         const SizedBox(width: 8),
                                         Flexible(
                                           child: Text(
@@ -3857,13 +3870,19 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
             },
           ),
           actions: [
-            Icon(
-              key: keys['riego:servidor']!,
-              globalDATA['$pc/$sn']?['cstate'] ?? false
-                  ? HugeIcons.strokeRoundedCloud
-                  : Icons.cloud_off,
-              color: color0,
-            ),
+            globalDATA['$pc/$sn']?['cstate'] ?? false
+                ? ImageIcon(
+                    const AssetImage(CaldenIcons.cloud),
+                    color: color0,
+                    size: 35,
+                    key: keys['riego:servidor']!,
+                  )
+                : ImageIcon(
+                    const AssetImage(CaldenIcons.cloudOff),
+                    color: color0,
+                    size: 25,
+                    key: keys['riego:servidor']!,
+                  ),
             IconButton(
               key: keys['riego:wifi']!,
               icon: Icon(wifiState.wifiIcon, color: color0),

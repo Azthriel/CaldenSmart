@@ -1282,13 +1282,17 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
             },
           ),
           actions: [
-            Icon(
-              //key: keys['termometros:servidor']!,
-              globalDATA['$pc/$sn']?['cstate'] ?? false
-                  ? HugeIcons.strokeRoundedCloud
-                  : Icons.cloud_off,
-              color: color0,
-            ),
+            globalDATA['$pc/$sn']?['cstate'] ?? false
+                ? const ImageIcon(
+                    AssetImage(CaldenIcons.cloud),
+                    color: color0,
+                    size: 35,
+                  )
+                : const ImageIcon(
+                    AssetImage(CaldenIcons.cloudOff),
+                    color: color0,
+                    size: 25,
+                  ),
             IconButton(
               //key: keys['termometros:wifi']!,
               icon: Icon(wifiState.wifiIcon, color: color0),

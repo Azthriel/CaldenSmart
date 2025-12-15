@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:caldensmart/secret.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:qr_flutter/qr_flutter.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../master.dart';
@@ -46,6 +48,10 @@ class ManagerScreenState extends State<ManagerScreen> {
   Map<String, Map<String, dynamic>> wifiRestrictions = {};
   String selectedAdminForRestrictions = '';
 
+  // Variables para consultas de clima
+  Map<String, dynamic>? weatherData;
+  bool isWeatherLoading = false;
+
   @override
   void dispose() {
     emailController.dispose();
@@ -58,16 +64,23 @@ class ManagerScreenState extends State<ManagerScreen> {
   void initState() {
     super.initState();
     discNotfActivated = configNotiDsc.keys.toList().contains(widget.deviceName);
+    quickAccesActivated = quickAccess.contains(widget.deviceName);
     _loadUsageHistory();
     _loadTimeRestrictions();
     _loadWifiRestrictions();
     _makeQueryIfNeeded();
+    _determineIfIsSpecialUser();
+  }
+
+  Future<void> _determineIfIsSpecialUser() async {
+    specialUser = await isSpecialUser(currentUserEmail);
+    if (mounted) setState(() {});
   }
 
   Future<void> _makeQueryIfNeeded() async {
     if (widget.needsAppbar) {
-      String pc = DeviceManager.getProductCode(widget.deviceName);
-      String sn = DeviceManager.extractSerialNumber(widget.deviceName);
+      final String pc = DeviceManager.getProductCode(widget.deviceName);
+      final String sn = DeviceManager.extractSerialNumber(widget.deviceName);
       await queryItems(pc, sn);
     }
   }
@@ -75,8 +88,8 @@ class ManagerScreenState extends State<ManagerScreen> {
   // Métodos para historial de uso
   Future<void> _loadUsageHistory() async {
     try {
-      String pc = DeviceManager.getProductCode(widget.deviceName);
-      String sn = DeviceManager.extractSerialNumber(widget.deviceName);
+      final String pc = DeviceManager.getProductCode(widget.deviceName);
+      final String sn = DeviceManager.extractSerialNumber(widget.deviceName);
 
       List<Map<String, dynamic>> history =
           await getParsedAdminUsageHistory(pc, sn);
@@ -91,8 +104,8 @@ class ManagerScreenState extends State<ManagerScreen> {
   // Métodos para restricciones horarias
   Future<void> _loadTimeRestrictions() async {
     try {
-      String pc = DeviceManager.getProductCode(widget.deviceName);
-      String sn = DeviceManager.extractSerialNumber(widget.deviceName);
+      final String pc = DeviceManager.getProductCode(widget.deviceName);
+      final String sn = DeviceManager.extractSerialNumber(widget.deviceName);
 
       Map<String, Map<String, dynamic>> restrictions =
           await getAdminTimeRestrictions(pc, sn);
@@ -764,6 +777,183 @@ class ManagerScreenState extends State<ManagerScreen> {
     );
   }
 
+  // Metodos para consulta de clima
+  Map<String, double>? extractCoordinates(String locationString) {
+    try {
+      // Formato esperado: "Latitude: -34.6233784, Longitude: -58.5565867"
+      final latMatch =
+          RegExp(r'Latitude:\s*([-+]?\d+\.?\d*)').firstMatch(locationString);
+      final lonMatch =
+          RegExp(r'Longitude:\s*([-+]?\d+\.?\d*)').firstMatch(locationString);
+
+      if (latMatch != null && lonMatch != null) {
+        final lat = double.parse(latMatch.group(1)!);
+        final lon = double.parse(lonMatch.group(1)!);
+        return {'lat': lat, 'lon': lon};
+      }
+      return null;
+    } catch (e) {
+      printLog.e('Error extrayendo coordenadas: $e');
+      return null;
+    }
+  }
+
+  String formatUnixTime(int timestamp) {
+    final dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  Future<void> fetchWeatherData(double lat, double lon) async {
+    try {
+      final url = Uri.parse(
+          'https://api.openweathermap.org/data/3.0/onecall?lat=$lat&lon=$lon&appid=$climaAPI&units=metric&lang=es');
+
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        printLog.i('=== RESPUESTA DE LA API DE CLIMA ===',
+            color: Colors.greenAccent);
+        printLog.i(data, color: Colors.greenAccent);
+        printLog.i('===================================',
+            color: Colors.greenAccent);
+
+        setState(() {
+          weatherData = data;
+        });
+      } else {
+        printLog.e('Error en la API: ${response.statusCode}',
+            color: Colors.red);
+        printLog.e('Respuesta: ${response.body}', color: Colors.red);
+      }
+    } catch (e) {
+      printLog.e('Error haciendo request a la API: $e', color: Colors.red);
+    }
+  }
+
+  void _showDeviceClima() async {
+    if (isWeatherLoading) return;
+
+    setState(() {
+      isWeatherLoading = true;
+    });
+
+    final String pc = DeviceManager.getProductCode(widget.deviceName);
+    final String sn = DeviceManager.extractSerialNumber(widget.deviceName);
+    String location = globalDATA['$pc/$sn']?['deviceLocation'] ?? 'unknown';
+    final coords = extractCoordinates(location);
+    if (coords != null) {
+      await fetchWeatherData(coords['lat']!, coords['lon']!);
+      if (weatherData != null) {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.0),
+                side: const BorderSide(color: color4, width: 2.0),
+              ),
+              backgroundColor: color1,
+              title: Text(
+                'Clima del Equipo',
+                style: GoogleFonts.poppins(
+                  color: color0,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildWeatherItem(
+                        'Temperatura', '${weatherData!['current']['temp']}°C'),
+                    _buildWeatherItem('Sensación Térmica',
+                        '${weatherData!['current']['feels_like']}°C'),
+                    _buildWeatherItem(
+                        'Humedad', '${weatherData!['current']['humidity']}%'),
+                    _buildWeatherItem('Presión',
+                        '${weatherData!['current']['pressure']} hPa'),
+                    _buildWeatherItem('Viento',
+                        '${weatherData!['current']['wind_speed']} m/s'),
+                    _buildWeatherItem('Dirección del viento',
+                        '${weatherData!['current']['wind_deg']}°'),
+                    _buildWeatherItem(
+                        'Nubosidad', '${weatherData!['current']['clouds']}%'),
+                    _buildWeatherItem(
+                        'UV Index', '${weatherData!['current']['uvi']}'),
+                    _buildWeatherItem('Visibilidad',
+                        '${weatherData!['current']['visibility']} m'),
+                    _buildWeatherItem('Amanecer',
+                        formatUnixTime(weatherData!['current']['sunrise'])),
+                    _buildWeatherItem('Atardecer',
+                        formatUnixTime(weatherData!['current']['sunset'])),
+                    _buildWeatherItem('Descripción',
+                        '${weatherData!['current']['weather'][0]['description']}'),
+                    _buildWeatherItem('Tipo principal',
+                        '${weatherData!['current']['weather'][0]['main']}'),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(
+                    'Cerrar',
+                    style: GoogleFonts.poppins(color: color4),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      } else {
+        showToast('No se pudo obtener la información del clima.');
+      }
+    } else {
+      showToast('Las coordenadas del dispositivo no son válidas.');
+    }
+
+    if (mounted) {
+      setState(() {
+        isWeatherLoading = false;
+      });
+    }
+  }
+
+  Widget _buildWeatherItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            '$label:',
+            style: GoogleFonts.poppins(
+              color: color0,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: GoogleFonts.poppins(
+                color: color0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final String pc = DeviceManager.getProductCode(widget.deviceName);
@@ -778,6 +968,7 @@ class ManagerScreenState extends State<ManagerScreen> {
         List<String>.from(globalDATA['$pc/$sn']?['secondary_admin'] ?? []);
 
     return Scaffold(
+      backgroundColor: color0,
       appBar: widget.needsAppbar
           ? AppBar(
               backgroundColor: color1,
@@ -810,7 +1001,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                 ),
               ],
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new),
+                icon: const Icon(HugeIcons.strokeRoundedArrowLeft01),
                 color: color0,
                 onPressed: () {
                   Navigator.of(context).pop();
@@ -990,8 +1181,9 @@ class ManagerScreenState extends State<ManagerScreen> {
                                       ),
                                       Icon(
                                         showSecondaryAdminFields
-                                            ? Icons.arrow_drop_up
-                                            : Icons.arrow_drop_down,
+                                            ? HugeIcons.strokeRoundedArrowUp01
+                                            : HugeIcons
+                                                .strokeRoundedArrowDown01,
                                         color: color0,
                                       ),
                                     ],
@@ -1176,8 +1368,9 @@ class ManagerScreenState extends State<ManagerScreen> {
                                       ),
                                       Icon(
                                         showSecondaryAdminList
-                                            ? Icons.arrow_drop_up
-                                            : Icons.arrow_drop_down,
+                                            ? HugeIcons.strokeRoundedArrowUp01
+                                            : HugeIcons
+                                                .strokeRoundedArrowDown01,
                                         color: color0,
                                       ),
                                     ],
@@ -1242,7 +1435,8 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                     ),
                                                     IconButton(
                                                       icon: const Icon(
-                                                          Icons.delete,
+                                                          HugeIcons
+                                                              .strokeRoundedDelete02,
                                                           color: color3),
                                                       onPressed: () {
                                                         removeSecondaryAdmin(
@@ -1333,8 +1527,9 @@ class ManagerScreenState extends State<ManagerScreen> {
                                       ),
                                       Icon(
                                         showSmartResident
-                                            ? Icons.arrow_drop_up
-                                            : Icons.arrow_drop_down,
+                                            ? HugeIcons.strokeRoundedArrowUp01
+                                            : HugeIcons
+                                                .strokeRoundedArrowDown01,
                                         color: color0,
                                       ),
                                     ],
@@ -1469,7 +1664,8 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                             ),
                                                             IconButton(
                                                               icon: const Icon(
-                                                                Icons.delete,
+                                                                HugeIcons
+                                                                    .strokeRoundedDelete02,
                                                                 color: Colors
                                                                     .redAccent,
                                                               ),
@@ -1704,8 +1900,9 @@ class ManagerScreenState extends State<ManagerScreen> {
                                         ),
                                         Icon(
                                           showUsageHistory
-                                              ? Icons.arrow_drop_up
-                                              : Icons.arrow_drop_down,
+                                              ? HugeIcons.strokeRoundedArrowUp01
+                                              : HugeIcons
+                                                  .strokeRoundedArrowDown01,
                                           color: color0,
                                         ),
                                       ],
@@ -1867,8 +2064,9 @@ class ManagerScreenState extends State<ManagerScreen> {
                                         ),
                                         Icon(
                                           showTimeRestrictions
-                                              ? Icons.arrow_drop_up
-                                              : Icons.arrow_drop_down,
+                                              ? HugeIcons.strokeRoundedArrowUp01
+                                              : HugeIcons
+                                                  .strokeRoundedArrowDown01,
                                           color: color0,
                                         ),
                                       ],
@@ -2052,8 +2250,9 @@ class ManagerScreenState extends State<ManagerScreen> {
                                         ),
                                         Icon(
                                           showWifiRestrictions
-                                              ? Icons.arrow_drop_up
-                                              : Icons.arrow_drop_down,
+                                              ? HugeIcons.strokeRoundedArrowUp01
+                                              : HugeIcons
+                                                  .strokeRoundedArrowDown01,
                                           color: color0,
                                         ),
                                       ],
@@ -2154,7 +2353,8 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                                 },
                                                                 icon:
                                                                     const Icon(
-                                                                  Icons.delete,
+                                                                  HugeIcons
+                                                                      .strokeRoundedDelete02,
                                                                   color: color4,
                                                                 ))
                                                           ],
@@ -2543,10 +2743,10 @@ class ManagerScreenState extends State<ManagerScreen> {
                           thumbIcon: WidgetStateProperty.resolveWith<Icon?>(
                             (Set<WidgetState> states) {
                               if (states.contains(WidgetState.selected)) {
-                                return const Icon(Icons.nights_stay,
+                                return const Icon(HugeIcons.strokeRoundedMoon02,
                                     color: color0);
                               } else {
-                                return const Icon(Icons.wb_sunny,
+                                return const Icon(HugeIcons.strokeRoundedSun03,
                                     color: color0);
                               }
                             },
@@ -2877,7 +3077,7 @@ class ManagerScreenState extends State<ManagerScreen> {
               ),
               const SizedBox(height: 10),
               GestureDetector(
-                onTap: () => launchWebURL(linksOfProducts(pc)),
+                onTap: () => launchWebURL(linksOfProducts(widget.deviceName)),
                 child: Container(
                   width: MediaQuery.of(context).size.width * 1.5,
                   padding:
@@ -2899,6 +3099,43 @@ class ManagerScreenState extends State<ManagerScreen> {
                   ),
                 ),
               ),
+              if (specialUser) ...[
+                const SizedBox(height: 10),
+                GestureDetector(
+                  onTap: isWeatherLoading ? null : () => _showDeviceClima(),
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 1.5,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: color1,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: isWeatherLoading
+                        ? const Center(
+                            child: SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                color: color0,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          )
+                        : Text(
+                            'Consultar clima del equipo',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              textStyle: const TextStyle(
+                                color: color0,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                  ),
+                ),
+              ],
               Padding(
                 padding: EdgeInsets.only(bottom: bottomBarHeight + 120),
               ),

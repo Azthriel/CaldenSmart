@@ -1123,8 +1123,8 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 500),
                             child: isPasswordCorrect
-                                ? const Icon(
-                                    Icons.lock_open,
+                                ? const ImageIcon(
+                                    AssetImage(CaldenIcons.unLock),
                                     color: color0,
                                     size: 40,
                                     key: ValueKey('open_lock'),
@@ -1514,13 +1514,19 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
             },
           ),
           actions: [
-            Icon(
-              key: keys['modulo:servidor']!,
-              globalDATA['$pc/$sn']?['cstate'] ?? false
-                  ? HugeIcons.strokeRoundedCloud
-                  : Icons.cloud_off,
-              color: color0,
-            ),
+            globalDATA['$pc/$sn']?['cstate'] ?? false
+                ? ImageIcon(
+                    const AssetImage(CaldenIcons.cloud),
+                    color: color0,
+                    size: 35,
+                    key: keys['modulo:servidor']!,
+                  )
+                : ImageIcon(
+                    const AssetImage(CaldenIcons.cloudOff),
+                    color: color0,
+                    size: 25,
+                    key: keys['modulo:servidor']!,
+                  ),
             IconButton(
               key: keys['modulo:wifi']!,
               icon: Icon(wifiState.wifiIcon, color: color0),

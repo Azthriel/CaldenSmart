@@ -813,7 +813,12 @@ String linksOfApp(String link) {
   }
 }
 
-String linksOfProducts(String pc) {
+String linksOfProducts(String device) {
+  final String pc = DeviceManager.getProductCode(device);
+  final String sn = DeviceManager.extractSerialNumber(device);
+  if (globalDATA['$pc/$sn']?['riegoActive'] == true) {
+    return 'https://caldensmart.com/dsraix3/';
+  }
   switch (pc) {
     case '015773_IOT':
       return 'https://www.intelligentgas.com.ar/item-015773esma/';
@@ -1239,7 +1244,7 @@ void wifiText(BuildContext context) async {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(
-                                      Icons.warning_amber_rounded,
+                                      HugeIcons.strokeRoundedAlert02,
                                       color: Colors.orange,
                                       size: 20,
                                     ),
@@ -1263,8 +1268,11 @@ void wifiText(BuildContext context) async {
                           TextButton(
                             onPressed: () {
                               sendWifitoBle('DSC', 'DSC');
-                              wifiNotifier.updateStatus('DESCONECTANDO...',
-                                  Colors.orange, Icons.wifi_find);
+                              wifiNotifier.updateStatus(
+                                'DESCONECTANDO...',
+                                Colors.orange,
+                                HugeIcons.strokeRoundedSearch02,
+                              );
                             },
                             style: const ButtonStyle(
                               foregroundColor: WidgetStatePropertyAll(
@@ -1274,7 +1282,7 @@ void wifiText(BuildContext context) async {
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                Icon(Icons.signal_wifi_off),
+                                Icon(HugeIcons.strokeRoundedWifiOff02),
                                 Text('Desconectar Red Actual')
                               ],
                             ),
@@ -1337,7 +1345,8 @@ void wifiText(BuildContext context) async {
                                                     child: Row(
                                                       children: [
                                                         const Icon(
-                                                          Icons.lock,
+                                                          HugeIcons
+                                                              .strokeRoundedSquareLock01,
                                                           color: color0,
                                                           size: 20,
                                                         ),
@@ -1431,7 +1440,7 @@ void wifiText(BuildContext context) async {
                                 Row(
                                   children: [
                                     const Icon(
-                                      Icons.wifi,
+                                      HugeIcons.strokeRoundedWifi02,
                                       color: color0,
                                     ),
                                     const SizedBox(width: 8.0),
@@ -1463,7 +1472,7 @@ void wifiText(BuildContext context) async {
                                 Row(
                                   children: [
                                     const Icon(
-                                      Icons.lock,
+                                      HugeIcons.strokeRoundedSquareLock01,
                                       color: color0,
                                     ),
                                     const SizedBox(width: 8.0),
@@ -1488,8 +1497,9 @@ void wifiText(BuildContext context) async {
                                           suffixIcon: IconButton(
                                             icon: Icon(
                                               obscureText
-                                                  ? Icons.visibility
-                                                  : Icons.visibility_off,
+                                                  ? HugeIcons.strokeRoundedView
+                                                  : HugeIcons
+                                                      .strokeRoundedViewOff,
                                               color: color0,
                                             ),
                                             onPressed: () {
@@ -1520,7 +1530,7 @@ void wifiText(BuildContext context) async {
                       children: [
                         IconButton(
                           icon: const Icon(
-                            Icons.qr_code,
+                            HugeIcons.strokeRoundedQrCode,
                             color: color0,
                           ),
                           iconSize: 30,
@@ -1571,15 +1581,21 @@ void wifiText(BuildContext context) async {
                                   '$_currentlySelectedSSID#${_wifiPasswordsMap[_currentlySelectedSSID]}');
                               sendWifitoBle(_currentlySelectedSSID!,
                                   _wifiPasswordsMap[_currentlySelectedSSID]!);
-                              wifiNotifier.updateStatus('CONECTANDO...',
-                                  Colors.blue, Icons.wifi_find);
+                              wifiNotifier.updateStatus(
+                                'CONECTANDO...',
+                                Colors.blue,
+                                HugeIcons.strokeRoundedSearch02,
+                              );
                             } else if (!android &&
                                 manualSSID != '' &&
                                 manualPassword != '') {
                               printLog.i('$manualSSID#$manualPassword');
                               sendWifitoBle(manualSSID, manualPassword);
-                              wifiNotifier.updateStatus('CONECTANDO...',
-                                  Colors.blue, Icons.wifi_find);
+                              wifiNotifier.updateStatus(
+                                'CONECTANDO...',
+                                Colors.blue,
+                                HugeIcons.strokeRoundedSearch02,
+                              );
                             } else {
                               showToast('Por favor, ingrese una red válida.');
                             }
@@ -1602,7 +1618,7 @@ void wifiText(BuildContext context) async {
                     children: [
                       IconButton(
                         icon: const Icon(
-                          Icons.arrow_back,
+                          HugeIcons.strokeRoundedArrowLeft02,
                           color: color0,
                         ),
                         onPressed: () {
@@ -1629,7 +1645,7 @@ void wifiText(BuildContext context) async {
                         Row(
                           children: [
                             const Icon(
-                              Icons.wifi,
+                              HugeIcons.strokeRoundedWifi02,
                               color: color0,
                             ),
                             const SizedBox(width: 8.0),
@@ -1658,7 +1674,7 @@ void wifiText(BuildContext context) async {
                         Row(
                           children: [
                             const Icon(
-                              Icons.lock,
+                              HugeIcons.strokeRoundedSquareLock01,
                               color: color0,
                             ),
                             const SizedBox(width: 8.0),
@@ -1679,8 +1695,8 @@ void wifiText(BuildContext context) async {
                                   suffixIcon: IconButton(
                                     icon: Icon(
                                       obscureText
-                                          ? Icons.visibility
-                                          : Icons.visibility_off,
+                                          ? HugeIcons.strokeRoundedView
+                                          : HugeIcons.strokeRoundedViewOff,
                                       color: color0,
                                     ),
                                     onPressed: () {
@@ -1710,7 +1726,10 @@ void wifiText(BuildContext context) async {
 
                           sendWifitoBle(manualSSID, manualPassword);
                           wifiNotifier.updateStatus(
-                              'CONECTANDO...', Colors.blue, Icons.wifi_find);
+                            'CONECTANDO...',
+                            Colors.blue,
+                            HugeIcons.strokeRoundedSearch02,
+                          );
                           Navigator.of(context).pop();
                         } else {}
                       },
@@ -1742,15 +1761,15 @@ void wifiText(BuildContext context) async {
 
 IconData wifiPower(int level) {
   if (level >= -30) {
-    return Icons.signal_wifi_4_bar; // Excelente
+    return HugeIcons.strokeRoundedWifiConnected01;
   } else if (level >= -67) {
-    return Icons.network_wifi; // Muy buena
+    return HugeIcons.strokeRoundedWifiFullSignal;
   } else if (level >= -70) {
-    return Icons.network_wifi_3_bar; // Okay
+    return HugeIcons.strokeRoundedWifiMediumSignal;
   } else if (level >= -80) {
-    return Icons.network_wifi_2_bar; // No buena
+    return HugeIcons.strokeRoundedWifiLowSignal;
   } else {
-    return Icons.network_wifi_1_bar; // Inusable
+    return HugeIcons.strokeRoundedWifiDisconnected04;
   }
 }
 
@@ -1954,7 +1973,7 @@ Future<void> openQRScanner(BuildContext context) async {
           wifiNotifier.updateStatus(
             'CONECTANDO...',
             Colors.blue,
-            Icons.wifi_find,
+            HugeIcons.strokeRoundedSearch02,
           );
         }
 
@@ -2873,7 +2892,9 @@ Future<bool> showNoInternetDialog(BuildContext context) async {
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                     ),
-                                    icon: const Icon(Icons.settings, size: 20),
+                                    icon: const Icon(
+                                        HugeIcons.strokeRoundedSettings01,
+                                        size: 20),
                                     label: Text(
                                       'Ajustes',
                                       style: GoogleFonts.poppins(fontSize: 14),
@@ -2895,7 +2916,9 @@ Future<bool> showNoInternetDialog(BuildContext context) async {
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                     ),
-                                    icon: const Icon(Icons.refresh, size: 20),
+                                    icon: const Icon(
+                                        HugeIcons.strokeRoundedReload,
+                                        size: 20),
                                     label: Text(
                                       'Reintentar',
                                       style: GoogleFonts.poppins(fontSize: 14),
@@ -2925,7 +2948,7 @@ Future<bool> showNoInternetDialog(BuildContext context) async {
                               radius: 50,
                               backgroundColor: color1,
                               child: Icon(
-                                Icons.wifi_off_rounded,
+                                HugeIcons.strokeRoundedWifiOff02,
                                 size: 50,
                                 color: color3,
                               ),
@@ -3328,7 +3351,7 @@ Future<void> showUpdateDialog(BuildContext ctx) {
                   ),
                   if (error) ...[
                     const Icon(
-                      Icons.error,
+                      HugeIcons.strokeRoundedAlertCircle,
                       size: 20,
                       color: color4,
                     ),
@@ -4357,7 +4380,7 @@ class WifiState {
   const WifiState({
     this.status = 'DESCONECTADO',
     this.statusColor = Colors.red,
-    this.wifiIcon = Icons.signal_wifi_off,
+    this.wifiIcon = HugeIcons.strokeRoundedWifiOff02,
   });
 
   WifiState copyWith({
@@ -4554,7 +4577,9 @@ class QRScanPageState extends State<QRScanPage>
           right: 20,
           child: IconButton(
             icon: Icon(
-              controller.torchEnabled ? Icons.flash_on : Icons.flash_off,
+              controller.torchEnabled
+                  ? HugeIcons.strokeRoundedFlash
+                  : HugeIcons.strokeRoundedFlashOff,
             ),
             onPressed: () => controller.toggleTorch(),
           ),
@@ -5090,7 +5115,7 @@ class AnimSearchBarState extends State<AnimSearchBar>
                       ///suffixIcon is of type Icon
                       child: widget.suffixIcon ??
                           Icon(
-                            Icons.close,
+                            HugeIcons.strokeRoundedCancel01,
                             size: 20.0,
                             color: widget.textFieldIconColor,
                           ),
@@ -5178,12 +5203,14 @@ class AnimSearchBarState extends State<AnimSearchBar>
                 icon: widget.prefixIcon != null
                     ? toggle == 1
                         ? Icon(
-                            Icons.arrow_back_ios,
+                            HugeIcons.strokeRoundedArrowLeft01,
                             color: widget.textFieldIconColor,
                           )
                         : widget.prefixIcon!
                     : Icon(
-                        toggle == 1 ? Icons.arrow_back_ios : Icons.search,
+                        toggle == 1
+                            ? HugeIcons.strokeRoundedArrowLeft01
+                            : HugeIcons.strokeRoundedSearch01,
                         // search icon color when closed
                         color: toggle == 0
                             ? widget.searchIconColor
@@ -5284,7 +5311,8 @@ class AccessDeniedScreen extends StatelessWidget {
               Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: color1),
+                  icon: const Icon(HugeIcons.strokeRoundedArrowLeft02,
+                      color: color1),
                   onPressed: () {
                     showDialog(
                       context: context,
@@ -5330,7 +5358,7 @@ class AccessDeniedScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(
-                    Icons.dangerous,
+                    HugeIcons.strokeRoundedAlertDiamond,
                     size: 80,
                     color: color1,
                   ),
@@ -5469,7 +5497,8 @@ class NotAllowedScreen extends StatelessWidget {
               Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: color1),
+                  icon: const Icon(HugeIcons.strokeRoundedArrowLeft02,
+                      color: color1),
                   onPressed: () {
                     showDialog(
                       context: context,
@@ -5515,7 +5544,7 @@ class NotAllowedScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(
-                    Icons.dangerous,
+                    HugeIcons.strokeRoundedAlertDiamond,
                     size: 80,
                     color: color1,
                   ),
@@ -5604,7 +5633,8 @@ class DeviceInUseScreen extends StatelessWidget {
               Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: color1),
+                  icon: const Icon(HugeIcons.strokeRoundedArrowLeft02,
+                      color: color1),
                   onPressed: () {
                     showDialog(
                       context: context,
@@ -5648,7 +5678,7 @@ class DeviceInUseScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(
-                    Icons.dangerous,
+                    HugeIcons.strokeRoundedAlertDiamond,
                     size: 80,
                     color: color1,
                   ),
@@ -5747,7 +5777,8 @@ class LabProcessNotFinished extends StatelessWidget {
               Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: color1),
+                  icon: const Icon(HugeIcons.strokeRoundedArrowLeft02,
+                      color: color1),
                   onPressed: () {
                     showDialog(
                       context: context,
@@ -5811,7 +5842,7 @@ class LabProcessNotFinished extends StatelessWidget {
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
-                              Icons.dangerous,
+                              HugeIcons.strokeRoundedAlertDiamond,
                               size: 64,
                               color: color0,
                             ),
@@ -5840,7 +5871,7 @@ class LabProcessNotFinished extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const Icon(
-                                      Icons.warning_amber,
+                                      HugeIcons.strokeRoundedAlert02,
                                       color: color2,
                                       size: 24,
                                     ),
@@ -5862,7 +5893,7 @@ class LabProcessNotFinished extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const Icon(
-                                      Icons.arrow_back,
+                                      HugeIcons.strokeRoundedArrowLeft02,
                                       color: color2,
                                       size: 24,
                                     ),
@@ -5919,7 +5950,8 @@ class ImageManager {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               ListTile(
-                leading: const Icon(Icons.photo_library, color: color0),
+                leading:
+                    const Icon(HugeIcons.strokeRoundedAlbum02, color: color0),
                 title: const Text(
                   'Elegir de la galería',
                   style: TextStyle(color: color0),
@@ -5932,7 +5964,8 @@ class ImageManager {
               ),
               const Divider(color: color0),
               ListTile(
-                leading: const Icon(Icons.camera_alt, color: color0),
+                leading:
+                    const Icon(HugeIcons.strokeRoundedCamera01, color: color0),
                 title: const Text(
                   'Tomar una foto',
                   style: TextStyle(color: color0),
@@ -5945,7 +5978,8 @@ class ImageManager {
               ),
               const Divider(color: color0),
               ListTile(
-                leading: const Icon(Icons.restore, color: color0),
+                leading:
+                    const Icon(HugeIcons.strokeRoundedReload, color: color0),
                 title: const Text(
                   'Restablecer imagen',
                   style: TextStyle(color: color0),
@@ -6009,25 +6043,27 @@ class ImageManager {
       case '022000_IOT':
         return 'assets/devices/022000.jpg';
       case '027000_IOT':
-        return 'assets/devices/027000.webp';
+        return 'assets/devices/027000.jpg';
       case '015773_IOT':
-        return 'assets/devices/015773.jpeg';
+        return 'assets/devices/015773.jpg';
       case '020010_IOT':
         return 'assets/devices/020010.jpg';
       case '050217_IOT':
-        return 'assets/devices/050217.png';
+        return 'assets/devices/050217.jpg';
       case '027313_IOT':
         return 'assets/devices/027313.jpg';
       case '041220_IOT':
         return 'assets/devices/041220.jpg';
       case '028000_IOT':
-        return 'assets/devices/028000.png';
+        return 'assets/devices/028000.jpg';
       case '024011_IOT':
         return 'assets/devices/024011.jpg';
       case '020020_IOT':
         return 'assets/devices/020020.jpg';
       case '023430_IOT':
         return 'assets/devices/023430.jpg';
+      case '027345_IOT':
+        return 'assets/devices/027345.jpg';
       default:
         return 'assets/branch/Logo.png';
     }
@@ -6569,7 +6605,8 @@ class Tutorial {
                       padding: const EdgeInsets.symmetric(
                           vertical: 12, horizontal: 17),
                     ),
-                    icon: const Icon(Icons.close, color: color0),
+                    icon: const Icon(HugeIcons.strokeRoundedCancel01,
+                        color: color0),
                     label: const Text('Saltar Tutorial',
                         style: TextStyle(color: color0)),
                     onPressed: () {
@@ -7308,3 +7345,13 @@ class PaintBottomAppBar extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 //*- PaintBottomAppBar -*\\
+
+//*- iconos -*\\
+class CaldenIcons {
+  static const String unLock = 'assets/icons/unlock.png';
+  static const String cloudOff = 'assets/icons/cloudOff.png';
+  static const String cloud = 'assets/icons/cloud.png';
+  static const String snowOff = 'assets/icons/snowOff.png';
+  static const String waterOff = 'assets/icons/waterOff.png';
+}
+//*- iconos -*\\

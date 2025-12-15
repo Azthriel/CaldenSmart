@@ -868,10 +868,10 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                                 const Row(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    Icon(
-                                      HugeIcons.strokeRoundedCloud,
+                                    ImageIcon(
+                                      AssetImage(CaldenIcons.cloud),
                                       color: Color(0xFF18B2C7),
-                                      size: 40,
+                                      size: 50,
                                     ),
                                     SizedBox(width: 20),
                                     Expanded(
@@ -1596,13 +1596,19 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
             },
           ),
           actions: [
-            Icon(
-              key: keys['detectores:servidor']!,
-              globalDATA['$pc/$sn']?['cstate'] ?? false
-                  ? HugeIcons.strokeRoundedCloud
-                  : Icons.cloud_off,
-              color: color0,
-            ),
+            globalDATA['$pc/$sn']?['cstate'] ?? false
+                ? ImageIcon(
+                    const AssetImage(CaldenIcons.cloud),
+                    color: color0,
+                    size: 35,
+                    key: keys['detectores:servidor']!,
+                  )
+                : ImageIcon(
+                    const AssetImage(CaldenIcons.cloudOff),
+                    color: color0,
+                    size: 25,
+                    key: keys['detectores:servidor']!,
+                  ),
             IconButton(
               key: keys['detectores:wifi']!,
               icon: Icon(wifiState.wifiIcon, color: color0),

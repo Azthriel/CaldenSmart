@@ -1,7 +1,7 @@
 name: caldensmart
 description: "Caldén Smart"
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
-version: 1.0.63+81
+version: 1.0.66+84
 
 environment:
   sdk: ^3.5.1
@@ -87,15 +87,16 @@ flutter:
     - assets/branch/Logo_sitio.png
     
     # Assets devices
-    - assets/devices/015773.jpeg
+    - assets/devices/015773.jpg
     - assets/devices/020010.jpg
     - assets/devices/020020.jpg
     - assets/devices/022000.jpg
     - assets/devices/023430.jpg
     - assets/devices/024011.jpg
-    - assets/devices/027000.webp
+    - assets/devices/027000.jpg
     - assets/devices/027313.jpg
-    - assets/devices/028000.png
+    - assets/devices/028000.jpg
+    - assets/devices/027345.jpg
     
     # Assets misc
     - assets/misc/Alexa.png

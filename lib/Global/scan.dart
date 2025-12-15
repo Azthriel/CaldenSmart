@@ -6,7 +6,7 @@ import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:hugeicons/hugeicons.dart';
 import '../master.dart';
 import '../aws/mqtt/mqtt.dart';
 import 'package:caldensmart/logger.dart';
@@ -31,8 +31,6 @@ class ScanPageState extends State<ScanPage>
   Timer? _updateTimer;
   bool _needsUpdate = false;
   Timer? _cleanupTimer;
-  String? _connectingDeviceId;
-
   int connectionTry = 0;
   final TextEditingController searchController = TextEditingController();
   late AnimationController _animationController;
@@ -41,6 +39,7 @@ class ScanPageState extends State<ScanPage>
   );
   StreamSubscription<List<ScanResult>>? listener;
   String? _touchedDeviceId;
+  String? _connectingDeviceId;
 
   @override
   void initState() {
@@ -81,19 +80,22 @@ class ScanPageState extends State<ScanPage>
     super.dispose();
   }
 
-  Icon _signalIcon(int rssi, {bool isLost = false}) {
+  Icon _signal(int rssi, {bool isLost = false}) {
     if (isLost) {
-      return Icon(MdiIcons.signalCellular3, color: Colors.white, size: 24);
+      return const Icon(HugeIcons.strokeRoundedFullSignal,
+          color: Colors.white, size: 24);
     }
     if (rssi >= -60) {
       // Mejor señal: FullSignalIconPlus
-      return Icon(MdiIcons.signalCellular2, color: Colors.white, size: 24);
+      return const Icon(HugeIcons.strokeRoundedMediumSignal,
+          color: Colors.white, size: 24);
     } else if (rssi >= -75) {
       // Señal media: MediumSignalIcon
-      return Icon(MdiIcons.signalCellular1, color: Colors.white, size: 24);
+      return const Icon(HugeIcons.strokeRoundedLowSignal,
+          color: Colors.white, size: 24);
     } else {
       // Señal baja: LowSignalIcon
-      return Icon(MdiIcons.signalCellularOutline,
+      return const Icon(HugeIcons.strokeRoundedSignalFull02,
           color: Colors.white, size: 24);
     }
   }
@@ -109,7 +111,6 @@ class ScanPageState extends State<ScanPage>
           withKeywords: keywords,
           androidUsesFineLocation: true,
           continuousUpdates: true,
-          removeIfGone: const Duration(seconds: 3),
         );
 
         listener = FlutterBluePlus.scanResults.listen(
@@ -201,7 +202,6 @@ class ScanPageState extends State<ScanPage>
       isConnecting = true;
       _connectingDeviceId = device.remoteId.toString();
     });
-
     try {
       printLog.i('Marca de tiempo ${DateTime.now().toIso8601String()}');
       await device.connect(timeout: const Duration(seconds: 6));
@@ -240,7 +240,6 @@ class ScanPageState extends State<ScanPage>
                           connectionFlag = false;
                         });
                       }
-                      connectionFlag = false;
                       printLog.i('Fallo en el setup');
                       showToast('Error en el dispositivo, intente nuevamente');
                       bluetoothManager.device.disconnect();
@@ -517,17 +516,17 @@ class ScanPageState extends State<ScanPage>
               rtl: false,
               autoFocus: true,
               helpText: "",
-              suffixIcon: Icon(
-                MdiIcons.close,
+              suffixIcon: const Icon(
+                HugeIcons.strokeRoundedCancel01,
                 color: color1,
               ),
               prefixIcon: toggle == 1
-                  ? Icon(
-                      MdiIcons.arrowLeft,
+                  ? const Icon(
+                      HugeIcons.strokeRoundedArrowLeft02,
                       color: color1,
                     )
-                  : Icon(
-                      MdiIcons.magnify,
+                  : const Icon(
+                      HugeIcons.strokeRoundedSearch01,
                       color: color1,
                     ),
               animationDurationInMilli: 400,
@@ -548,7 +547,7 @@ class ScanPageState extends State<ScanPage>
           ),
           actions: [
             IconButton(
-              icon: Icon(MdiIcons.accountCircleOutline, size: 40.0),
+              icon: const Icon(HugeIcons.strokeRoundedUserCircle, size: 40.0),
               color: color0,
               onPressed: () {
                 navigatorKey.currentState?.pushNamed('/profile');
@@ -581,8 +580,8 @@ class ScanPageState extends State<ScanPage>
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              MdiIcons.magnifyClose,
+                            const Icon(
+                              HugeIcons.strokeRoundedSearch01,
                               size: 80,
                               color: color1,
                             ),
@@ -615,16 +614,16 @@ class ScanPageState extends State<ScanPage>
                                 border: Border.all(
                                     color: color1.withValues(alpha: 0.3)),
                               ),
-                              child: Row(
+                              child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    MdiIcons.gestureSwipe,
+                                    HugeIcons.strokeRoundedDrag01,
                                     size: 24,
                                     color: color1,
                                   ),
-                                  const SizedBox(width: 8),
-                                  const Flexible(
+                                  SizedBox(width: 8),
+                                  Flexible(
                                     child: Text(
                                       'Desliza hacia abajo para escanear de nuevo',
                                       style: TextStyle(
@@ -648,22 +647,22 @@ class ScanPageState extends State<ScanPage>
                                 border: Border.all(
                                     color: color1.withValues(alpha: 0.2)),
                               ),
-                              child: Row(
+                              child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    MdiIcons.wifi,
+                                    HugeIcons.strokeRoundedWifi02,
                                     size: 24,
                                     color: color1,
                                   ),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: 8),
                                   Icon(
-                                    MdiIcons.gestureSwipeRight,
+                                    HugeIcons.strokeRoundedSwipeRight01,
                                     size: 20,
                                     color: color1,
                                   ),
-                                  const SizedBox(width: 8),
-                                  const Flexible(
+                                  SizedBox(width: 8),
+                                  Flexible(
                                     child: Text(
                                       'Desliza hacia la derecha para ir al menú WiFi',
                                       style: TextStyle(
@@ -935,13 +934,14 @@ class ScanPageState extends State<ScanPage>
                                                   mainAxisSize:
                                                       MainAxisSize.min,
                                                   children: [
-                                                    Icon(
-                                                      MdiIcons.bluetooth,
+                                                    const Icon(
+                                                      HugeIcons
+                                                          .strokeRoundedBluetooth,
                                                       size: 20,
                                                       color: Colors.white,
                                                     ),
                                                     const SizedBox(width: 10),
-                                                    _signalIcon(rssi,
+                                                    _signal(rssi,
                                                         isLost: isLost),
                                                   ],
                                                 ),

@@ -552,7 +552,7 @@ class ProfilePageState extends State<ProfilePage> {
                   const Divider(color: color1),
                   ListTile(
                     leading: const Icon(
-                      HugeIcons.strokeRoundedThermometer,
+                      HugeIcons.strokeRoundedTemperature,
                       color: color1,
                     ),
                     title: Text(

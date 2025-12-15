@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
@@ -789,57 +790,57 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
     try {
       var permissionStatus4 = await Permission.locationAlways.status;
       if (!permissionStatus4.isGranted) {
-        await showDialog<void>(
-          context: navigatorKey.currentContext ?? context,
-          barrierDismissible: false,
-          builder: (BuildContext dialogContext) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20.0),
-                side: const BorderSide(color: color4, width: 2.0),
-              ),
-              backgroundColor: color1,
-              title: const Text(
-                'Habilita la ubicación todo el tiempo',
-                style: TextStyle(color: color0),
-              ),
-              content: Text(
-                '$appName utiliza tu ubicación, incluso cuando la app esta cerrada o en desuso, para poder encender o apagar el calefactor en base a tu distancia con el mismo.',
-                style: const TextStyle(
-                  color: color0,
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  style: const ButtonStyle(
-                    foregroundColor: WidgetStatePropertyAll(
-                      color0,
-                    ),
-                  ),
-                  child: const Text('Habilitar'),
-                  onPressed: () async {
-                    try {
-                      var permissionStatus4 =
-                          await Permission.locationAlways.request();
+        // Usamos un Completer para esperar a que el diálogo se cierre
+        final completer = Completer<void>();
 
-                      if (!permissionStatus4.isGranted) {
-                        await Permission.locationAlways.request();
-                      }
-                      permissionStatus4 =
-                          await Permission.locationAlways.status;
-                    } catch (e, s) {
-                      printLog.e(e);
-                      printLog.t(s);
-                    }
-                    Navigator.of(navigatorKey.currentContext ?? context).pop();
-                  },
-                ),
-              ],
-            );
-          },
+        showAlertDialog(
+          navigatorKey.currentContext ?? context,
+          true,
+          const Text(
+            'Habilita la ubicación todo el tiempo',
+            style: TextStyle(color: Color(0xFFFFFFFF)),
+          ),
+          Text(
+            '$appName utiliza tu ubicación, incluso cuando la app está cerrada o en desuso, para poder encender o apagar el calefactor en base a tu distancia con el mismo.',
+            style: const TextStyle(
+              color: Color(0xFFFFFFFF),
+            ),
+          ),
+          <Widget>[
+            TextButton(
+              style: const ButtonStyle(
+                foregroundColor: WidgetStatePropertyAll(Color(0xFFFFFFFF)),
+              ),
+              child: const Text('Habilitar'),
+              onPressed: () async {
+                try {
+                  var permissionStatus4 =
+                      await Permission.locationAlways.request();
+
+                  if (!permissionStatus4.isGranted) {
+                    await Permission.locationAlways.request();
+                  }
+                  permissionStatus4 = await Permission.locationAlways.status;
+
+                  // Completa el Completer una vez que el permiso ha sido manejado
+                  completer.complete();
+                  Navigator.of(navigatorKey.currentContext ?? context).pop();
+                } catch (e, s) {
+                  printLog.e(e);
+                  printLog.t(s);
+                  completer.completeError(
+                      e); // Completa con error si ocurre una excepción
+                }
+              },
+            ),
+          ],
         );
+
+        // Espera a que el Completer se complete
+        await completer.future;
       }
 
+      // Vuelve a verificar el estado del permiso
       permissionStatus4 = await Permission.locationAlways.status;
 
       if (permissionStatus4.isGranted) {
@@ -848,7 +849,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
         return false;
       }
     } catch (e, s) {
-      printLog.e('Error al habilitar la ubi: $e');
+      printLog.e('Error al habilitar la ubicación: $e');
       printLog.t(s);
       return false;
     }
@@ -1888,13 +1889,19 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
             },
           ),
           actions: [
-            Icon(
-              globalDATA['$pc/$sn']?['cstate'] ?? false
-                  ? HugeIcons.strokeRoundedCloud
-                  : Icons.cloud_off,
-              color: color0,
-              key: keys['calefactores:servidor']!,
-            ),
+            globalDATA['$pc/$sn']?['cstate'] ?? false
+                ? ImageIcon(
+                    const AssetImage(CaldenIcons.cloud),
+                    color: color0,
+                    size: 35,
+                    key: keys['calefactores:servidor']!,
+                  )
+                : ImageIcon(
+                    const AssetImage(CaldenIcons.cloudOff),
+                    color: color0,
+                    size: 25,
+                    key: keys['calefactores:servidor']!,
+                  ),
             IconButton(
               key: keys['calefactores:wifi']!,
               icon: Icon(wifiState.wifiIcon, color: color0),

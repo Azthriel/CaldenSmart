@@ -1281,20 +1281,30 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                   ],
                                 ),
                                 child: AnimatedCrossFade(
-                                  firstChild: Icon(
-                                    isNC
-                                        ? Icons.lock_open
-                                        : HugeIcons.strokeRoundedSquareLock01,
-                                    size: 80,
-                                    color: Colors.white,
-                                  ),
-                                  secondChild: Icon(
-                                    isNC
-                                        ? HugeIcons.strokeRoundedSquareLock01
-                                        : Icons.lock_open,
-                                    size: 80,
-                                    color: Colors.white,
-                                  ),
+                                  firstChild: isNC
+                                      ? const ImageIcon(
+                                          AssetImage(CaldenIcons.unLock),
+                                          color: color0,
+                                          size: 80,
+                                          key: ValueKey('open_lock'),
+                                        )
+                                      : const Icon(
+                                          HugeIcons.strokeRoundedSquareLock01,
+                                          size: 80,
+                                          color: Colors.white,
+                                        ),
+                                  secondChild: isNC
+                                      ? const Icon(
+                                          HugeIcons.strokeRoundedSquareLock01,
+                                          size: 80,
+                                          color: Colors.white,
+                                        )
+                                      : const ImageIcon(
+                                          AssetImage(CaldenIcons.unLock),
+                                          color: color0,
+                                          size: 80,
+                                          key: ValueKey('open_lock'),
+                                        ),
                                   crossFadeState: estado[0] == '1'
                                       ? CrossFadeState.showFirst
                                       : CrossFadeState.showSecond,
@@ -1687,8 +1697,8 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 500),
                             child: isPasswordCorrect
-                                ? const Icon(
-                                    Icons.lock_open,
+                                ? const ImageIcon(
+                                    AssetImage(CaldenIcons.unLock),
                                     color: color0,
                                     size: 40,
                                     key: ValueKey('open_lock'),
@@ -2077,13 +2087,19 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
             },
           ),
           actions: [
-            Icon(
-              key: keys['rele1i1o:servidor']!,
-              globalDATA['$pc/$sn']?['cstate'] ?? false
-                  ? HugeIcons.strokeRoundedCloud
-                  : Icons.cloud_off,
-              color: color0,
-            ),
+            globalDATA['$pc/$sn']?['cstate'] ?? false
+                ? ImageIcon(
+                    const AssetImage(CaldenIcons.cloud),
+                    color: color0,
+                    size: 35,
+                    key: keys['rele1i1o:servidor']!,
+                  )
+                : ImageIcon(
+                    const AssetImage(CaldenIcons.cloudOff),
+                    color: color0,
+                    size: 25,
+                    key: keys['rele1i1o:servidor']!,
+                  ),
             IconButton(
               key: keys['rele1i1o:wifi']!,
               icon: Icon(wifiState.wifiIcon, color: color0),

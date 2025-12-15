@@ -40,7 +40,7 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
   String measure = 'KW/h';
 
   IconData powerIconOn = HugeIcons.strokeRoundedRainDrop;
-  IconData powerIconOff = Icons.format_color_reset;
+  
 
   int _selectedIndex = 0;
 
@@ -755,7 +755,7 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
                             isHeating: trueStatus,
                             icon: powerIconOn,
                           )
-                        : Icon(powerIconOff, size: 80, color: Colors.white),
+                        : const ImageIcon(AssetImage(CaldenIcons.waterOff)),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -1289,13 +1289,19 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
             },
           ),
           actions: [
-            Icon(
-              key: keys['termotanque:servidor']!,
-              globalDATA['$pc/$sn']?['cstate'] ?? false
-                  ? HugeIcons.strokeRoundedCloud
-                  : Icons.cloud_off,
-              color: color0,
-            ),
+            globalDATA['$pc/$sn']?['cstate'] ?? false
+                ? ImageIcon(
+                    const AssetImage(CaldenIcons.cloud),
+                    color: color0,
+                    size: 35,
+                    key: keys['termotanque:servidor']!,
+                  )
+                : ImageIcon(
+                    const AssetImage(CaldenIcons.cloudOff),
+                    color: color0,
+                    size: 25,
+                    key: keys['termotanque:servidor']!,
+                  ),
             IconButton(
               key: keys['termotanque:wifi']!,
               icon: Icon(wifiState.wifiIcon, color: color0),

@@ -620,11 +620,17 @@ class _WidgetConfigScreenState extends State<WidgetConfigScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(
-                      online ? HugeIcons.strokeRoundedCloud : Icons.cloud_off,
-                      size: 14,
-                      color: online ? Colors.green : color3,
-                    ),
+                    online
+                        ? ImageIcon(
+                            const AssetImage(CaldenIcons.cloud),
+                            color: online ? Colors.green : color3,
+                            size: 25,
+                          )
+                        : ImageIcon(
+                            const AssetImage(CaldenIcons.cloudOff),
+                            size: 14,
+                            color: online ? Colors.green : color3,
+                          ),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
