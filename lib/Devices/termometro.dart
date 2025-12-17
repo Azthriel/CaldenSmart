@@ -453,7 +453,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
   }
 
   void subscribeToWifiStatus() async {
-    printLog.i('Se subscribio a wifi');
+   // printLog.i('Se subscribio a wifi');
     await bluetoothManager.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
@@ -466,7 +466,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
   }
 
   void subscribeToVars() async {
-    printLog.i('Me subscribo a vars');
+   // printLog.i('Me subscribo a vars');
     await bluetoothManager.varsUuid.setNotifyValue(true);
 
     final trueStatusSub =
@@ -600,17 +600,17 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
               if (type == 'max') {
                 alertMaxTemp = newValue;
                 String data = '$pc[7]($newValue)';
-                printLog.i('Enviando: $data');
+                //printLog.i('Enviando: $data');
                 bluetoothManager.toolsUuid.write(data.codeUnits);
               } else {
                 alertMinTemp = newValue;
                 String data = '$pc[8]($newValue)';
-                printLog.i('Enviando: $data');
+                //printLog.i('Enviando: $data');
                 bluetoothManager.toolsUuid.write(data.codeUnits);
               }
             });
-            printLog.i(
-                'Nuevo valor de alerta ${type == 'max' ? 'máxima' : 'mínima'}: $newValue°C');
+           // printLog.i(
+           //     'Nuevo valor de alerta ${type == 'max' ? 'máxima' : 'mínima'}: $newValue°C');
 
             Navigator.of(context).pop();
           },
@@ -623,9 +623,9 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
     final String pc = DeviceManager.getProductCode(deviceName);
     final String sn = DeviceManager.extractSerialNumber(deviceName);
 
-    printLog.i('Building historial page for $pc/$sn');
-    printLog.i('GlobalDATA keys: ${globalDATA.keys}');
-    printLog.i('Device data: ${globalDATA['$pc/$sn']}');
+   // printLog.i('Building historial page for $pc/$sn');
+   // printLog.i('GlobalDATA keys: ${globalDATA.keys}');
+   // printLog.i('Device data: ${globalDATA['$pc/$sn']}');
 
     // Obtener datos desde globalDATA
     Map<String, dynamic> historicTemp =
@@ -633,8 +633,8 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
     bool historicTempPremium =
         globalDATA['$pc/$sn']?['historicTempPremium'] ?? false;
 
-    printLog.i('HistoricTemp: $historicTemp');
-    printLog.i('HistoricTempPremium: $historicTempPremium');
+   // printLog.i('HistoricTemp: $historicTemp');
+   // printLog.i('HistoricTempPremium: $historicTempPremium');
 
     // Convertir el mapa a lista de puntos ordenados por timestamp
     List<MapEntry<DateTime, double>> dataPoints = [];
@@ -655,7 +655,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
         }
 
         dataPoints.add(MapEntry(timestamp, temp));
-        printLog.i('Parsed point: $timestamp -> $temp°C');
+      //  printLog.i('Parsed point: $timestamp -> $temp°C');
       } catch (e) {
         printLog.e('Error parsing timestamp "$key": $e');
       }
@@ -664,7 +664,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
     // Ordenar por timestamp
     dataPoints.sort((a, b) => a.key.compareTo(b.key));
 
-    printLog.i('DataPoints count: ${dataPoints.length}');
+   // printLog.i('DataPoints count: ${dataPoints.length}');
 
     if (dataPoints.isEmpty) {
       return Container(
@@ -1396,7 +1396,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                           setState(() {
                             _isTutorialActive = false;
                           });
-                          printLog.i('Tutorial is complete!');
+                       //   printLog.i('Tutorial is complete!');
                         },
                       );
                     }

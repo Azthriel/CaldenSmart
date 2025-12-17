@@ -1027,7 +1027,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
 
     Navigator.pop(context, true);
 
-    printLog.i(eventosCreados);
+   // printLog.i(eventosCreados);
   }
 
   @override

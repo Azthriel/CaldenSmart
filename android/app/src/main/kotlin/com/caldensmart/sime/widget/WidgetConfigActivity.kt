@@ -47,7 +47,6 @@ class WidgetConfigActivity : FlutterActivity() {
                     // Flutter nos pide el ID del widget actual
                     result.success(appWidgetId)
                 } else if (call.method == "finishConfig") {
-                    // Flutter nos dice "¡Listo! El usuario eligió el dispositivo"
                     
                     // Confirmamos a Android que la configuración fue exitosa
                     val resultValue = Intent()

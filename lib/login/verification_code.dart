@@ -15,129 +15,139 @@ Widget buildEnterCodeForm(WelcomePageState state) {
             bottom: MediaQuery.of(state.context).viewInsets.bottom,
           ),
           child: state.buildConstrainedCard(
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Código de verificación',
-                  style: TextStyle(
-                      fontSize: 24, fontWeight: FontWeight.bold, color: color1),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Ingrese el código enviado a su correo y su nueva contraseña',
-                  style: TextStyle(fontSize: 18, color: color0),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 15),
-                state.buildTextFormField(
-                  controller: state.enterCodeController,
-                  hintText: 'Código',
-                  icon: HugeIcons.strokeRoundedMessage02,
-                  obscureText: false,
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Por favor, ingrese el código';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 10),
-                state.buildTextFormField(
-                  controller: state.newPasswordController,
-                  hintText: 'Nueva contraseña',
-                  icon: HugeIcons.strokeRoundedSquareLock01,
-                  obscureText: state.obscurePassword,
-                  suffixIcon: GestureDetector(
-                    onTap: () {
-                      state.togglePasswordVisibility();
-                    },
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      transitionBuilder:
-                          (Widget child, Animation<double> animation) {
-                        return RotationTransition(
-                          turns: child.key == const ValueKey('icon1')
-                              ? Tween<double>(begin: 1, end: 0)
-                                  .animate(animation)
-                              : Tween<double>(begin: 0, end: 1)
-                                  .animate(animation),
-                          child: child,
-                        );
-                      },
-                      child: state.obscurePassword
-                          ? const Icon(HugeIcons.strokeRoundedViewOff,
-                              key: ValueKey('icon1'), color: color1)
-                          : const Icon(HugeIcons.strokeRoundedView,
-                              key: ValueKey('icon2'), color: color1),
-                    ),
+            Form(
+              key: state.resetPasswordFormKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Código de verificación',
+                    style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: color0),
+                    textAlign: TextAlign.center,
                   ),
-                  keyboardType: TextInputType.text,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Por favor, ingrese su nueva contraseña';
-                    }
-                    if (value.trim().length < 8) {
-                      return 'La contraseña debe tener\nal menos 8 caracteres';
-                    }
-                    if (!RegExp(r'\d').hasMatch(value.trim())) {
-                      return 'La contraseña debe tener\nal menos 1 número';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (state.enterCodeController.text.trim().isEmpty ||
-                          state.newPasswordController.text.trim().isEmpty) {
-                        showToast(
-                            'Por favor, ingrese el código y la nueva contraseña');
-                      } else {
-                        await state.confirmPasswordReset(
-                          state.forgotPasswordEmailController.text.trim(),
-                          state.enterCodeController.text.trim(),
-                          state.newPasswordController.text.trim(),
-                        );
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Ingrese el código enviado a su correo y su nueva contraseña',
+                    style: TextStyle(fontSize: 18, color: color0),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 15),
+                  state.buildTextFormField(
+                    controller: state.enterCodeController,
+                    hintText: 'Código',
+                    icon: HugeIcons.strokeRoundedMessage02,
+                    obscureText: false,
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Por favor, ingrese el código';
                       }
+                      return null;
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: color1,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
+                  ),
+                  const SizedBox(height: 10),
+                  state.buildTextFormField(
+                    controller: state.newPasswordController,
+                    hintText: 'Nueva contraseña',
+                    icon: HugeIcons.strokeRoundedSquareLock01,
+                    obscureText: state.obscurePassword,
+                    suffixIcon: GestureDetector(
+                      onTap: () {
+                        state.togglePasswordVisibility();
+                      },
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        transitionBuilder:
+                            (Widget child, Animation<double> animation) {
+                          return RotationTransition(
+                            turns: child.key == const ValueKey('icon1')
+                                ? Tween<double>(begin: 1, end: 0)
+                                    .animate(animation)
+                                : Tween<double>(begin: 0, end: 1)
+                                    .animate(animation),
+                            child: child,
+                          );
+                        },
+                        child: state.obscurePassword
+                            ? const Icon(HugeIcons.strokeRoundedViewOff,
+                                key: ValueKey('icon1'), color: color1)
+                            : const Icon(HugeIcons.strokeRoundedView,
+                                key: ValueKey('icon2'), color: color1),
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30.0),
-                      ),
-                      elevation: 5,
                     ),
-                    child: const Text(
-                      'Confirmar',
-                      style: TextStyle(color: color0, fontSize: 16),
+                    keyboardType: TextInputType.text,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Por favor, ingrese su nueva contraseña';
+                      }
+                      final String password = value.trim();
+
+                      if (password.length < 8) {
+                        return 'Mínimo 8 caracteres.';
+                      }
+                      if (!RegExp(r'[a-zA-Z]').hasMatch(password)) {
+                        return 'Debe tener al menos una letra.';
+                      }
+                      if (!RegExp(r'[A-Z]').hasMatch(password)) {
+                        return 'Debe tener una mayúscula.';
+                      }
+                      if (!RegExp(r'\d').hasMatch(password)) {
+                        return 'Debe tener al menos un número.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (state.resetPasswordFormKey.currentState!
+                            .validate()) {
+                          await state.confirmPasswordReset(
+                            state.forgotPasswordEmailController.text.trim(),
+                            state.enterCodeController.text.trim(),
+                            state.newPasswordController.text.trim(),
+                          );
+                        } else {}
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: color1,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30.0),
+                        ),
+                        elevation: 5,
+                      ),
+                      child: const Text(
+                        'Confirmar',
+                        style: TextStyle(color: color0, fontSize: 16),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 5),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () {
-                      state.resendResetCode(
-                          state.forgotPasswordEmailController.text.trim());
-                    },
-                    style: TextButton.styleFrom(foregroundColor: color1),
-                    child: const Text(
-                      'Reenviar código',
-                      style: TextStyle(color: color0, fontSize: 14),
+                  const SizedBox(height: 5),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () {
+                        state.resendResetCode(
+                            state.forgotPasswordEmailController.text.trim());
+                      },
+                      style: TextButton.styleFrom(foregroundColor: color1),
+                      child: const Text(
+                        'Reenviar código',
+                        style: TextStyle(color: color0, fontSize: 14),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

@@ -74,7 +74,7 @@ flutter:
     - assets/Background.png
     - assets/DragonForeground.png
     - assets/LogoApp.png
-    
+
     # Assets branch
     - assets/branch/Banner.png
     - assets/branch/caldensmart_rounded.png
@@ -85,7 +85,7 @@ flutter:
     - assets/branch/Foreground.png
     - assets/branch/Logo.png
     - assets/branch/Logo_sitio.png
-    
+
     # Assets devices
     - assets/devices/015773.jpg
     - assets/devices/020010.jpg
@@ -97,7 +97,7 @@ flutter:
     - assets/devices/027313.jpg
     - assets/devices/028000.jpg
     - assets/devices/027345.jpg
-    
+
     # Assets misc
     - assets/misc/Alexa.png
     - assets/misc/google.png
@@ -105,3 +105,10 @@ flutter:
     - assets/misc/parteSuperior.png
     - assets/misc/persiana.jpg
     - assets/misc/Siri.webp
+
+    # icons
+    - assets/icons/unlock.png
+    - assets/icons/cloud.png
+    - assets/icons/cloudOff.png
+    - assets/icons/snowOff.png
+    - assets/icons/waterOff.png

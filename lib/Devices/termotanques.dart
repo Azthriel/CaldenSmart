@@ -426,10 +426,10 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
 
     valueConsuption = equipmentConsumption(pc);
 
-    printLog.i('Valor temp: $tempValue');
-    printLog.i('¿Encendido? $turnOn');
-    printLog.i('¿Alquiler temporario? $activatedAT');
-    printLog.i('¿Inquilino? $tenant');
+   // printLog.i('Valor temp: $tempValue');
+   // printLog.i('¿Encendido? $turnOn');
+   // printLog.i('¿Alquiler temporario? $activatedAT');
+   // printLog.i('¿Inquilino? $tenant');
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       updateWifiValues(toolsValues);
       if (shouldUpdateDevice) {
@@ -499,7 +499,7 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
 
     if (partes.length > 2) {
       tiempo = partes[3];
-      printLog.i('Tiempo: ${utf8.decode(list).split(':')}');
+    //  printLog.i('Tiempo: ${utf8.decode(list).split(':')}');
     } else {
       timeData();
     }
@@ -513,7 +513,7 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
           loading = true;
         });
 
-        printLog.i('Estoy haciendo calculaciones místicas');
+      //  printLog.i('Estoy haciendo calculaciones místicas');
 
         if (valueConsuption != null) {
           result = double.parse(tiempo) *
@@ -527,7 +527,7 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
 
         await Future.delayed(const Duration(seconds: 1));
 
-        printLog.i('Calculaciones terminadas');
+      //  printLog.i('Calculaciones terminadas');
 
         if (context.mounted) {
           setState(() {
@@ -546,12 +546,12 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
   void updateWifiValues(List<int> data) {
     var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-    printLog.i(fun);
+  //  printLog.i(fun);
     var parts = fun.split(':');
     final regex = RegExp(r'\((\d+)\)');
     final match = regex.firstMatch(parts[2]);
     int users = int.parse(match!.group(1).toString());
-    printLog.i('Hay $users conectados');
+  //  printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
     final wifiNotifier = ref.read(wifiProvider.notifier);
@@ -603,12 +603,12 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
   }
 
   void subscribeToWifiStatus() async {
-    printLog.i('Se subscribio a wifi');
+  //  printLog.i('Se subscribio a wifi');
     await bluetoothManager.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
         bluetoothManager.toolsUuid.onValueReceived.listen((List<int> status) {
-      printLog.i('Llegaron cositas wifi');
+  //    printLog.i('Llegaron cositas wifi');
       updateWifiValues(status);
     });
 
@@ -616,7 +616,7 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
   }
 
   void subscribeTrueStatus() async {
-    printLog.i('Me subscribo a vars');
+ //   printLog.i('Me subscribo a vars');
     await bluetoothManager.varsUuid.setNotifyValue(true);
 
     final trueStatusSub =
@@ -913,7 +913,7 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
                                         });
                                       },
                                       onChangeEnd: (value) {
-                                        printLog.i('$value');
+                                       // printLog.i('$value');
                                         sendTemperature(value.round());
                                       },
                                     ),
@@ -1405,7 +1405,7 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
                           setState(() {
                             _isTutorialActive = false;
                           });
-                          printLog.i('Tutorial is complete!');
+                         // printLog.i('Tutorial is complete!');
                         },
                       );
                     }

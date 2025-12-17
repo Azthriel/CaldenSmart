@@ -580,13 +580,13 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                       paso['stepDelayUnit'] as String? ?? 'seg';
 
                   // Debug printLog.i para ver qué valores tenemos
-                  printLog.i('=== DEBUG DELAY ===');
-                  printLog.i('stepDelay: $stepDelay');
-                  printLog.i('stepDelay.inSeconds: ${stepDelay.inSeconds}');
-                  printLog.i('stepDelay.inMinutes: ${stepDelay.inMinutes}');
-                  printLog.i('stepDelayUnit: $stepDelayUnit');
-                  printLog.i(
-                      'stepDelay > Duration.zero: ${stepDelay > Duration.zero}');
+                  // printLog.i('=== DEBUG DELAY ===');
+                  // printLog.i('stepDelay: $stepDelay');
+                  // printLog.i('stepDelay.inSeconds: ${stepDelay.inSeconds}');
+                  // printLog.i('stepDelay.inMinutes: ${stepDelay.inMinutes}');
+                  // printLog.i('stepDelayUnit: $stepDelayUnit');
+                  // printLog.i(
+                  //     'stepDelay > Duration.zero: ${stepDelay > Duration.zero}');
 
                   String delayText = 'Instantáneo';
                   String delaySubtext = '';
@@ -1032,7 +1032,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
       'stepDelayUnit': tempStepDelayUnit,
     };
 
-    printLog.i('stepData guardado: $stepData');
+    //printLog.i('stepData guardado: $stepData');
 
     setState(() {
       if (currentStepIndex < pasosCadena.length) {
@@ -1041,7 +1041,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
         pasosCadena.add(stepData);
       }
 
-      printLog.i('pasosCadena después de guardar: $pasosCadena');
+      //printLog.i('pasosCadena después de guardar: $pasosCadena');
       currentStep = 2;
     });
   }
@@ -1322,7 +1322,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
 
     Navigator.pop(context, true);
 
-    printLog.i(eventosCreados);
+    //printLog.i(eventosCreados);
   }
 
   IconData _getContinueIcon() {

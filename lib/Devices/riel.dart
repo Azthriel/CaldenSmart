@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../Global/manager_screen.dart';
 import '../master.dart';
-import 'package:caldensmart/logger.dart';
+// import 'package:caldensmart/logger.dart';
 
 class RollerPage extends ConsumerStatefulWidget {
   const RollerPage({super.key});
@@ -113,12 +113,12 @@ class RollerPageState extends ConsumerState<RollerPage> {
   void updateWifiValues(List<int> data) {
     var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-    printLog.i(fun);
+    //printLog.i(fun);
     var parts = fun.split(':');
     final regex = RegExp(r'\((\d+)\)');
     final match = regex.firstMatch(parts[2]);
     int users = int.parse(match!.group(1).toString());
-    printLog.i('Hay $users conectados');
+    //printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
     final wifiNotifier = ref.read(wifiProvider.notifier);
@@ -170,7 +170,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
   }
 
   void subscribeToWifiStatus() async {
-    printLog.i('Se subscribio a wifi');
+    //printLog.i('Se subscribio a wifi');
     await bluetoothManager.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
@@ -182,7 +182,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
   }
 
   void subToVars() async {
-    printLog.i('Me subscribo a vars');
+   // printLog.i('Me subscribo a vars');
     await bluetoothManager.varsUuid.setNotifyValue(true);
 
     final varsSub =
@@ -202,13 +202,13 @@ class RollerPageState extends ConsumerState<RollerPage> {
 
   void setRange(int mm) {
     String data = '$pc[7]($mm)';
-    printLog.i(data);
+    //printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setDistance(int pc) {
     String data = '$pc[7]($pc%)';
-    printLog.i(data);
+    //printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
@@ -219,43 +219,43 @@ class RollerPageState extends ConsumerState<RollerPage> {
 
   void setMotorSpeed(String rpm) {
     String data = '$pc[10]($rpm)';
-    printLog.i(data);
+    //printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setMicroStep(String uStep) {
     String data = '$pc[11]($uStep)';
-    printLog.i(data);
+    //printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setMotorCurrent(bool run, String value) {
     String data = '$pc[12](${run ? '1' : '0'}#$value)';
-    printLog.i(data);
+    //printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setFreeWheeling(bool active) {
     String data = '$pc[14](${active ? '1' : '0'})';
-    printLog.i(data);
+    //printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setTPWMTHRS(String value) {
     String data = '$pc[15]($value)';
-    printLog.i(data);
+    //printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setTCOOLTHRS(String value) {
     String data = '$pc[16]($value)';
-    printLog.i(data);
+    //printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setSGTHRS(String value) {
     String data = '$pc[17]($value)';
-    printLog.i(data);
+    //printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
@@ -337,7 +337,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                         setState(() {
                           workingPosition = 0;
                         });
-                        printLog.i(data);
+                        //printLog.i(data);
                       },
                       onLongPressEnd: (LongPressEndDetails a) {
                         String data = '$pc[7]($actualPosition%)';
@@ -345,7 +345,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                         setState(() {
                           workingPosition = actualPosition;
                         });
-                        printLog.i(data);
+                        //printLog.i(data);
                       },
                       child: Material(
                         color: Colors.transparent,
@@ -396,7 +396,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                         setState(() {
                           workingPosition = 100;
                         });
-                        printLog.i(data);
+                        //printLog.i(data);
                       },
                       onLongPressEnd: (LongPressEndDetails a) {
                         String data = '$pc[7]($actualPosition%)';
@@ -404,7 +404,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                         setState(() {
                           workingPosition = actualPosition;
                         });
-                        printLog.i(data);
+                       // printLog.i(data);
                       },
                       child: Material(
                         color: Colors.transparent,

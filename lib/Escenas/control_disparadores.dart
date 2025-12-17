@@ -696,7 +696,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                                 isSelected: [isOn == true, isOn == false],
                                 onPressed: (i) => setState(() {
                                   deviceActions[device] = i == 0 ? true : false;
-                                  printLog.i('$deviceActions', color: 'verde');
+                                //  printLog.i('$deviceActions', color: 'verde');
                                 }),
                                 borderRadius: BorderRadius.circular(12),
                                 selectedColor: color0,

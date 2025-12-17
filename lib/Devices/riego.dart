@@ -50,6 +50,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
 
   late List<String> zoneOrder;
   late List<TextEditingController> minutesControllers;
+  late List<TextEditingController> secondsControllers;
   late List<bool> zoneEnabled;
   late List<bool> selectedExtensions;
   late List<String> extensionesEncontradas;
@@ -429,6 +430,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
 
     zoneOrder = [];
     minutesControllers = [];
+    secondsControllers = [];
     zoneEnabled = [];
     zones = {};
 
@@ -827,12 +829,12 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
   void updateWifiValues(List<int> data) {
     var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-    printLog.i(fun);
+   // printLog.i(fun);
     var parts = fun.split(':');
     final regex = RegExp(r'\((\d+)\)');
     final match = regex.firstMatch(parts[2]);
     int users = int.parse(match!.group(1).toString());
-    printLog.i('Hay $users conectados');
+   // printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
     final wifiNotifier = ref.read(wifiProvider.notifier);
@@ -884,7 +886,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
   }
 
   void subscribeToWifiStatus() async {
-    printLog.i('Se subscribio a wifi');
+    //printLog.i('Se subscribio a wifi');
     await bluetoothManager.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
@@ -898,7 +900,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
   void processValues(List<int> values) {
     ioValues = values;
     var parts = utf8.decode(values).split('/');
-    printLog.i('Valores: $parts');
+    //printLog.i('Valores: $parts');
     tipo.clear();
     estado.clear();
     common.clear();
@@ -921,8 +923,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
           })
         });
 
-        printLog.i(
-            'En la posición $i el modo es ${tipo[i]} y su estado es ${estado[i]}');
+        // printLog.i(
+        //     'En la posición $i el modo es ${tipo[i]} y su estado es ${estado[i]}');
       }
       setState(() {});
     } else if (pc == '020010_IOT') {
@@ -958,7 +960,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
           })
         });
 
-        printLog.i('¿La entrada $j esta en alerta?: ${alertIO[j]}');
+       // printLog.i('¿La entrada $j esta en alerta?: ${alertIO[j]}');
       }
       setState(() {});
     } else if (pc == '020020_IOT') {
@@ -994,7 +996,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
           })
         });
 
-        printLog.i('¿La entrada $j esta en alerta?: ${alertIO[j]}');
+        //printLog.i('¿La entrada $j esta en alerta?: ${alertIO[j]}');
       }
       setState(() {});
     } else {
@@ -1031,10 +1033,10 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
 
   void subToIO() async {
     await bluetoothManager.ioUuid.setNotifyValue(true);
-    printLog.i('Subscrito a IO');
+   // printLog.i('Subscrito a IO');
 
     var ioSub = bluetoothManager.ioUuid.onValueReceived.listen((event) {
-      printLog.i('Cambio en IO');
+   //   printLog.i('Cambio en IO');
       processValues(event);
     });
 
@@ -1369,7 +1371,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                             children: [
                               const Row(children: [
                                 Icon(
-                                  HugeIcons.strokeRoundedPlugSocket,
+                                  HugeIcons.strokeRoundedShutDown,
                                   color: color1,
                                   size: 25,
                                 ),
@@ -2469,6 +2471,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                         zoneOrder.add(deviceId);
                                         minutesControllers.add(
                                             TextEditingController(text: '5'));
+                                        secondsControllers.add(
+                                            TextEditingController(text: '00'));
                                         zoneEnabled.add(true);
                                         zoneCounter++;
                                       }
@@ -2779,15 +2783,15 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                     String deviceId =
                                         paso['device']?.toString() ?? '';
                                     int minutes = paso['duration'] as int? ?? 5;
+                                    int seconds =
+                                        paso['duration_seg'] as int? ?? 0;
                                     String zoneName =
                                         getZoneNameFromDevice(deviceId);
 
                                     return Container(
                                       margin: const EdgeInsets.only(bottom: 6),
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 10,
-                                      ),
+                                          horizontal: 12, vertical: 8),
                                       decoration: BoxDecoration(
                                         color: color0,
                                         borderRadius: BorderRadius.circular(12),
@@ -2802,26 +2806,32 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                       ),
                                       child: Row(
                                         children: [
-                                          Container(
-                                            width: 26,
-                                            height: 26,
-                                            decoration: BoxDecoration(
-                                              color: color1,
-                                              borderRadius:
-                                                  BorderRadius.circular(13),
-                                            ),
-                                            child: Center(
-                                              child: Text(
-                                                '${index + 1}',
-                                                style: const TextStyle(
-                                                  color: color0,
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.bold,
+                                          SizedBox(
+                                            width: 75,
+                                            child: Align(
+                                              alignment: Alignment.centerLeft,
+                                              child: Container(
+                                                width: 26,
+                                                height: 26,
+                                                decoration: BoxDecoration(
+                                                  color: color1,
+                                                  borderRadius:
+                                                      BorderRadius.circular(13),
+                                                ),
+                                                child: Center(
+                                                  child: Text(
+                                                    '${index + 1}',
+                                                    style: const TextStyle(
+                                                      color: color0,
+                                                      fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
                                             ),
                                           ),
-                                          const SizedBox(width: 12),
                                           Expanded(
                                             child: Text(
                                               zoneName,
@@ -2831,26 +2841,50 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                                 fontWeight: FontWeight.w600,
                                               ),
                                               textAlign: TextAlign.center,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  color1.withValues(alpha: 0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              '$minutes min',
-                                              style: const TextStyle(
-                                                color: color1,
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w600,
+                                          SizedBox(
+                                            width: 75,
+                                            child: Align(
+                                              alignment: Alignment.centerRight,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: color1.withValues(
+                                                      alpha: 0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      '$minutes min',
+                                                      style: const TextStyle(
+                                                        color: color1,
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                    if (seconds > 0)
+                                                      Text(
+                                                        '$seconds seg',
+                                                        style: const TextStyle(
+                                                          color: color1,
+                                                          fontSize: 11,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -3068,6 +3102,10 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                 zoneOrder.insert(newIndex, item);
                                 minutesControllers.insert(newIndex, controller);
                                 zoneEnabled.insert(newIndex, enabled);
+                                final secController =
+                                    secondsControllers.removeAt(oldIndex);
+                                secondsControllers.insert(
+                                    newIndex, secController);
                               });
                             },
                             children: List.generate(zoneOrder.length, (index) {
@@ -3129,11 +3167,9 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                       ),
                                     ),
                                     Expanded(
-                                      flex: 4,
+                                      flex: 5,
                                       child: Container(
-                                        height: 40,
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8),
+                                        height: 72,
                                         decoration: BoxDecoration(
                                           color: Colors.white,
                                           borderRadius:
@@ -3151,105 +3187,249 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                             ),
                                           ],
                                         ),
-                                        child: Row(
+                                        child: Column(
                                           children: [
-                                            GestureDetector(
-                                              onTap: () {
-                                                int currentValue = int.tryParse(
+                                            Expanded(
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  GestureDetector(
+                                                    behavior:
+                                                        HitTestBehavior.opaque,
+                                                    onTap: () {
+                                                      int currentVal = int.tryParse(
+                                                              minutesControllers[
+                                                                      index]
+                                                                  .text) ??
+                                                          0;
+                                                      if (currentVal > 0) {
                                                         minutesControllers[
-                                                                index]
-                                                            .text) ??
-                                                    0;
-                                                if (currentValue > 1) {
-                                                  minutesControllers[index]
-                                                          .text =
-                                                      (currentValue - 1)
-                                                          .toString();
-                                                }
-                                              },
-                                              child: Container(
-                                                width: 28,
-                                                height: 28,
-                                                decoration: BoxDecoration(
-                                                  color: Colors.grey.shade100,
-                                                  borderRadius:
-                                                      BorderRadius.circular(6),
-                                                ),
-                                                child: const Icon(
-                                                  HugeIcons
-                                                      .strokeRoundedPlugSocket,
-                                                  size: 14,
-                                                  color: color1,
-                                                ),
+                                                                    index]
+                                                                .text =
+                                                            (currentVal - 1)
+                                                                .toString();
+                                                      }
+                                                    },
+                                                    child: Container(
+                                                      width: 32,
+                                                      alignment:
+                                                          Alignment.center,
+                                                      child: const Icon(
+                                                        HugeIcons
+                                                            .strokeRoundedMinusSign,
+                                                        size: 14,
+                                                        color: color1,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Row(
+                                                    children: [
+                                                      SizedBox(
+                                                        width: 28,
+                                                        child: TextField(
+                                                          controller:
+                                                              minutesControllers[
+                                                                  index],
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                          keyboardType:
+                                                              TextInputType
+                                                                  .number,
+                                                          inputFormatters: [
+                                                            FilteringTextInputFormatter
+                                                                .digitsOnly,
+                                                            LengthLimitingTextInputFormatter(
+                                                                3),
+                                                          ],
+                                                          style:
+                                                              const TextStyle(
+                                                            color: color1,
+                                                            fontSize: 13,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                          ),
+                                                          decoration:
+                                                              const InputDecoration(
+                                                            border: InputBorder
+                                                                .none,
+                                                            contentPadding:
+                                                                EdgeInsets.zero,
+                                                            isDense: true,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        'min',
+                                                        style: TextStyle(
+                                                          color: Colors
+                                                              .grey.shade600,
+                                                          fontSize: 11,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  GestureDetector(
+                                                    behavior:
+                                                        HitTestBehavior.opaque,
+                                                    onTap: () {
+                                                      int currentVal = int.tryParse(
+                                                              minutesControllers[
+                                                                      index]
+                                                                  .text) ??
+                                                          0;
+                                                      minutesControllers[index]
+                                                              .text =
+                                                          (currentVal + 1)
+                                                              .toString();
+                                                    },
+                                                    child: Container(
+                                                      width: 32,
+                                                      alignment:
+                                                          Alignment.center,
+                                                      child: const Icon(
+                                                        HugeIcons
+                                                            .strokeRoundedPlusSign,
+                                                        size: 14,
+                                                        color: color1,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
+                                            ),
+                                            Divider(
+                                              height: 1,
+                                              thickness: 1,
+                                              color: Colors.grey.shade200,
                                             ),
                                             Expanded(
-                                              child: Container(
-                                                alignment: Alignment.center,
-                                                child: TextField(
-                                                  controller:
-                                                      minutesControllers[index],
-                                                  textAlign: TextAlign.center,
-                                                  keyboardType:
-                                                      TextInputType.number,
-                                                  inputFormatters: [
-                                                    FilteringTextInputFormatter
-                                                        .digitsOnly,
-                                                    LengthLimitingTextInputFormatter(
-                                                        3),
-                                                  ],
-                                                  style: const TextStyle(
-                                                    color: color1,
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.w700,
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  GestureDetector(
+                                                    behavior:
+                                                        HitTestBehavior.opaque,
+                                                    onTap: () {
+                                                      int currentVal = int.tryParse(
+                                                              secondsControllers[
+                                                                      index]
+                                                                  .text) ??
+                                                          0;
+                                                      int newVal =
+                                                          currentVal - 1;
+                                                      if (newVal < 0) {
+                                                        newVal = 59;
+                                                      }
+                                                      secondsControllers[index]
+                                                              .text =
+                                                          newVal
+                                                              .toString()
+                                                              .padLeft(2, '0');
+                                                    },
+                                                    child: Container(
+                                                      width: 32,
+                                                      alignment:
+                                                          Alignment.center,
+                                                      child: Icon(
+                                                        HugeIcons
+                                                            .strokeRoundedMinusSign,
+                                                        size: 14,
+                                                        color:
+                                                            color1.withValues(
+                                                                alpha: 0.8),
+                                                      ),
+                                                    ),
                                                   ),
-                                                  decoration:
-                                                      const InputDecoration(
-                                                    border: InputBorder.none,
-                                                    contentPadding:
-                                                        EdgeInsets.zero,
-                                                    isDense: true,
+                                                  Row(
+                                                    children: [
+                                                      SizedBox(
+                                                        width: 28,
+                                                        child: TextField(
+                                                          controller:
+                                                              secondsControllers[
+                                                                  index],
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                          keyboardType:
+                                                              TextInputType
+                                                                  .number,
+                                                          inputFormatters: [
+                                                            FilteringTextInputFormatter
+                                                                .digitsOnly,
+                                                            LengthLimitingTextInputFormatter(
+                                                                2),
+                                                          ],
+                                                          style:
+                                                              const TextStyle(
+                                                            color: color1,
+                                                            fontSize: 13,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                          ),
+                                                          decoration:
+                                                              const InputDecoration(
+                                                            border: InputBorder
+                                                                .none,
+                                                            contentPadding:
+                                                                EdgeInsets.zero,
+                                                            isDense: true,
+                                                            hintText: "00",
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        'seg',
+                                                        style: TextStyle(
+                                                          color: Colors
+                                                              .grey.shade600,
+                                                          fontSize: 11,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                ),
-                                              ),
-                                            ),
-                                            Text(
-                                              'min',
-                                              style: TextStyle(
-                                                color: Colors.grey.shade700,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            GestureDetector(
-                                              onTap: () {
-                                                int currentValue = int.tryParse(
-                                                        minutesControllers[
-                                                                index]
-                                                            .text) ??
-                                                    0;
-                                                if (currentValue < 999) {
-                                                  minutesControllers[index]
-                                                          .text =
-                                                      (currentValue + 1)
-                                                          .toString();
-                                                }
-                                              },
-                                              child: Container(
-                                                width: 28,
-                                                height: 28,
-                                                decoration: BoxDecoration(
-                                                  color: Colors.grey.shade100,
-                                                  borderRadius:
-                                                      BorderRadius.circular(6),
-                                                ),
-                                                child: const Icon(
-                                                  HugeIcons
-                                                      .strokeRoundedPlusSign,
-                                                  size: 14,
-                                                  color: color1,
-                                                ),
+                                                  GestureDetector(
+                                                    behavior:
+                                                        HitTestBehavior.opaque,
+                                                    onTap: () {
+                                                      int currentVal = int.tryParse(
+                                                              secondsControllers[
+                                                                      index]
+                                                                  .text) ??
+                                                          0;
+                                                      int newVal =
+                                                          currentVal + 1;
+                                                      if (newVal > 59) {
+                                                        newVal = 0;
+                                                      }
+                                                      secondsControllers[index]
+                                                              .text =
+                                                          newVal
+                                                              .toString()
+                                                              .padLeft(2, '0');
+                                                    },
+                                                    child: Container(
+                                                      width: 32,
+                                                      alignment:
+                                                          Alignment.center,
+                                                      child: Icon(
+                                                        HugeIcons
+                                                            .strokeRoundedPlusSign,
+                                                        size: 14,
+                                                        color:
+                                                            color1.withValues(
+                                                                alpha: 0.8),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                           ],
@@ -3390,10 +3570,14 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                         final minutes = int.tryParse(
                                                 minutesControllers[i].text) ??
                                             5;
+                                        final seconds = int.tryParse(
+                                                secondsControllers[i].text) ??
+                                            0;
 
                                         pasos.add({
                                           'device': zoneOrder[i],
                                           'duration': minutes,
+                                          'duration_seg': seconds,
                                         });
                                       }
                                     }
@@ -3439,6 +3623,10 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                       for (var controller
                                           in minutesControllers) {
                                         controller.text = '5';
+                                      }
+                                      for (var controller
+                                          in secondsControllers) {
+                                        controller.text = '00';
                                       }
                                       zoneEnabled = List<bool>.filled(
                                               zoneOrder.length, true)
@@ -3988,7 +4176,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                             isRutina = false;
                             isExtension = false;
                           });
-                          printLog.i('Tutorial is complete!');
+                          //printLog.i('Tutorial is complete!');
                         },
                       );
                     }

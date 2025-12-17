@@ -451,10 +451,10 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
 
     valueConsuption = equipmentConsumption(pc);
 
-    printLog.i('Valor temp: $tempValue');
-    printLog.i('¿Encendido? $turnOn');
-    printLog.i('¿Alquiler temporario? $activatedAT');
-    printLog.i('¿Inquilino? $tenant');
+    // printLog.i('Valor temp: $tempValue');
+    // printLog.i('¿Encendido? $turnOn');
+    // printLog.i('¿Alquiler temporario? $activatedAT');
+    // printLog.i('¿Inquilino? $tenant');
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       updateWifiValues(toolsValues);
       if (shouldUpdateDevice) {
@@ -525,7 +525,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
 
     if (partes.length > 2) {
       tiempo = partes[3];
-      printLog.i('Tiempo: ${utf8.decode(list).split(':')}');
+      //printLog.i('Tiempo: ${utf8.decode(list).split(':')}');
     } else {
       timeData();
     }
@@ -539,7 +539,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
           loading = true;
         });
 
-        printLog.i('Estoy haciendo calculaciones místicas');
+       // printLog.i('Estoy haciendo calculaciones místicas');
 
         if (valueConsuption != null) {
           result = double.parse(tiempo) *
@@ -552,7 +552,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
         }
         await Future.delayed(const Duration(seconds: 1));
 
-        printLog.i('Calculaciones terminadas');
+       // printLog.i('Calculaciones terminadas');
 
         if (context.mounted) {
           setState(() {
@@ -571,12 +571,12 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
   void updateWifiValues(List<int> data) {
     var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-    printLog.i(fun);
+   // printLog.i(fun);
     var parts = fun.split(':');
     final regex = RegExp(r'\((\d+)\)');
     final match = regex.firstMatch(parts[2]);
     int users = int.parse(match!.group(1).toString());
-    printLog.i('Hay $users conectados');
+   // printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
     final wifiNotifier = ref.read(wifiProvider.notifier);
@@ -628,12 +628,12 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
   }
 
   void subscribeToWifiStatus() async {
-    printLog.i('Se subscribio a wifi');
+   // printLog.i('Se subscribio a wifi');
     await bluetoothManager.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
         bluetoothManager.toolsUuid.onValueReceived.listen((List<int> status) {
-      printLog.i('Llegaron cositas wifi');
+    //  printLog.i('Llegaron cositas wifi');
       updateWifiValues(status);
     });
 
@@ -641,7 +641,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
   }
 
   void subscribeTrueStatus() async {
-    printLog.i('Me subscribo a vars');
+   // printLog.i('Me subscribo a vars');
     await bluetoothManager.varsUuid.setNotifyValue(true);
 
     final trueStatusSub =
@@ -702,15 +702,15 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
             await getDevicesInDistanceControl(currentUserEmail);
         deviceControl.add(deviceName);
         putDevicesInDistanceControl(currentUserEmail, deviceControl);
-        printLog.i(
-            'Hay ${deviceControl.length} equipos con el control x distancia');
+        // printLog.i(
+        //     'Hay ${deviceControl.length} equipos con el control x distancia');
 
         if (deviceControl.length == 1) {
           await initializeService();
           final backService = FlutterBackgroundService();
           await backService.startService();
           backService.invoke('distanceControl');
-          printLog.i('Servicio iniciado a las ${DateTime.now()}');
+          // printLog.i('Servicio iniciado a las ${DateTime.now()}');
         }
       } catch (e) {
         showToast('Error al iniciar control por distancia.');
@@ -724,14 +724,14 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
           await getDevicesInDistanceControl(currentUserEmail);
       deviceControl.remove(deviceName);
       putDevicesInDistanceControl(currentUserEmail, deviceControl);
-      printLog.i(
-          'Quedan ${deviceControl.length} equipos con el control x distancia');
+      // printLog.i(
+      //     'Quedan ${deviceControl.length} equipos con el control x distancia');
 
       if (deviceControl.isEmpty) {
         final backService = FlutterBackgroundService();
         backService.invoke("stopService");
         backTimerDS?.cancel();
-        printLog.i('Servicio apagado');
+        // printLog.i('Servicio apagado');
       }
     }
   }
@@ -891,7 +891,8 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                     child: turnOn
                         ? AnimatedIconWidget(
                             isHeating: trueStatus, icon: powerIconOn)
-                        : const ImageIcon(AssetImage(CaldenIcons.snowOff)),
+                        : const ImageIcon(AssetImage(CaldenIcons.snowOff),
+                            size: 80, color: color0),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -1051,7 +1052,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                                         });
                                       },
                                       onChangeEnd: (value) {
-                                        printLog.i('$value');
+                                        // printLog.i('$value');
                                         sendTemperature(value.round());
                                       },
                                     ),
@@ -1246,8 +1247,8 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                                                 });
                                               },
                                               onChangeEnd: (value) {
-                                                printLog.i(
-                                                    'Valor enviado: ${value.round()}');
+                                                // printLog.i(
+                                                //     'Valor enviado: ${value.round()}');
                                                 putDistanceOff(
                                                   pc,
                                                   sn,
@@ -1338,8 +1339,8 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                                                 });
                                               },
                                               onChangeEnd: (value) {
-                                                printLog.i(
-                                                    'Valor enviado: ${value.round()}');
+                                                // printLog.i(
+                                                //     'Valor enviado: ${value.round()}');
                                                 putDistanceOn(
                                                   pc,
                                                   sn,
@@ -1838,7 +1839,7 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
                           setState(() {
                             _isTutorialActive = false;
                           });
-                          printLog.i('Tutorial is complete!');
+                          // printLog.i('Tutorial is complete!');
                         },
                       );
                     }

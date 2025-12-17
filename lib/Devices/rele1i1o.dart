@@ -368,7 +368,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
     _notis =
         notificationMap['$pc/$sn'] ?? List<bool>.filled(parts.length, false);
 
-    printLog.i(_notis);
+    // printLog.i(_notis);
 
     tracking = devicesToTrack.contains(deviceName);
 
@@ -478,12 +478,12 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
   void updateWifiValues(List<int> data) {
     var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-    printLog.i(fun);
+    //printLog.i(fun);
     var parts = fun.split(':');
     final regex = RegExp(r'\((\d+)\)');
     final match = regex.firstMatch(parts[2]);
     int users = int.parse(match!.group(1).toString());
-    printLog.i('Hay $users conectados');
+    //printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
     final wifiNotifier = ref.read(wifiProvider.notifier);
@@ -536,7 +536,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
   }
 
   void subscribeToWifiStatus() async {
-    printLog.i('Se subscribio a wifi');
+    //printLog.i('Se subscribio a wifi');
     await bluetoothManager.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
@@ -550,7 +550,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
   void processValues(List<int> values) {
     ioValues = values;
     var parts = utf8.decode(values).split('/');
-    printLog.i('Valores: $parts');
+    //printLog.i('Valores: $parts');
     tipo.clear();
     estado.clear();
     common.clear();
@@ -590,10 +590,10 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
 
   void subToIO() async {
     await bluetoothManager.ioUuid.setNotifyValue(true);
-    printLog.i('Subscrito a IO');
+    //printLog.i('Subscrito a IO');
 
     var ioSub = bluetoothManager.ioUuid.onValueReceived.listen((event) {
-      printLog.i('Cambio en IO');
+      // printLog.i('Cambio en IO');
       processValues(event);
     });
 
@@ -685,15 +685,15 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
             await getDevicesInDistanceControl(currentUserEmail);
         deviceControl.add(deviceName);
         putDevicesInDistanceControl(currentUserEmail, deviceControl);
-        printLog.i(
-            'Hay ${deviceControl.length} equipos con el control x distancia');
+        // printLog.i(
+        //     'Hay ${deviceControl.length} equipos con el control x distancia');
 
         if (deviceControl.length == 1) {
           await initializeService();
           final backService = FlutterBackgroundService();
           await backService.startService();
           backService.invoke('distanceControl');
-          printLog.i('Servicio iniciado a las ${DateTime.now()}');
+          // printLog.i('Servicio iniciado a las ${DateTime.now()}');
         }
       } catch (e) {
         showToast('Error al iniciar control por distancia.');
@@ -707,14 +707,13 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
           await getDevicesInDistanceControl(currentUserEmail);
       deviceControl.remove(deviceName);
       putDevicesInDistanceControl(currentUserEmail, deviceControl);
-      printLog.i(
-          'Quedan ${deviceControl.length} equipos con el control x distancia');
+      //printLog.i('Quedan ${deviceControl.length} equipos con el control x distancia');
 
       if (deviceControl.isEmpty) {
         final backService = FlutterBackgroundService();
         backService.invoke("stopService");
         backTimerDS?.cancel();
-        printLog.i('Servicio apagado');
+        //printLog.i('Servicio apagado');
       }
     }
   }
@@ -1523,8 +1522,8 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                   });
                                                 },
                                                 onChangeEnd: (value) {
-                                                  printLog.i(
-                                                      'Valor enviado: ${value.round()}');
+                                                  // printLog.i(
+                                                  //     'Valor enviado: ${value.round()}');
                                                   putDistanceOff(
                                                     pc,
                                                     sn,
@@ -1617,8 +1616,8 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                   });
                                                 },
                                                 onChangeEnd: (value) {
-                                                  printLog.i(
-                                                      'Valor enviado: ${value.round()}');
+                                                  // printLog.i(
+                                                  //     'Valor enviado: ${value.round()}');
                                                   putDistanceOn(
                                                     pc,
                                                     sn,
@@ -1847,7 +1846,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                     setState(() {
                                                       String data =
                                                           '$pc[14]($i#0)';
-                                                      printLog.i(data);
+                                                      // printLog.i(data);
                                                       bluetoothManager.toolsUuid
                                                           .write(
                                                               data.codeUnits);
@@ -1896,7 +1895,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                                     setState(() {
                                                       String data =
                                                           '$pc[14]($i#1)';
-                                                      printLog.i(data);
+                                                      //printLog.i(data);
                                                       bluetoothManager.toolsUuid
                                                           .write(
                                                               data.codeUnits);
@@ -2212,7 +2211,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                           setState(() {
                             _isTutorialActive = false;
                           });
-                          printLog.i('Tutorial is complete!');
+                          //printLog.i('Tutorial is complete!');
                         },
                       );
                     }

@@ -476,6 +476,7 @@ class LoadState extends State<LoadingPage> {
               globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;
           turnOn = parts2[2] == '1';
           trueStatus = parts2[4] == '1';
+          actualTemp = parts2[5];
           printLog.i('Estado: $turnOn');
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');

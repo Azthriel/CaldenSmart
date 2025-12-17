@@ -20,7 +20,7 @@ Future<void> signInWithGoogle(BuildContext context) async {
         globalSignOut: true,
       ),
     );
-    printLog.i('Sesión anterior cerrada.');
+   // printLog.i('Sesión anterior cerrada.');
 
     // Abrir sesión en una ventana privada si el navegador o el sistema operativo lo permite
     final res = await Amplify.Auth.signInWithWebUI(
@@ -137,6 +137,8 @@ class WelcomePageState extends State<WelcomePage>
 
   ///*- Clave global para el formulario de registro *-\\\
   final registerFormKey = GlobalKey<FormState>();
+
+  final resetPasswordFormKey = GlobalKey<FormState>();
 
   ///*- Variable para el estado del checkbox de aceptar términos *-\\\
   bool acceptTerms = false;

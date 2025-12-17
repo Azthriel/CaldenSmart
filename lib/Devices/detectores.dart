@@ -290,12 +290,12 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
   void updateWifiValues(List<int> data) {
     var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-    printLog.i(fun);
+    //printLog.i(fun);
     var parts = fun.split(':');
     final regex = RegExp(r'\((\d+)\)');
     final match = regex.firstMatch(parts[2]);
     int users = int.parse(match!.group(1).toString());
-    printLog.i('Hay $users conectados');
+    //printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
     final wifiNotifier = ref.read(wifiProvider.notifier);
@@ -347,7 +347,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
   }
 
   void subscribeToWifiStatus() async {
-    printLog.i('Se subscribio a wifi');
+    //printLog.i('Se subscribio a wifi');
     await bluetoothManager.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
@@ -360,10 +360,10 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
 
   void _subscribeToWorkCharacteristic() async {
     await bluetoothManager.workUuid.setNotifyValue(true);
-    printLog.i('Me suscribí a work');
+    //printLog.i('Me suscribí a work');
     final workSub =
         bluetoothManager.workUuid.onValueReceived.listen((List<int> status) {
-      printLog.i('Cositas: $status');
+      //printLog.i('Cositas: $status');
       setState(() {
         alert = status[4] == 1;
         ppmCO = status[5] + (status[6] << 8);
@@ -373,15 +373,15 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
         promedioppmCO = status[17] + (status[18] << 8);
         promedioppmCH4 = status[19] + (status[20] << 8);
         daysToExpire = status[21] + (status[22] << 8);
-        printLog
-            .i('Parte baja CO: ${status[9]} // Parte alta CO: ${status[10]}');
-        printLog.i('PPMCO: $ppmCO');
-        printLog.i(
-            'Parte baja CH4: ${status[11]} // Parte alta CH4: ${status[12]}');
-        printLog.i('PPMCH4: $ppmCH4');
-        printLog.i('Alerta: $alert');
+        // printLog
+        //     .i('Parte baja CO: ${status[9]} // Parte alta CO: ${status[10]}');
+        // printLog.i('PPMCO: $ppmCO');
+        // printLog.i(
+        //     'Parte baja CH4: ${status[11]} // Parte alta CH4: ${status[12]}');
+        // printLog.i('PPMCH4: $ppmCH4');
+        // printLog.i('Alerta: $alert');
         _textToShow = alert ? 'PELIGRO' : 'AIRE PURO';
-        printLog.i(_textToShow);
+        // printLog.i(_textToShow);
       });
     });
 
@@ -1716,7 +1716,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                           setState(() {
                             _isTutorialActive = false;
                           });
-                          printLog.i('Tutorial is complete!');
+                          // printLog.i('Tutorial is complete!');
                         },
                       );
                     }

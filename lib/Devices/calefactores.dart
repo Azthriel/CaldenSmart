@@ -494,10 +494,10 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
 
     valueConsuption = equipmentConsumption(pc);
 
-    printLog.i('Valor temp: $tempValue');
-    printLog.i('¿Encendido? $turnOn');
-    printLog.i('¿Alquiler temporario? $activatedAT');
-    printLog.i('¿Inquilino? $tenant');
+    // printLog.i('Valor temp: $tempValue');
+    // printLog.i('¿Encendido? $turnOn');
+    // printLog.i('¿Alquiler temporario? $activatedAT');
+    // printLog.i('¿Inquilino? $tenant');
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       updateWifiValues(toolsValues);
       if (shouldUpdateDevice) {
@@ -569,7 +569,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
 
     if (partes.length > 2) {
       tiempo = partes[3];
-      printLog.i('Tiempo: ${utf8.decode(list).split(':')}');
+      //printLog.i('Tiempo: ${utf8.decode(list).split(':')}');
     } else {
       timeData();
     }
@@ -583,7 +583,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
           loading = true;
         });
 
-        printLog.i('Estoy haciendo calculaciones místicas');
+      //  printLog.i('Estoy haciendo calculaciones místicas');
 
         if (valueConsuption != null) {
           result = double.parse(tiempo) *
@@ -597,7 +597,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
 
         await Future.delayed(const Duration(seconds: 1));
 
-        printLog.i('Calculaciones terminadas');
+       // printLog.i('Calculaciones terminadas');
 
         if (context.mounted) {
           setState(() {
@@ -674,7 +674,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
   }
 
   void subscribeToWifiStatus() async {
-    printLog.i('Se subscribio a wifi');
+    //printLog.i('Se subscribio a wifi');
     await bluetoothManager.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
@@ -687,13 +687,13 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
   }
 
   void subscribeTrueStatus() async {
-    printLog.i('Me subscribo a vars');
+   // printLog.i('Me subscribo a vars');
     await bluetoothManager.varsUuid.setNotifyValue(true);
 
     final trueStatusSub =
         bluetoothManager.varsUuid.onValueReceived.listen((List<int> status) {
       var parts = utf8.decode(status).split(':');
-      printLog.i('Llegaron cositas vars: $parts', color: 'Naranja');
+    //  printLog.i('Llegaron cositas vars: $parts', color: 'Naranja');
 
       if (parts.length <= 3) {
         setState(() {
@@ -752,15 +752,15 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
             await getDevicesInDistanceControl(currentUserEmail);
         deviceControl.add(deviceName);
         putDevicesInDistanceControl(currentUserEmail, deviceControl);
-        printLog.i(
-            'Hay ${deviceControl.length} equipos con el control x distancia');
+        // printLog.i(
+        //     'Hay ${deviceControl.length} equipos con el control x distancia');
 
         if (deviceControl.length == 1) {
           await initializeService();
           final backService = FlutterBackgroundService();
           await backService.startService();
           backService.invoke('distanceControl');
-          printLog.i('Servicio iniciado a las ${DateTime.now()}');
+          //printLog.i('Servicio iniciado a las ${DateTime.now()}');
         }
       } catch (e) {
         showToast('Error al iniciar control por distancia.');
@@ -774,14 +774,14 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
           await getDevicesInDistanceControl(currentUserEmail);
       deviceControl.remove(deviceName);
       putDevicesInDistanceControl(currentUserEmail, deviceControl);
-      printLog.i(
-          'Quedan ${deviceControl.length} equipos con el control x distancia');
+      // printLog.i(
+      //     'Quedan ${deviceControl.length} equipos con el control x distancia');
 
       if (deviceControl.isEmpty) {
         final backService = FlutterBackgroundService();
         backService.invoke("stopService");
         backTimerDS?.cancel();
-        printLog.i('Servicio apagado');
+      //  printLog.i('Servicio apagado');
       }
     }
   }
@@ -1002,7 +1002,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                                 String data = '027000_IOT[15](1)';
                                 bluetoothManager.toolsUuid
                                     .write(data.codeUnits);
-                                printLog.i(data);
+                              //  printLog.i(data);
 
                                 HapticFeedback.selectionClick();
                               }
@@ -1020,7 +1020,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
 
                               String data = '027000_IOT[15](0)';
                               bluetoothManager.toolsUuid.write(data.codeUnits);
-                              printLog.i(data);
+                            //  printLog.i(data);
                             },
                             child: Container(
                               padding: const EdgeInsets.all(15),
@@ -1206,7 +1206,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                                         });
                                       },
                                       onChangeEnd: (value) {
-                                        printLog.i('$value');
+                                    //    printLog.i('$value');
                                         sendTemperature(value.round());
                                       },
                                     ),
@@ -1407,8 +1407,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                                                   });
                                                 },
                                                 onChangeEnd: (value) {
-                                                  printLog.i(
-                                                      'Valor enviado: ${value.round()}');
+                                                  // printLog.i(
+                                                  //     'Valor enviado: ${value.round()}');
                                                   putDistanceOff(
                                                     pc,
                                                     sn,
@@ -1501,8 +1501,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                                                   });
                                                 },
                                                 onChangeEnd: (value) {
-                                                  printLog.i(
-                                                      'Valor enviado: ${value.round()}');
+                                                  // printLog.i(
+                                                  //     'Valor enviado: ${value.round()}');
                                                   putDistanceOn(
                                                     pc,
                                                     sn,
@@ -2007,7 +2007,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                           setState(() {
                             _isTutorialActive = false;
                           });
-                          printLog.i('Tutorial is complete!');
+                          //printLog.i('Tutorial is complete!');
                         },
                       );
                     }

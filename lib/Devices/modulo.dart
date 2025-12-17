@@ -6,7 +6,7 @@ import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:caldensmart/logger.dart';
+// import 'package:caldensmart/logger.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../Global/manager_screen.dart';
 
@@ -332,7 +332,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
   @override
   void initState() {
     super.initState();
-    printLog.i('Marca de tiempo ${DateTime.now().toIso8601String()}');
+    // printLog.i('Marca de tiempo ${DateTime.now().toIso8601String()}');
     _selectedPins = List<bool>.filled(parts.length, false);
 
     tracking = devicesToTrack.contains(deviceName);
@@ -444,12 +444,12 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
   void updateWifiValues(List<int> data) {
     var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-    printLog.i(fun);
+    // printLog.i(fun);
     var parts = fun.split(':');
     final regex = RegExp(r'\((\d+)\)');
     final match = regex.firstMatch(parts[2]);
     int users = int.parse(match!.group(1).toString());
-    printLog.i('Hay $users conectados');
+    //printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
     final wifiNotifier = ref.read(wifiProvider.notifier);
@@ -501,7 +501,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
   }
 
   void subscribeToWifiStatus() async {
-    printLog.i('Se subscribio a wifi');
+    // printLog.i('Se subscribio a wifi');
     await bluetoothManager.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
@@ -515,7 +515,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
   void processValues(List<int> values) {
     ioValues = values;
     var parts = utf8.decode(values).split('/');
-    printLog.i('Valores: $parts');
+    // printLog.i('Valores: $parts');
     tipo.clear();
     estado.clear();
     common.clear();
@@ -553,7 +553,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
         })
       });
 
-      printLog.i('¿La entrada $j esta en alerta?: ${alertIO[j]}');
+      //   printLog.i('¿La entrada $j esta en alerta?: ${alertIO[j]}');
     }
 
     for (int i = 0; i < parts.length; i++) {
@@ -568,10 +568,10 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
 
   void subToIO() async {
     await bluetoothManager.ioUuid.setNotifyValue(true);
-    printLog.i('Subscrito a IO');
+    //   printLog.i('Subscrito a IO');
 
     var ioSub = bluetoothManager.ioUuid.onValueReceived.listen((event) {
-      printLog.i('Cambio en IO');
+      //   printLog.i('Cambio en IO');
       processValues(event);
     });
 
@@ -1273,7 +1273,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                                     setState(() {
                                                       String data =
                                                           '$pc[14]($i#0)';
-                                                      printLog.i(data);
+                                                      //  printLog.i(data);
                                                       bluetoothManager.toolsUuid
                                                           .write(
                                                               data.codeUnits);
@@ -1322,7 +1322,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                                                     setState(() {
                                                       String data =
                                                           '$pc[14]($i#1)';
-                                                      printLog.i(data);
+                                                      //  printLog.i(data);
                                                       bluetoothManager.toolsUuid
                                                           .write(
                                                               data.codeUnits);
@@ -1641,7 +1641,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                           setState(() {
                             _isTutorialActive = false;
                           });
-                          printLog.i('Tutorial is complete!');
+                          // printLog.i('Tutorial is complete!');
                         },
                       );
                     }

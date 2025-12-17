@@ -108,8 +108,8 @@ class WifiPageState extends ConsumerState<WifiPage>
   void _setupRiegoCompletedListener() {
     _riegoCompletedSubscription =
         riegoCompletedController.stream.listen((riegoName) {
-      printLog.i(
-          'Recibida notificación de riego completado en WiFi UI: $riegoName');
+      // printLog.i(
+      //     'Recibida notificación de riego completado en WiFi UI: $riegoName');
       if (mounted) {
         setState(() {
           _processingRiegos.remove(riegoName);
@@ -252,8 +252,8 @@ class WifiPageState extends ConsumerState<WifiPage>
         _saveOrder();
       }
 
-      printLog.i(
-          'Lista final de dispositivos: ${todosLosDispositivos.length} elementos');
+      // printLog.i(
+      //     'Lista final de dispositivos: ${todosLosDispositivos.length} elementos');
 
       _actualizarListasUI();
 
@@ -535,7 +535,7 @@ class WifiPageState extends ConsumerState<WifiPage>
         // Multi-Status - algunos dispositivos fallaron
         final responseData = jsonDecode(response.body);
 
-        printLog.i('Algunos dispositivos no pudieron ser controlados');
+        printLog.e('Algunos dispositivos no pudieron ser controlados');
 
         final exitosos = responseData['exitosos'] ?? 0;
         final fallidos = responseData['fallidos'] ?? 0;
@@ -1022,6 +1022,45 @@ class WifiPageState extends ConsumerState<WifiPage>
         .toList();
   }
 
+  //*- Función para habilitar/inhabilitar eventos -*\\
+  Future<void> _toggleEventEnabled(
+      Map<String, dynamic> evento, bool nuevoValor) async {
+    String nombre = evento['title'];
+    String tipo = evento['evento'];
+
+    String? activador;
+    String? horario;
+
+    if (tipo == 'disparador') {
+      if (evento['activadores'] != null &&
+          (evento['activadores'] as List).isNotEmpty) {
+        activador = evento['activadores'].first.toString();
+      } else {
+        List<dynamic> deviceGroup = evento['deviceGroup'] ?? [];
+        if (deviceGroup.isNotEmpty) {
+          activador = deviceGroup.first.toString();
+        }
+      }
+    } else if (tipo == 'horario') {
+      horario = evento['selectedTime'];
+    }
+
+    setState(() {
+      evento['enabled'] = nuevoValor;
+
+      int index = eventosCreados.indexOf(evento);
+      if (index != -1) {
+        eventosCreados[index] = evento;
+      }
+    });
+
+    putEventos(currentUserEmail, eventosCreados);
+
+    setEventEnabled(
+        nombre, currentUserEmail, nuevoValor, tipo, activador, horario);
+  }
+
+  //*- Función para habilitar/inhabilitar eventos -*\\
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -2136,9 +2175,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           int i = int.parse(ioKey.substring(2));
                                           Map<String, dynamic> equipo =
                                               jsonDecode(deviceDATA[ioKey]);
-                                          printLog.i(
-                                            'Voy a realizar el cambio: $equipo',
-                                          );
+                                          // printLog.i(
+                                          //   'Voy a realizar el cambio: $equipo',
+                                          // );
                                           String tipoWifi =
                                               equipo['pinType'].toString() ==
                                                       '0'
@@ -3402,9 +3441,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           int i = int.parse(ioKey.substring(2));
                                           Map<String, dynamic> equipo =
                                               jsonDecode(deviceDATA[ioKey]);
-                                          printLog.i(
-                                            'Voy a realizar el cambio: $equipo',
-                                          );
+                                          // printLog.i(
+                                          //   'Voy a realizar el cambio: $equipo',
+                                          // );
                                           String tipoWifi =
                                               equipo['pinType'].toString() ==
                                                       '0'
@@ -5890,18 +5929,18 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   .entries
                                   .map((entry) {
                                 final paso = entry.value;
+                                final idx = entry.key;
 
-                                // Validar que los campos requeridos existan
-                                if (paso == null ||
-                                    paso['device'] == null ||
-                                    paso['duration'] == null) {
+                                if (paso == null || paso['device'] == null) {
                                   return const SizedBox.shrink();
                                 }
 
                                 final deviceString = paso['device'].toString();
-                                final duration = paso['duration'];
+                                final int minutes =
+                                    paso['duration'] as int? ?? 5;
+                                final int seconds =
+                                    paso['duration_seg'] as int? ?? 0;
 
-                                // Formatear nombre del dispositivo
                                 String displayName = '';
                                 int zonaNumber = 0;
 
@@ -5911,8 +5950,6 @@ class WifiPageState extends ConsumerState<WifiPage>
 
                                   if (zonaMap.containsKey(deviceString)) {
                                     zonaNumber = zonaMap[deviceString]!;
-                                  } else {
-                                    zonaNumber = 0;
                                   }
 
                                   displayName = nicknamesMap[deviceString] ??
@@ -5924,7 +5961,8 @@ class WifiPageState extends ConsumerState<WifiPage>
 
                                 return Container(
                                   margin: const EdgeInsets.only(bottom: 8),
-                                  padding: const EdgeInsets.all(12),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
                                   decoration: BoxDecoration(
                                     color: color0.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
@@ -5935,52 +5973,81 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   ),
                                   child: Row(
                                     children: [
-                                      Container(
-                                        width: 24,
-                                        height: 24,
-                                        decoration: const BoxDecoration(
-                                          color: color4,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            zonaNumber > 0
-                                                ? '$zonaNumber'
-                                                : '-',
-                                            style: GoogleFonts.poppins(
-                                              color: color1,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 12,
+                                      SizedBox(
+                                        width: 70,
+                                        child: Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: Container(
+                                            width: 24,
+                                            height: 24,
+                                            decoration: const BoxDecoration(
+                                              color: color4,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                zonaNumber > 0
+                                                    ? '$zonaNumber'
+                                                    : '${idx + 1}',
+                                                style: GoogleFonts.poppins(
+                                                  color: color1,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
                                             ),
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 12),
                                       Expanded(
                                         child: Text(
                                           displayName,
                                           style: GoogleFonts.poppins(
                                             color: color0,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
                                           ),
+                                          textAlign: TextAlign.center,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue
-                                              .withValues(alpha: 0.2),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          '$duration min',
-                                          style: GoogleFonts.poppins(
-                                            color: Colors.blue,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
+                                      SizedBox(
+                                        width: 70,
+                                        child: Align(
+                                          alignment: Alignment.centerRight,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blue
+                                                  .withValues(alpha: 0.2),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  '$minutes min',
+                                                  style: GoogleFonts.poppins(
+                                                    color: Colors.blue,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                if (seconds > 0)
+                                                  Text(
+                                                    '$seconds seg',
+                                                    style: GoogleFonts.poppins(
+                                                      color: Colors.blue,
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -6104,13 +6171,12 @@ class WifiPageState extends ConsumerState<WifiPage>
           // Manejar evento de clima
           if (eventoClima != null) {
             try {
+              bool isEnabled = eventoClima['enabled'] ?? true;
               String condition = eventoClima['condition'] ?? '';
 
-              // Obtener las acciones de los dispositivos
               Map<String, dynamic> devicesActions =
                   Map<String, dynamic>.from(eventoClima['deviceActions'] ?? {});
 
-              // Crear lista de nombres de dispositivos
               String devicesInGroup = deviceName;
               List<String> deviceList = devicesInGroup
                   .replaceAll('[', '')
@@ -6129,29 +6195,28 @@ class WifiPageState extends ConsumerState<WifiPage>
                 climaNicksList.add(displayName);
               }
 
-              // Determinar icono según la condición
               IconData climaIcon;
               switch (condition) {
                 case 'Lluvia':
                   climaIcon = HugeIcons.strokeRoundedCloudAngledRain;
                   break;
                 case 'Nublado':
-                  climaIcon = HugeIcons.strokeRoundedSunCloud01;
+                  climaIcon = HugeIcons.strokeRoundedSunCloud02;
                   break;
                 case 'Viento Fuerte':
-                  climaIcon = HugeIcons.strokeRoundedSunCloudFastWind02;
+                  climaIcon = HugeIcons.strokeRoundedFastWind;
                   break;
                 case 'Soleado':
                   climaIcon = HugeIcons.strokeRoundedSun03;
                   break;
                 default:
-                  climaIcon = HugeIcons.strokeRoundedSunCloudLittleSnow01;
+                  climaIcon = HugeIcons.strokeRoundedCloudSnow;
               }
 
               return RepaintBoundary(
                 key: ValueKey('clima_$grupo'),
                 child: Card(
-                  color: color1,
+                  color: isEnabled ? color1 : color1.withValues(alpha: 0.8),
                   margin:
                       const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                   elevation: 2,
@@ -6160,8 +6225,8 @@ class WifiPageState extends ConsumerState<WifiPage>
                         .copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color4,
-                      collapsedIconColor: color4,
+                      iconColor: isEnabled ? color4 : Colors.grey,
+                      collapsedIconColor: isEnabled ? color4 : Colors.grey,
                       onExpansionChanged: (bool expanded) {
                         setState(() {
                           _expandedStates[deviceName] = expanded;
@@ -6175,16 +6240,22 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 color: Colors.grey),
                           ),
                           const SizedBox(width: 8),
-                          const Icon(HugeIcons.strokeRoundedCloudAngledRainZap,
-                              color: color4),
+                          Icon(HugeIcons.strokeRoundedCloudAngledRainZap,
+                              color: isEnabled ? color4 : Colors.grey),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               grupo,
                               style: GoogleFonts.poppins(
-                                color: color0,
+                                color: isEnabled
+                                    ? color0
+                                    : color0.withValues(alpha: 0.6),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
+                                decoration: isEnabled
+                                    ? TextDecoration.none
+                                    : TextDecoration.lineThrough,
+                                decorationColor: color4,
                               ),
                             ),
                           ),
@@ -6192,13 +6263,15 @@ class WifiPageState extends ConsumerState<WifiPage>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: color0.withValues(alpha: 0.2),
+                              color: isEnabled
+                                  ? color0.withValues(alpha: 0.2)
+                                  : Colors.grey.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              'CLIMA',
+                              isEnabled ? 'CLIMA' : 'INACTIVO',
                               style: GoogleFonts.poppins(
-                                color: color0,
+                                color: isEnabled ? color0 : Colors.grey,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -6212,10 +6285,11 @@ class WifiPageState extends ConsumerState<WifiPage>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Información de condición climática (simplificado)
                               Row(
                                 children: [
-                                  Icon(climaIcon, color: color4, size: 20),
+                                  Icon(climaIcon,
+                                      color: isEnabled ? color4 : Colors.grey,
+                                      size: 20),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
@@ -6234,7 +6308,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         Text(
                                           condition,
                                           style: GoogleFonts.poppins(
-                                            color: color0,
+                                            color: isEnabled
+                                                ? color0
+                                                : color0.withValues(alpha: 0.5),
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -6245,11 +6321,12 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 ],
                               ),
                               const SizedBox(height: 20),
-                              // Dispositivos afectados
                               Text(
                                 'Dispositivos afectados:',
                                 style: GoogleFonts.poppins(
-                                  color: color0,
+                                  color: isEnabled
+                                      ? color0
+                                      : color0.withValues(alpha: 0.5),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
@@ -6260,7 +6337,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 String deviceNick = entry.value;
                                 final equipo = deviceList[entry.key].trim();
 
-                                // Verificar si es un evento buscando en eventosCreados
                                 bool isEvento = false;
                                 bool isCadena = false;
                                 bool isRiego = false;
@@ -6273,7 +6349,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 );
 
                                 if (eventoEncontrado.isNotEmpty) {
-                                  // Es un evento (grupo, cadena o riego)
                                   final eventoType =
                                       eventoEncontrado['evento'] as String;
                                   deviceNick = equipo;
@@ -6283,14 +6358,12 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   isGrupo = eventoType == 'grupo';
                                 }
 
-                                // Definir acción, ícono y color según el tipo
                                 String actionText = '';
                                 IconData actionIcon =
                                     HugeIcons.strokeRoundedSettings02;
                                 Color actionColor = color0;
 
                                 if (isEvento) {
-                                  // Manejo especial para eventos
                                   if (isCadena) {
                                     actionText = 'Se ejecutará';
                                     actionIcon =
@@ -6301,7 +6374,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                                     actionIcon = HugeIcons.strokeRoundedLeaf01;
                                     actionColor = Colors.blue;
                                   } else if (isGrupo) {
-                                    // Es un grupo
                                     final action =
                                         devicesActions['$equipo:grupo'] ??
                                             false;
@@ -6313,14 +6385,12 @@ class WifiPageState extends ConsumerState<WifiPage>
                                     actionColor =
                                         action ? Colors.green : Colors.red;
                                   } else {
-                                    // Evento desconocido
                                     actionText = 'Se ejecutará';
                                     actionIcon =
                                         HugeIcons.strokeRoundedSettings02;
                                     actionColor = color4;
                                   }
                                 } else {
-                                  // Es un dispositivo individual
                                   final action =
                                       devicesActions[equipo] ?? false;
                                   actionText = action ? "Encenderá" : "Apagará";
@@ -6331,6 +6401,11 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       action ? Colors.green : Colors.red;
                                 }
 
+                                if (!isEnabled) {
+                                  actionColor =
+                                      actionColor.withValues(alpha: 0.4);
+                                }
+
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 8),
                                   child: Row(
@@ -6338,8 +6413,11 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       Container(
                                         width: 24,
                                         height: 24,
-                                        decoration: const BoxDecoration(
-                                          color: color4,
+                                        decoration: BoxDecoration(
+                                          color: isEnabled
+                                              ? color4
+                                              : Colors.grey
+                                                  .withValues(alpha: 0.3),
                                           shape: BoxShape.circle,
                                         ),
                                         child: Center(
@@ -6358,7 +6436,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         child: Text(
                                           deviceNick,
                                           style: GoogleFonts.poppins(
-                                            color: color0,
+                                            color: isEnabled
+                                                ? color0
+                                                : color0.withValues(alpha: 0.5),
                                             fontSize: 14,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -6383,70 +6463,102 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 );
                               }),
                               const SizedBox(height: 10),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: IconButton(
-                                  icon: const Icon(
-                                    HugeIcons.strokeRoundedDelete02,
-                                    color: color0,
+                              const Divider(color: Colors.white24),
+                              Row(
+                                children: [
+                                  Switch(
+                                    value: isEnabled,
+                                    activeThumbColor: Colors.green,
+                                    activeTrackColor:
+                                        Colors.green.withValues(alpha: 0.3),
+                                    inactiveThumbColor: Colors.grey,
+                                    inactiveTrackColor:
+                                        Colors.grey.withValues(alpha: 0.3),
+                                    onChanged: (val) =>
+                                        _toggleEventEnabled(eventoClima, val),
                                   ),
-                                  tooltip: 'Eliminar evento de clima',
-                                  onPressed: () {
-                                    showAlertDialog(
-                                      context,
-                                      false,
-                                      const Text(
-                                        '¿Eliminar este evento clima?',
-                                        style: TextStyle(color: color0),
+                                  Text(
+                                    isEnabled ? 'Habilitado' : 'Inhabilitado',
+                                    style: GoogleFonts.poppins(
+                                      color: isEnabled
+                                          ? color0
+                                          : color0.withValues(alpha: 0.6),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: IconButton(
+                                      icon: const Icon(
+                                        HugeIcons.strokeRoundedDelete02,
+                                        color: Colors.redAccent,
+                                        size: 20,
                                       ),
-                                      const Text(
-                                        'Esta acción no se puede deshacer.',
-                                        style: TextStyle(color: color0),
-                                      ),
-                                      <Widget>[
-                                        TextButton(
-                                          style: ButtonStyle(
-                                            foregroundColor:
-                                                WidgetStateProperty.all(color0),
+                                      onPressed: () {
+                                        showAlertDialog(
+                                          context,
+                                          false,
+                                          const Text(
+                                            '¿Eliminar este evento clima?',
+                                            style: TextStyle(color: color0),
                                           ),
-                                          child: const Text('Cancelar'),
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                        ),
-                                        TextButton(
-                                          style: ButtonStyle(
-                                            foregroundColor:
-                                                WidgetStateProperty.all(color0),
+                                          const Text(
+                                            'Esta acción no se puede deshacer.',
+                                            style: TextStyle(color: color0),
                                           ),
-                                          child: const Text('Confirmar'),
-                                          onPressed: () {
-                                            setState(() {
-                                              eventosCreados.removeWhere((e) =>
-                                                  e['title'] == grupo &&
-                                                  e['evento'] == 'clima');
-                                              putEventos(currentUserEmail,
-                                                  eventosCreados);
-                                              printLog.d(grupo,
-                                                  color: 'naranja');
-                                              deleteEventoControlPorClima(
-                                                  currentUserEmail, grupo);
-                                              todosLosDispositivos.removeWhere(
-                                                  (entry) =>
-                                                      entry.key == grupo);
-                                              savedOrder.removeWhere((item) =>
-                                                  item['key'] == grupo);
+                                          <Widget>[
+                                            TextButton(
+                                              style: ButtonStyle(
+                                                foregroundColor:
+                                                    WidgetStateProperty.all(
+                                                        color0),
+                                              ),
+                                              child: const Text('Cancelar'),
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                            ),
+                                            TextButton(
+                                              style: ButtonStyle(
+                                                foregroundColor:
+                                                    WidgetStateProperty.all(
+                                                        color0),
+                                              ),
+                                              child: const Text('Confirmar'),
+                                              onPressed: () {
+                                                setState(() {
+                                                  eventosCreados.removeWhere(
+                                                      (e) =>
+                                                          e['title'] == grupo &&
+                                                          e['evento'] ==
+                                                              'clima');
+                                                  putEventos(currentUserEmail,
+                                                      eventosCreados);
+                                                  printLog.d(grupo,
+                                                      color: 'naranja');
+                                                  deleteEventoControlPorClima(
+                                                      currentUserEmail, grupo);
+                                                  todosLosDispositivos
+                                                      .removeWhere((entry) =>
+                                                          entry.key == grupo);
+                                                  savedOrder.removeWhere(
+                                                      (item) =>
+                                                          item['key'] == grupo);
 
-                                              _actualizarListasUI();
-                                            });
-                                            _saveOrder();
-                                            Navigator.of(context).pop();
-                                          },
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ),
+                                                  _actualizarListasUI();
+                                                });
+                                                _saveOrder();
+                                                Navigator.of(context).pop();
+                                              },
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -6493,13 +6605,12 @@ class WifiPageState extends ConsumerState<WifiPage>
           // Manejar evento de disparador
           if (eventoDisparador != null) {
             try {
+              bool isEnabled = eventoDisparador['enabled'] ?? true;
               List<dynamic> deviceGroup = eventoDisparador['deviceGroup'] ?? [];
 
-              // Obtener las acciones de los dispositivos ejecutores
               Map<String, dynamic> devicesActions = Map<String, dynamic>.from(
                   eventoDisparador['deviceActions'] ?? {});
 
-              // Crear lista de nombres de dispositivos
               String devicesInGroup = deviceName;
               List<String> deviceList = devicesInGroup
                   .replaceAll('[', '')
@@ -6518,7 +6629,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                 disparadorNicksList.add(displayName);
               }
 
-              // El primer dispositivo es el activador, el resto son ejecutores
               String activador = disparadorNicksList.isNotEmpty
                   ? disparadorNicksList.first
                   : '';
@@ -6526,20 +6636,18 @@ class WifiPageState extends ConsumerState<WifiPage>
                   ? disparadorNicksList.sublist(1)
                   : [];
 
-              // Verificar si el activador es un termómetro
               bool isTermometro = deviceGroup.isNotEmpty &&
                   deviceGroup.first.toString().contains('Termometro');
 
-              // Obtener estado de alerta y termómetro
               String? estadoAlerta =
                   eventoDisparador['estadoAlerta']?.toString();
               String? estadoTermometro =
                   eventoDisparador['estadoTermometro']?.toString();
 
               return RepaintBoundary(
-                  key: ValueKey('disparador_error_$grupo'),
+                  key: ValueKey('disparador_$grupo'),
                   child: Card(
-                    color: color1,
+                    color: isEnabled ? color1 : color1.withValues(alpha: 0.8),
                     margin:
                         const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                     elevation: 2,
@@ -6549,8 +6657,8 @@ class WifiPageState extends ConsumerState<WifiPage>
                       child: ExpansionTile(
                         tilePadding:
                             const EdgeInsets.symmetric(horizontal: 16.0),
-                        iconColor: color4,
-                        collapsedIconColor: color4,
+                        iconColor: isEnabled ? color4 : Colors.grey,
+                        collapsedIconColor: isEnabled ? color4 : Colors.grey,
                         onExpansionChanged: (bool expanded) {
                           setState(() {
                             _expandedStates[deviceName] = expanded;
@@ -6564,16 +6672,22 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   color: Colors.grey),
                             ),
                             const SizedBox(width: 8),
-                            const Icon(HugeIcons.strokeRoundedPlayCircle,
-                                color: color4),
+                            Icon(HugeIcons.strokeRoundedPlayCircle,
+                                color: isEnabled ? color4 : Colors.grey),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 grupo,
                                 style: GoogleFonts.poppins(
-                                  color: color0,
+                                  color: isEnabled
+                                      ? color0
+                                      : color0.withValues(alpha: 0.6),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
+                                  decoration: isEnabled
+                                      ? TextDecoration.none
+                                      : TextDecoration.lineThrough,
+                                  decorationColor: color4,
                                 ),
                               ),
                             ),
@@ -6581,13 +6695,15 @@ class WifiPageState extends ConsumerState<WifiPage>
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: color0.withValues(alpha: 0.2),
+                                color: isEnabled
+                                    ? color0.withValues(alpha: 0.2)
+                                    : Colors.grey.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                'DISPARADOR',
+                                isEnabled ? 'DISPARADOR' : 'INACTIVO',
                                 style: GoogleFonts.poppins(
-                                  color: color0,
+                                  color: isEnabled ? color0 : Colors.grey,
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -6601,16 +6717,16 @@ class WifiPageState extends ConsumerState<WifiPage>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Sección Activador
                                 Row(
                                   children: [
-                                    const Icon(HugeIcons.strokeRoundedTap05,
-                                        color: color4, size: 20),
+                                    Icon(HugeIcons.strokeRoundedTap05,
+                                        color: isEnabled ? color4 : Colors.grey,
+                                        size: 20),
                                     const SizedBox(width: 8),
                                     Text(
                                       'ACTIVADOR',
                                       style: GoogleFonts.poppins(
-                                        color: color4,
+                                        color: isEnabled ? color4 : Colors.grey,
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
                                         letterSpacing: 1,
@@ -6629,7 +6745,10 @@ class WifiPageState extends ConsumerState<WifiPage>
                                               ? HugeIcons
                                                   .strokeRoundedTemperature
                                               : HugeIcons.strokeRoundedAlert02,
-                                          color: color4,
+                                          color: isEnabled
+                                              ? color4
+                                              : Colors.grey
+                                                  .withValues(alpha: 0.5),
                                           size: 20,
                                         ),
                                         const SizedBox(width: 12),
@@ -6637,7 +6756,10 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           child: Text(
                                             activador,
                                             style: GoogleFonts.poppins(
-                                              color: color0,
+                                              color: isEnabled
+                                                  ? color0
+                                                  : color0.withValues(
+                                                      alpha: 0.5),
                                               fontSize: 14,
                                               fontWeight: FontWeight.w500,
                                             ),
@@ -6647,7 +6769,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                                     ),
                                   ),
                                 const SizedBox(height: 12),
-                                // Condiciones del disparador
                                 if (estadoAlerta != null)
                                   Card(
                                     color: Colors.transparent,
@@ -6656,10 +6777,13 @@ class WifiPageState extends ConsumerState<WifiPage>
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
                                       side: BorderSide(
-                                        color: (estadoAlerta == "1"
-                                                ? Colors.orange
-                                                : Colors.blueGrey)
-                                            .withValues(alpha: 0.3),
+                                        color: isEnabled
+                                            ? (estadoAlerta == "1"
+                                                    ? Colors.orange
+                                                    : Colors.blueGrey)
+                                                .withValues(alpha: 0.3)
+                                            : Colors.grey
+                                                .withValues(alpha: 0.2),
                                         width: 1,
                                       ),
                                     ),
@@ -6674,9 +6798,11 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                 ? HugeIcons.strokeRoundedAlert02
                                                 : HugeIcons
                                                     .strokeRoundedCheckmarkCircle02,
-                                            color: estadoAlerta == "1"
-                                                ? Colors.orange
-                                                : Colors.blueGrey,
+                                            color: isEnabled
+                                                ? (estadoAlerta == "1"
+                                                    ? Colors.orange
+                                                    : Colors.blueGrey)
+                                                : Colors.grey,
                                             size: 18,
                                           ),
                                           const SizedBox(width: 8),
@@ -6694,9 +6820,11 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                     style: GoogleFonts.poppins(
                                                       fontWeight:
                                                           FontWeight.bold,
-                                                      color: estadoAlerta == "1"
-                                                          ? Colors.orange
-                                                          : Colors.blueGrey,
+                                                      color: isEnabled
+                                                          ? (estadoAlerta == "1"
+                                                              ? Colors.orange
+                                                              : Colors.blueGrey)
+                                                          : Colors.grey,
                                                       letterSpacing: 0.5,
                                                     ),
                                                   ),
@@ -6705,8 +6833,11 @@ class WifiPageState extends ConsumerState<WifiPage>
                                               ),
                                               style: GoogleFonts.poppins(
                                                 fontSize: 13,
-                                                color: color0.withValues(
-                                                    alpha: 0.85),
+                                                color: isEnabled
+                                                    ? color0.withValues(
+                                                        alpha: 0.85)
+                                                    : color0.withValues(
+                                                        alpha: 0.5),
                                               ),
                                             ),
                                           ),
@@ -6722,10 +6853,13 @@ class WifiPageState extends ConsumerState<WifiPage>
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
                                       side: BorderSide(
-                                        color: (estadoTermometro == "1"
-                                                ? Colors.red
-                                                : Colors.lightBlue)
-                                            .withValues(alpha: 0.3),
+                                        color: isEnabled
+                                            ? (estadoTermometro == "1"
+                                                    ? Colors.red
+                                                    : Colors.lightBlue)
+                                                .withValues(alpha: 0.3)
+                                            : Colors.grey
+                                                .withValues(alpha: 0.2),
                                         width: 1,
                                       ),
                                     ),
@@ -6737,9 +6871,11 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         children: [
                                           Icon(
                                             HugeIcons.strokeRoundedTemperature,
-                                            color: estadoTermometro == "1"
-                                                ? Colors.red
-                                                : Colors.lightBlue,
+                                            color: isEnabled
+                                                ? (estadoTermometro == "1"
+                                                    ? Colors.red
+                                                    : Colors.lightBlue)
+                                                : Colors.grey,
                                             size: 18,
                                           ),
                                           const SizedBox(width: 8),
@@ -6758,10 +6894,13 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                     style: GoogleFonts.poppins(
                                                       fontWeight:
                                                           FontWeight.bold,
-                                                      color: estadoTermometro ==
-                                                              "1"
-                                                          ? Colors.red
-                                                          : Colors.lightBlue,
+                                                      color: isEnabled
+                                                          ? (estadoTermometro ==
+                                                                  "1"
+                                                              ? Colors.red
+                                                              : Colors
+                                                                  .lightBlue)
+                                                          : Colors.grey,
                                                       letterSpacing: 0.5,
                                                     ),
                                                   ),
@@ -6771,8 +6910,11 @@ class WifiPageState extends ConsumerState<WifiPage>
                                               ),
                                               style: GoogleFonts.poppins(
                                                 fontSize: 13,
-                                                color: color0.withValues(
-                                                    alpha: 0.85),
+                                                color: isEnabled
+                                                    ? color0.withValues(
+                                                        alpha: 0.85)
+                                                    : color0.withValues(
+                                                        alpha: 0.5),
                                               ),
                                             ),
                                           ),
@@ -6781,19 +6923,19 @@ class WifiPageState extends ConsumerState<WifiPage>
                                     ),
                                   ),
                                 const SizedBox(height: 16),
-                                // Sección Ejecutores
                                 if (ejecutores.isNotEmpty) ...[
                                   Row(
                                     children: [
-                                      const Icon(
-                                          HugeIcons.strokeRoundedSettings02,
-                                          color: color4,
+                                      Icon(HugeIcons.strokeRoundedSettings02,
+                                          color:
+                                              isEnabled ? color4 : Colors.grey,
                                           size: 20),
                                       const SizedBox(width: 8),
                                       Text(
                                         'EJECUTORES',
                                         style: GoogleFonts.poppins(
-                                          color: color4,
+                                          color:
+                                              isEnabled ? color4 : Colors.grey,
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
                                           letterSpacing: 1,
@@ -6805,11 +6947,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   ...ejecutores.asMap().entries.map((entry) {
                                     final idx = entry.key + 1;
                                     String ejecutorName = entry.value;
-                                    // +1 porque el índice 0 es el activador
                                     final equipoOriginal =
                                         deviceList[entry.key + 1].trim();
 
-                                    // Verificar si es un evento buscando en eventosCreados
                                     bool isEvento = false;
                                     bool isCadena = false;
                                     bool isRiego = false;
@@ -6823,7 +6963,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                                     );
 
                                     if (eventoEncontrado.isNotEmpty) {
-                                      // Es un evento (grupo, cadena o riego)
                                       final eventoType =
                                           eventoEncontrado['evento'] as String;
                                       ejecutorName = equipoOriginal;
@@ -6833,15 +6972,13 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       isGrupo = eventoType == 'grupo';
                                     }
 
-                                    // Definir acción, ícono y color según el tipo
                                     String actionText = '';
+                                    String fullActionText = '';
                                     IconData actionIcon =
                                         HugeIcons.strokeRoundedSettings02;
                                     Color actionColor = color0;
-                                    String fullActionText = '';
 
                                     if (isEvento) {
-                                      // Manejo especial para eventos
                                       if (isCadena) {
                                         actionText = 'ejecutará';
                                         fullActionText = 'Se ejecutará';
@@ -6855,7 +6992,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                                             HugeIcons.strokeRoundedLeaf01;
                                         actionColor = Colors.blue;
                                       } else if (isGrupo) {
-                                        // Es un grupo
                                         final action = devicesActions[
                                                 '$equipoOriginal:grupo'] ??
                                             false;
@@ -6869,7 +7005,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         actionColor =
                                             action ? Colors.green : Colors.red;
                                       } else {
-                                        // Evento desconocido
                                         actionText = 'ejecutará';
                                         fullActionText = 'Se ejecutará';
                                         actionIcon =
@@ -6877,7 +7012,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         actionColor = color4;
                                       }
                                     } else {
-                                      // Es un dispositivo individual
                                       final action =
                                           devicesActions[equipoOriginal] ??
                                               false;
@@ -6889,6 +7023,11 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           : HugeIcons.strokeRoundedPlugSocket);
                                       actionColor =
                                           action ? Colors.green : color4;
+                                    }
+
+                                    if (!isEnabled) {
+                                      actionColor =
+                                          actionColor.withValues(alpha: 0.4);
                                     }
 
                                     return Container(
@@ -6909,8 +7048,11 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           Container(
                                             width: 24,
                                             height: 24,
-                                            decoration: const BoxDecoration(
-                                              color: color4,
+                                            decoration: BoxDecoration(
+                                              color: isEnabled
+                                                  ? color4
+                                                  : Colors.grey
+                                                      .withValues(alpha: 0.3),
                                               shape: BoxShape.circle,
                                             ),
                                             child: Center(
@@ -6933,7 +7075,10 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                 Text(
                                                   ejecutorName,
                                                   style: GoogleFonts.poppins(
-                                                    color: color0,
+                                                    color: isEnabled
+                                                        ? color0
+                                                        : color0.withValues(
+                                                            alpha: 0.5),
                                                     fontSize: 14,
                                                     fontWeight: FontWeight.w500,
                                                   ),
@@ -6972,78 +7117,112 @@ class WifiPageState extends ConsumerState<WifiPage>
                                     );
                                   }),
                                   const SizedBox(height: 10),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        HugeIcons.strokeRoundedDelete02,
-                                        color: color0,
+                                  const Divider(color: Colors.white24),
+                                  Row(
+                                    children: [
+                                      Switch(
+                                        value: isEnabled,
+                                        activeThumbColor: Colors.green,
+                                        activeTrackColor:
+                                            Colors.green.withValues(alpha: 0.3),
+                                        inactiveThumbColor: Colors.grey,
+                                        inactiveTrackColor:
+                                            Colors.grey.withValues(alpha: 0.3),
+                                        onChanged: (val) => _toggleEventEnabled(
+                                            eventoDisparador, val),
                                       ),
-                                      tooltip:
-                                          'Eliminar evento de disparadores',
-                                      onPressed: () {
-                                        showAlertDialog(
-                                          context,
-                                          false,
-                                          const Text(
-                                            '¿Eliminar este evento de control por disparador?',
-                                            style: TextStyle(color: color0),
+                                      Text(
+                                        isEnabled
+                                            ? 'Habilitado'
+                                            : 'Inhabilitado',
+                                        style: GoogleFonts.poppins(
+                                          color: isEnabled
+                                              ? color0
+                                              : color0.withValues(alpha: 0.6),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: IconButton(
+                                          icon: const Icon(
+                                            HugeIcons.strokeRoundedDelete02,
+                                            color: Colors.redAccent,
+                                            size: 20,
                                           ),
-                                          const Text(
-                                            'Esta acción no se puede deshacer.',
-                                            style: TextStyle(color: color0),
-                                          ),
-                                          <Widget>[
-                                            TextButton(
-                                              style: ButtonStyle(
-                                                foregroundColor:
-                                                    WidgetStateProperty.all(
-                                                        color0),
+                                          onPressed: () {
+                                            showAlertDialog(
+                                              context,
+                                              false,
+                                              const Text(
+                                                '¿Eliminar este evento de control por disparador?',
+                                                style: TextStyle(color: color0),
                                               ),
-                                              child: const Text('Cancelar'),
-                                              onPressed: () {
-                                                Navigator.of(context).pop();
-                                              },
-                                            ),
-                                            TextButton(
-                                              style: ButtonStyle(
-                                                foregroundColor:
-                                                    WidgetStateProperty.all(
-                                                        color0),
+                                              const Text(
+                                                'Esta acción no se puede deshacer.',
+                                                style: TextStyle(color: color0),
                                               ),
-                                              child: const Text('Confirmar'),
-                                              onPressed: () {
-                                                setState(() {
-                                                  eventosCreados.removeWhere(
-                                                      (e) =>
-                                                          e['title'] == grupo &&
-                                                          e['evento'] ==
-                                                              'disparador');
-                                                  putEventos(currentUserEmail,
-                                                      eventosCreados);
+                                              <Widget>[
+                                                TextButton(
+                                                  style: ButtonStyle(
+                                                    foregroundColor:
+                                                        WidgetStateProperty.all(
+                                                            color0),
+                                                  ),
+                                                  child: const Text('Cancelar'),
+                                                  onPressed: () {
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                ),
+                                                TextButton(
+                                                  style: ButtonStyle(
+                                                    foregroundColor:
+                                                        WidgetStateProperty.all(
+                                                            color0),
+                                                  ),
+                                                  child:
+                                                      const Text('Confirmar'),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      eventosCreados
+                                                          .removeWhere((e) =>
+                                                              e['title'] ==
+                                                                  grupo &&
+                                                              e['evento'] ==
+                                                                  'disparador');
+                                                      putEventos(
+                                                          currentUserEmail,
+                                                          eventosCreados);
 
-                                                  String sortKey =
-                                                      '$currentUserEmail:$grupo';
+                                                      deleteEventoControlPorDisparadores(
+                                                          activador,
+                                                          currentUserEmail,
+                                                          grupo);
 
-                                                  removeEjecutoresFromDisparador(
-                                                      activador, sortKey);
-                                                  todosLosDispositivos
-                                                      .removeWhere((entry) =>
-                                                          entry.key == grupo);
-                                                  savedOrder.removeWhere(
-                                                      (item) =>
-                                                          item['key'] == grupo);
+                                                      todosLosDispositivos
+                                                          .removeWhere(
+                                                              (entry) =>
+                                                                  entry.key ==
+                                                                  grupo);
+                                                      savedOrder.removeWhere(
+                                                          (item) =>
+                                                              item['key'] ==
+                                                              grupo);
 
-                                                  _actualizarListasUI();
-                                                });
-                                                _saveOrder();
-                                                Navigator.of(context).pop();
-                                              },
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    ),
+                                                      _actualizarListasUI();
+                                                    });
+                                                    _saveOrder();
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ],
@@ -7091,14 +7270,14 @@ class WifiPageState extends ConsumerState<WifiPage>
           // Manejar evento de horario
           if (eventoHorario != null) {
             try {
+              bool isEnabled = eventoHorario['enabled'] ?? true;
+
               List<String> selectedDays =
                   List<String>.from(eventoHorario['selectedDays'] ?? []);
               String selectedTime = eventoHorario['selectedTime'] ?? '';
 
-              // Obtener las acciones de los dispositivos
               Map<String, dynamic> devicesActions = Map<String, dynamic>.from(
                   eventoHorario['deviceActions'] ?? {});
-              // Crear lista de nombres de dispositivos
               String devicesInGroup = deviceName;
               List<String> deviceList = devicesInGroup
                   .replaceAll('[', '')
@@ -7128,7 +7307,7 @@ class WifiPageState extends ConsumerState<WifiPage>
               return RepaintBoundary(
                 key: ValueKey('horario_$grupo'),
                 child: Card(
-                  color: color1,
+                  color: isEnabled ? color1 : color1.withValues(alpha: 0.8),
                   margin:
                       const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                   elevation: 2,
@@ -7137,8 +7316,8 @@ class WifiPageState extends ConsumerState<WifiPage>
                         .copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      iconColor: color4,
-                      collapsedIconColor: color4,
+                      iconColor: isEnabled ? color4 : Colors.grey,
+                      collapsedIconColor: isEnabled ? color4 : Colors.grey,
                       onExpansionChanged: (bool expanded) {
                         setState(() {
                           _expandedStates[deviceName] = expanded;
@@ -7152,16 +7331,24 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 color: Colors.grey),
                           ),
                           const SizedBox(width: 8),
-                          const Icon(HugeIcons.strokeRoundedClock01,
-                              color: color4),
+                          Icon(
+                            HugeIcons.strokeRoundedClock01,
+                            color: isEnabled ? color4 : Colors.grey,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               grupo,
                               style: GoogleFonts.poppins(
-                                color: color0,
+                                color: isEnabled
+                                    ? color0
+                                    : color0.withValues(alpha: 0.6),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
+                                decoration: isEnabled
+                                    ? TextDecoration.none
+                                    : TextDecoration.lineThrough,
+                                decorationColor: color4,
                               ),
                             ),
                           ),
@@ -7169,13 +7356,15 @@ class WifiPageState extends ConsumerState<WifiPage>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: color0.withValues(alpha: 0.2),
+                              color: isEnabled
+                                  ? color0.withValues(alpha: 0.2)
+                                  : Colors.grey.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              'HORARIO',
+                              isEnabled ? 'HORARIO' : 'INACTIVO',
                               style: GoogleFonts.poppins(
-                                color: color0,
+                                color: isEnabled ? color0 : Colors.grey,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -7189,12 +7378,13 @@ class WifiPageState extends ConsumerState<WifiPage>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Información de días y hora (simplificado)
                               Row(
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     HugeIcons.strokeRoundedCalendar01,
-                                    color: color4,
+                                    color: isEnabled
+                                        ? color4
+                                        : Colors.grey.withValues(alpha: 0.5),
                                     size: 20,
                                   ),
                                   const SizedBox(width: 12),
@@ -7215,7 +7405,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         Text(
                                           formatDays(selectedDays),
                                           style: GoogleFonts.poppins(
-                                            color: color0,
+                                            color: isEnabled
+                                                ? color0
+                                                : color0.withValues(alpha: 0.5),
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -7228,9 +7420,11 @@ class WifiPageState extends ConsumerState<WifiPage>
                               const SizedBox(height: 16),
                               Row(
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     HugeIcons.strokeRoundedClock01,
-                                    color: color4,
+                                    color: isEnabled
+                                        ? color4
+                                        : Colors.grey.withValues(alpha: 0.5),
                                     size: 20,
                                   ),
                                   const SizedBox(width: 12),
@@ -7253,7 +7447,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                               ? selectedTime
                                               : 'No especificada',
                                           style: GoogleFonts.poppins(
-                                            color: color0,
+                                            color: isEnabled
+                                                ? color0
+                                                : color0.withValues(alpha: 0.5),
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -7264,11 +7460,12 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 ],
                               ),
                               const SizedBox(height: 20),
-                              // Dispositivos afectados
                               Text(
                                 'Dispositivos afectados:',
                                 style: GoogleFonts.poppins(
-                                  color: color0,
+                                  color: isEnabled
+                                      ? color0
+                                      : color0.withValues(alpha: 0.5),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
@@ -7279,7 +7476,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 String deviceNick = entry.value;
                                 final equipo = deviceList[entry.key].trim();
 
-                                // Verificar si es un evento buscando en eventosCreados
                                 bool isEvento = false;
                                 bool isCadena = false;
                                 bool isRiego = false;
@@ -7292,7 +7488,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 );
 
                                 if (eventoEncontrado.isNotEmpty) {
-                                  // Es un evento (grupo, cadena o riego)
                                   final eventoType =
                                       eventoEncontrado['evento'] as String;
                                   deviceNick = equipo;
@@ -7302,14 +7497,12 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   isGrupo = eventoType == 'grupo';
                                 }
 
-                                // Definir acción, ícono y color según el tipo
                                 String actionText = '';
                                 IconData actionIcon =
                                     HugeIcons.strokeRoundedSettings02;
                                 Color actionColor = color0;
 
                                 if (isEvento) {
-                                  // Manejo especial para eventos
                                   if (isCadena) {
                                     actionText = 'Se ejecutará';
                                     actionIcon =
@@ -7320,7 +7513,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                                     actionIcon = HugeIcons.strokeRoundedLeaf01;
                                     actionColor = Colors.blue;
                                   } else if (isGrupo) {
-                                    // Es un grupo
                                     final action =
                                         devicesActions['$equipo:grupo'] ??
                                             false;
@@ -7332,14 +7524,12 @@ class WifiPageState extends ConsumerState<WifiPage>
                                     actionColor =
                                         action ? Colors.green : Colors.red;
                                   } else {
-                                    // Evento desconocido
                                     actionText = 'Se ejecutará';
                                     actionIcon =
                                         HugeIcons.strokeRoundedSettings02;
                                     actionColor = color4;
                                   }
                                 } else {
-                                  // Es un dispositivo individual
                                   final action =
                                       devicesActions['$equipo:dispositivo'] ??
                                           false;
@@ -7351,6 +7541,11 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       action ? Colors.green : Colors.red;
                                 }
 
+                                if (!isEnabled) {
+                                  actionColor =
+                                      actionColor.withValues(alpha: 0.4);
+                                }
+
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 8),
                                   child: Row(
@@ -7358,8 +7553,11 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       Container(
                                         width: 24,
                                         height: 24,
-                                        decoration: const BoxDecoration(
-                                          color: color4,
+                                        decoration: BoxDecoration(
+                                          color: isEnabled
+                                              ? color4
+                                              : Colors.grey
+                                                  .withValues(alpha: 0.3),
                                           shape: BoxShape.circle,
                                         ),
                                         child: Center(
@@ -7378,7 +7576,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         child: Text(
                                           deviceNick,
                                           style: GoogleFonts.poppins(
-                                            color: color0,
+                                            color: isEnabled
+                                                ? color0
+                                                : color0.withValues(alpha: 0.5),
                                             fontSize: 14,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -7403,70 +7603,99 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 );
                               }),
                               const SizedBox(height: 10),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: IconButton(
-                                  icon: const Icon(
-                                    HugeIcons.strokeRoundedDelete02,
-                                    color: color0,
-                                  ),
-                                  tooltip: 'Eliminar evento de horario',
-                                  onPressed: () {
-                                    showAlertDialog(
-                                      context,
-                                      false,
-                                      const Text(
-                                        '¿Eliminar este evento de control por horario?',
-                                        style: TextStyle(color: color0),
-                                      ),
-                                      const Text(
-                                        'Esta acción no se puede deshacer.',
-                                        style: TextStyle(color: color0),
-                                      ),
-                                      <Widget>[
-                                        TextButton(
-                                          style: ButtonStyle(
-                                            foregroundColor:
-                                                WidgetStateProperty.all(color0),
-                                          ),
-                                          child: const Text('Cancelar'),
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                        ),
-                                        TextButton(
-                                          style: ButtonStyle(
-                                            foregroundColor:
-                                                WidgetStateProperty.all(color0),
-                                          ),
-                                          child: const Text('Confirmar'),
-                                          onPressed: () {
-                                            setState(() {
-                                              eventosCreados.removeWhere((e) =>
-                                                  e['title'] == grupo &&
-                                                  e['evento'] == 'horario');
-                                              putEventos(currentUserEmail,
-                                                  eventosCreados);
-                                              deleteEventoControlPorHorarios(
-                                                  selectedTime,
-                                                  currentUserEmail,
-                                                  grupo);
-                                              todosLosDispositivos.removeWhere(
-                                                  (entry) =>
-                                                      entry.key == grupo);
-                                              savedOrder.removeWhere((item) =>
-                                                  item['key'] == grupo);
-                                              _actualizarListasUI();
-                                            });
-                                            _saveOrder();
-                                            Navigator.of(context).pop();
-                                          },
-                                        ),
-                                      ],
-                                    );
-                                  },
+                              const Divider(color: Colors.white24),
+                              Row(children: [
+                                Switch(
+                                  value: isEnabled,
+                                  activeThumbColor: Colors.green,
+                                  activeTrackColor:
+                                      Colors.green.withValues(alpha: 0.3),
+                                  inactiveThumbColor: Colors.grey,
+                                  inactiveTrackColor:
+                                      Colors.grey.withValues(alpha: 0.3),
+                                  onChanged: (val) =>
+                                      _toggleEventEnabled(eventoHorario, val),
                                 ),
-                              ),
+                                Text(
+                                  isEnabled ? 'Habilitado' : 'Inhabilitado',
+                                  style: GoogleFonts.poppins(
+                                    color: isEnabled
+                                        ? color0
+                                        : color0.withValues(alpha: 0.6),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: IconButton(
+                                    onPressed: () {
+                                      showAlertDialog(
+                                        context,
+                                        false,
+                                        const Text(
+                                          '¿Eliminar este evento de control por horario?',
+                                          style: TextStyle(color: color0),
+                                        ),
+                                        const Text(
+                                          'Esta acción no se puede deshacer.',
+                                          style: TextStyle(color: color0),
+                                        ),
+                                        <Widget>[
+                                          TextButton(
+                                            style: ButtonStyle(
+                                              foregroundColor:
+                                                  WidgetStateProperty.all(
+                                                      color0),
+                                            ),
+                                            child: const Text('Cancelar'),
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                          TextButton(
+                                            style: ButtonStyle(
+                                              foregroundColor:
+                                                  WidgetStateProperty.all(
+                                                      color0),
+                                            ),
+                                            child: const Text('Confirmar'),
+                                            onPressed: () {
+                                              setState(() {
+                                                eventosCreados.removeWhere(
+                                                    (e) =>
+                                                        e['title'] == grupo &&
+                                                        e['evento'] ==
+                                                            'horario');
+                                                putEventos(currentUserEmail,
+                                                    eventosCreados);
+                                                deleteEventoControlPorHorarios(
+                                                    selectedTime,
+                                                    currentUserEmail,
+                                                    grupo);
+                                                todosLosDispositivos
+                                                    .removeWhere((entry) =>
+                                                        entry.key == grupo);
+                                                savedOrder.removeWhere((item) =>
+                                                    item['key'] == grupo);
+                                                _actualizarListasUI();
+                                              });
+                                              _saveOrder();
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                    icon: const Icon(
+                                      HugeIcons.strokeRoundedDelete02,
+                                      color: Colors.redAccent,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                              ]),
                             ],
                           ),
                         ),
@@ -7508,7 +7737,6 @@ class WifiPageState extends ConsumerState<WifiPage>
               );
             }
           }
-
           String devicesInGroup = deviceName;
           List<String> deviceList =
               devicesInGroup.replaceAll('[', '').replaceAll(']', '').split(',');

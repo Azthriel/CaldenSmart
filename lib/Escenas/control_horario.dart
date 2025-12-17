@@ -469,7 +469,6 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
               final device = selectedDevices[index];
               final isOn = deviceActions[device] ?? false;
               String displayName = device;
-              String deviceType = 'Dispositivo';
               IconData iconData = HugeIcons.strokeRoundedLaptopPhoneSync;
               bool isCadena = false;
               bool isRiego = false;
@@ -482,11 +481,6 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
               if (eventoEncontrado.isNotEmpty) {
                 final eventoType = eventoEncontrado['evento'] as String;
                 displayName = device;
-                deviceType = eventoType == 'grupo'
-                    ? 'Grupo'
-                    : eventoType == 'riego'
-                        ? 'Riego'
-                        : 'Cadena';
                 iconData = (eventoType == 'grupo'
                     ? HugeIcons.strokeRoundedSmartPhone01
                     : eventoType == 'riego'
@@ -497,9 +491,6 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
               } else {
                 displayName = nicknamesMap[device] ?? device;
               }
-
-              printLog.i('Device Type = $deviceType');
-
               return Card(
                 elevation: 4,
                 shape: RoundedRectangleBorder(

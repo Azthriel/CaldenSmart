@@ -182,7 +182,7 @@ class ScanPageState extends State<ScanPage>
           now.difference(lastSeen).inSeconds > 12 &&
           !lostDevices.contains(deviceId)) {
         devicesToMarkAsLost.add(deviceId);
-        printLog.i('Marcando como perdido: ${device.platformName}');
+        // printLog.i('Marcando como perdido: ${device.platformName}');
       }
     }
 
@@ -207,7 +207,7 @@ class ScanPageState extends State<ScanPage>
       await device.connect(timeout: const Duration(seconds: 6));
       deviceName = device.platformName;
 
-      printLog.i('Teoricamente estoy conectado');
+      //printLog.i('Teoricamente estoy conectado');
 
       BluetoothManager bluetoothManager = BluetoothManager();
 
@@ -324,9 +324,9 @@ class ScanPageState extends State<ScanPage>
   }
 
   void _runQuickAction(BluetoothDevice device, bool newValue) async {
-    printLog.i("=== INICIANDO ACCIÓN RÁPIDA ===");
-    printLog.i("Dispositivo: ${device.platformName}");
-    printLog.i("Nuevo valor: $newValue");
+    // printLog.i("=== INICIANDO ACCIÓN RÁPIDA ===");
+    // printLog.i("Dispositivo: ${device.platformName}");
+    // printLog.i("Nuevo valor: $newValue");
 
     setState(() {
       quickAction = true;
@@ -415,8 +415,8 @@ class ScanPageState extends State<ScanPage>
           printLog.i(
             "Tengo sexo en monopatin",
           );
-          printLog.i(
-              "Voy a ${newValue ? 'Encender' : 'Apagar'} el equipo $deviceName");
+          // printLog.i(
+          //     "Voy a ${newValue ? 'Encender' : 'Apagar'} el equipo $deviceName");
 
           if (productCode == '020010_IOT' ||
               productCode == '020020_IOT' ||
@@ -464,7 +464,7 @@ class ScanPageState extends State<ScanPage>
             "¿Se me cayo la pichula? ${device.isDisconnected}",
           );
         } else {
-          printLog.i('Fallo en el setup');
+          printLog.e('Fallo en el setup');
           showToast("Error con el acceso rápido\nIntente nuevamente");
           bluetoothManager.device.disconnect();
         }
@@ -475,7 +475,7 @@ class ScanPageState extends State<ScanPage>
         bluetoothManager.device.disconnect();
       });
     } else {
-      printLog.i(
+      printLog.e(
         "Fallecio el sexo",
       );
       showToast("Error con el acceso rápido\nIntente nuevamente");

@@ -65,6 +65,7 @@ class ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: color0,
       appBar: AppBar(
         backgroundColor: color1,
         leading: IconButton(
@@ -421,8 +422,7 @@ class ProfilePageState extends State<ProfilePage> {
                             if (selectedSoundDomotica == value) {
                               selectedSoundDomotica = null;
                             } else {
-                              selectedSoundDomotica = value;
-                              printLog.i('Elegí alarma${value! + 1}');
+                              selectedSoundDomotica = value!;
                               soundOfNotification['020010_IOT'] =
                                   'alarm${value + 1}';
                               soundOfNotification['020020_IOT'] =
@@ -510,8 +510,8 @@ class ProfilePageState extends State<ProfilePage> {
                             if (selectedSoundDetector == value) {
                               selectedSoundDetector = null;
                             } else {
-                              selectedSoundDetector = value;
-                              printLog.i('Elegí alarma${value! + 1}');
+                              selectedSoundDetector = value!;
+                              // printLog.i('Elegí alarma${value! + 1}');
                               soundOfNotification['015773_IOT'] =
                                   'alarm${value + 1}';
                               saveSounds(soundOfNotification);
@@ -595,8 +595,8 @@ class ProfilePageState extends State<ProfilePage> {
                             if (selectedSoundTermometro == value) {
                               selectedSoundTermometro = null;
                             } else {
-                              selectedSoundTermometro = value;
-                              printLog.i('Elegí alarma${value! + 1}');
+                              selectedSoundTermometro = value!;
+                              // printLog.i('Elegí alarma${value! + 1}');
                               soundOfNotification['023430_IOT'] =
                                   'alarm${value + 1}';
                               saveSounds(soundOfNotification);

@@ -339,9 +339,9 @@ class RelayPageState extends ConsumerState<RelayPage> {
     nickname = nicknamesMap[deviceName] ?? deviceName;
     showOptions = currentUserEmail == owner;
 
-    printLog.i('¿Encendido? $turnOn');
-    printLog.i('¿Alquiler temporario? $activatedAT');
-    printLog.i('¿Inquilino? $tenant');
+    // printLog.i('¿Encendido? $turnOn');
+    // printLog.i('¿Alquiler temporario? $activatedAT');
+    // printLog.i('¿Inquilino? $tenant');
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       updateWifiValues(toolsValues);
@@ -407,12 +407,12 @@ class RelayPageState extends ConsumerState<RelayPage> {
   void updateWifiValues(List<int> data) {
     var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-    printLog.i(fun);
+    // printLog.i(fun);
     var parts = fun.split(':');
     final regex = RegExp(r'\((\d+)\)');
     final match = regex.firstMatch(parts[2]);
     int users = int.parse(match!.group(1).toString());
-    printLog.i('Hay $users conectados');
+    // printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
     final wifiNotifier = ref.read(wifiProvider.notifier);
@@ -464,12 +464,12 @@ class RelayPageState extends ConsumerState<RelayPage> {
   }
 
   void subscribeToWifiStatus() async {
-    printLog.i('Se subscribió a wifi');
+    //   printLog.i('Se subscribió a wifi');
     await bluetoothManager.toolsUuid.setNotifyValue(true);
 
     final wifiSub =
         bluetoothManager.toolsUuid.onValueReceived.listen((List<int> status) {
-      printLog.i('Llegaron cositas wifi');
+      //   printLog.i('Llegaron cositas wifi');
       updateWifiValues(status);
     });
 
@@ -527,16 +527,17 @@ class RelayPageState extends ConsumerState<RelayPage> {
         List<String> deviceControl =
             await getDevicesInDistanceControl(currentUserEmail);
         deviceControl.add(deviceName);
+
         putDevicesInDistanceControl(currentUserEmail, deviceControl);
-        printLog.i(
-            'Hay ${deviceControl.length} equipos con el control x distancia');
+        // printLog.i(
+        // 'Hay ${deviceControl.length} equipos con el control x distancia');
 
         if (deviceControl.length == 1) {
           await initializeService();
           final backService = FlutterBackgroundService();
           await backService.startService();
           backService.invoke('distanceControl');
-          printLog.i('Servicio iniciado a las ${DateTime.now()}');
+          //    printLog.i('Servicio iniciado a las ${DateTime.now()}');
         }
       } catch (e) {
         showToast('Error al iniciar control por distancia.');
@@ -550,14 +551,14 @@ class RelayPageState extends ConsumerState<RelayPage> {
           await getDevicesInDistanceControl(currentUserEmail);
       deviceControl.remove(deviceName);
       putDevicesInDistanceControl(currentUserEmail, deviceControl);
-      printLog.i(
-          'Quedan ${deviceControl.length} equipos con el control x distancia');
+      // printLog.i(
+      //     'Quedan ${deviceControl.length} equipos con el control x distancia');
 
       if (deviceControl.isEmpty) {
         final backService = FlutterBackgroundService();
         backService.invoke("stopService");
         backTimerDS?.cancel();
-        printLog.i('Servicio apagado');
+        // printLog.i('Servicio apagado');
       }
     }
   }
@@ -1094,8 +1095,8 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                                 });
                                               },
                                               onChangeEnd: (value) {
-                                                printLog.i(
-                                                    'Valor enviado: ${value.round()}');
+                                                // printLog.i(
+                                                //     'Valor enviado: ${value.round()}');
                                                 putDistanceOff(
                                                   pc,
                                                   sn,
@@ -1188,8 +1189,8 @@ class RelayPageState extends ConsumerState<RelayPage> {
                                                 });
                                               },
                                               onChangeEnd: (value) {
-                                                printLog.i(
-                                                    'Valor enviado: ${value.round()}');
+                                                // printLog.i(
+                                                //     'Valor enviado: ${value.round()}');
                                                 putDistanceOn(
                                                   pc,
                                                   sn,
@@ -1743,7 +1744,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
                           setState(() {
                             _isTutorialActive = false;
                           });
-                          printLog.i('Tutorial is complete!');
+                          // printLog.i('Tutorial is complete!');
                         },
                       );
                     }

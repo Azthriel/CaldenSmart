@@ -41,7 +41,7 @@ Widget buildForgotPasswordForm(WelcomePageState state) {
                   children: [
                     IconButton(
                       icon: const Icon(HugeIcons.strokeRoundedArrowLeft02,
-                          color: color1),
+                          color: color0),
                       onPressed: () {
                         state.switchForm(FormType.login);
                       },
@@ -53,7 +53,7 @@ Widget buildForgotPasswordForm(WelcomePageState state) {
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: color1,
+                          color: color0,
                         ),
                       ),
                     ),

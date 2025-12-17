@@ -814,11 +814,11 @@ class ManagerScreenState extends State<ManagerScreen> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        printLog.i('=== RESPUESTA DE LA API DE CLIMA ===',
-            color: Colors.greenAccent);
-        printLog.i(data, color: Colors.greenAccent);
-        printLog.i('===================================',
-            color: Colors.greenAccent);
+        // printLog.i('=== RESPUESTA DE LA API DE CLIMA ===',
+        //     color: Colors.greenAccent);
+        // printLog.i(data, color: Colors.greenAccent);
+        // printLog.i('===================================',
+        //     color: Colors.greenAccent);
 
         setState(() {
           weatherData = data;
@@ -2755,10 +2755,10 @@ class ManagerScreenState extends State<ManagerScreen> {
                           onChanged: (value) {
                             setState(() {
                               nightMode = value;
-                              printLog.i('Estado: $nightMode');
+                              //printLog.i('Estado: $nightMode');
                               int fun = nightMode ? 1 : 0;
                               String data = '$pc[9]($fun)';
-                              printLog.i(data);
+                              //printLog.i(data);
                               bluetoothManager.toolsUuid.write(data.codeUnits);
                             });
                           },

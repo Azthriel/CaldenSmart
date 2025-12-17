@@ -8,7 +8,7 @@ import '/master.dart';
 //*-Lee todos los datos de un equipo-*\\
 Future<void> queryItems(String pc, String sn) async {
   try {
-    printLog.i('Buscare en el equipo: $pc/$sn');
+    // printLog.i('Buscare en el equipo: $pc/$sn');
     final response = await service.query(
       tableName: 'sime-domotica',
       keyConditionExpression: 'product_code = :pk AND device_id = :sk',
@@ -19,7 +19,7 @@ Future<void> queryItems(String pc, String sn) async {
     );
 
     if (response.items != null) {
-      printLog.i('Items encontrados');
+      // printLog.i('Items encontrados');
       // printLog.i(response.items);
       for (var item in response.items!) {
         printLog.i("-----------Inicio de un item-----------");
@@ -266,7 +266,7 @@ Future<void> queryItems(String pc, String sn) async {
         printLog.i("-----------Fin de un item-----------");
       }
     } else {
-      printLog.i('Dispositivo no encontrado');
+      printLog.e('Dispositivo no encontrado');
     }
   } catch (e) {
     printLog.e('Error durante la consulta: $e');
@@ -294,7 +294,7 @@ Future<void> putTokensInAlexaDevices(String email, List<String> tokens) async {
       cleanTokens.add('');
     }
 
-    final response = await service.updateItem(
+    await service.updateItem(
       tableName: 'Alexa-Devices',
       key: {
         'email': AttributeValue(s: email),
@@ -304,7 +304,7 @@ Future<void> putTokensInAlexaDevices(String email, List<String> tokens) async {
       },
     );
 
-    printLog.i('Tokens guardados en Alexa-Devices para $email: $response');
+    // printLog.i('Tokens guardados en Alexa-Devices para $email: $response');
   } catch (e) {
     printLog.e('Error guardando tokens en Alexa-Devices: $e');
   }
@@ -324,7 +324,7 @@ Future<List<String>> getTokensFromAlexaDevices(String email) async {
       var item = response.item!;
       List<String> tokens = item['tokens']?.ss ?? [];
 
-      printLog.i('Tokens encontrados en Alexa-Devices para $email: $tokens');
+      // printLog.i('Tokens encontrados en Alexa-Devices para $email: $tokens');
 
       if (tokens.contains('') && tokens.length == 1) {
         return [];
@@ -332,7 +332,7 @@ Future<List<String>> getTokensFromAlexaDevices(String email) async {
         return tokens;
       }
     } else {
-      printLog.i('Usuario no encontrado en Alexa-Devices: $email');
+      printLog.e('Usuario no encontrado en Alexa-Devices: $email');
       return [];
     }
   } catch (e) {
@@ -361,7 +361,7 @@ Future<void> putActiveUsers(
       cleanEmails.add('');
     }
 
-    final response = await service.updateItem(
+    await service.updateItem(
       tableName: 'sime-domotica',
       key: {
         'product_code': AttributeValue(s: pc),
@@ -373,7 +373,7 @@ Future<void> putActiveUsers(
       },
     );
 
-    printLog.i('ActiveUsers guardados para $pc/$sn: $response');
+    // printLog.i('ActiveUsers guardados para $pc/$sn: $response');
   } catch (e) {
     printLog.e('Error guardando activeUsers: $e');
   }
@@ -394,7 +394,7 @@ Future<List<String>> getActiveUsers(String pc, String sn) async {
       var item = response.item!;
       List<String> activeUsers = item['activeUsers']?.ss ?? [];
 
-      printLog.i('ActiveUsers encontrados para $pc/$sn: $activeUsers');
+      // printLog.i('ActiveUsers encontrados para $pc/$sn: $activeUsers');
 
       if (activeUsers.contains('') && activeUsers.length == 1) {
         return [];
@@ -402,7 +402,7 @@ Future<List<String>> getActiveUsers(String pc, String sn) async {
         return activeUsers;
       }
     } else {
-      printLog.i('Equipo no encontrado en sime-domotica: $pc/$sn');
+      printLog.e('Equipo no encontrado en sime-domotica: $pc/$sn');
       return [];
     }
   } catch (e) {
@@ -418,9 +418,9 @@ Future<void> addToActiveUsers(String pc, String sn, String email) async {
     if (!currentUsers.contains(email)) {
       currentUsers.add(email);
       await putActiveUsers(pc, sn, currentUsers);
-      printLog.i('Email $email añadido a activeUsers de $pc/$sn');
+      // printLog.i('Email $email añadido a activeUsers de $pc/$sn');
     } else {
-      printLog.i('Email $email ya está en activeUsers de $pc/$sn');
+      // printLog.i('Email $email ya está en activeUsers de $pc/$sn');
     }
   } catch (e) {
     printLog.e('Error añadiendo email a activeUsers: $e');
@@ -434,9 +434,9 @@ Future<void> removeFromActiveUsers(String pc, String sn, String email) async {
     if (currentUsers.contains(email)) {
       currentUsers.remove(email);
       await putActiveUsers(pc, sn, currentUsers);
-      printLog.i('Email $email removido de activeUsers de $pc/$sn');
+      // printLog.i('Email $email removido de activeUsers de $pc/$sn');
     } else {
-      printLog.i('Email $email no estaba en activeUsers de $pc/$sn');
+      // printLog.i('Email $email no estaba en activeUsers de $pc/$sn');
     }
   } catch (e) {
     printLog.e('Error removiendo email de activeUsers: $e');
@@ -466,10 +466,10 @@ Future<void> checkAndRemoveFromActiveUsers(
       // Si el dispositivo no está en previous connections, remover de activeUsers
       if (!previousConnections.contains(deviceName)) {
         await removeFromActiveUsers(pc, sn, userEmail);
-        printLog.i('Usuario $userEmail removido de activeUsers para $pc/$sn');
+        // printLog.i('Usuario $userEmail removido de activeUsers para $pc/$sn');
       } else {
-        printLog
-            .i('Usuario $userEmail mantiene conexión previa con $deviceName');
+        // printLog
+        //     .i('Usuario $userEmail mantiene conexión previa con $deviceName');
       }
     }
   } catch (e, s) {
@@ -483,14 +483,14 @@ Future<void> checkAndRemoveFromActiveUsers(
 //*-Guarda el mail del owner de un equipo en dynamo-*\\
 Future<void> putOwner(String pc, String sn, String data) async {
   try {
-    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+    await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
     }, attributeUpdates: {
       'owner': AttributeValueUpdate(value: AttributeValue(s: data)),
     });
 
-    printLog.i('Item escrito perfectamente $response');
+    // printLog.i('Item escrito perfectamente $response');
   } catch (e) {
     printLog.e('Error inserting item: $e');
   }
@@ -503,14 +503,12 @@ Future<void> putSecondaryAdmins(String pc, String sn, List<String> data) async {
     data.add('');
   }
   try {
-    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+    await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
     }, attributeUpdates: {
       'secondary_admin': AttributeValueUpdate(value: AttributeValue(ss: data)),
     });
-
-    printLog.i('Item escrito perfectamente $response');
   } catch (e) {
     printLog.e('Error inserting item: $e');
   }
@@ -520,14 +518,14 @@ Future<void> putSecondaryAdmins(String pc, String sn, List<String> data) async {
 //*-Escribe la distancia de encendido y apagado de el control por distancia de un equipo-*\\
 Future<void> putDistanceOn(String pc, String sn, String data) async {
   try {
-    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+    await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
     }, attributeUpdates: {
       'distanceOn': AttributeValueUpdate(value: AttributeValue(n: data)),
     });
 
-    printLog.i('Item escrito perfectamente $response');
+    // printLog.i('Item escrito perfectamente $response');
   } catch (e) {
     printLog.e('Error inserting item: $e');
   }
@@ -535,14 +533,14 @@ Future<void> putDistanceOn(String pc, String sn, String data) async {
 
 Future<void> putDistanceOff(String pc, String sn, String data) async {
   try {
-    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+    await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
     }, attributeUpdates: {
       'distanceOff': AttributeValueUpdate(value: AttributeValue(n: data)),
     });
 
-    printLog.i('Item escrito perfectamente $response');
+    // printLog.i('Item escrito perfectamente $response');
   } catch (e) {
     printLog.e('Error inserting item: $e');
   }
@@ -553,7 +551,7 @@ Future<void> putDistanceOff(String pc, String sn, String data) async {
 Future<void> saveATData(String pc, String sn, bool activate, String mail,
     String dOn, String dOff) async {
   try {
-    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+    await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
     }, attributeUpdates: {
@@ -564,7 +562,7 @@ Future<void> saveATData(String pc, String sn, bool activate, String mail,
     });
 
     activatedAT = activate;
-    printLog.i('Inquilino escrito perfectamente $response');
+    // printLog.i('Inquilino escrito perfectamente $response');
   } catch (e) {
     printLog.e('Error inserting item: $e');
   }
@@ -574,14 +572,14 @@ Future<void> saveATData(String pc, String sn, bool activate, String mail,
 //*-Guardar si un equipo es NA o NC-*\\
 Future<void> saveNC(String pc, String sn, bool data) async {
   try {
-    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+    await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
     }, attributeUpdates: {
       'isNC': AttributeValueUpdate(value: AttributeValue(boolValue: data)),
     });
 
-    printLog.i('Item escrito perfectamente $response');
+    // printLog.i('Item escrito perfectamente $response');
   } catch (e) {
     printLog.e('Error inserting item: $e');
   }
@@ -615,7 +613,7 @@ Future<void> putPreviusConnections(String email, List<String> data,
   // Si es un borrado intencional y la lista está vacía, usar el marcador fantasma
   if (data.isEmpty && isIntentionalClear) {
     data = [intentionallyEmptyMarker];
-    printLog.i('Lista vaciada intencionalmente, usando marcador fantasma');
+    // printLog.i('Lista vaciada intencionalmente, usando marcador fantasma');
   }
   // Si la lista está vacía sin ser intencional, bloquear solo si no es usuario nuevo
   else if (data.isEmpty && deviceLoadState != DeviceLoadState.newUser) {
@@ -641,11 +639,6 @@ Future<void> putPreviusConnections(String email, List<String> data,
             AttributeValueUpdate(value: AttributeValue(ss: data)),
       },
     );
-
-    List<String> realDevices = data
-        .where((d) => d.isNotEmpty && d != intentionallyEmptyMarker)
-        .toList();
-    printLog.i('Lista de dispositivos actualizada correctamente: $realDevices');
   } catch (e) {
     printLog.e('Error actualizando la lista de dispositivos: $e');
     rethrow;
@@ -657,7 +650,7 @@ Future<void> putPreviusConnections(String email, List<String> data,
 ///*-Guardar y obtener Nicknames de los equipo-*\\\
 Future<void> putNicknames(String email, Map<String, String> data) async {
   try {
-    final response = await service.updateItem(tableName: 'Alexa-Devices', key: {
+    await service.updateItem(tableName: 'Alexa-Devices', key: {
       'email': AttributeValue(s: email),
     }, attributeUpdates: {
       'nicknames': AttributeValueUpdate(
@@ -670,7 +663,7 @@ Future<void> putNicknames(String email, Map<String, String> data) async {
       ),
     });
 
-    printLog.i('Item escrito perfectamente $response');
+    // printLog.i('Item escrito perfectamente $response');
   } catch (e) {
     printLog.e('Error guardando alexa item: $e');
   }
@@ -691,10 +684,10 @@ Future<Map<String, String>> getNicknames(String email) async {
       mapa.forEach((key, value) {
         nicks.addAll({key: value.s ?? ''});
       });
-      printLog.i('Nicknames encontrados: $nicks');
+      // printLog.i('Nicknames encontrados: $nicks');
       return nicks;
     } else {
-      printLog.i('Item no encontrado. No está el mail en la database');
+      printLog.e('Item no encontrado. No está el mail en la database');
       return nicks;
     }
   } catch (e) {
@@ -723,7 +716,7 @@ Future<List<String>> getPreviusConnections(String email) async {
 
       return equipos;
     } else {
-      printLog.i('Item no encontrado. No está el mail en la database');
+      printLog.e('Item no encontrado. No está el mail en la database');
       return [];
     }
   } catch (e) {
@@ -737,14 +730,14 @@ Future<List<String>> getPreviusConnections(String email) async {
 ///*-Guardar el largo del Roller-*\\\
 Future<void> putRollerLength(String pc, String sn, String data) async {
   try {
-    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+    await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
     }, attributeUpdates: {
       'rollerSavedLength': AttributeValueUpdate(value: AttributeValue(s: data)),
     });
 
-    printLog.i('Item escrito perfectamente $response');
+    // printLog.i('Item escrito perfectamente $response');
   } catch (e) {
     printLog.e('Error inserting item: $e');
   }
@@ -792,13 +785,13 @@ Future<void> getDevices(String email) async {
         subToTopicMQTT('devices_tx/$pc/$sn');
       }
 
-      printLog.i('Se encontro el siguiente item: $equipos');
+      // printLog.i('Se encontro el siguiente item: $equipos');
 
       alexaDevices = item['devices']?.ss ?? [];
       if (alexaDevices.contains('') && alexaDevices.length == 1) {
         alexaDevices = [];
       }
-      printLog.i('Equipos de asistentes por voz: $alexaDevices');
+      // printLog.i('Equipos de asistentes por voz: $alexaDevices');
 
       await DeviceManager.init();
 
@@ -808,7 +801,7 @@ Future<void> getDevices(String email) async {
       }
     } else {
       // Usuario NO existe en la base de datos = Usuario nuevo
-      printLog.i('Item no encontrado. Usuario nuevo detectado');
+      // printLog.i('Item no encontrado. Usuario nuevo detectado');
       deviceLoadState = DeviceLoadState.newUser;
       previusConnections = [];
       lastSuccessfulLoad = DateTime.now();
@@ -831,8 +824,8 @@ Future<String> safeAddDevice(String email, String deviceName) async {
   switch (deviceLoadState) {
     case DeviceLoadState.unknown:
     case DeviceLoadState.loading:
-      printLog
-          .i('Estado de carga incierto, reintentando cargar dispositivos...');
+      // printLog
+      //     .i('Estado de carga incierto, reintentando cargar dispositivos...');
       await getDevices(email);
       if (deviceLoadState == DeviceLoadState.loadError) {
         return 'error';
@@ -843,8 +836,8 @@ Future<String> safeAddDevice(String email, String deviceName) async {
       printLog.e(
           'Error de carga detectado. No se agregará dispositivo para evitar sobrescritura');
       if (loadRetryCount < maxRetryAttempts) {
-        printLog.i(
-            'Reintentando carga de dispositivos (intento ${loadRetryCount + 1}/$maxRetryAttempts)');
+        // printLog.i(
+        //     'Reintentando carga de dispositivos (intento ${loadRetryCount + 1}/$maxRetryAttempts)');
         await getDevices(email);
         if (deviceLoadState == DeviceLoadState.loadError) {
           return 'error';
@@ -862,7 +855,7 @@ Future<String> safeAddDevice(String email, String deviceName) async {
 
   // Validar que el dispositivo no esté ya en la lista
   if (previusConnections.contains(deviceName)) {
-    printLog.i('Dispositivo $deviceName ya está en la lista');
+    // printLog.i('Dispositivo $deviceName ya está en la lista');
     return 'exists';
   }
 
@@ -878,7 +871,7 @@ Future<String> safeAddDevice(String email, String deviceName) async {
     // Intentar guardar en DynamoDB
     await putPreviusConnections(email, previusConnections);
 
-    printLog.i('Dispositivo $deviceName agregado exitosamente');
+    // printLog.i('Dispositivo $deviceName agregado exitosamente');
     return 'added';
   } catch (e) {
     // En caso de error, restaurar la lista anterior
@@ -984,7 +977,7 @@ void putEventos(
         'events': AttributeValueUpdate(value: AttributeValue(l: attributeList)),
       },
     );
-    printLog.i('Eventos guardados correctamente');
+    // printLog.i('Eventos guardados correctamente');
   } catch (e) {
     printLog.e('Error al guardar eventos: $e');
   }
@@ -1098,7 +1091,7 @@ Future<List<Map<String, dynamic>>> getEventos(
       return map;
     }).toList();
 
-    printLog.i('Eventos procesados: ${result.length}');
+    // printLog.i('Eventos procesados: ${result.length}');
     return result;
   } catch (e) {
     printLog.e('Error al cargar eventos: $e');
@@ -1109,14 +1102,14 @@ Future<List<Map<String, dynamic>>> getEventos(
 ///Guarda la ubicación del equipo en la base de datos
 Future<void> saveLocation(String pc, String sn, String data) async {
   try {
-    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+    await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
     }, attributeUpdates: {
       'deviceLocation': AttributeValueUpdate(value: AttributeValue(s: data)),
     });
 
-    printLog.i('Item escrito perfectamente $response');
+    // printLog.i('Item escrito perfectamente $response');
   } catch (e) {
     printLog.e('Error inserting item: $e');
   }
@@ -1125,7 +1118,7 @@ Future<void> saveLocation(String pc, String sn, String data) async {
 ///Guarda las versiones de Hardware y Software
 Future<void> putVersions(String pc, String sn, String hard, String soft) async {
   try {
-    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+    await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
     }, attributeUpdates: {
@@ -1133,7 +1126,7 @@ Future<void> putVersions(String pc, String sn, String hard, String soft) async {
       'SoftwareVersion': AttributeValueUpdate(value: AttributeValue(s: soft)),
     });
 
-    printLog.i('Item escrito perfectamente $response');
+    // printLog.i('Item escrito perfectamente $response');
   } catch (e) {
     printLog.e('Error inserting item: $e');
   }
@@ -1142,7 +1135,7 @@ Future<void> putVersions(String pc, String sn, String hard, String soft) async {
 //*-Obtener datos generales de la aplicación desde GENERALDATA-*\\
 Future<Map<String, dynamic>> getGeneralData() async {
   try {
-    printLog.i('Obteniendo datos generales de GENERALDATA...');
+    // printLog.i('Obteniendo datos generales de GENERALDATA...');
     final response = await service.getItem(
       tableName: 'GENERALDATA',
       key: {
@@ -1190,10 +1183,10 @@ Future<Map<String, dynamic>> getGeneralData() async {
         }
       }
 
-      printLog.i('Datos generales obtenidos correctamente');
+      // printLog.i('Datos generales obtenidos correctamente');
       return generalData;
     } else {
-      printLog.i('No se encontraron datos generales en GENERALDATA');
+      printLog.e('No se encontraron datos generales en GENERALDATA');
       return {};
     }
   } catch (e) {
@@ -1222,7 +1215,7 @@ Future<void> putEventoControlPorDisparadores(
   try {
     String sortKey = '$email:$nombreEvento';
 
-    final response = await service.putItem(
+    await service.putItem(
       tableName: 'Eventos_ControlPorDisparadores',
       item: {
         'deviceName': AttributeValue(s: activador),
@@ -1236,84 +1229,27 @@ Future<void> putEventoControlPorDisparadores(
       },
     );
 
-    printLog.i(
-        'Evento de control por disparadores guardado (nueva lógica): $response');
+    // printLog.i(
+    //     'Evento de control por disparadores guardado (nueva lógica): $response');
   } catch (e) {
     printLog.e('Error guardando evento de control por disparadores: $e');
   }
 }
 
-/// Elimina ejecutores específicos de un evento disparador
-/// [activador] es el nombre del dispositivo activador
-/// [sortKey] es la clave de ordenamiento (email:nombreEvento)
-/// NUEVA LÓGICA: Primero intenta eliminar de Eventos_ControlPorDisparadores
-/// Si no funciona, usa fallback a Eventos_ControlDisparadores (tabla vieja)
-void removeEjecutoresFromDisparador(String activador, String sortKey) async {
+void deleteEventoControlPorDisparadores(
+    String activador, String email, String nombreEvento) async {
   try {
-    printLog.i('Iniciando eliminación para activador: $activador');
-    printLog.i('SortKey: $sortKey');
+    String sortKey = '$email:$nombreEvento';
 
-    // PASO 1: Intentar nueva lógica - eliminar de Eventos_ControlPorDisparadores
-    bool nuevaLogicaExitosa = await _tryRemoveFromNewTable(activador, sortKey);
-
-    if (nuevaLogicaExitosa) {
-      printLog.i(
-          'Nueva lógica exitosa: eventos eliminados de Eventos_ControlPorDisparadores');
-      return;
-    }
-
-    // PASO 2: Fallback - eliminar de tabla vieja Eventos_ControlDisparadores
-    printLog.i('Nueva lógica falló, usando fallback con tabla vieja');
-    await _removeFromOldTable(activador);
-  } catch (e) {
-    printLog
-        .e('Error general eliminando evento de control por disparadores: $e');
-  }
-}
-
-/// Intenta eliminar todos los eventos del activador de la nueva tabla
-/// Retorna true si fue exitoso, false si no encontró datos o falló
-Future<bool> _tryRemoveFromNewTable(String activador, String sortKey) async {
-  try {
-    printLog.i('Intentando eliminar de Eventos_ControlPorDisparadores...');
-    final response = await service.deleteItem(
+    await service.deleteItem(
       tableName: 'Eventos_ControlPorDisparadores',
       key: {
         'deviceName': AttributeValue(s: activador),
         'email:nombreEvento': AttributeValue(s: sortKey),
       },
     );
-
-    if (response.attributes == null || response.attributes!.isEmpty) {
-      printLog.i(
-          'No se encontraron eventos para eliminar de Eventos_ControlPorDisparadores');
-      return false; // No había eventos para eliminar
-    }
-    printLog.i(
-        'Todos los eventos eliminados exitosamente de Eventos_ControlPorDisparadores');
-    return true;
   } catch (e) {
-    printLog.e('Error en nueva lógica (Eventos_ControlPorDisparadores): $e');
-    return false;
-  }
-}
-
-/// Elimina el item del activador de la tabla vieja (fallback)
-Future<void> _removeFromOldTable(String activador) async {
-  try {
-    printLog.i('Eliminando de Eventos_ControlDisparadores (tabla vieja)...');
-
-    final response = await service.deleteItem(
-      tableName: 'Eventos_ControlDisparadores',
-      key: {
-        'deviceName': AttributeValue(s: activador),
-      },
-    );
-
-    printLog.i(
-        'Evento eliminado de tabla vieja (Eventos_ControlDisparadores): $response');
-  } catch (e) {
-    printLog.e('Error eliminando de tabla vieja: $e');
+    printLog.e('Error eliminando evento de control por disparadores: $e');
   }
 }
 //*- Guarda evento: Control por disparadores -*\\
@@ -1342,7 +1278,7 @@ Future<void> putEventoControlPorHorarios(
   try {
     String sortKey = '$email:$nombreEvento';
 
-    final response = await service.putItem(
+    await service.putItem(
       tableName: 'Eventos_ControlPorHorarios',
       item: {
         'horario': AttributeValue(s: horario),
@@ -1361,12 +1297,12 @@ Future<void> putEventoControlPorHorarios(
       },
     );
 
-    printLog.i('Evento de control por horarios guardado: $response');
-    printLog
-        .i('Ejecutores con formato nombre:tipo: ${ejecutores.keys.toList()}');
-    printLog.i('Días guardados como números: $days');
-    printLog.i(
-        'Timezone: $timezoneName (UTC${timezoneOffset >= 0 ? '+' : ''}$timezoneOffset)');
+    // printLog.i('Evento de control por horarios guardado: $response');
+    // printLog
+    //     .i('Ejecutores con formato nombre:tipo: ${ejecutores.keys.toList()}');
+    // printLog.i('Días guardados como números: $days');
+    // printLog.i(
+    //     'Timezone: $timezoneName (UTC${timezoneOffset >= 0 ? '+' : ''}$timezoneOffset)');
   } catch (e) {
     printLog.e('Error guardando evento de control por horarios: $e');
   }
@@ -1380,8 +1316,7 @@ void deleteEventoControlPorHorarios(
     String horario, String email, String nombreEvento) async {
   try {
     String sortKey = '$email:$nombreEvento';
-
-    final response = await service.deleteItem(
+    await service.deleteItem(
       tableName: 'Eventos_ControlPorHorarios',
       key: {
         'horario': AttributeValue(s: horario),
@@ -1389,7 +1324,7 @@ void deleteEventoControlPorHorarios(
       },
     );
 
-    printLog.i('Evento de control por horarios eliminado: $response');
+    // printLog.i('Evento de control por horarios eliminado: $response');
   } catch (e) {
     printLog.e('Error eliminando evento de control por horarios: $e');
   }
@@ -1404,14 +1339,14 @@ Future<void> putDevicesInDistanceControl(
     data.add('');
   }
   try {
-    final response = await service.updateItem(tableName: 'Alexa-Devices', key: {
+    await service.updateItem(tableName: 'Alexa-Devices', key: {
       'email': AttributeValue(s: email)
     }, attributeUpdates: {
       'DevicesInDistanceControl':
           AttributeValueUpdate(value: AttributeValue(ss: data)),
     });
 
-    printLog.i('Item escrito perfectamente $response');
+    // printLog.i('Item escrito perfectamente $response');
   } catch (e) {
     printLog.e('Error inserting item: $e');
   }
@@ -1428,7 +1363,7 @@ Future<List<String>> getDevicesInDistanceControl(String email) async {
       var item = response.item!;
       List<String> dsControl = item['DevicesInDistanceControl']?.ss ?? [];
 
-      printLog.i('Se encontro el siguiente item: $dsControl');
+      // printLog.i('Se encontro el siguiente item: $dsControl');
 
       if (dsControl.contains('') && dsControl.length == 1) {
         return [];
@@ -1436,7 +1371,7 @@ Future<List<String>> getDevicesInDistanceControl(String email) async {
         return dsControl;
       }
     } else {
-      printLog.i('Item no encontrado.');
+      printLog.e('Item no encontrado.');
       return [];
     }
   } catch (e) {
@@ -1447,7 +1382,7 @@ Future<List<String>> getDevicesInDistanceControl(String email) async {
 
 Future<void> putDistanceControl(String pc, String sn, bool status) async {
   try {
-    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+    await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
     }, attributeUpdates: {
@@ -1455,7 +1390,7 @@ Future<void> putDistanceControl(String pc, String sn, bool status) async {
           AttributeValueUpdate(value: AttributeValue(boolValue: status)),
     });
 
-    printLog.i('Item escrito perfectamente $response');
+    // printLog.i('Item escrito perfectamente $response');
   } catch (e) {
     printLog.e('Error inserting item: $e');
   }
@@ -1496,7 +1431,7 @@ void putEventoControlPorCadena(
 
 void deleteEventoControlPorCadena(String email, String nombreEvento) async {
   try {
-    final response = await service.deleteItem(
+    await service.deleteItem(
       tableName: 'Eventos_ControlPorCadena',
       key: {
         'email': AttributeValue(s: email),
@@ -1504,7 +1439,7 @@ void deleteEventoControlPorCadena(String email, String nombreEvento) async {
       },
     );
 
-    printLog.i('Evento de control por cadena eliminado: $response');
+    // printLog.i('Evento de control por cadena eliminado: $response');
   } catch (e) {
     printLog.e('Error eliminando evento de control por cadena: $e');
   }
@@ -1551,7 +1486,7 @@ Future<List<Map<String, dynamic>>> queryEventosControlPorCadena(
       }
     }
 
-    printLog.i('Eventos de control por cadena consultados: ${eventos.length}');
+    // printLog.i('Eventos de control por cadena consultados: ${eventos.length}');
     return eventos;
   } catch (e) {
     printLog.e('Error consultando eventos de control por cadena: $e');
@@ -1606,7 +1541,7 @@ Future<List<Map<String, dynamic>>> queryEventosControlDeRiego(
       }
     }
 
-    printLog.i('Eventos de control de riego consultados: ${eventos.length}');
+    // printLog.i('Eventos de control de riego consultados: ${eventos.length}');
     return eventos;
   } catch (e) {
     printLog.e('Error consultando eventos de control de riego: $e');
@@ -1619,7 +1554,7 @@ Future<List<Map<String, dynamic>>> queryEventosControlDeRiego(
 void putEventoControlPorGrupos(
     String email, String nombreEvento, List<String> grupo) async {
   try {
-    final response = await service.putItem(
+    await service.putItem(
       tableName: 'Eventos_ControlPorGrupos',
       item: {
         'email': AttributeValue(s: email),
@@ -1628,7 +1563,7 @@ void putEventoControlPorGrupos(
       },
     );
 
-    printLog.i('Evento de control por grupos guardado: $response');
+    // printLog.i('Evento de control por grupos guardado: $response');
   } catch (e) {
     printLog.e('Error guardando evento de control por grupos: $e');
   }
@@ -1636,7 +1571,7 @@ void putEventoControlPorGrupos(
 
 void deleteEventoControlPorGrupos(String email, String nombreEvento) async {
   try {
-    final response = await service.deleteItem(
+    await service.deleteItem(
       tableName: 'Eventos_ControlPorGrupos',
       key: {
         'email': AttributeValue(s: email),
@@ -1644,7 +1579,7 @@ void deleteEventoControlPorGrupos(String email, String nombreEvento) async {
       },
     );
 
-    printLog.i('Evento de control por grupos eliminado: $response');
+    // printLog.i('Evento de control por grupos eliminado: $response');
   } catch (e) {
     printLog.e('Error eliminando evento de control por grupos: $e');
   }
@@ -1655,7 +1590,7 @@ void deleteEventoControlPorGrupos(String email, String nombreEvento) async {
 void putEventoControlPorClima(String email, String nombreEvento, String clima,
     Map<String, Map<String, bool>> ejecutores) async {
   try {
-    final response = await service.putItem(
+    await service.putItem(
       tableName: 'Eventos_ControlPorClima',
       item: {
         'email': AttributeValue(s: email),
@@ -1675,7 +1610,7 @@ void putEventoControlPorClima(String email, String nombreEvento, String clima,
       },
     );
 
-    printLog.i('Evento de control por clima guardado: $response');
+    // printLog.i('Evento de control por clima guardado: $response');
   } catch (e) {
     printLog.e('Error guardando evento de control por clima: $e');
   }
@@ -1683,7 +1618,7 @@ void putEventoControlPorClima(String email, String nombreEvento, String clima,
 
 void deleteEventoControlPorClima(String email, String nombreEvento) async {
   try {
-    final response = await service.deleteItem(
+    await service.deleteItem(
       tableName: 'Eventos_ControlPorClima',
       key: {
         'email': AttributeValue(s: email),
@@ -1691,7 +1626,7 @@ void deleteEventoControlPorClima(String email, String nombreEvento) async {
       },
     );
 
-    printLog.i('Evento de control por clima eliminado: $response');
+    // printLog.i('Evento de control por clima eliminado: $response');
   } catch (e) {
     printLog.e('Error eliminando evento de control por clima: $e');
   }
@@ -1704,14 +1639,14 @@ Future<void> putRiegoExtensions(String pc, String sn, List<String> data) async {
     data.add('');
   }
   try {
-    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+    await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
     }, attributeUpdates: {
       'riegoExtensions': AttributeValueUpdate(value: AttributeValue(ss: data)),
     });
 
-    printLog.i('Item escrito perfectamente $response');
+    // printLog.i('Item escrito perfectamente $response');
   } catch (e) {
     printLog.e('Error inserting item: $e');
   }
@@ -1720,7 +1655,7 @@ Future<void> putRiegoExtensions(String pc, String sn, List<String> data) async {
 //*- Guarda el estado de freeBomb -*\\
 Future<void> putFreeBomb(String pc, String sn, bool status) async {
   try {
-    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+    await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
     }, attributeUpdates: {
@@ -1728,7 +1663,7 @@ Future<void> putFreeBomb(String pc, String sn, bool status) async {
           AttributeValueUpdate(value: AttributeValue(boolValue: status)),
     });
 
-    printLog.i('Item freeBomb escrito perfectamente $response');
+    // printLog.i('Item freeBomb escrito perfectamente $response');
   } catch (e) {
     printLog.e('Error insertando freeBomb: $e');
   }
@@ -1738,7 +1673,7 @@ Future<void> putFreeBomb(String pc, String sn, bool status) async {
 Future<void> putRiegoMaster(
     String pc, String sn, String masterDeviceName) async {
   try {
-    final response = await service.updateItem(tableName: 'sime-domotica', key: {
+    await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
     }, attributeUpdates: {
@@ -1746,7 +1681,7 @@ Future<void> putRiegoMaster(
           AttributeValueUpdate(value: AttributeValue(s: masterDeviceName)),
     });
 
-    printLog.i('Item riegoMaster escrito perfectamente $response');
+    // printLog.i('Item riegoMaster escrito perfectamente $response');
   } catch (e) {
     printLog.e('Error insertando riegoMaster: $e');
   }
@@ -1757,7 +1692,7 @@ Future<void> putRiegoMaster(
 void putEventoControlDeRiego(String email, String nombreEvento,
     bool cancelIfRain, String bomba, List<Map<String, dynamic>> pasos) async {
   try {
-    final response = await service.putItem(
+    await service.putItem(
       tableName: 'Eventos_ControlDeRiego',
       item: {
         'email': AttributeValue(s: email),
@@ -1775,7 +1710,7 @@ void putEventoControlDeRiego(String email, String nombreEvento,
       },
     );
 
-    printLog.i('Evento de control de riego guardado: $response');
+    // printLog.i('Evento de control de riego guardado: $response');
   } catch (e) {
     printLog.e('Error guardando evento de control de riego: $e');
   }
@@ -1783,7 +1718,7 @@ void putEventoControlDeRiego(String email, String nombreEvento,
 
 void deleteEventoControlDeRiego(String email, String nombreEvento) async {
   try {
-    final response = await service.deleteItem(
+    await service.deleteItem(
       tableName: 'Eventos_ControlDeRiego',
       key: {
         'email': AttributeValue(s: email),
@@ -1791,7 +1726,7 @@ void deleteEventoControlDeRiego(String email, String nombreEvento) async {
       },
     );
 
-    printLog.i('Evento de control de riego eliminado: $response');
+    // printLog.i('Evento de control de riego eliminado: $response');
   } catch (e) {
     printLog.e('Error eliminando evento de control de riego: $e');
   }
@@ -1821,7 +1756,7 @@ Future<void> putAdminUsageHistory(
     }
 
     // Guardar en DynamoDB
-    final response = await service.updateItem(
+    await service.updateItem(
       tableName: 'sime-domotica',
       key: {
         'product_code': AttributeValue(s: pc),
@@ -1835,7 +1770,7 @@ Future<void> putAdminUsageHistory(
       },
     );
 
-    printLog.i('Historial de uso guardado: $response');
+    // printLog.i('Historial de uso guardado: $response');
   } catch (e) {
     printLog.e('Error guardando historial de uso: $e');
   }
@@ -2130,5 +2065,56 @@ void savePrintLog(String email, String log) async {
     printLog.i('Log guardado perfectamente $response');
   } catch (e) {
     printLog.e('Error insertando log: $e');
+  }
+}
+
+///Inhabilita o habilita un evento
+void setEventEnabled(
+    String nombreEvento, String email, bool habilitado, String tipoEvento,
+    [String? activador, String? horario]) async {
+  try {
+    String tableName = '';
+    Map<String, AttributeValue> key = {};
+
+    switch (tipoEvento) {
+      case 'disparadores':
+        tableName = 'Eventos_ControlPorDisparadores';
+        key = {
+          'deviceName': AttributeValue(s: activador!),
+          'email:nombreEvento': AttributeValue(s: '$email:$nombreEvento'),
+        };
+        break;
+      case 'horario':
+        tableName = 'Eventos_ControlPorHorarios';
+        key = {
+          'horario': AttributeValue(s: horario!),
+          'email:nombreEvento': AttributeValue(s: '$email:$nombreEvento'),
+        };
+        break;
+      case 'clima':
+        tableName = 'Eventos_ControlPorClima';
+        key = {
+          'email': AttributeValue(s: email),
+          'nombreEvento': AttributeValue(s: nombreEvento),
+        };
+        break;
+      default:
+        printLog.e('Tipo de evento desconocido: $tipoEvento');
+        return;
+    }
+
+    final response = await service.updateItem(
+      tableName: tableName,
+      key: key,
+      attributeUpdates: {
+        'enabled': AttributeValueUpdate(
+          value: AttributeValue(boolValue: habilitado),
+        ),
+      },
+    );
+
+    printLog.i('Evento actualizado correctamente: $response');
+  } catch (e) {
+    printLog.e('Error actualizando evento habilitado: $e');
   }
 }
