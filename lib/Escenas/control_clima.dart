@@ -22,6 +22,20 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
   Map<String, bool> deviceActions = {};
   String selectedWeatherCondition = '';
 
+  String? windDirection;
+
+  final List<String> windDirectionsList = [
+    'Todos los origenes',
+    'Norte',
+    'Noreste',
+    'Este',
+    'Sureste',
+    'Sur',
+    'Suroeste',
+    'Oeste',
+    'Noroeste'
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -258,6 +272,10 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
   }
 
   Widget _buildWeatherConditionStep() {
+    bool isWindCondition =
+        selectedWeatherCondition.toLowerCase().contains('viento') &&
+            !selectedWeatherCondition.toLowerCase().contains('sin');
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -294,7 +312,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                   value: selectedWeatherCondition,
                   isExpanded: true,
                   icon: const Icon(
-                    HugeIcons.strokeRoundedArrowDown02,
+                    HugeIcons.strokeRoundedArrowDown01,
                     color: color0,
                   ),
                   dropdownColor: color1,
@@ -307,6 +325,11 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                   onChanged: (String? value) {
                     setState(() {
                       selectedWeatherCondition = value!;
+
+                      if (!value.toLowerCase().contains('viento') ||
+                          value.toLowerCase().contains('sin')) {
+                        windDirection = null;
+                      }
                     });
                   },
                   items: weatherConditions
@@ -314,10 +337,13 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                     return DropdownMenuItem<String>(
                       value: value,
                       child: Center(
-                        child: Text(
-                          value,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(color: color0),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            value,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(color: color0),
+                          ),
                         ),
                       ),
                     );
@@ -327,6 +353,69 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
             ),
           ),
         ),
+        if (isWindCondition) ...[
+          const SizedBox(height: 20),
+          Center(
+            child: Text(
+              'Selecciona el origen del viento',
+              style: GoogleFonts.poppins(color: color0, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Theme(
+            data: Theme.of(context).copyWith(canvasColor: Colors.white),
+            child: DropdownButtonHideUnderline(
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.6,
+                decoration: BoxDecoration(
+                  color: color0.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: color0, width: 2),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: DropdownButton<String>(
+                    value: windDirection,
+                    hint: Center(
+                      child: Text("Dirección",
+                          style: GoogleFonts.poppins(
+                              color: color0.withValues(alpha: 0.5))),
+                    ),
+                    isExpanded: true,
+                    icon: const Icon(HugeIcons.strokeRoundedNavigation04,
+                        color: color0),
+                    dropdownColor: color1,
+                    borderRadius: BorderRadius.circular(15),
+                    elevation: 4,
+                    style: GoogleFonts.poppins(color: color0, fontSize: 18),
+                    onChanged: (String? value) {
+                      setState(() {
+                        windDirection = value;
+                      });
+                    },
+                    items: windDirectionsList
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Center(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              value,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.poppins(color: color0),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 40),
       ],
     );
@@ -970,10 +1059,16 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
     printLog.d("Dispositivos/Eventos seleccionados: $deviceGroup");
     printLog.d("Acciones: $deviceActions");
 
+    String? directionToSave;
+    if (windDirection != null && windDirection != 'Todos los origenes') {
+      directionToSave = windDirection;
+    }
+
     Map<String, dynamic> eventoData = {
       'evento': 'clima',
       'title': title.text,
       'condition': selectedWeatherCondition,
+      if (directionToSave != null) 'wind_direction': directionToSave,
       'deviceGroup': List<String>.from(deviceGroup),
       'deviceActions': Map<String, bool>.from(deviceActions),
     };
@@ -1016,7 +1111,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
     printLog.d("Ejecutores: $ejecutores");
 
     putEventoControlPorClima(currentUserEmail, title.text.trim(),
-        selectedWeatherCondition, ejecutores);
+        selectedWeatherCondition, ejecutores, directionToSave);
 
     showToast("Control climático creado exitosamente");
 
@@ -1027,7 +1122,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
 
     Navigator.pop(context, true);
 
-   // printLog.i(eventosCreados);
+    // printLog.i(eventosCreados);
   }
 
   @override

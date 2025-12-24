@@ -805,6 +805,26 @@ class ManagerScreenState extends State<ManagerScreen> {
     return '$hour:$minute';
   }
 
+  String getWindDirection(num degrees) {
+    if (degrees >= 337.5 || degrees < 22.5) {
+      return 'Norte';
+    } else if (degrees >= 22.5 && degrees < 67.5) {
+      return 'Noreste';
+    } else if (degrees >= 67.5 && degrees < 112.5) {
+      return 'Este';
+    } else if (degrees >= 112.5 && degrees < 157.5) {
+      return 'Sureste';
+    } else if (degrees >= 157.5 && degrees < 202.5) {
+      return 'Sur';
+    } else if (degrees >= 202.5 && degrees < 247.5) {
+      return 'Suroeste';
+    } else if (degrees >= 247.5 && degrees < 292.5) {
+      return 'Oeste';
+    } else {
+      return 'Noroeste';
+    }
+  }
+
   Future<void> fetchWeatherData(double lat, double lon) async {
     try {
       final url = Uri.parse(
@@ -880,6 +900,8 @@ class ManagerScreenState extends State<ManagerScreen> {
                     _buildWeatherItem('Viento',
                         '${weatherData!['current']['wind_speed']} m/s'),
                     _buildWeatherItem('Dirección del viento',
+                        getWindDirection(weatherData!['current']['wind_deg'])),
+                    _buildWeatherItem('Grados del viento',
                         '${weatherData!['current']['wind_deg']}°'),
                     _buildWeatherItem(
                         'Nubosidad', '${weatherData!['current']['clouds']}%'),

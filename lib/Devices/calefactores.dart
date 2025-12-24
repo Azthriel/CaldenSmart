@@ -1937,7 +1937,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                       index: _selectedIndex,
                       height: 75.0,
                       items: const <Widget>[
-                        Icon(HugeIcons.strokeRoundedHome07,
+                        Icon(HugeIcons.strokeRoundedHome11,
                             size: 30, color: color0),
                         Icon(HugeIcons.strokeRoundedTemperature,
                             size: 30, color: color0),

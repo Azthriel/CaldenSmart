@@ -1588,7 +1588,7 @@ void deleteEventoControlPorGrupos(String email, String nombreEvento) async {
 
 //*- Guarda evento: Control por clima -*\\
 void putEventoControlPorClima(String email, String nombreEvento, String clima,
-    Map<String, Map<String, bool>> ejecutores) async {
+    Map<String, Map<String, bool>> ejecutores, String? windDirection) async {
   try {
     await service.putItem(
       tableName: 'Eventos_ControlPorClima',
@@ -1607,6 +1607,9 @@ void putEventoControlPorClima(String email, String nombreEvento, String clima,
             }
           },
         ),
+        if (windDirection != null) ...{
+          'wind_direction': AttributeValue(s: windDirection),
+        },
       },
     );
 

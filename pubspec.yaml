@@ -1,7 +1,7 @@
 name: caldensmart
 description: "Caldén Smart"
-publish_to: "none" # Remove this line if you wish to publish to pub.dev
-version: 1.0.66+84
+publish_to: "none"
+version: 1.0.68+86
 
 environment:
   sdk: ^3.5.1

@@ -4,8 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:caldensmart/aws/dynamo/dynamo.dart' show savePrintLog;
-import 'package:caldensmart/master.dart'
-    show shouldSaveLog, currentUserEmail, stringifyPrintLog;
+import 'package:caldensmart/master.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 

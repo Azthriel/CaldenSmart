@@ -1571,7 +1571,7 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
                       index: _selectedIndex,
                       height: 75.0,
                       items: <Widget>[
-                        const Icon(HugeIcons.strokeRoundedHome07,
+                        const Icon(HugeIcons.strokeRoundedHome11,
                             size: 30, color: color0),
                         const Icon(HugeIcons.strokeRoundedBluetooth,
                             size: 30, color: color0),

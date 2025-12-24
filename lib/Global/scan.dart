@@ -288,6 +288,8 @@ class ScanPageState extends State<ScanPage>
             devices.clear();
             lostDevices.clear();
             lastSeenDevices.clear();
+            _connectingDeviceId = null;
+            isConnecting = false;
           })
         : null;
     scan();

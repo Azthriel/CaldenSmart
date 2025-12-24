@@ -914,7 +914,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                 index: _selectedIndex,
                 height: 75.0,
                 items: const <Widget>[
-                  Icon(HugeIcons.strokeRoundedHome07, size: 30, color: color0),
+                  Icon(HugeIcons.strokeRoundedHome11, size: 30, color: color0),
                   Icon(HugeIcons.strokeRoundedWrench01,
                       size: 30, color: color0),
                   Icon(HugeIcons.strokeRoundedSettings02,

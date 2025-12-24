@@ -1211,6 +1211,50 @@ class WifiPageState extends ConsumerState<WifiPage>
     );
   }
 
+  Widget _buildNotOwnerWarning() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(
+          height: 10,
+        ),
+        SizedBox(
+          width: MediaQuery.of(context).size.width * 0.8,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.1), // Fondo sutil
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.amber.shade700, width: 1),
+            ),
+            child: Row(
+              children: [
+                Icon(HugeIcons.strokeRoundedIdNotVerified,
+                    color: Colors.amber[800]),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Ud. no está habilitado\npara controlar este dispositivo',
+                    style: GoogleFonts.poppins(
+                      color: Colors.amber[900],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(
+          height: 10,
+        ),
+      ],
+    );
+  }
+
   Widget _buildDeviceList(
       List<MapEntry<String, String>> deviceList, String tipo,
       {Widget? footerWidget}) {
@@ -1744,6 +1788,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                         )
                                                       : const SizedBox(
                                                           height: 0, width: 0),
+                                                  if (!owner) ...[
+                                                    _buildNotOwnerWarning()
+                                                  ],
                                                 ],
                                               )
                                             : Text(
@@ -1955,37 +2002,43 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                           ),
                                                         ),
                                                   const SizedBox(width: 5),
-                                                  Switch(
-                                                      activeThumbColor:
-                                                          const Color(
-                                                              0xFF9C9D98),
-                                                      activeTrackColor:
-                                                          const Color(
-                                                              0xFFB2B5AE),
-                                                      inactiveThumbColor:
-                                                          const Color(
-                                                              0xFFB2B5AE),
-                                                      inactiveTrackColor:
-                                                          const Color(
-                                                              0xFF9C9D98),
-                                                      value: estado,
-                                                      onChanged: online
-                                                          ? (newValue) {
-                                                              toggleState(
-                                                                  deviceName,
-                                                                  newValue);
-                                                              setState(
-                                                                () {
-                                                                  estado =
-                                                                      newValue;
-                                                                  if (!newValue) {
-                                                                    heaterOn =
-                                                                        false;
-                                                                  }
-                                                                },
-                                                              );
-                                                            }
-                                                          : null),
+                                                  owner
+                                                      ? Switch(
+                                                          activeThumbColor:
+                                                              const Color(
+                                                                  0xFF9C9D98),
+                                                          activeTrackColor:
+                                                              const Color(
+                                                                  0xFFB2B5AE),
+                                                          inactiveThumbColor:
+                                                              const Color(
+                                                                  0xFFB2B5AE),
+                                                          inactiveTrackColor:
+                                                              const Color(
+                                                                  0xFF9C9D98),
+                                                          value: estado,
+                                                          onChanged: online
+                                                              ? (newValue) {
+                                                                  toggleState(
+                                                                      deviceName,
+                                                                      newValue);
+                                                                  setState(
+                                                                    () {
+                                                                      estado =
+                                                                          newValue;
+                                                                      if (!newValue) {
+                                                                        heaterOn =
+                                                                            false;
+                                                                      }
+                                                                    },
+                                                                  );
+                                                                }
+                                                              : null)
+                                                      : const SizedBox(
+                                                          height: 0, width: 0),
+                                                  if (!owner) ...[
+                                                    _buildNotOwnerWarning()
+                                                  ],
                                                 ],
                                               )
                                             : Text(
@@ -2390,6 +2443,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                 : null,
                                           );
                                         }),
+                                        if (!owner) ...[
+                                          _buildNotOwnerWarning()
+                                        ],
                                       ],
                                     )
                                   : const SizedBox(height: 0),
@@ -2603,59 +2659,68 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                       horizontal: 16.0,
                                                       vertical: 5.0),
                                               child: online
-                                                  ? Row(
+                                                  ? Column(
                                                       children: [
-                                                        estado
-                                                            ? Text(
-                                                                'ENCENDIDO',
-                                                                style:
-                                                                    GoogleFonts
+                                                        Row(
+                                                          children: [
+                                                            estado
+                                                                ? Text(
+                                                                    'ENCENDIDO',
+                                                                    style: GoogleFonts
                                                                         .poppins(
-                                                                  color: Colors
-                                                                      .green,
-                                                                  fontSize: 15,
-                                                                ),
-                                                              )
-                                                            : Text(
-                                                                'APAGADO',
-                                                                style:
-                                                                    GoogleFonts
+                                                                      color: Colors
+                                                                          .green,
+                                                                      fontSize:
+                                                                          15,
+                                                                    ),
+                                                                  )
+                                                                : Text(
+                                                                    'APAGADO',
+                                                                    style: GoogleFonts
                                                                         .poppins(
-                                                                  color: color4,
-                                                                  fontSize: 15,
-                                                                ),
-                                                              ),
-                                                        const SizedBox(
-                                                            width: 5),
-                                                        owner
-                                                            ? Switch(
-                                                                activeThumbColor:
-                                                                    const Color(
-                                                                        0xFF9C9D98),
-                                                                activeTrackColor:
-                                                                    const Color(
-                                                                        0xFFB2B5AE),
-                                                                inactiveThumbColor:
-                                                                    const Color(
-                                                                        0xFFB2B5AE),
-                                                                inactiveTrackColor:
-                                                                    const Color(
-                                                                        0xFF9C9D98),
-                                                                value: estado,
-                                                                onChanged:
-                                                                    (newValue) {
-                                                                  toggleState(
-                                                                      deviceName,
-                                                                      newValue);
-                                                                  setState(() {
-                                                                    estado =
-                                                                        newValue;
-                                                                  });
-                                                                },
-                                                              )
-                                                            : const SizedBox(
-                                                                height: 0,
-                                                                width: 0),
+                                                                      color:
+                                                                          color4,
+                                                                      fontSize:
+                                                                          15,
+                                                                    ),
+                                                                  ),
+                                                            const SizedBox(
+                                                                width: 5),
+                                                            owner
+                                                                ? Switch(
+                                                                    activeThumbColor:
+                                                                        const Color(
+                                                                            0xFF9C9D98),
+                                                                    activeTrackColor:
+                                                                        const Color(
+                                                                            0xFFB2B5AE),
+                                                                    inactiveThumbColor:
+                                                                        const Color(
+                                                                            0xFFB2B5AE),
+                                                                    inactiveTrackColor:
+                                                                        const Color(
+                                                                            0xFF9C9D98),
+                                                                    value:
+                                                                        estado,
+                                                                    onChanged:
+                                                                        (newValue) {
+                                                                      toggleState(
+                                                                          deviceName,
+                                                                          newValue);
+                                                                      setState(
+                                                                          () {
+                                                                        estado =
+                                                                            newValue;
+                                                                      });
+                                                                    },
+                                                                  )
+                                                                : const SizedBox
+                                                                    .shrink(),
+                                                          ],
+                                                        ),
+                                                        if (!owner) ...[
+                                                          _buildNotOwnerWarning()
+                                                        ],
                                                       ],
                                                     )
                                                   : Padding(
@@ -3252,6 +3317,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                         )
                                                       : const SizedBox(
                                                           height: 0, width: 0),
+                                                  if (!owner) ...[
+                                                    _buildNotOwnerWarning()
+                                                  ],
                                                 ],
                                               )
                                             : Padding(
@@ -3656,6 +3724,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                 : null,
                                           );
                                         }),
+                                        if (!owner) ...[
+                                          _buildNotOwnerWarning()
+                                        ],
                                       ],
                                     )
                                   : const SizedBox(height: 0),
@@ -3927,6 +3998,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                         : const SizedBox(
                                                             height: 0,
                                                             width: 0),
+                                                    if (!owner) ...[
+                                                      _buildNotOwnerWarning()
+                                                    ],
                                                   ],
                                                 )
                                               : Text(
@@ -4168,6 +4242,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                         : const SizedBox(
                                                             height: 0,
                                                             width: 0),
+                                                    if (!owner) ...[
+                                                      _buildNotOwnerWarning()
+                                                    ],
                                                   ],
                                                 )
                                               : Text(
@@ -4640,6 +4717,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                         )
                                                       : const SizedBox(
                                                           height: 0, width: 0),
+                                                  if (!owner) ...[
+                                                    _buildNotOwnerWarning()
+                                                  ],
                                                 ],
                                               )
                                             : Padding(
@@ -6177,6 +6257,8 @@ class WifiPageState extends ConsumerState<WifiPage>
               Map<String, dynamic> devicesActions =
                   Map<String, dynamic>.from(eventoClima['deviceActions'] ?? {});
 
+              String? windDirection = eventoClima['wind_direction'];
+
               String devicesInGroup = deviceName;
               List<String> deviceList = devicesInGroup
                   .replaceAll('[', '')
@@ -6306,7 +6388,10 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           ),
                                         ),
                                         Text(
-                                          condition,
+                                          (windDirection != null &&
+                                                  windDirection.isNotEmpty)
+                                              ? '$condition con origen $windDirection'
+                                              : condition,
                                           style: GoogleFonts.poppins(
                                             color: isEnabled
                                                 ? color0
