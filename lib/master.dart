@@ -6,6 +6,7 @@ import 'dart:ui';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:caldensmart/firebase_options.dart';
 import 'package:caldensmart/secret.dart';
+import 'package:caldensmart/widget/widget_handler.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/gestures.dart';
@@ -2512,6 +2513,8 @@ Future<bool> onIosStart(ServiceInstance service) async {
 
   await setupMqtt();
 
+  await subscribeToWidgetTopics();
+
   flutterLocalNotificationsPlugin.show(
     888,
     'Servicio inicializado con exito',
@@ -2530,7 +2533,13 @@ Future<bool> onIosStart(ServiceInstance service) async {
   );
 
   service.on('stopService').listen((event) {
+    disposeWidgetListener();
     service.stopSelf();
+  });
+
+  service.on('subscribeWidgets').listen((event) async {
+    printLog.i('Servicio iOS: recibida petición para suscribir widgets');
+    await subscribeToWidgetTopics();
   });
 
   service.on('distanceControl').listen((event) {
@@ -2549,6 +2558,8 @@ void onStart(ServiceInstance service) async {
   DartPluginRegistrant.ensureInitialized();
 
   await setupMqtt();
+
+  await subscribeToWidgetTopics();
 
   flutterLocalNotificationsPlugin.show(
     888,
@@ -2571,7 +2582,13 @@ void onStart(ServiceInstance service) async {
   );
 
   service.on('stopService').listen((event) {
+    disposeWidgetListener();
     service.stopSelf();
+  });
+
+  service.on('subscribeWidgets').listen((event) async {
+    printLog.i('Servicio: recibida petición para suscribir widgets');
+    await subscribeToWidgetTopics();
   });
 
   service.on('distanceControl').listen((event) {

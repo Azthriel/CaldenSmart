@@ -12,10 +12,13 @@ import 'package:caldensmart/Devices/termometro.dart';
 import 'package:caldensmart/Devices/termotanques.dart';
 import 'package:caldensmart/Escenas/escenas.dart';
 import 'package:caldensmart/Global/profile.dart';
+import 'package:caldensmart/widget/select_device.dart';
+import 'package:caldensmart/widget/widget_handler.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:upgrader/upgrader.dart';
 import 'Devices/domotica.dart';
@@ -84,6 +87,8 @@ Future<void> main() async {
   FirebaseMessaging.onBackgroundMessage(handleNotifications);
 
   FirebaseMessaging.onMessage.listen(handleNotifications);
+
+  HomeWidget.registerInteractivityCallback(backgroundCallback);
 
   FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
 
@@ -394,7 +399,7 @@ class MyAppState extends State<MyApp> {
         '/termometro': (context) => const TermometroPage(),
         '/riego': (context) => const RiegoPage(),
         '/termotanque': (context) => const TermotanquePage(),
-        // '/widget_config_selection': (context) => const SelectDeviceScreen(),
+        '/widget_config_selection': (context) => const SelectDeviceScreen(),
       },
     );
   }

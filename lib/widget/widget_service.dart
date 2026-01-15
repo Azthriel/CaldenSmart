@@ -4,7 +4,6 @@ import 'package:home_widget/home_widget.dart';
 import 'package:caldensmart/master.dart';
 import 'package:caldensmart/logger.dart';
 import 'widget_models.dart';
-import 'widget_channel.dart';
 
 /// Servicio para gestionar widgets de la app
 class WidgetService {
@@ -106,36 +105,38 @@ class WidgetService {
     try {
       printLog.i('Actualizando widget ${widgetData.widgetId}: ${widgetData.nickname}, online=${state.online}, status=${state.status}');
       
-      // Guardar datos directamente en SharedPreferences nativo usando MethodChannel
-      await WidgetChannel.saveWidgetData(widgetData.widgetId, 'nickname', widgetData.nickname);
-      await WidgetChannel.saveWidgetData(widgetData.widgetId, 'online', state.online);
-      await WidgetChannel.saveWidgetData(widgetData.widgetId, 'status', state.status);
-      await WidgetChannel.saveWidgetData(widgetData.widgetId, 'type', widgetData.type.toString());
+      // Guardar datos usando HomeWidget.saveWidgetData para compatibilidad con widget nativo
+      bool isControl = widgetData.type == WidgetType.control;
+      
+      await HomeWidget.saveWidgetData('widget_nickname_${widgetData.widgetId}', widgetData.nickname);
+      await HomeWidget.saveWidgetData('widget_online_${widgetData.widgetId}', state.online);
+      await HomeWidget.saveWidgetData('widget_status_${widgetData.widgetId}', state.status);
+      await HomeWidget.saveWidgetData('widget_is_control_${widgetData.widgetId}', isControl);
 
-      // Datos específicos según el tipo
+      // Datos específicos según el tipo (para uso futuro)
       if (widgetData.type == WidgetType.display) {
         if (state.temperature != null) {
-          await WidgetChannel.saveWidgetData(widgetData.widgetId, 'temperature', state.temperature!);
+          await HomeWidget.saveWidgetData('widget_temperature_${widgetData.widgetId}', state.temperature!);
         }
 
         if (state.alert != null) {
-          await WidgetChannel.saveWidgetData(widgetData.widgetId, 'alert', state.alert!);
+          await HomeWidget.saveWidgetData('widget_alert_${widgetData.widgetId}', state.alert!);
         }
 
         if (state.ppmCO != null) {
-          await WidgetChannel.saveWidgetData(widgetData.widgetId, 'ppmCO', state.ppmCO!);
+          await HomeWidget.saveWidgetData('widget_ppmCO_${widgetData.widgetId}', state.ppmCO!);
         }
 
         if (state.ppmCH4 != null) {
-          await WidgetChannel.saveWidgetData(widgetData.widgetId, 'ppmCH4', state.ppmCH4!);
+          await HomeWidget.saveWidgetData('widget_ppmCH4_${widgetData.widgetId}', state.ppmCH4!);
         }
       }
 
-      printLog.i('Datos guardados en SharedPreferences nativo, actualizando widget ${widgetData.widgetId}');
+      printLog.i('Datos guardados, actualizando widget nativo ${widgetData.widgetId}');
 
-      // Actualizar el widget nativo unificado
+      // Actualizar el widget nativo
       await HomeWidget.updateWidget(
-        androidName: 'widget.CaldenSmartWidgetProvider',
+        qualifiedAndroidName: 'com.caldensmart.sime.widget.ControlWidgetProvider',
       );
 
       printLog.i('Widget ${widgetData.widgetId} actualizado correctamente');

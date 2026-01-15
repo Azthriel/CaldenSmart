@@ -7,6 +7,7 @@ import 'package:hugeicons/hugeicons.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:caldensmart/widget/widget_handler.dart';
 import '../Global/manager_screen.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../aws/mqtt/mqtt.dart';
@@ -778,8 +779,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
       //     'Quedan ${deviceControl.length} equipos con el control x distancia');
 
       if (deviceControl.isEmpty) {
-        final backService = FlutterBackgroundService();
-        backService.invoke("stopService");
+        // Verificar si hay widgets activos antes de detener el servicio
+        await tryStopBackgroundService();
         backTimerDS?.cancel();
       //  printLog.i('Servicio apagado');
       }

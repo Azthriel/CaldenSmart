@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:caldensmart/widget/widget_handler.dart';
+
 import '/master.dart';
 import '/aws/mqtt/mqtt_certificates.dart';
 import '/aws/dynamo/dynamo.dart';
@@ -265,8 +267,11 @@ void listenToTopics() {
         }
       }
 
+      String pc = listNames[1];
+      String sn = listNames[2];
+
       // 🔧 MANEJO DE MENSAJES DE DISPOSITIVOS (lógica existente)
-      String keyName = "${listNames[1]}/${listNames[2]}";
+      String keyName = "$pc/$sn";
       printLog.i('Keyname: $keyName');
 
       bool specialDevice = (messageMap.keys.contains('index') &&
@@ -285,6 +290,11 @@ void listenToTopics() {
         container
             .read(globalDataProvider.notifier)
             .updateData(keyName, encoded);
+
+        // Actualizar widgets para dispositivos con pin
+        bool isOn = messageMap['w_status'] ?? false;
+        bool isOnline = globalDATA[keyName]?['cstate'] ?? false;
+        updateWidgetsForDevice(pc, sn, isOn, isOnline, pinIndex: index);
       } else {
         globalDATA.putIfAbsent(keyName, () => {}).addAll(messageMap);
 
@@ -293,6 +303,17 @@ void listenToTopics() {
         container
             .read(globalDataProvider.notifier)
             .updateData(keyName, messageMap);
+
+        // Actualizar widgets para dispositivos normales
+        if (messageMap.containsKey('w_status') ||
+            messageMap.containsKey('cstate')) {
+          bool isOn = messageMap['w_status'] ??
+              globalDATA[keyName]?['w_status'] ??
+              false;
+          bool isOnline =
+              messageMap['cstate'] ?? globalDATA[keyName]?['cstate'] ?? true;
+          updateWidgetsForDevice(pc, sn, isOn, isOnline);
+        }
       }
 
       printLog.i('Received message: $messageMap from topic: $topic');
