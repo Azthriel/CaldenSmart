@@ -1905,7 +1905,10 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                   ),
             IconButton(
               key: keys['calefactores:wifi']!,
-              icon: Icon(wifiState.wifiIcon, color: color0),
+              icon: wifiState.wifiIcon is String
+                  ? ImageIcon(AssetImage(wifiState.wifiIcon),
+                      color: color0, size: 24)
+                  : Icon(wifiState.wifiIcon, color: color0, size: 24),
               onPressed: () {
                 if (_isTutorialActive) return;
                 wifiText(context);

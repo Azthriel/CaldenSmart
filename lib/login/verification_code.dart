@@ -20,13 +20,26 @@ Widget buildEnterCodeForm(WelcomePageState state) {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Código de verificación',
-                    style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: color0),
-                    textAlign: TextAlign.center,
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(HugeIcons.strokeRoundedArrowLeft02,
+                            color: color0),
+                        onPressed: () {
+                          state.switchForm(FormType.forgotPassword);
+                        },
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Código de verificación',
+                          style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: color0),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
                   const Text(

@@ -75,10 +75,12 @@ class ProfilePageState extends State<ProfilePage> {
             Navigator.pop(context);
           },
         ),
-        title: Text(
-          'Configuraciones del perfil',
+        title: AutoScrollingText(
+          text: 'Configuraciones del perfil',
           style: GoogleFonts.poppins(
               color: color0, fontWeight: FontWeight.bold, fontSize: 20),
+          velocity: 50.0,
+          pauseDuration: const Duration(seconds: 2),
         ),
       ),
       body: Container(
@@ -383,14 +385,14 @@ class ProfilePageState extends State<ProfilePage> {
                     leading: const Icon(HugeIcons.strokeRoundedHome11,
                         color: color1),
                     title: Text(
-                      "Domotica",
+                      "Domótica",
                       style: GoogleFonts.poppins(
                         color: color1,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     subtitle: Text(
-                      "Alarma para domotica",
+                      "Alarma para domótica",
                       style: GoogleFonts.poppins(
                         color: color1,
                       ),
@@ -668,30 +670,38 @@ class ProfilePageState extends State<ProfilePage> {
                     duration: const Duration(milliseconds: 300),
                     firstChild: const SizedBox.shrink(),
                     secondChild: Padding(
-                      padding: EdgeInsets.symmetric(
-                          horizontal: MediaQuery.of(context).size.width * 0.1),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 8.0),
                       child: Container(
                         decoration: BoxDecoration(
                           color: color1,
                           borderRadius: BorderRadius.circular(10.0),
                         ),
-                        padding: const EdgeInsets.all(8.0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0, vertical: 4.0),
                         child: Row(
                           spacing: 10,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              tutorial
-                                  ? "Tutorial Activado"
-                                  : "Tutorial Desactivado",
-                              style: GoogleFonts.poppins(
-                                color: color0,
-                                fontWeight: FontWeight.bold,
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 8.0),
+                                child: Text(
+                                  tutorial
+                                      ? "Tutorial Activado"
+                                      : "Tutorial Desactivado",
+                                  style: GoogleFonts.poppins(
+                                    color: color0,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  softWrap: true,
+                                ),
                               ),
                             ),
                             Switch(
                               value: tutorial,
                               activeThumbColor: color0,
+                              activeTrackColor: color0.withValues(alpha: 0.5),
                               onChanged: (bool value) {
                                 setState(() {
                                   tutorial = value;
@@ -801,7 +811,9 @@ class ProfilePageState extends State<ProfilePage> {
                             },
                           ),
                           ListTile(
-                            leading: const Icon(HugeIcons.strokeRoundedFacebook01, color: color1),
+                            leading: const Icon(
+                                HugeIcons.strokeRoundedFacebook01,
+                                color: color1),
                             title: Text(
                               'Facebook',
                               style: GoogleFonts.poppins(
@@ -813,7 +825,8 @@ class ProfilePageState extends State<ProfilePage> {
                             },
                           ),
                           ListTile(
-                            leading: const Icon(HugeIcons.strokeRoundedInternet, color: color1),
+                            leading: const Icon(HugeIcons.strokeRoundedInternet,
+                                color: color1),
                             title: Text(
                               'Sitio web',
                               style: GoogleFonts.poppins(

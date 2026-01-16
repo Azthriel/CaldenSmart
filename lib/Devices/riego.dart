@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../Global/manager_screen.dart';
@@ -67,7 +66,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
 
-  void initItems() {
+   void initItems() {
     items.addAll({
       TutorialItem(
         globalKey: keys['riego:estado']!,
@@ -119,8 +118,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
       ),
       TutorialItem(
         globalKey: keys['riego:panelControl']!,
-        shapeFocus: ShapeFocus.roundedSquare,
-        borderRadius: const Radius.circular(10.0),
+        fullBackground: true,
         contentPosition: ContentPosition.below,
         pageIndex: 0,
         child: const TutorialItemContent(
@@ -194,6 +192,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
       TutorialItem(
         globalKey: keys['riego:rutinaPanel']!,
         pageIndex: 1,
+        fullBackground: true,
         shapeFocus: ShapeFocus.roundedSquare,
         borderRadius: const Radius.circular(10.0),
         contentPosition: ContentPosition.above,
@@ -1329,7 +1328,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
             const SizedBox(height: 20),
             Center(
               child: Card(
-                key: keys['riego:panelControl']!,
+                
                 color: color1,
                 child: SizedBox(
                   width: MediaQuery.of(context).size.width * 0.9,
@@ -1346,6 +1345,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                               fontWeight: FontWeight.bold),
                         ),
                       ),
+                      SizedBox(height: 20, key: keys['riego:panelControl']!),
                       const SizedBox(height: 20),
                       const Center(
                         child: Text(
@@ -2910,7 +2910,6 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
             if (isRutina == true && isExtension == false) ...[
               Center(
                 child: Card(
-                  key: keys['riego:rutinaPanel']!,
                   color: color1,
                   elevation: 6,
                   shape: RoundedRectangleBorder(
@@ -2932,6 +2931,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                         ),
                         const SizedBox(height: 18),
                         Padding(
+                            key: keys['riego:rutinaPanel']!,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.center,
@@ -3108,7 +3108,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                     newIndex, secController);
                               });
                             },
-                            children: List.generate(zoneOrder.length, (index) {
+                                                        children: List.generate(zoneOrder.length, (index) {
                               String deviceId = zoneOrder[index];
                               String zoneLabel = zones.keys.firstWhere(
                                 (key) => zones[key] == deviceId,
@@ -3118,7 +3118,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                               return Container(
                                 key: ValueKey('${zoneOrder[index]}_$index'),
                                 margin: const EdgeInsets.only(bottom: 10),
-                                padding: const EdgeInsets.all(12),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 12),
                                 decoration: BoxDecoration(
                                   color: zoneEnabled[index]
                                       ? color0
@@ -3134,316 +3135,262 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                   ],
                                 ),
                                 child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(6),
-                                      decoration: BoxDecoration(
-                                        color: zoneEnabled[index]
-                                            ? color1.withValues(alpha: 0.1)
-                                            : Colors.white
-                                                .withValues(alpha: 0.2),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Icon(
-                                        HugeIcons.strokeRoundedMenu01,
-                                        color: zoneEnabled[index]
-                                            ? color1
-                                            : Colors.white,
-                                        size: 18,
-                                      ),
+                                    Icon(
+                                      HugeIcons.strokeRoundedMenu01,
+                                      color: zoneEnabled[index]
+                                          ? color1
+                                          : Colors.white,
+                                      size: 18,
                                     ),
-                                    const SizedBox(width: 12),
+                                    const SizedBox(width: 6),
+
                                     Expanded(
-                                      flex: 2,
                                       child: Text(
                                         zoneLabel,
                                         style: TextStyle(
                                           color: zoneEnabled[index]
                                               ? color1
                                               : Colors.white,
-                                          fontSize: 16,
+                                          fontSize: 14,
                                           fontWeight: FontWeight.w600,
                                         ),
+                                        softWrap: true,
                                       ),
                                     ),
-                                    Expanded(
-                                      flex: 5,
-                                      child: Container(
-                                        height: 72,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                          border: Border.all(
-                                            color: Colors.grey.shade300,
-                                            width: 1.2,
+                                    const SizedBox(width: 6),
+
+                                    Flexible(
+                                      flex: 0,
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Container(
+                                          height: 70,
+                                          width: 130, // Ancho base ideal
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            border: Border.all(
+                                                color: Colors.grey.shade300,
+                                                width: 1.2),
                                           ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black
-                                                  .withValues(alpha: 0.04),
-                                              blurRadius: 3,
-                                              offset: const Offset(0, 1),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            Expanded(
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  GestureDetector(
-                                                    behavior:
-                                                        HitTestBehavior.opaque,
-                                                    onTap: () {
-                                                      int currentVal = int.tryParse(
+                                          child: Column(
+                                            children: [
+                                              // Fila Minutos
+                                              Expanded(
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    GestureDetector(
+                                                      onTap: () {
+                                                        int currentVal = int.tryParse(
+                                                                minutesControllers[
+                                                                        index]
+                                                                    .text) ??
+                                                            0;
+                                                        if (currentVal > 0) {
+                                                          setState(() =>
                                                               minutesControllers[
-                                                                      index]
-                                                                  .text) ??
-                                                          0;
-                                                      if (currentVal > 0) {
-                                                        minutesControllers[
-                                                                    index]
-                                                                .text =
-                                                            (currentVal - 1)
-                                                                .toString();
-                                                      }
-                                                    },
-                                                    child: Container(
-                                                      width: 32,
-                                                      alignment:
-                                                          Alignment.center,
-                                                      child: const Icon(
-                                                        HugeIcons
-                                                            .strokeRoundedMinusSign,
-                                                        size: 14,
-                                                        color: color1,
-                                                      ),
+                                                                          index]
+                                                                      .text =
+                                                                  (currentVal -
+                                                                          1)
+                                                                      .toString());
+                                                        }
+                                                      },
+                                                      child: const SizedBox(
+                                                          width: 30,
+                                                          child: Icon(
+                                                              HugeIcons
+                                                                  .strokeRoundedMinusSign,
+                                                              size: 14,
+                                                              color: color1)),
                                                     ),
-                                                  ),
-                                                  Row(
-                                                    children: [
-                                                      SizedBox(
-                                                        width: 28,
-                                                        child: TextField(
-                                                          controller:
-                                                              minutesControllers[
-                                                                  index],
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                          keyboardType:
-                                                              TextInputType
-                                                                  .number,
-                                                          inputFormatters: [
-                                                            FilteringTextInputFormatter
-                                                                .digitsOnly,
-                                                            LengthLimitingTextInputFormatter(
-                                                                3),
-                                                          ],
-                                                          style:
-                                                              const TextStyle(
-                                                            color: color1,
-                                                            fontSize: 13,
-                                                            fontWeight:
-                                                                FontWeight.w700,
-                                                          ),
-                                                          decoration:
-                                                              const InputDecoration(
-                                                            border: InputBorder
-                                                                .none,
-                                                            contentPadding:
-                                                                EdgeInsets.zero,
-                                                            isDense: true,
+                                                    Row(
+                                                      children: [
+                                                        SizedBox(
+                                                          width: 28,
+                                                          child: TextField(
+                                                            controller:
+                                                                minutesControllers[
+                                                                    index],
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            keyboardType:
+                                                                TextInputType
+                                                                    .number,
+                                                            style: const TextStyle(
+                                                                color: color1,
+                                                                fontSize: 13,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700),
+                                                            decoration:
+                                                                const InputDecoration(
+                                                                    border:
+                                                                        InputBorder
+                                                                            .none,
+                                                                    isDense:
+                                                                        true),
                                                           ),
                                                         ),
-                                                      ),
-                                                      Text(
-                                                        'min',
-                                                        style: TextStyle(
-                                                          color: Colors
-                                                              .grey.shade600,
-                                                          fontSize: 11,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  GestureDetector(
-                                                    behavior:
-                                                        HitTestBehavior.opaque,
-                                                    onTap: () {
-                                                      int currentVal = int.tryParse(
-                                                              minutesControllers[
-                                                                      index]
-                                                                  .text) ??
-                                                          0;
-                                                      minutesControllers[index]
-                                                              .text =
-                                                          (currentVal + 1)
-                                                              .toString();
-                                                    },
-                                                    child: Container(
-                                                      width: 32,
-                                                      alignment:
-                                                          Alignment.center,
-                                                      child: const Icon(
-                                                        HugeIcons
-                                                            .strokeRoundedPlusSign,
-                                                        size: 14,
-                                                        color: color1,
-                                                      ),
+                                                        Text('min',
+                                                            style: TextStyle(
+                                                                color: Colors
+                                                                    .grey
+                                                                    .shade600,
+                                                                fontSize: 11)),
+                                                      ],
                                                     ),
-                                                  ),
-                                                ],
+                                                    GestureDetector(
+                                                      onTap: () {
+                                                        int currentVal = int.tryParse(
+                                                                minutesControllers[
+                                                                        index]
+                                                                    .text) ??
+                                                            0;
+                                                        setState(() =>
+                                                            minutesControllers[
+                                                                        index]
+                                                                    .text =
+                                                                (currentVal + 1)
+                                                                    .toString());
+                                                      },
+                                                      child: const SizedBox(
+                                                          width: 30,
+                                                          child: Icon(
+                                                              HugeIcons
+                                                                  .strokeRoundedPlusSign,
+                                                              size: 14,
+                                                              color: color1)),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
-                                            ),
-                                            Divider(
-                                              height: 1,
-                                              thickness: 1,
-                                              color: Colors.grey.shade200,
-                                            ),
-                                            Expanded(
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  GestureDetector(
-                                                    behavior:
-                                                        HitTestBehavior.opaque,
-                                                    onTap: () {
-                                                      int currentVal = int.tryParse(
-                                                              secondsControllers[
-                                                                      index]
-                                                                  .text) ??
-                                                          0;
-                                                      int newVal =
-                                                          currentVal - 1;
-                                                      if (newVal < 0) {
-                                                        newVal = 59;
-                                                      }
-                                                      secondsControllers[index]
-                                                              .text =
-                                                          newVal
-                                                              .toString()
-                                                              .padLeft(2, '0');
-                                                    },
-                                                    child: Container(
-                                                      width: 32,
-                                                      alignment:
-                                                          Alignment.center,
-                                                      child: Icon(
-                                                        HugeIcons
-                                                            .strokeRoundedMinusSign,
-                                                        size: 14,
-                                                        color:
-                                                            color1.withValues(
-                                                                alpha: 0.8),
-                                                      ),
+                                              Divider(
+                                                  height: 1,
+                                                  thickness: 1,
+                                                  color: Colors.grey.shade200),
+                                              // Fila Segundos
+                                              Expanded(
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    GestureDetector(
+                                                      onTap: () {
+                                                        int currentVal = int.tryParse(
+                                                                secondsControllers[
+                                                                        index]
+                                                                    .text) ??
+                                                            0;
+                                                        int newVal =
+                                                            currentVal - 1 < 0
+                                                                ? 59
+                                                                : currentVal -
+                                                                    1;
+                                                        setState(() =>
+                                                            secondsControllers[
+                                                                        index]
+                                                                    .text =
+                                                                newVal
+                                                                    .toString()
+                                                                    .padLeft(2,
+                                                                        '0'));
+                                                      },
+                                                      child: const SizedBox(
+                                                          width: 30,
+                                                          child: Icon(
+                                                              HugeIcons
+                                                                  .strokeRoundedMinusSign,
+                                                              size: 14,
+                                                              color: color1)),
                                                     ),
-                                                  ),
-                                                  Row(
-                                                    children: [
-                                                      SizedBox(
-                                                        width: 28,
-                                                        child: TextField(
-                                                          controller:
-                                                              secondsControllers[
-                                                                  index],
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                          keyboardType:
-                                                              TextInputType
-                                                                  .number,
-                                                          inputFormatters: [
-                                                            FilteringTextInputFormatter
-                                                                .digitsOnly,
-                                                            LengthLimitingTextInputFormatter(
-                                                                2),
-                                                          ],
-                                                          style:
-                                                              const TextStyle(
-                                                            color: color1,
-                                                            fontSize: 13,
-                                                            fontWeight:
-                                                                FontWeight.w700,
-                                                          ),
-                                                          decoration:
-                                                              const InputDecoration(
-                                                            border: InputBorder
-                                                                .none,
-                                                            contentPadding:
-                                                                EdgeInsets.zero,
-                                                            isDense: true,
-                                                            hintText: "00",
+                                                    Row(
+                                                      children: [
+                                                        SizedBox(
+                                                          width: 28,
+                                                          child: TextField(
+                                                            controller:
+                                                                secondsControllers[
+                                                                    index],
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            keyboardType:
+                                                                TextInputType
+                                                                    .number,
+                                                            style: const TextStyle(
+                                                                color: color1,
+                                                                fontSize: 13,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700),
+                                                            decoration:
+                                                                const InputDecoration(
+                                                                    border:
+                                                                        InputBorder
+                                                                            .none,
+                                                                    isDense:
+                                                                        true),
                                                           ),
                                                         ),
-                                                      ),
-                                                      Text(
-                                                        'seg',
-                                                        style: TextStyle(
-                                                          color: Colors
-                                                              .grey.shade600,
-                                                          fontSize: 11,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  GestureDetector(
-                                                    behavior:
-                                                        HitTestBehavior.opaque,
-                                                    onTap: () {
-                                                      int currentVal = int.tryParse(
-                                                              secondsControllers[
-                                                                      index]
-                                                                  .text) ??
-                                                          0;
-                                                      int newVal =
-                                                          currentVal + 1;
-                                                      if (newVal > 59) {
-                                                        newVal = 0;
-                                                      }
-                                                      secondsControllers[index]
-                                                              .text =
-                                                          newVal
-                                                              .toString()
-                                                              .padLeft(2, '0');
-                                                    },
-                                                    child: Container(
-                                                      width: 32,
-                                                      alignment:
-                                                          Alignment.center,
-                                                      child: Icon(
-                                                        HugeIcons
-                                                            .strokeRoundedPlusSign,
-                                                        size: 14,
-                                                        color:
-                                                            color1.withValues(
-                                                                alpha: 0.8),
-                                                      ),
+                                                        Text('seg',
+                                                            style: TextStyle(
+                                                                color: Colors
+                                                                    .grey
+                                                                    .shade600,
+                                                                fontSize: 11)),
+                                                      ],
                                                     ),
-                                                  ),
-                                                ],
+                                                    GestureDetector(
+                                                      onTap: () {
+                                                        int currentVal = int.tryParse(
+                                                                secondsControllers[
+                                                                        index]
+                                                                    .text) ??
+                                                            0;
+                                                        int newVal =
+                                                            currentVal + 1 > 59
+                                                                ? 0
+                                                                : currentVal +
+                                                                    1;
+                                                        setState(() =>
+                                                            secondsControllers[
+                                                                        index]
+                                                                    .text =
+                                                                newVal
+                                                                    .toString()
+                                                                    .padLeft(2,
+                                                                        '0'));
+                                                      },
+                                                      child: const SizedBox(
+                                                          width: 30,
+                                                          child: Icon(
+                                                              HugeIcons
+                                                                  .strokeRoundedPlusSign,
+                                                              size: 14,
+                                                              color: color1)),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 12),
+                                    const SizedBox(width: 6),
+
+                                    // 4. Botón Check (Fijo)
                                     GestureDetector(
-                                      onTap: () {
-                                        setState(() {
+                                      onTap: () => setState(() =>
                                           zoneEnabled[index] =
-                                              !zoneEnabled[index];
-                                        });
-                                      },
+                                              !zoneEnabled[index]),
                                       child: Container(
                                         padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
@@ -3453,11 +3400,10 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                           borderRadius:
                                               BorderRadius.circular(10),
                                           border: Border.all(
-                                            color: zoneEnabled[index]
-                                                ? Colors.green
-                                                : Colors.red,
-                                            width: 1.2,
-                                          ),
+                                              color: zoneEnabled[index]
+                                                  ? Colors.green
+                                                  : Colors.red,
+                                              width: 1.2),
                                         ),
                                         child: Icon(
                                           zoneEnabled[index]
@@ -4073,7 +4019,10 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                   ),
             IconButton(
               key: keys['riego:wifi']!,
-              icon: Icon(wifiState.wifiIcon, color: color0),
+              icon: wifiState.wifiIcon is String
+                  ? ImageIcon(AssetImage(wifiState.wifiIcon),
+                      color: color0, size: 24)
+                  : Icon(wifiState.wifiIcon, color: color0, size: 24),
               onPressed: () {
                 if (_isTutorialActive) return;
 

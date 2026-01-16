@@ -347,8 +347,6 @@ class MyAppState extends State<MyApp> {
                   width: 100,
                   height: 100,
                 ),
-                const SizedBox(height: 20),
-                const CircularProgressIndicator(color: color3),
               ],
             ),
           ),

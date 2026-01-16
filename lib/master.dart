@@ -1323,10 +1323,17 @@ void wifiText(BuildContext context) async {
                                                     });
                                                   }
                                                 },
-                                                leading: Icon(
-                                                  wifiPower(nivel),
-                                                  color: Colors.white,
-                                                ),
+                                                leading: wifiPower(nivel)
+                                                        is String
+                                                    ? ImageIcon(
+                                                        AssetImage(
+                                                            wifiPower(nivel)),
+                                                        color: Colors.white,
+                                                      )
+                                                    : Icon(
+                                                        wifiPower(nivel),
+                                                        color: Colors.white,
+                                                      ),
                                                 title: Text(
                                                   network.ssid,
                                                   style: const TextStyle(
@@ -1760,15 +1767,15 @@ void wifiText(BuildContext context) async {
   }
 }
 
-IconData wifiPower(int level) {
+dynamic wifiPower(int level) {
   if (level >= -30) {
-    return HugeIcons.strokeRoundedWifiConnected01;
+    return HugeIcons.strokeRoundedWifi02;
   } else if (level >= -67) {
-    return HugeIcons.strokeRoundedWifiFullSignal;
+    return CaldenIcons.wifi01;
   } else if (level >= -70) {
-    return HugeIcons.strokeRoundedWifiMediumSignal;
+    return CaldenIcons.wifi02;
   } else if (level >= -80) {
-    return HugeIcons.strokeRoundedWifiLowSignal;
+    return CaldenIcons.wifi02;
   } else {
     return HugeIcons.strokeRoundedWifiDisconnected04;
   }
@@ -4392,7 +4399,7 @@ class GlobalDataNotifier
 class WifiState {
   final String status;
   final Color statusColor;
-  final IconData wifiIcon;
+  final dynamic wifiIcon;
 
   const WifiState({
     this.status = 'DESCONECTADO',
@@ -4403,7 +4410,7 @@ class WifiState {
   WifiState copyWith({
     String? status,
     Color? statusColor,
-    IconData? wifiIcon,
+    dynamic wifiIcon,
   }) {
     return WifiState(
       status: status ?? this.status,
@@ -4416,7 +4423,7 @@ class WifiState {
 class WifiNotifier extends StateNotifier<WifiState> {
   WifiNotifier() : super(const WifiState());
 
-  void updateStatus(String status, Color statusColor, IconData wifiIcon) {
+  void updateStatus(String status, Color statusColor, dynamic wifiIcon) {
     state = state.copyWith(
       status: status,
       statusColor: statusColor,
@@ -6604,33 +6611,48 @@ class Tutorial {
                   targetOffset: offset,
                   targetSize: sizeW,
                 ),
-                if (item.buttonAction != null)
-                  Positioned(
-                    bottom: 32,
-                    left: 32,
-                    child: item.buttonAction!,
-                  ),
-                Positioned(
-                  bottom: 32,
-                  right: 32,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: color4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
+                 Positioned.fill(
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: SafeArea(
+                      minimum: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (item.buttonAction != null)
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.bottomLeft,
+                                child: item.buttonAction!,
+                              ),
+                            )
+                          else
+                            const Spacer(),
+                          const SizedBox(width: 20),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: color4,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 17),
+                            ),
+                            icon: const Icon(HugeIcons.strokeRoundedCancel01,
+                                color: color0),
+                            label: const Text(
+                                'Saltar', // Texto más corto para móviles
+                                style: TextStyle(color: color0)),
+                            onPressed: () {
+                              clearEntries();
+                              completer.complete();
+                              onTutorialComplete();
+                            },
+                          ),
+                        ],
                       ),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 12, horizontal: 17),
                     ),
-                    icon: const Icon(HugeIcons.strokeRoundedCancel01,
-                        color: color0),
-                    label: const Text('Saltar Tutorial',
-                        style: TextStyle(color: color0)),
-                    onPressed: () {
-                      clearEntries();
-                      completer.complete();
-                      onTutorialComplete();
-                    },
                   ),
                 ),
               ],
@@ -6647,23 +6669,44 @@ class Tutorial {
     return completer.future;
   }
 
-  static Widget _buildTutorialText({
+   static Widget _buildTutorialText({
     required BuildContext context,
     required TutorialItem item,
     required Offset targetOffset,
     required Size targetSize,
   }) {
-    final sw = MediaQuery.of(context).size.width;
-    final cw = sw * 0.8;
-    final textHeight = sw * 0.27;
+    final mediaQuery = MediaQuery.of(context);
+    final sw = mediaQuery.size.width;
+    final sh = mediaQuery.size.height;
+    final bottomReservedSpace = 90.0 + mediaQuery.padding.bottom;
 
-    final topY = item.contentPosition == ContentPosition.above
-        ? targetOffset.dy - textHeight - item.focusMargin + item.contentOffsetY
-        : targetOffset.dy +
-            item.focusMargin +
-            targetSize.height +
-            20 +
-            item.contentOffsetY;
+    final cw = sw * 0.8;
+
+    double topY;
+    double maxHeightConstraint;
+
+    if (item.contentPosition == ContentPosition.above) {
+      const estimatedHeight = 150.0;
+      topY = targetOffset.dy -
+          estimatedHeight -
+          item.focusMargin +
+          item.contentOffsetY;
+
+      if (topY < mediaQuery.padding.top + 20) {
+        topY = mediaQuery.padding.top + 20;
+      }
+      maxHeightConstraint = targetOffset.dy - item.focusMargin - topY - 10;
+    } else {
+      topY = targetOffset.dy +
+          item.focusMargin +
+          targetSize.height +
+          20 +
+          item.contentOffsetY;
+
+      maxHeightConstraint = sh - topY - bottomReservedSpace;
+    }
+
+    if (maxHeightConstraint < 100) maxHeightConstraint = 100;
 
     final title = (item.child as TutorialItemContent).title;
     final content = (item.child as TutorialItemContent).content;
@@ -6701,28 +6744,37 @@ class Tutorial {
       top: topY,
       left: (sw - cw) / 2,
       width: cw,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Stack(
-            alignment: Alignment.center,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: maxHeightConstraint,
+        ),
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              strokedText(title, 20, FontWeight.bold, Colors.white),
-              filledText(title, 20, FontWeight.bold, Colors.white),
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  strokedText(title, 20, FontWeight.bold, Colors.white),
+                  filledText(title, 20, FontWeight.bold, Colors.white),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  strokedText(content, 16, FontWeight.normal, Colors.white70),
+                  filledText(content, 16, FontWeight.normal, Colors.white70),
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 4),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              strokedText(content, 16, FontWeight.normal, Colors.white70),
-              filledText(content, 16, FontWeight.normal, Colors.white70),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
+
 
   static void clearEntries() {
     for (var e in entries) {
@@ -7370,5 +7422,8 @@ class CaldenIcons {
   static const String cloud = 'assets/icons/cloud.png';
   static const String snowOff = 'assets/icons/snowOff.png';
   static const String waterOff = 'assets/icons/waterOff.png';
+  static const String wifi01 = 'assets/icons/wifi01.png';
+  static const String wifi02 = 'assets/icons/wifi02.png';
+  static const String wifi03 = 'assets/icons/wifi03.png';
 }
 //*- iconos -*\\

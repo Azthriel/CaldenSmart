@@ -112,3 +112,6 @@ flutter:
     - assets/icons/cloudOff.png
     - assets/icons/snowOff.png
     - assets/icons/waterOff.png
+    - assets/icons/wifi01.png
+    - assets/icons/wifi02.png
+    - assets/icons/wifi03.png

@@ -185,6 +185,11 @@ class ManagerScreenState extends State<ManagerScreen> {
                     ),
                     if (currentRestriction['enabled']) ...[
                       const SizedBox(height: 20),
+                      Text(
+                        'Configurar franja horaria permitida:',
+                        style: GoogleFonts.poppins(color: color0, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 20),
                       // Selección de horarios con diseño mejorado
                       Container(
                         padding: const EdgeInsets.all(16),
@@ -988,6 +993,7 @@ class ManagerScreenState extends State<ManagerScreen> {
     tenant = globalDATA['$pc/$sn']?['tenant'] == currentUserEmail;
     adminDevices =
         List<String>.from(globalDATA['$pc/$sn']?['secondary_admin'] ?? []);
+    String nickname = nicknamesMap[widget.deviceName] ?? widget.deviceName;
 
     return Scaffold(
       backgroundColor: color0,
@@ -995,23 +1001,83 @@ class ManagerScreenState extends State<ManagerScreen> {
           ? AppBar(
               backgroundColor: color1,
               iconTheme: const IconThemeData(color: color0),
-              title: Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 30,
-                      width: 2,
-                      child: AutoScrollingText(
-                        text: widget.deviceName,
-                        style: GoogleFonts.poppins(
-                          color: color0,
+              title: GestureDetector(
+                onTap: () async {
+                  TextEditingController nicknameController =
+                      TextEditingController(text: nickname);
+                  showAlertDialog(
+                    context,
+                    false,
+                    const Text(
+                      'Editar identificación del dispositivo',
+                      style: TextStyle(color: color0),
+                    ),
+                    TextField(
+                      style: const TextStyle(color: color0),
+                      cursorColor: const Color(0xFFFFFFFF),
+                      controller: nicknameController,
+                      decoration: const InputDecoration(
+                        hintText:
+                            "Introduce tu nueva identificación del dispositivo",
+                        hintStyle: TextStyle(color: color0),
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: color0),
                         ),
-                        velocity: 50,
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: color0),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 3),
-                ],
+                    <Widget>[
+                      TextButton(
+                        style: ButtonStyle(
+                          foregroundColor: WidgetStateProperty.all(color0),
+                        ),
+                        child: const Text('Cancelar'),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                      TextButton(
+                        style: ButtonStyle(
+                          foregroundColor: WidgetStateProperty.all(color0),
+                        ),
+                        child: const Text('Guardar'),
+                        onPressed: () {
+                          setState(() {
+                            String newNickname = nicknameController.text;
+                            nickname = newNickname;
+                            nicknamesMap[deviceName] = newNickname;
+                            putNicknames(currentUserEmail, nicknamesMap);
+                          });
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
+                  );
+                },
+                child: Row(
+                  children: [
+                    Expanded(
+                      //key: keys['termometros:titulo']!,
+                      child: SizedBox(
+                        height: 30,
+                        width: 2,
+                        child: AutoScrollingText(
+                          text: nickname,
+                          style: GoogleFonts.poppins().copyWith(color: color0),
+                          velocity: 50,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 3),
+                    const Icon(
+                      HugeIcons.strokeRoundedPen01,
+                      size: 20,
+                      color: color0,
+                    )
+                  ],
+                ),
               ),
               actions: [
                 IconButton(
@@ -2376,7 +2442,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                                 icon:
                                                                     const Icon(
                                                                   HugeIcons
-                                                                      .strokeRoundedDelete02,
+                                                                      .strokeRoundedSettings01,
                                                                   color: color4,
                                                                 ))
                                                           ],

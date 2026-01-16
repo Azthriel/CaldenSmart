@@ -389,16 +389,25 @@ class EscenasPageState extends State<EscenasPage> {
 
   @override
   Widget build(BuildContext context) {
+    bool isAtMainOptions = currentBuilder == buildMainOptions;
+
     return PopScope(
+      canPop: isAtMainOptions,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        setState(() {
+          currentBuilder = buildMainOptions;
+          resetConfig();
+        });
+      },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(
-            'Programación de eventos',
+          title: AutoScrollingText(
+            text: 'Programación de eventos',
             style: GoogleFonts.poppins(
-              color: color0,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
+                color: color0, fontWeight: FontWeight.bold, fontSize: 20),
+            velocity: 50.0,
+            pauseDuration: const Duration(seconds: 2),
           ),
           backgroundColor: color1,
           leading: IconButton(

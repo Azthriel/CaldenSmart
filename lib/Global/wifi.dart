@@ -1013,13 +1013,25 @@ class WifiPageState extends ConsumerState<WifiPage>
   }
 
   void _actualizarListasUI() {
-    _listaIndividuales = todosLosDispositivos
-        .where((device) => device.key == 'individual')
-        .toList();
+    setState(() {
+      _listaIndividuales = todosLosDispositivos.where((device) {
+        if (device.key != 'individual') return false;
 
-    _listaEventos = todosLosDispositivos
-        .where((device) => device.key != 'individual')
-        .toList();
+        String deviceName = device.value;
+        String pc = DeviceManager.getProductCode(deviceName);
+        String sn = DeviceManager.extractSerialNumber(deviceName);
+        var data = globalDATA['$pc/$sn'] ?? {};
+
+        bool isExtension = data['riegoMaster'] != null &&
+            data['riegoMaster'].toString().isNotEmpty;
+
+        return !isExtension;
+      }).toList();
+
+      _listaEventos = todosLosDispositivos
+          .where((device) => device.key != 'individual')
+          .toList();
+    });
   }
 
   //*- Función para habilitar/inhabilitar eventos -*\\
@@ -1296,7 +1308,10 @@ class WifiPageState extends ConsumerState<WifiPage>
                 ),
               ),
               const SizedBox(height: 20),
-              _buildConfigButton()
+              if (tipo != 'individual') ...[
+                const SizedBox(height: 20),
+                _buildConfigButton(),
+              ],
             ],
           ),
         ),

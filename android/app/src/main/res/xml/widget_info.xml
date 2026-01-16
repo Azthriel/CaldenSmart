@@ -9,5 +9,7 @@
     android:initialLayout="@layout/widget_layout"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
-    android:configure="com.caldensmart.sime.widget.WidgetConfigActivity">
+    android:configure="com.caldensmart.sime.widget.WidgetConfigActivity"
+    android:previewLayout="@layout/widget_preview"
+    android:previewImage="@drawable/preview_image">
 </appwidget-provider>

@@ -8,10 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Para MethodChannel
 import 'package:google_fonts/google_fonts.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class SelectDeviceScreen extends StatefulWidget {
   const SelectDeviceScreen({super.key});
-
   @override
   State<SelectDeviceScreen> createState() => _SelectDeviceScreenState();
 }
@@ -25,9 +25,7 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
   String currentUserEmail = '';
   List<String> previusConnections = []; // Lista de IDs de dispositivos
   Map<String, String> nicknamesMap = {}; // Mapa ID -> Apodo
-  Map<String, bool> devicesToShow =
-      {}; // Dispositivos a mostrar (True -> Control | False -> Solo lectura)
-  // Map<String, dynamic> globalDATA = {}; // Tu estructura de datos global
+  Map<String, bool> devicesToShow = {}; // Mapa ID -> esControl
 
   @override
   void initState() {
@@ -280,18 +278,18 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Asegúrate de que esta imagen exista o usa un Icono por ahora
-                const Icon(Icons.download_for_offline_outlined,
-                    size: 100, color: color1),
-                const SizedBox(height: 20),
-                Text(
-                  'Cargando dispositivos...',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: color1,
-                  ),
-                ),
+                // const Icon(Icons.download_for_offline_outlined,
+                //     size: 100, color: color1),
+                //onst SizedBox(height: 20),
+                // Text(
+                //   'Cargando dispositivos...',
+                //   textAlign: TextAlign.center,
+                //   style: GoogleFonts.poppins(
+                //     fontSize: 16,
+                //     fontWeight: FontWeight.bold,
+                //     color: color1,
+                //   ),
+                // ),
                 const SizedBox(height: 20),
                 Image.asset('assets/branch/dragon.gif',
                     width: 150, height: 150),
@@ -307,102 +305,148 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
       backgroundColor: color0,
       appBar: AppBar(
         title: Text('Selecciona un dispositivo',
-            style: GoogleFonts.poppins(color: color0)),
+            style: GoogleFonts.poppins(
+                color: color0, fontWeight: FontWeight.bold)),
         backgroundColor: color1,
         iconTheme: const IconThemeData(color: color0),
+        elevation: 0,
       ),
       body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (devicesToShow.isEmpty)
                 Center(
-                  child: Text(
-                    "No hay dispositivos registrados",
-                    style: GoogleFonts.poppins(color: color0),
-                  ),
+                  child: Text("No hay dispositivos registrados",
+                      style: GoogleFonts.poppins(color: Colors.white38)),
                 )
               else
                 ...devicesToShow.entries.map((device) {
-                  bool isOnline = globalDATA[
-                              '${DeviceManager.getProductCode(device.key)}/${DeviceManager.extractSerialNumber(device.key)}']
-                          ?['cstate'] ??
-                      false;
-                  String nickname = '';
-                  if (device.key.contains('_')) {
-                    nickname = nicknamesMap[device.key] ??
-                        '${nicknamesMap[device.key.split('_')[0]] ?? device.key.split('_')[0]} pin ${device.key.split('_')[1]}';
-                  } else {
-                    nickname = nicknamesMap[device.key] ?? device.key;
-                  }
+                  String pc =
+                      DeviceManager.getProductCode(device.key.split('_')[0]);
+                  String sn = DeviceManager.extractSerialNumber(
+                      device.key.split('_')[0]);
+                  bool isOnline = globalDATA['$pc/$sn']?['cstate'] ?? false;
+
+                  String nickname = device.key.contains('_')
+                      ? (nicknamesMap[device.key.split('_')[0]] ??
+                          device.key.split('_')[0])
+                      : (nicknamesMap[device.key] ?? device.key);
+
                   return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    padding: const EdgeInsets.only(bottom: 16.0),
                     child: InkWell(
-                      // Hice el Container clickeable
                       onTap: () => _onDeviceSelected(device.key),
+                      borderRadius: BorderRadius.circular(15),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: color1,
-                          borderRadius: BorderRadius.circular(12.0),
-                          border: Border.all(color: color4),
+                          color: const Color(0xFF1E1E1E),
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(color: Colors.white10, width: 0.5),
                         ),
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
+                        child: Column(
                           children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              decoration: const BoxDecoration(
+                                color: color1,
+                                borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(15),
+                                    topRight: Radius.circular(15)),
+                              ),
+                              child: Row(
                                 children: [
-                                  Text(
-                                    nickname,
-                                    style: GoogleFonts.poppins(
+                                  Icon(
+                                      device.value
+                                          ? HugeIcons.strokeRoundedToggleOn
+                                          : HugeIcons.strokeRoundedView,
                                       color: color0,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        isOnline
-                                            ? Icons.cloud_outlined
-                                            : Icons.cloud_off,
-                                        color: isOnline
-                                            ? Colors.green
-                                            : Colors.red,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        isOnline ? 'En línea' : 'Desconectado',
-                                        style: GoogleFonts.poppins(
+                                      size: 16),
+                                  const SizedBox(width: 8),
+                                  Text(device.value ? 'CONTROL' : 'LECTURA',
+                                      style: GoogleFonts.poppins(
                                           color: color0,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.2)),
+                                  const Spacer(),
+                                  if (device.key.contains('_'))
+                                    Text('PIN ${device.key.split('_')[1]}',
+                                        style: GoogleFonts.poppins(
+                                            color:
+                                                color0.withValues(alpha: 0.6),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold)),
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            Text(
-                              device.value ? 'Control' : 'Lectura',
-                              style: GoogleFonts.poppins(
-                                color: color0,
-                                fontSize: 14,
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(nickname,
+                                            style: GoogleFonts.poppins(
+                                                color: Colors.white,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w600)),
+                                        const SizedBox(height: 12),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 10, vertical: 5),
+                                          decoration: BoxDecoration(
+                                            color: isOnline
+                                                ? Colors.green
+                                                    .withValues(alpha: 0.1)
+                                                : Colors.white
+                                                    .withValues(alpha: 0.05),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Container(
+                                                width: 7,
+                                                height: 7,
+                                                decoration: BoxDecoration(
+                                                  color: isOnline
+                                                      ? Colors.greenAccent
+                                                      : color3,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                  isOnline
+                                                      ? 'En línea'
+                                                      : 'Desconectado',
+                                                  style: GoogleFonts.poppins(
+                                                      color: isOnline
+                                                          ? Colors.greenAccent
+                                                          : color3,
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          FontWeight.w500)),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(
+                                      HugeIcons.strokeRoundedArrowRight01,
+                                      color: Colors.white,
+                                      size: 16),
+                                ],
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              device.value
-                                  ? Icons.toggle_on_outlined
-                                  : Icons.remove_red_eye_outlined,
-                              color: color0,
-                              size: 30,
                             ),
                           ],
                         ),
