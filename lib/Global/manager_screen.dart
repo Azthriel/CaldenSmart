@@ -1047,7 +1047,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                           setState(() {
                             String newNickname = nicknameController.text;
                             nickname = newNickname;
-                            nicknamesMap[deviceName] = newNickname;
+                            nicknamesMap[widget.deviceName] = newNickname;
                             putNicknames(currentUserEmail, nicknamesMap);
                           });
                           Navigator.of(context).pop();

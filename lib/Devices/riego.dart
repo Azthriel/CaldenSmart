@@ -66,7 +66,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
   ///*- Elementos para tutoriales -*\\\
   List<TutorialItem> items = [];
 
-   void initItems() {
+  void initItems() {
     items.addAll({
       TutorialItem(
         globalKey: keys['riego:estado']!,
@@ -828,12 +828,12 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
   void updateWifiValues(List<int> data) {
     var fun = utf8.decode(data); //Wifi status | wifi ssid | ble status(users)
     fun = fun.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-   // printLog.i(fun);
+    // printLog.i(fun);
     var parts = fun.split(':');
     final regex = RegExp(r'\((\d+)\)');
     final match = regex.firstMatch(parts[2]);
     int users = int.parse(match!.group(1).toString());
-   // printLog.i('Hay $users conectados');
+    // printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
     final wifiNotifier = ref.read(wifiProvider.notifier);
@@ -959,7 +959,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
           })
         });
 
-       // printLog.i('¿La entrada $j esta en alerta?: ${alertIO[j]}');
+        // printLog.i('¿La entrada $j esta en alerta?: ${alertIO[j]}');
       }
       setState(() {});
     } else if (pc == '020020_IOT') {
@@ -1032,10 +1032,10 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
 
   void subToIO() async {
     await bluetoothManager.ioUuid.setNotifyValue(true);
-   // printLog.i('Subscrito a IO');
+    // printLog.i('Subscrito a IO');
 
     var ioSub = bluetoothManager.ioUuid.onValueReceived.listen((event) {
-   //   printLog.i('Cambio en IO');
+      //   printLog.i('Cambio en IO');
       processValues(event);
     });
 
@@ -1166,7 +1166,17 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                     size: 25,
                   ),
             IconButton(
-              icon: Icon(wifiState.wifiIcon, color: color0),
+              icon: wifiState.wifiIcon is String
+                  ? ImageIcon(
+                      AssetImage(wifiState.wifiIcon),
+                      color: color0,
+                      size: 24,
+                    )
+                  : Icon(
+                      wifiState.wifiIcon,
+                      color: color0,
+                      size: 24,
+                    ),
               onPressed: () {
                 wifiText(context);
               },
@@ -1328,7 +1338,6 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
             const SizedBox(height: 20),
             Center(
               child: Card(
-                
                 color: color1,
                 child: SizedBox(
                   width: MediaQuery.of(context).size.width * 0.9,
@@ -2515,6 +2524,8 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                         zoneOrder.add(deviceId);
                                         minutesControllers.add(
                                             TextEditingController(text: '5'));
+                                        secondsControllers.add(
+                                            TextEditingController(text: '00'));
                                         zoneEnabled.add(true);
                                         zoneCounter++;
                                       }
@@ -2931,7 +2942,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                         ),
                         const SizedBox(height: 18),
                         Padding(
-                            key: keys['riego:rutinaPanel']!,
+                          key: keys['riego:rutinaPanel']!,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.center,
@@ -3108,7 +3119,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                     newIndex, secController);
                               });
                             },
-                                                        children: List.generate(zoneOrder.length, (index) {
+                            children: List.generate(zoneOrder.length, (index) {
                               String deviceId = zoneOrder[index];
                               String zoneLabel = zones.keys.firstWhere(
                                 (key) => zones[key] == deviceId,

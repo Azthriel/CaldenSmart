@@ -167,6 +167,22 @@ class WelcomePageState extends State<WelcomePage>
     });
   }
 
+  bool isFormLoading = false;
+  bool isGoogleLoading = false;
+
+  void setFormLoading(bool value) {
+    setState(() {
+      isFormLoading = value;
+    });
+  }
+
+  void setGoogleLoading(bool value) {
+    setState(() {
+      isGoogleLoading = value;
+    });
+  }
+
+
   ///*- Inicializa los controladores de animación *-\\\
   @override
   void initState() {

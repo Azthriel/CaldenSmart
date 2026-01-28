@@ -315,17 +315,22 @@ class ProfilePageState extends State<ProfilePage> {
                                                               ?['owner'] ==
                                                           null) ...[
                                                     IconButton(
-                                                      onPressed: () =>
-                                                          Navigator.of(context)
-                                                              .push(
-                                                        MaterialPageRoute(
-                                                          builder: (context) =>
-                                                              ManagerScreen(
-                                                            deviceName: device,
-                                                            needsAppbar: true,
+                                                      onPressed: () {
+                                                        Navigator.of(context)
+                                                            .push(
+                                                          MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                ManagerScreen(
+                                                              deviceName:
+                                                                  device,
+                                                              needsAppbar: true,
+                                                            ),
                                                           ),
-                                                        ),
-                                                      ),
+                                                        )
+                                                            .then((_) {
+                                                          setState(() {});
+                                                        });
+                                                      },
                                                       icon: const Icon(
                                                         HugeIcons
                                                             .strokeRoundedSettings01,

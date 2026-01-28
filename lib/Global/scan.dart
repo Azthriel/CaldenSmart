@@ -41,13 +41,15 @@ class ScanPageState extends State<ScanPage>
   String? _touchedDeviceId;
   String? _connectingDeviceId;
 
+  StreamSubscription<BluetoothAdapterState>? _adapterStateSubscription;
+
   @override
   void initState() {
     super.initState();
     BluetoothWatcher().start();
     List<dynamic> lista = dbData['Keywords'] ?? [];
     keywords = lista.map((item) => item.toString()).toList();
-    scan();
+    //scan();
 
     searchController.addListener(() {
       setState(() {
@@ -66,10 +68,20 @@ class ScanPageState extends State<ScanPage>
         _removeLostDevices();
       }
     });
+    _adapterStateSubscription = FlutterBluePlus.adapterState.listen((state) {
+      if (state == BluetoothAdapterState.on) {
+        printLog
+            .i('Bluetooth encendido detectado: Iniciando reescan automático');
+        if (mounted) {
+          reescan();
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
+    _adapterStateSubscription?.cancel();
     _updateTimer?.cancel();
     _cleanupTimer?.cancel();
     _animationController.dispose();
@@ -305,6 +317,8 @@ class ScanPageState extends State<ScanPage>
       printLog.i('Estado de conexión normal: $state');
 
       if (state == BluetoothConnectionState.disconnected) {
+        Tutorial.clearEntries();
+
         printLog.e('Dispositivo desconectado - Conexión normal');
 
         // Mostrar toast

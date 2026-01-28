@@ -6,10 +6,11 @@ import 'package:hugeicons/hugeicons.dart';
 import 'welcome.dart';
 import '/master.dart';
 
-/// Widget que construye el formulario de inicio de sesión.
 Widget buildLoginForm(WelcomePageState state) {
-  // Función de inicio de sesión utilizando Amplify Auth.
   Future<void> signIn(String email, String password) async {
+    state.setFormLoading(true);
+    FocusScope.of(state.context).unfocus();
+
     try {
       SignInResult result = await Amplify.Auth.signIn(
         username: email.trim(),
@@ -24,7 +25,6 @@ Widget buildLoginForm(WelcomePageState state) {
             '/menu');
       }
     } on AuthException catch (e) {
-      // Verificamos el mensaje de la excepción para identificar el error
       if (e.message.contains('UserNotFoundException') ||
           e.message.contains('User does not exist')) {
         showToast('No existe una cuenta con ese correo electrónico');
@@ -36,8 +36,14 @@ Widget buildLoginForm(WelcomePageState state) {
         showToast('Error de autenticación.');
       }
       printLog.e('Error iniciando sesión: ${e.message}');
+    } finally {
+      if (state.mounted) {
+        state.setFormLoading(false);
+      }
     }
   }
+
+  bool anyLoading = state.isFormLoading || state.isGoogleLoading;
 
   return Container(
     key: const ValueKey<FormType>(FormType.login),
@@ -54,14 +60,6 @@ Widget buildLoginForm(WelcomePageState state) {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // const Text(
-                  //   'Iniciar Sesión',
-                  //   style: TextStyle(
-                  //     fontSize: 24,
-                  //     fontWeight: FontWeight.bold,
-                  //     color: color1,
-                  //   ),
-                  // ),
                   const SizedBox(height: 20),
                   state.buildTextFormField(
                     controller: state.loginEmailController,
@@ -120,13 +118,14 @@ Widget buildLoginForm(WelcomePageState state) {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  // Botón para recuperar contraseña.
                   Align(
                     alignment: Alignment.center,
                     child: TextButton(
-                      onPressed: () {
-                        state.switchForm(FormType.forgotPassword);
-                      },
+                      onPressed: anyLoading
+                          ? null
+                          : () {
+                              state.switchForm(FormType.forgotPassword);
+                            },
                       style: TextButton.styleFrom(
                         foregroundColor: color1,
                       ),
@@ -142,43 +141,54 @@ Widget buildLoginForm(WelcomePageState state) {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  // Botón para iniciar sesión.
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                        onPressed: () {
-                          if (state.loginFormKey.currentState!.validate()) {
-                            String email =
-                                state.loginEmailController.text.trim();
-                            String password =
-                                state.loginPasswordController.text.trim();
-                            signIn(email, password);
-                            showToast('Iniciando sesión...');
-                          } else {
-                            showToast('Por favor, complete todos los campos');
-                          }
-                        },
+                        onPressed: anyLoading
+                            ? null
+                            : () {
+                                if (state.loginFormKey.currentState!
+                                    .validate()) {
+                                  String email =
+                                      state.loginEmailController.text.trim();
+                                  String password =
+                                      state.loginPasswordController.text.trim();
+                                  signIn(email, password);
+                                } else {
+                                  showToast(
+                                      'Por favor, complete todos los campos');
+                                }
+                              },
                         style: ElevatedButton.styleFrom(
+                          disabledBackgroundColor: Colors.grey,
                           backgroundColor: const Color(0xFF97292c),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30.0),
                           ),
-                          elevation: 5,
+                          elevation: anyLoading ? 0 : 5,
                         ),
-                        child: Text(
-                          'Entrar',
-                          style: GoogleFonts.montserrat(
-                            textStyle: const TextStyle(
-                              color: color0,
-                              fontSize: 16,
-                            ),
-                          ),
-                        )),
+                        child: state.isFormLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                'Entrar',
+                                style: GoogleFonts.montserrat(
+                                  textStyle: const TextStyle(
+                                    color: color0,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              )),
                   ),
-                  const SizedBox(height: 10), // Menos espacio
-                  // Divisores con "O" en el medio.
+                  const SizedBox(height: 10),
                   const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: <Widget>[
@@ -191,17 +201,27 @@ Widget buildLoginForm(WelcomePageState state) {
                     ],
                   ),
                   const SizedBox(
-                    height: 10, // Menos espacio
+                    height: 10,
                   ),
-                  // Botón para iniciar sesión con Google.
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () async {
-                        showToast('Iniciando sesión con Google...');
-                        await signInWithGoogle(state.context);
-                      },
+                      onPressed: anyLoading
+                          ? null
+                          : () async {
+                              state.setGoogleLoading(true);
+                              try {
+                                showToast('Iniciando sesión con Google...');
+                                await signInWithGoogle(state.context);
+                              } finally {
+                                if (state.mounted) {
+                                  state.setGoogleLoading(false);
+                                }
+                              }
+                            },
                       style: ElevatedButton.styleFrom(
+                        disabledBackgroundColor:
+                            Colors.grey.withValues(alpha: 0.5),
                         backgroundColor: color0.withValues(alpha: 0.60),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,
@@ -215,29 +235,41 @@ Widget buildLoginForm(WelcomePageState state) {
                             color: color1,
                           ),
                         ),
-                        elevation: 5,
+                        elevation: anyLoading ? 0 : 5,
                       ),
-                      icon: Image.asset(
-                        'assets/misc/google.png',
-                        width: 24,
-                        height: 24,
-                      ),
-                      label: const Text(
-                        'Google',
-                        style: TextStyle(
-                          color: color0,
-                          fontSize: 16,
-                        ),
-                      ),
+                      icon: state.isGoogleLoading
+                          ? const SizedBox.shrink()
+                          : Image.asset(
+                              'assets/misc/google.png',
+                              width: 24,
+                              height: 24,
+                            ),
+                      label: state.isGoogleLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: color1,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              'Google',
+                              style: TextStyle(
+                                color: color0,
+                                fontSize: 16,
+                              ),
+                            ),
                     ),
                   ),
-                  const SizedBox(height: 10), // Menos espacio
-                  //Texto para registrarse.
+                  const SizedBox(height: 10),
                   Center(
                     child: TextButton(
-                      onPressed: () {
-                        state.switchForm(FormType.register);
-                      },
+                      onPressed: anyLoading
+                          ? null
+                          : () {
+                              state.switchForm(FormType.register);
+                            },
                       style: TextButton.styleFrom(
                         foregroundColor: color1,
                       ),

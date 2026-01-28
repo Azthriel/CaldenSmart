@@ -6523,6 +6523,8 @@ class Tutorial {
   static List<OverlayEntry> entries = [];
   static late int _current;
 
+  static bool _active = false;
+
   static Future<void> showTutorial(
     BuildContext context,
     List<TutorialItem> items,
@@ -6530,25 +6532,45 @@ class Tutorial {
     required VoidCallback onTutorialComplete,
   }) async {
     clearEntries();
+    _active = true;
+
     final overlay = Overlay.of(context);
     _current = 0;
     final completer = Completer<void>();
 
     void removeLast() {
-      if (entries.isNotEmpty) entries.removeLast().remove();
+      if (entries.isNotEmpty) {
+        try {
+          entries.removeLast().remove();
+        } catch (_) {}
+      }
     }
 
     Future<void> showStep() async {
+      if (!_active) {
+        if (!completer.isCompleted) completer.complete();
+        return;
+      }
+
       if (_current >= items.length) {
-        completer.complete();
+        if (!completer.isCompleted) completer.complete();
         onTutorialComplete();
         return;
       }
+
       removeLast();
+
       final item = items[_current];
+
       if (item.onStepReached != null) {
         item.onStepReached!();
         await Future.delayed(const Duration(milliseconds: 200));
+      }
+
+      if (!_active) {
+        removeLast();
+        if (!completer.isCompleted) completer.complete();
+        return;
       }
 
       if (item.pageIndex != null &&
@@ -6559,6 +6581,18 @@ class Tutorial {
           curve: Curves.easeInOut,
         );
         await Future.delayed(const Duration(milliseconds: 300));
+      }
+
+      if (!_active) {
+        if (!completer.isCompleted) completer.complete();
+        return;
+      }
+
+      if (item.globalKey.currentContext == null ||
+          !item.globalKey.currentContext!.mounted) {
+        clearEntries();
+        if (!completer.isCompleted) completer.complete();
+        return;
       }
 
       final render = item.globalKey.currentContext?.findRenderObject();
@@ -6572,9 +6606,11 @@ class Tutorial {
       }
 
       void next() {
+        if (!_active) return;
+
         if (_current == items.length - 1) {
           clearEntries();
-          completer.complete();
+          if (!completer.isCompleted) completer.complete();
           onTutorialComplete();
         } else {
           _current++;
@@ -6582,6 +6618,7 @@ class Tutorial {
         }
       }
 
+      if (item.globalKey.currentContext == null) return;
       final box =
           item.globalKey.currentContext!.findRenderObject() as RenderBox;
       final offset = box.localToGlobal(Offset.zero);
@@ -6611,7 +6648,7 @@ class Tutorial {
                   targetOffset: offset,
                   targetSize: sizeW,
                 ),
-                 Positioned.fill(
+                Positioned.fill(
                   child: Align(
                     alignment: Alignment.bottomCenter,
                     child: SafeArea(
@@ -6641,12 +6678,11 @@ class Tutorial {
                             ),
                             icon: const Icon(HugeIcons.strokeRoundedCancel01,
                                 color: color0),
-                            label: const Text(
-                                'Saltar', // Texto más corto para móviles
+                            label: const Text('Saltar',
                                 style: TextStyle(color: color0)),
                             onPressed: () {
                               clearEntries();
-                              completer.complete();
+                              if (!completer.isCompleted) completer.complete();
                               onTutorialComplete();
                             },
                           ),
@@ -6662,14 +6698,16 @@ class Tutorial {
       });
 
       entries.add(entry);
-      overlay.insert(entry);
+      if (_active) {
+        overlay.insert(entry);
+      }
     }
 
     await showStep();
     return completer.future;
   }
 
-   static Widget _buildTutorialText({
+  static Widget _buildTutorialText({
     required BuildContext context,
     required TutorialItem item,
     required Offset targetOffset,
@@ -6775,14 +6813,22 @@ class Tutorial {
     );
   }
 
-
   static void clearEntries() {
-    for (var e in entries) {
-      e.remove();
-    }
+    _active = false;
+
+    final List<OverlayEntry> currentEntries = List.from(entries);
     entries.clear();
+
+    for (var e in currentEntries) {
+      try {
+        if (e.mounted) {
+          e.remove();
+        }
+      } catch (_) {}
+    }
   }
 }
+
 
 class TutorialItemContent extends StatelessWidget {
   final String title;

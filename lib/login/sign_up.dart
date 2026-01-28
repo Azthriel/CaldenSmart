@@ -6,6 +6,8 @@ import 'welcome.dart';
 import 'package:caldensmart/master.dart';
 
 Widget buildRegisterForm(WelcomePageState state) {
+  bool anyLoading = state.isFormLoading || state.isGoogleLoading;
+
   return Container(
     key: const ValueKey<FormType>(FormType.register),
     padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
@@ -135,9 +137,11 @@ Widget buildRegisterForm(WelcomePageState state) {
                       children: [
                         Checkbox(
                           value: state.acceptTerms,
-                          onChanged: (bool? value) {
-                            state.updateAcceptTerms(value ?? false);
-                          },
+                          onChanged: anyLoading
+                              ? null
+                              : (bool? value) {
+                                  state.updateAcceptTerms(value ?? false);
+                                },
                           activeColor: color1,
                           checkColor: color0,
                         ),
@@ -156,9 +160,11 @@ Widget buildRegisterForm(WelcomePageState state) {
                                     decoration: TextDecoration.underline,
                                   ),
                                   recognizer: TapGestureRecognizer()
-                                    ..onTap = () {
-                                      state.launchTermsURL();
-                                    },
+                                    ..onTap = anyLoading
+                                        ? null
+                                        : () {
+                                            state.launchTermsURL();
+                                          },
                                 ),
                                 const TextSpan(
                                   text: ' y ',
@@ -172,9 +178,11 @@ Widget buildRegisterForm(WelcomePageState state) {
                                     decoration: TextDecoration.underline,
                                   ),
                                   recognizer: TapGestureRecognizer()
-                                    ..onTap = () {
-                                      state.launchPrivacyURL();
-                                    },
+                                    ..onTap = anyLoading
+                                        ? null
+                                        : () {
+                                            state.launchPrivacyURL();
+                                          },
                                 ),
                               ],
                             ),
@@ -186,35 +194,56 @@ Widget buildRegisterForm(WelcomePageState state) {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
-                          if (state.registerFormKey.currentState!.validate()) {
-                            if (!state.acceptTerms) {
-                              showToast(
-                                  'Debe aceptar los términos y condiciones');
-                              return;
-                            }
-                            state.signUpUser(
-                              state.registerEmailController.text.trim(),
-                              state.registerPasswordController.text.trim(),
-                            );
-                          } else {
-                            showToast(
-                                'Por favor, complete todos los campos correctamente');
-                          }
-                        },
+                        onPressed: anyLoading
+                            ? null
+                            : () async {
+                                if (state.registerFormKey.currentState!
+                                    .validate()) {
+                                  if (!state.acceptTerms) {
+                                    showToast(
+                                        'Debe aceptar los términos y condiciones');
+                                    return;
+                                  }
+                                  state.setFormLoading(true);
+                                  try {
+                                    await state.signUpUser(
+                                      state.registerEmailController.text.trim(),
+                                      state.registerPasswordController.text
+                                          .trim(),
+                                    );
+                                  } finally {
+                                    if (state.mounted) {
+                                      state.setFormLoading(false);
+                                    }
+                                  }
+                                } else {
+                                  showToast(
+                                      'Por favor, complete todos los campos correctamente');
+                                }
+                              },
                         style: ElevatedButton.styleFrom(
+                          disabledBackgroundColor: Colors.grey,
                           backgroundColor: const Color(0xFF97292c),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30.0),
                           ),
-                          elevation: 5,
+                          elevation: anyLoading ? 0 : 5,
                         ),
-                        child: const Text(
-                          'Registrarse',
-                          style: TextStyle(color: color0, fontSize: 16),
-                        ),
+                        child: state.isFormLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Registrarse',
+                                style: TextStyle(color: color0, fontSize: 16),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -230,17 +259,26 @@ Widget buildRegisterForm(WelcomePageState state) {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () async {
-                          try {
-                            showToast('Registrandose con Google...');
-                            await signInWithGoogle(state.context);
-                          } catch (error) {
-                            showToast('Error al registrarse con Google');
-                            printLog
-                                .e('Error al registrarse con google: $error');
-                          }
-                        },
+                        onPressed: anyLoading
+                            ? null
+                            : () async {
+                                state.setGoogleLoading(true);
+                                try {
+                                  showToast('Registrandose con Google...');
+                                  await signInWithGoogle(state.context);
+                                } catch (error) {
+                                  showToast('Error al registrarse con Google');
+                                  printLog.e(
+                                      'Error al registrarse con google: $error');
+                                } finally {
+                                  if (state.mounted) {
+                                    state.setGoogleLoading(false);
+                                  }
+                                }
+                              },
                         style: ElevatedButton.styleFrom(
+                          disabledBackgroundColor:
+                              Colors.grey.withValues(alpha: 0.5),
                           backgroundColor: color0.withValues(alpha: 0.60),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 10),
@@ -248,25 +286,38 @@ Widget buildRegisterForm(WelcomePageState state) {
                             borderRadius: BorderRadius.circular(30.0),
                             side: const BorderSide(color: color1),
                           ),
-                          elevation: 5,
+                          elevation: anyLoading ? 0 : 5,
                         ),
-                        icon: Image.asset('assets/misc/google.png',
-                            width: 20, height: 20),
-                        label: const Text(
-                          'Google',
-                          style: TextStyle(
-                            color: color0,
-                            fontSize: 14,
-                          ),
-                        ),
+                        icon: state.isGoogleLoading
+                            ? const SizedBox.shrink()
+                            : Image.asset('assets/misc/google.png',
+                                width: 20, height: 20),
+                        label: state.isGoogleLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: color1,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Google',
+                                style: TextStyle(
+                                  color: color0,
+                                  fontSize: 14,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Center(
                       child: TextButton(
-                        onPressed: () {
-                          state.switchForm(FormType.login);
-                        },
+                         onPressed: anyLoading
+                            ? null
+                            : () {
+                                state.switchForm(FormType.login);
+                              },
                         style: TextButton.styleFrom(foregroundColor: color1),
                         child: const Text(
                           '¿Ya tienes una cuenta?\nIniciar sesión',
