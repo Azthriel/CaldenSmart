@@ -31,6 +31,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:wifi_scan/wifi_scan.dart';
 import 'aws/dynamo/dynamo.dart';
 import 'aws/mqtt/mqtt.dart';
+import 'package:mqtt_client/mqtt_client.dart';
 import 'Global/stored_data.dart';
 import 'package:caldensmart/logger.dart';
 
@@ -2518,9 +2519,24 @@ Future<bool> onIosStart(ServiceInstance service) async {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
 
-  await setupMqtt();
+  // Marcar servicio como NO listo mientras se inicializa
+  await setWidgetServiceReady(false);
+
+  final mqttConnected = await setupMqtt();
+
+  if (!mqttConnected) {
+    printLog.e('Servicio iOS: Error conectando a MQTT');
+    await Future.delayed(const Duration(seconds: 5));
+    await setupMqtt();
+  }
 
   await subscribeToWidgetTopics();
+
+  // Sincronizar widgets con el estado real desde la base de datos
+  await syncWidgetsWithDatabase();
+
+  // Marcar servicio como LISTO
+  await setWidgetServiceReady(true);
 
   flutterLocalNotificationsPlugin.show(
     888,
@@ -2539,7 +2555,8 @@ Future<bool> onIosStart(ServiceInstance service) async {
     ),
   );
 
-  service.on('stopService').listen((event) {
+  service.on('stopService').listen((event) async {
+    await setWidgetServiceReady(false);
     disposeWidgetListener();
     service.stopSelf();
   });
@@ -2547,6 +2564,27 @@ Future<bool> onIosStart(ServiceInstance service) async {
   service.on('subscribeWidgets').listen((event) async {
     printLog.i('Servicio iOS: recibida petición para suscribir widgets');
     await subscribeToWidgetTopics();
+  });
+
+  // Listener para suscribir Y sincronizar (cuando se agrega un nuevo widget)
+  service.on('subscribeAndSyncWidgets').listen((event) async {
+    printLog.i(
+        'Servicio iOS: recibida petición para suscribir y sincronizar widgets');
+    await subscribeToWidgetTopics();
+    await syncWidgetsWithDatabase();
+  });
+
+  // Listener para verificar si quedan widgets activos (llamado cuando se elimina un widget)
+  service.on('checkWidgetsAndStop').listen((event) async {
+    printLog.i('Servicio iOS: verificando si quedan widgets activos');
+    final hasWidgets = await hasActiveWidgets();
+    if (!hasWidgets) {
+      printLog
+          .i('Servicio iOS: no hay widgets, verificando control por distancia');
+      await stopWidgetService();
+    } else {
+      printLog.i('Servicio iOS: aún hay widgets activos');
+    }
   });
 
   service.on('distanceControl').listen((event) {
@@ -2557,6 +2595,21 @@ Future<bool> onIosStart(ServiceInstance service) async {
     });
   });
 
+  // Timer para mantener MQTT conectado (reconexión automática)
+  Timer.periodic(const Duration(minutes: 5), (timer) async {
+    if (mqttAWSFlutterClient == null ||
+        mqttAWSFlutterClient!.connectionStatus?.state !=
+            MqttConnectionState.connected) {
+      printLog.i('Servicio iOS: Reconectando a MQTT...');
+      await setWidgetServiceReady(false);
+      final reconnected = await setupMqtt();
+      if (reconnected) {
+        await subscribeToWidgetTopics();
+        await setWidgetServiceReady(true);
+      }
+    }
+  });
+
   return true;
 }
 
@@ -2564,9 +2617,25 @@ Future<bool> onIosStart(ServiceInstance service) async {
 void onStart(ServiceInstance service) async {
   DartPluginRegistrant.ensureInitialized();
 
-  await setupMqtt();
+  // Marcar servicio como NO listo mientras se inicializa
+  await setWidgetServiceReady(false);
+
+  final mqttConnected = await setupMqtt();
+
+  if (!mqttConnected) {
+    printLog.e('Servicio background: Error conectando a MQTT');
+    // Intentar reconectar después de un delay
+    await Future.delayed(const Duration(seconds: 5));
+    await setupMqtt();
+  }
 
   await subscribeToWidgetTopics();
+
+  // Sincronizar widgets con el estado real desde la base de datos
+  await syncWidgetsWithDatabase();
+
+  // Marcar servicio como LISTO
+  await setWidgetServiceReady(true);
 
   flutterLocalNotificationsPlugin.show(
     888,
@@ -2588,7 +2657,8 @@ void onStart(ServiceInstance service) async {
     ),
   );
 
-  service.on('stopService').listen((event) {
+  service.on('stopService').listen((event) async {
+    await setWidgetServiceReady(false);
     disposeWidgetListener();
     service.stopSelf();
   });
@@ -2598,12 +2668,48 @@ void onStart(ServiceInstance service) async {
     await subscribeToWidgetTopics();
   });
 
+  // Listener para suscribir Y sincronizar (cuando se agrega un nuevo widget)
+  service.on('subscribeAndSyncWidgets').listen((event) async {
+    printLog
+        .i('Servicio: recibida petición para suscribir y sincronizar widgets');
+    await subscribeToWidgetTopics();
+    await syncWidgetsWithDatabase();
+  });
+
+  // Listener para verificar si quedan widgets activos (llamado cuando se elimina un widget)
+  service.on('checkWidgetsAndStop').listen((event) async {
+    printLog.i('Servicio: verificando si quedan widgets activos');
+    final hasWidgets = await hasActiveWidgets();
+    if (!hasWidgets) {
+      printLog.i('Servicio: no hay widgets, verificando control por distancia');
+      await stopWidgetService();
+    } else {
+      printLog.i('Servicio: aún hay widgets activos');
+    }
+  });
+
   service.on('distanceControl').listen((event) {
     showNotification('Se inició el control por distancia',
         'Recuerde tener la ubicación del telefono encendida', 'noti');
     backTimerDS = Timer.periodic(const Duration(minutes: 2), (timer) async {
       await backFunctionDS();
     });
+  });
+
+  // Timer para mantener MQTT conectado (reconexión automática)
+  Timer.periodic(const Duration(minutes: 5), (timer) async {
+    if (mqttAWSFlutterClient == null ||
+        mqttAWSFlutterClient!.connectionStatus?.state !=
+            MqttConnectionState.connected) {
+      printLog.i('Servicio background: Reconectando a MQTT...');
+      await setWidgetServiceReady(false);
+      final reconnected = await setupMqtt();
+      if (reconnected) {
+        await subscribeToWidgetTopics();
+        await setWidgetServiceReady(true);
+        printLog.i('Servicio background: MQTT reconectado');
+      }
+    }
   });
 }
 
@@ -6829,7 +6935,6 @@ class Tutorial {
   }
 }
 
-
 class TutorialItemContent extends StatelessWidget {
   final String title;
   final String content;
@@ -7471,5 +7576,8 @@ class CaldenIcons {
   static const String wifi01 = 'assets/icons/wifi01.png';
   static const String wifi02 = 'assets/icons/wifi02.png';
   static const String wifi03 = 'assets/icons/wifi03.png';
+  static const String termometro = 'assets/icons/termometro.png';
+  static const String termometroPlus = 'assets/icons/termometroPlus.png';
+  static const String termometroMenos = 'assets/icons/termometroMenos.png';
 }
 //*- iconos -*\\

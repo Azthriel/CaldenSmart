@@ -4485,9 +4485,10 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                                   .strokeRoundedAlert02,
                                                               color: color4,
                                                             )
-                                                          : const Icon(
-                                                              HugeIcons
-                                                                  .strokeRoundedTemperature,
+                                                          : const ImageIcon(
+                                                              AssetImage(
+                                                                  CaldenIcons
+                                                                      .termometro),
                                                               color:
                                                                   Colors.green,
                                                             ),
@@ -7099,8 +7100,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          Icon(
-                                            HugeIcons.strokeRoundedTemperature,
+                                          ImageIcon(
+                                            const AssetImage(
+                                                CaldenIcons.termometro),
                                             color: isEnabled
                                                 ? (estadoTermometro == "1"
                                                     ? Colors.red

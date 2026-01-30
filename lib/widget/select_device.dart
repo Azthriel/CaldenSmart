@@ -331,8 +331,8 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
                   bool isOnline = globalDATA['$pc/$sn']?['cstate'] ?? false;
 
                   String nickname = device.key.contains('_')
-                      ? (nicknamesMap[device.key.split('_')[0]] ??
-                          device.key.split('_')[0])
+                      ? (nicknamesMap[device.key] ??
+                          '${nicknamesMap[device.key.split('_')[0]] ?? device.key.split('_')[0]} pin ${device.key.split('_')[1]}')
                       : (nicknamesMap[device.key] ?? device.key);
 
                   return Padding(
@@ -372,14 +372,6 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
                                           letterSpacing: 1.2)),
-                                  const Spacer(),
-                                  if (device.key.contains('_'))
-                                    Text('PIN ${device.key.split('_')[1]}',
-                                        style: GoogleFonts.poppins(
-                                            color:
-                                                color0.withValues(alpha: 0.6),
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold)),
                                 ],
                               ),
                             ),

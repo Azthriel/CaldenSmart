@@ -1,7 +1,7 @@
 name: caldensmart
 description: "Caldén Smart"
 publish_to: "none"
-version: 1.0.69+87
+version: 1.0.70+88
 
 environment:
   sdk: ^3.5.1
@@ -115,3 +115,6 @@ flutter:
     - assets/icons/wifi01.png
     - assets/icons/wifi02.png
     - assets/icons/wifi03.png
+    - assets/icons/termometro.png
+    - assets/icons/termometroPlus.png
+    - assets/icons/termometroMenos.png

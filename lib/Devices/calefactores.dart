@@ -1107,8 +1107,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                   children: [
                     Column(
                       children: [
-                        Icon(
-                          HugeIcons.strokeRoundedTemperature,
+                        ImageIcon(
+                          const AssetImage(CaldenIcons.termometro),
                           size: MediaQuery.of(context).size.width * 0.5,
                           color: Color.lerp(
                             Colors.blueAccent,
@@ -1943,7 +1943,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                       items: const <Widget>[
                         Icon(HugeIcons.strokeRoundedHome11,
                             size: 30, color: color0),
-                        Icon(HugeIcons.strokeRoundedTemperature,
+                            ImageIcon(AssetImage(CaldenIcons.termometro),
                             size: 30, color: color0),
                         Icon(HugeIcons.strokeRoundedLocation06,
                             size: 30, color: color0),

@@ -558,10 +558,8 @@ class ProfilePageState extends State<ProfilePage> {
                   ),
                   const Divider(color: color1),
                   ListTile(
-                    leading: const Icon(
-                      HugeIcons.strokeRoundedTemperature,
-                      color: color1,
-                    ),
+                    leading: const ImageIcon(AssetImage(CaldenIcons.termometro),
+                        color: color1),
                     title: Text(
                       "Termómetro",
                       style: GoogleFonts.poppins(

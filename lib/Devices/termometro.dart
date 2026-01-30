@@ -77,12 +77,17 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
         pageIndex: 0,
         fullBackground: true,
         onStepReached: () {
-          setState(() {
-            showNotification(
-                '¡ALERTA DE TEMPERATURA EN ${nicknamesMap[deviceName] ?? deviceName}!',
-                'Se detectó temperatura MÍNIMA alcanzada.\nA las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
-                soundOfNotification[DeviceManager.getProductCode(deviceName)] ??
-                    'alarm2');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                showNotification(
+                    '¡ALERTA DE TEMPERATURA EN ${nicknamesMap[deviceName] ?? deviceName}!',
+                    'Se detectó temperatura MÍNIMA alcanzada.\nA las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                    soundOfNotification[
+                            DeviceManager.getProductCode(deviceName)] ??
+                        'alarm2');
+              });
+            }
           });
         },
         child: const TutorialItemContent(
@@ -301,11 +306,15 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
         pageIndex: 3,
         fullBackground: true,
         onStepReached: () {
-          setState(() {
-            showNotification(
-                '¡El equipo ${nicknamesMap[deviceName] ?? deviceName} se desconecto!',
-                'Se detecto una desconexión a las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
-                'noti');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                showNotification(
+                    '¡El equipo ${nicknamesMap[deviceName] ?? deviceName} se desconecto!',
+                    'Se detecto una desconexión a las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                    'noti');
+              });
+            }
           });
         },
         child: const TutorialItemContent(
@@ -758,11 +767,8 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
-                              HugeIcons.strokeRoundedTemperature,
-                              color: color4,
-                              size: 80,
-                            ),
+                            const ImageIcon(AssetImage(CaldenIcons.termometro),
+                                size: 80, color: color4),
                             const SizedBox(height: 16),
                             const Text(
                               'Temperatura Actual',
@@ -830,14 +836,20 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                       return ScaleTransition(
                                           scale: animation, child: child);
                                     },
-                                    child: Icon(
-                                      alertMinFlag
-                                          ? HugeIcons.strokeRoundedAlert02
-                                          : HugeIcons.strokeRoundedArrowDown02,
-                                      key: ValueKey<bool>(alertMinFlag),
-                                      color: alertMinFlag ? color4 : color0,
-                                      size: 32,
-                                    ),
+                                    child: alertMinFlag
+                                        ? const Icon(
+                                            HugeIcons.strokeRoundedAlert02,
+                                            key: ValueKey('alert'),
+                                            color: color4,
+                                            size: 32,
+                                          )
+                                        : const ImageIcon(
+                                            AssetImage(
+                                                CaldenIcons.termometroMenos),
+                                            key: ValueKey('termometro'),
+                                            color: color0,
+                                            size: 32,
+                                          ),
                                   ),
                                   const SizedBox(height: 6),
                                   const Flexible(
@@ -904,14 +916,20 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                       return ScaleTransition(
                                           scale: animation, child: child);
                                     },
-                                    child: Icon(
-                                      alertMaxFlag
-                                          ? HugeIcons.strokeRoundedAlert02
-                                          : HugeIcons.strokeRoundedArrowUp02,
-                                      key: ValueKey<bool>(alertMaxFlag),
-                                      color: alertMaxFlag ? color3 : color0,
-                                      size: 32,
-                                    ),
+                                    child: alertMaxFlag
+                                        ? const Icon(
+                                            HugeIcons.strokeRoundedAlert02,
+                                            key: ValueKey('alertMax'),
+                                            color: color3,
+                                            size: 32,
+                                          )
+                                        : const ImageIcon(
+                                            AssetImage(
+                                                CaldenIcons.termometroPlus),
+                                            key: ValueKey('termometroPlus'),
+                                            color: color0,
+                                            size: 32,
+                                          ),
                                   ),
                                   const SizedBox(height: 6),
                                   const Flexible(
@@ -1002,14 +1020,20 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                   return ScaleTransition(
                                       scale: animation, child: child);
                                 },
-                                child: Icon(
-                                  alertMaxFlag
-                                      ? HugeIcons.strokeRoundedAlert02
-                                      : HugeIcons.strokeRoundedArrowUp02,
-                                  key: ValueKey<bool>(alertMaxFlag),
-                                  color: alertMaxFlag ? color3 : color0,
-                                  size: 50,
-                                ),
+                                child: alertMaxFlag
+                                    ? Icon(
+                                        HugeIcons.strokeRoundedAlert02,
+                                        key: ValueKey<bool>(alertMaxFlag),
+                                        color: color3,
+                                        size: 50,
+                                      )
+                                    : ImageIcon(
+                                        const AssetImage(
+                                            CaldenIcons.termometroPlus),
+                                        key: ValueKey<bool>(alertMaxFlag),
+                                        color: color0,
+                                        size: 50,
+                                      ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -1097,14 +1121,20 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                                   return ScaleTransition(
                                       scale: animation, child: child);
                                 },
-                                child: Icon(
-                                  alertMinFlag
-                                      ? HugeIcons.strokeRoundedAlert02
-                                      : HugeIcons.strokeRoundedArrowDown02,
-                                  key: ValueKey<bool>(alertMinFlag),
-                                  color: alertMinFlag ? color4 : color0,
-                                  size: 50,
-                                ),
+                                child: alertMinFlag
+                                    ? Icon(
+                                        HugeIcons.strokeRoundedAlert02,
+                                        key: ValueKey<bool>(alertMinFlag),
+                                        color: color4,
+                                        size: 50,
+                                      )
+                                    : ImageIcon(
+                                        const AssetImage(
+                                            CaldenIcons.termometroMenos),
+                                        key: ValueKey<bool>(alertMinFlag),
+                                        color: color0,
+                                        size: 50,
+                                      ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -1331,7 +1361,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
                       index: _selectedIndex,
                       height: 75.0,
                       items: const <Widget>[
-                        Icon(HugeIcons.strokeRoundedTemperature,
+                        ImageIcon(AssetImage(CaldenIcons.termometro),
                             size: 30, color: color0),
                         Icon(HugeIcons.strokeRoundedSlidersHorizontal,
                             size: 30, color: color0),

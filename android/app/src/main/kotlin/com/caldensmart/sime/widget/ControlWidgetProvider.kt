@@ -31,6 +31,8 @@ class ControlWidgetProvider : HomeWidgetProvider() {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val editor = prefs.edit()
 
+        var remainingWidgets = 0
+
         for (widgetId in appWidgetIds) {
             Log.d(TAG, "Limpiando datos del widget $widgetId")
 
@@ -48,6 +50,11 @@ class ControlWidgetProvider : HomeWidgetProvider() {
             editor.remove("widget_alert_$widgetId")
             editor.remove("widget_ppmCO_$widgetId")
             editor.remove("widget_ppmCH4_$widgetId")
+            editor.remove("widget_loading_$widgetId")
+            editor.remove("widget_initializing_$widgetId")
+            editor.remove("widget_is_display_type_$widgetId")
+            editor.remove("widget_display_temp_$widgetId")
+            editor.remove("widget_display_alert_$widgetId")
 
             // Actualizar la lista de widgets activos
             val widgetIdsJson = prefs.getString("active_widget_ids", null)
@@ -63,8 +70,10 @@ class ControlWidgetProvider : HomeWidgetProvider() {
                         }
                     }
                     editor.putString("active_widget_ids", newArray.toString())
+                    remainingWidgets = newArray.length()
                     if (newArray.length() == 0) {
                         editor.putBoolean("widgetServiceEnabled", false)
+                        editor.putBoolean("widget_service_ready", false)
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error actualizando lista de widgets: ${e.message}")
@@ -72,6 +81,18 @@ class ControlWidgetProvider : HomeWidgetProvider() {
             }
         }
         editor.apply()
+
+        // Notificar al servicio de Flutter para que verifique si debe detenerse
+        Log.d(TAG, "Widgets restantes: $remainingWidgets, notificando al servicio Flutter")
+        try {
+            val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(
+                context,
+                Uri.parse("caldensmart://widget/checkAndStop")
+            )
+            backgroundIntent.send()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error notificando al servicio Flutter: ${e.message}")
+        }
     }
 
     override fun onUpdate(
@@ -88,8 +109,10 @@ class ControlWidgetProvider : HomeWidgetProvider() {
             val isOnline = widgetData.getBoolean("widget_online_$widgetId", false)
             val isOn = widgetData.getBoolean("widget_status_$widgetId", false)
             val isLoading = widgetData.getBoolean("widget_loading_$widgetId", false)
+            val isInitializing = widgetData.getBoolean("widget_initializing_$widgetId", false)
+            val isServiceReady = widgetData.getBoolean("widget_service_ready", false)
 
-            views.setViewVisibility(R.id.widget_loading_background, if (isLoading) android.view.View.VISIBLE else android.view.View.GONE)
+            views.setViewVisibility(R.id.widget_loading_background, if (isLoading || isInitializing) android.view.View.VISIBLE else android.view.View.GONE)
 
             // Datos específicos
             val productCode = widgetData.getString("widget_pc_$widgetId", null)
@@ -116,67 +139,88 @@ class ControlWidgetProvider : HomeWidgetProvider() {
                 }
 
                 if (isControl) {
-                    //views.setTextViewText(R.id.widget_type_text, "Control")
+                    views.setViewVisibility(R.id.widget_power_indicator, android.view.View.GONE)
+                    views.setViewVisibility(R.id.widget_status_icon, android.view.View.VISIBLE)
+                    views.setInt(R.id.widget_status_icon, "setColorFilter", 0)
 
-
-                    if (isOn) {
-                        views.setTextViewText(R.id.widget_power_indicator, "Encendido")
-                        views.setTextColor(R.id.widget_power_indicator, 0xFF4CAF50.toInt())
+                    if (!isServiceReady && isOnline) {
+                        views.setViewVisibility(R.id.widget_power_indicator, android.view.View.VISIBLE)
+                        views.setViewVisibility(R.id.widget_status_icon, android.view.View.GONE)
+                        views.setTextViewText(R.id.widget_power_indicator, "Iniciando...")
+                        views.setTextColor(R.id.widget_power_indicator, 0xFF9E9E9E.toInt())
+                        views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_offline)
+                        val pendingIntent = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
+                        views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
+                    } else if (isOn) {
+                        views.setImageViewResource(R.id.widget_status_icon, R.drawable.ic_switch_on)
                         views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_on)
+
+                        if (isOnline && !isLoading && isServiceReady) {
+                            val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(
+                                context,
+                                Uri.parse("caldensmart://widget/toggle?widgetId=$widgetId")
+                            )
+                            views.setOnClickPendingIntent(R.id.widget_container, backgroundIntent)
+                        } else {
+                            val pendingIntent = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
+                            views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
+                        }
                     } else {
-                        views.setTextViewText(R.id.widget_power_indicator, "Apagado")
-                        views.setTextColor(R.id.widget_power_indicator, 0xFFF44336.toInt())
+                        views.setImageViewResource(R.id.widget_status_icon, R.drawable.ic_switch_off)
 
                         if (isOnline) {
                             views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_off)
                         } else {
                             views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_offline)
                         }
-                    }
 
-                    if (isOnline && !isLoading) {
-                        val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(
-                            context,
-                            Uri.parse("caldensmart://widget/toggle?widgetId=$widgetId")
-                        )
-                        views.setOnClickPendingIntent(R.id.widget_container, backgroundIntent)
-                    } else {
-                        val pendingIntent = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
-                        views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
+                        if (isOnline && !isLoading && isServiceReady) {
+                            val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(
+                                context,
+                                Uri.parse("caldensmart://widget/toggle?widgetId=$widgetId")
+                            )
+                            views.setOnClickPendingIntent(R.id.widget_container, backgroundIntent)
+                        } else {
+                            val pendingIntent = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
+                            views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
+                        }
                     }
                 } else {
-                    //views.setTextViewText(R.id.widget_type_text, "Lectura")
+                    views.setViewVisibility(R.id.widget_power_indicator, android.view.View.VISIBLE)
+                    views.setViewVisibility(R.id.widget_status_icon, android.view.View.GONE)
+
                     when {
-                        // Termómetro
-                        productCode == "023430_IOT" && displayTemp != null -> {
-                            views.setTextViewText(R.id.widget_power_indicator, "${displayTemp}°C")
+                        productCode == "023430_IOT" -> {
+                            val tempText = if (displayTemp != null) "${displayTemp}°C" else "--°C"
+                            views.setTextViewText(R.id.widget_power_indicator, tempText)
                             views.setTextColor(R.id.widget_power_indicator, 0xFF2196F3.toInt())
+
                             if (isOnline) views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_off)
                             else views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_offline)
                         }
-                        // Detector
+
                         productCode == "015773_IOT" -> {
-                            // Eliminadas referencias a widget_device_icon (danger/check)
+                            views.setViewVisibility(R.id.widget_power_indicator, android.view.View.GONE)
+                            views.setViewVisibility(R.id.widget_status_icon, android.view.View.VISIBLE)
+
                             if (displayAlert) {
-                                views.setTextViewText(R.id.widget_power_indicator, "⚠ ALERTA")
-                                views.setTextColor(R.id.widget_power_indicator, 0xFFF44336.toInt())
+                                views.setInt(R.id.widget_status_icon, "setColorFilter", 0xFFF44336.toInt())
                                 views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_alert)
                             } else {
-                                views.setTextViewText(R.id.widget_power_indicator, "OK")
-                                views.setTextColor(R.id.widget_power_indicator, 0xFF4CAF50.toInt())
+                                views.setInt(R.id.widget_status_icon, "setColorFilter", 0xFF9E9E9E.toInt())
                                 if (isOnline) views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_off)
                                 else views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_offline)
                             }
                         }
-                        // Sensores IO
                         isDisplayType -> {
+                            views.setViewVisibility(R.id.widget_power_indicator, android.view.View.GONE)
+                            views.setViewVisibility(R.id.widget_status_icon, android.view.View.VISIBLE)
+
                             if (displayAlert) {
-                                views.setTextViewText(R.id.widget_power_indicator, "ABIERTO")
-                                views.setTextColor(R.id.widget_power_indicator, 0xFFF44336.toInt())
+                                views.setInt(R.id.widget_status_icon, "setColorFilter", 0xFFF44336.toInt())
                                 views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_alert)
                             } else {
-                                views.setTextViewText(R.id.widget_power_indicator, "CERRADO")
-                                views.setTextColor(R.id.widget_power_indicator,  0xFFFFFFFF.toInt())
+                                views.setInt(R.id.widget_status_icon, "setColorFilter", 0xFF9E9E9E.toInt())
                                 if (isOnline) views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_off)
                                 else views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_offline)
                             }
@@ -195,8 +239,8 @@ class ControlWidgetProvider : HomeWidgetProvider() {
 
                 views.setImageViewResource(R.id.widget_connection_icon, R.drawable.ic_widget_settings)
 
-                //views.setTextViewText(R.id.widget_type_text, "Toca para configurar")
                 views.setTextViewText(R.id.widget_power_indicator, "")
+                views.setViewVisibility(R.id.widget_status_icon, android.view.View.GONE)
                 views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_configuring)
 
                 val pendingIntent = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)

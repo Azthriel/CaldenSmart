@@ -31,7 +31,6 @@
                 android:layout_height="25dp"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
-
                 android:src="@drawable/ic_widget_online" />
         </RelativeLayout>
 
@@ -77,6 +76,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="end">
+
+            <ImageView
+                android:id="@+id/widget_status_icon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_widget_alert"
+                android:visibility="gone"
+                tools:visibility="visible"
+                tools:tint="#9E9E9E" />
 
             <TextView
                 android:id="@+id/widget_power_indicator"

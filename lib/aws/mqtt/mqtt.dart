@@ -292,9 +292,25 @@ void listenToTopics() {
             .updateData(keyName, encoded);
 
         // Actualizar widgets para dispositivos con pin
-        bool isOn = messageMap['w_status'] ?? false;
+        int pinType = messageMap['pinType'] ?? 0;
+        bool wStatus = messageMap['w_status'] ?? false;
         bool isOnline = globalDATA[keyName]?['cstate'] ?? false;
-        updateWidgetsForDevice(pc, sn, isOn, isOnline, pinIndex: index);
+
+        if (pinType == 0) {
+          // Salida (control) - actualizar estado on/off
+          updateWidgetsForDevice(pc, sn, wStatus, isOnline, pinIndex: index);
+        } else {
+          // Entrada (visualización) - calcular estado de alerta
+          // Lógica: Cerrado cuando w_status y r_state coinciden
+          // - Si w_status == true y r_state == '1' → Cerrado (sin alerta)
+          // - Si w_status == true y r_state != '1' → Abierto (alerta)
+          // - Si w_status == false y r_state == '1' → Abierto (alerta)
+          // - Si w_status == false y r_state != '1' → Cerrado (sin alerta)
+          int rState = int.tryParse(messageMap['r_state'].toString()) ?? 0;
+          bool isAlert = (wStatus && rState == 0) || (!wStatus && rState == 1);
+          updateWidgetsForDeviceDisplay(pc, sn, isOnline,
+              pinIndex: index, displayAlert: isAlert);
+        }
       } else {
         globalDATA.putIfAbsent(keyName, () => {}).addAll(messageMap);
 
