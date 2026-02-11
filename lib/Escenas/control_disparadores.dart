@@ -23,10 +23,13 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
   TextEditingController title = TextEditingController();
   String estadoAlerta = "1";
   String estadoTermometro = "1";
+  Map<String, bool> _wifiPermissions = {};
+  bool _isLoadingPermissions = true;
 
   @override
   void initState() {
     super.initState();
+    _loadWifiPermissions();
     _initializeData();
   }
 
@@ -37,9 +40,61 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
     currentStep = 0;
   }
 
+  Future<void> _loadWifiPermissions() async {
+    Map<String, bool> permissions = {};
+    for (var device in previusConnections) {
+      String pc = DeviceManager.getProductCode(device);
+      String sn = DeviceManager.extractSerialNumber(device);
+      String key = '$pc/$sn';
+      bool hasPermission = await checkAdminWifiPermission(device);
+      permissions[key] = hasPermission;
+    }
+    if (mounted) {
+      setState(() {
+        _wifiPermissions = permissions;
+        _isLoadingPermissions = false;
+      });
+    }
+  }
+
+  bool _hasRestrictedDevicesInGroup(dynamic deviceGroup) {
+    List<String> devices = [];
+    if (deviceGroup is String) {
+      devices = deviceGroup
+          .replaceAll('[', '')
+          .replaceAll(']', '')
+          .split(',')
+          .map((e) => e.trim())
+          .toList();
+    } else if (deviceGroup is List) {
+      devices = deviceGroup.map((e) => e.toString()).toList();
+    }
+
+    for (String devName in devices) {
+      String cleanName =
+          devName.contains('_') ? devName.split('_')[0] : devName;
+      String pc = DeviceManager.getProductCode(cleanName);
+      String sn = DeviceManager.extractSerialNumber(cleanName);
+      String key = '$pc/$sn';
+
+      if (_wifiPermissions.containsKey(key) && _wifiPermissions[key] == false) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   bool _isActivador(String equipo) {
     final displayName = nicknamesMap[equipo] ?? equipo;
     if (displayName.isEmpty) return false;
+
+    final pc = DeviceManager.getProductCode(equipo);
+    final sn = DeviceManager.extractSerialNumber(equipo);
+    final key = '$pc/$sn';
+
+    if (!_isLoadingPermissions && _wifiPermissions.containsKey(key)) {
+      if (_wifiPermissions[key] == false) return false;
+    }
 
     if (equipo.contains('Detector') ||
         equipo.contains('Termometro') ||
@@ -71,6 +126,14 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
   bool _isEjecutor(String equipo) {
     final displayName = nicknamesMap[equipo] ?? equipo;
     if (displayName.isEmpty) return false;
+
+    final pc = DeviceManager.getProductCode(equipo);
+    final sn = DeviceManager.extractSerialNumber(equipo);
+    final key = '$pc/$sn';
+
+    if (!_isLoadingPermissions && _wifiPermissions.containsKey(key)) {
+      if (_wifiPermissions[key] == false) return false;
+    }
 
     if (equipo.contains('Domotica') ||
         equipo.contains('Modulo') ||
@@ -268,6 +331,8 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
 
     final eventosDisponibles = eventosCreados.where((evento) {
       final eventoType = evento['evento'] as String;
+      if (_hasRestrictedDevicesInGroup(evento['deviceGroup'])) return false;
+
       return eventoType == 'grupo' ||
           eventoType == 'cadena' ||
           eventoType == 'riego';
@@ -696,7 +761,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                                 isSelected: [isOn == true, isOn == false],
                                 onPressed: (i) => setState(() {
                                   deviceActions[device] = i == 0 ? true : false;
-                                //  printLog.i('$deviceActions', color: 'verde');
+                                  //  printLog.i('$deviceActions', color: 'verde');
                                 }),
                                 borderRadius: BorderRadius.circular(12),
                                 selectedColor: color0,
@@ -916,6 +981,9 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
   Widget _buildCurrentStepContent() {
     switch (currentStep) {
       case 0:
+        if (_isLoadingPermissions) {
+          return const Center(child: CircularProgressIndicator(color: color4));
+        }
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [

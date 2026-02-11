@@ -465,6 +465,8 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
     subscribeToWifiStatus();
     subscribeTrueStatus();
 
+    if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
+
     addDeviceToCore(deviceName);
   }
 

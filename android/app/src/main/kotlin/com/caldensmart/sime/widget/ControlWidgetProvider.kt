@@ -23,6 +23,22 @@ class ControlWidgetProvider : HomeWidgetProvider() {
         private const val PREFS_NAME = "HomeWidgetPreferences"
     }
 
+    override fun onEnabled(context: Context?) {
+        super.onEnabled(context)
+        context?.let {
+            Log.d(TAG, "Primer widget añadido, programando WorkManager")
+            WidgetUpdateWorker.schedule(it)
+        }
+    }
+
+    override fun onDisabled(context: Context?) {
+        super.onDisabled(context)
+        context?.let {
+            Log.d(TAG, "Último widget eliminado, cancelando WorkManager")
+            WidgetUpdateWorker.cancel(it)
+        }
+    }
+
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         super.onDeleted(context, appWidgetIds)
 

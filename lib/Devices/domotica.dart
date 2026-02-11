@@ -361,6 +361,8 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
     subscribeToWifiStatus();
     subToIO();
     processValues(ioValues);
+
+    if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
   }
 
   @override

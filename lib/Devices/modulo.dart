@@ -360,6 +360,8 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
     subToIO();
     processValues(ioValues);
     notificationMap.putIfAbsent('$pc/$sn', () => List<bool>.filled(4, false));
+
+    if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
   }
 
   @override

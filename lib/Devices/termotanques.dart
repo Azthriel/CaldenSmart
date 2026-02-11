@@ -439,6 +439,8 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
     subscribeTrueStatus();
 
     addDeviceToCore(deviceName);
+
+    if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
   }
 
   @override

@@ -273,6 +273,8 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
 
     onlineInCloud = globalDATA['$pc/$sn']?['cstate'] ?? false;
 
+    if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       updateWifiValues(toolsValues);
       if (shouldUpdateDevice) {

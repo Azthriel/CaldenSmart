@@ -354,6 +354,8 @@ class RelayPageState extends ConsumerState<RelayPage> {
     subscribeTrueStatus();
 
     addDeviceToCore(deviceName);
+
+    if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
   }
 
   @override

@@ -155,6 +155,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
         borderRadius: const Radius.circular(30),
         shapeFocus: ShapeFocus.roundedSquare,
         contentPosition: ContentPosition.above,
+        fullBackground: true,
         focusMargin: 15.0,
         pageIndex: 2,
         child: const TutorialItemContent(
@@ -353,6 +354,8 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
         await showUpdateDialog(context);
       }
     });
+
+    if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
   }
 
   @override
@@ -1485,6 +1488,7 @@ class _HistorialChartState extends State<_HistorialChart> {
                 fontWeight: FontWeight.bold,
               ),
             ),
+            SizedBox(height: 0, key: keys['termometro:graficoTemperatura']!),
             SizedBox(height: 20, key: keys['termometro:ofrecerPremium']!),
 
             // Selector de período (solo si es premium)
@@ -1614,7 +1618,6 @@ class _HistorialChartState extends State<_HistorialChart> {
     if (interval < 1) interval = 1.0;
 
     return Card(
-      key: keys['termometro:graficoTemperatura']!,
       color: color1,
       elevation: 6,
       shape: RoundedRectangleBorder(

@@ -459,6 +459,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
     subscribeToWifiStatus();
     subToIO();
     processValues(ioValues);
+    if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
   }
 
   @override

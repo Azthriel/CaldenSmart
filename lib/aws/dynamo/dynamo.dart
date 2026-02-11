@@ -647,6 +647,74 @@ Future<void> putPreviusConnections(String email, List<String> data,
 
 ///*-Guardar equipos en dynamo-*\\\
 
+///*-Guardar y obtener folders de equipos -*\\\
+Future<Map<String, List<String>>> getFolders(String email) async {
+  Map<String, List<String>> foldersResult = {};
+
+  try {
+    final response = await service.getItem(
+      tableName: 'Alexa-Devices',
+      key: {'email': AttributeValue(s: email)},
+    );
+
+    folders.clear();
+
+    if (response.item != null) {
+      final dynamic foldersAttr = response.item!['folders'];
+
+      if (foldersAttr != null && foldersAttr.m != null) {
+        Map<String, AttributeValue> mapaRaw = foldersAttr.m!;
+
+        mapaRaw.forEach((key, value) {
+          foldersResult[key] =
+              value.ss ?? value.l?.map((e) => e.s ?? "").toList() ?? [];
+        });
+      }
+      printLog.d('Folders obtenidos para $email: $foldersResult');
+      return foldersResult;
+    } else {
+      printLog.e('Item no encontrado para el email: $email');
+      return {};
+    }
+  } catch (e) {
+    printLog.e('Error al obtener folders: $e');
+    return {};
+  }
+}
+
+Future<void> putFolders(
+    String email, Map<String, List<String>> foldersToSave) async {
+  try {
+    Map<String, AttributeValue> folderAttribute =
+        foldersToSave.map((key, value) {
+      return MapEntry(
+        key,
+        AttributeValue(
+          l: value.map((deviceId) => AttributeValue(s: deviceId)).toList(),
+        ),
+      );
+    });
+
+    await service.updateItem(
+      tableName: 'Alexa-Devices',
+      key: {'email': AttributeValue(s: email)},
+      attributeUpdates: {
+        'folders': AttributeValueUpdate(
+          value: AttributeValue(m: folderAttribute),
+          action: AttributeAction.put,
+        ),
+      },
+    );
+
+    printLog.i('Sincronización completa: Map > List > String guardado.');
+  } catch (e) {
+    printLog.e('Error al guardar en Dynamo: $e');
+  }
+}
+///*-Guardar y obtener folders de equipos -*\\\
+
+
+
 ///*-Guardar y obtener Nicknames de los equipo-*\\\
 Future<void> putNicknames(String email, Map<String, String> data) async {
   try {
@@ -1707,6 +1775,7 @@ void putEventoControlDeRiego(String email, String nombreEvento,
             return AttributeValue(m: {
               'device': AttributeValue(s: paso['device']),
               'duration': AttributeValue(n: paso['duration'].toString()),
+              'duration_seg': AttributeValue(n: paso['duration_seg'].toString()),
             });
           }).toList(),
         ),
@@ -2068,6 +2137,81 @@ void savePrintLog(String email, String log) async {
     printLog.i('Log guardado perfectamente $response');
   } catch (e) {
     printLog.e('Error insertando log: $e');
+  }
+}
+
+/// Guarda registros de logs del dispositivo en la tabla sime-domotica
+/// Los logs se guardan bajo el atributo 'device_register_ble' como un mapa
+/// donde la clave es el timestamp de sesión y el valor es una lista de logs
+Future<void> saveDeviceRegisterLog(String pc, String sn, int sessionTimestamp,
+    List<Map<String, dynamic>> logs) async {
+  try {
+    // Usar el timestamp de sesión como claveq
+    String sessionKey = sessionTimestamp.toString();
+
+    // Obtener los logs existentes
+    final getResponse = await service.getItem(
+      tableName: 'sime-domotica',
+      key: {
+        'product_code': AttributeValue(s: pc),
+        'device_id': AttributeValue(s: sn),
+      },
+    );
+
+    Map<String, AttributeValue> existingLogs = {};
+    if (getResponse.item != null &&
+        getResponse.item!['device_register_ble'] != null) {
+      existingLogs = getResponse.item!['device_register_ble']!.m ?? {};
+    }
+
+    // Si ya existe una entrada para este timestamp de sesión, agregar a la lista existente
+    List<AttributeValue> currentSessionLogs = [];
+    if (existingLogs.containsKey(sessionKey) &&
+        existingLogs[sessionKey]!.l != null) {
+      currentSessionLogs = existingLogs[sessionKey]!.l!;
+    }
+
+    // Agregar los nuevos logs a la lista de esta sesión
+    for (var log in logs) {
+      currentSessionLogs.add(
+        AttributeValue(m: {
+          'content': AttributeValue(s: log['content']),
+          'level': AttributeValue(s: log['level']),
+          'timestamp': AttributeValue(n: log['timestamp'].toString()),
+        }),
+      );
+    }
+
+    // Actualizar la entrada de esta sesión
+    existingLogs[sessionKey] = AttributeValue(l: currentSessionLogs);
+
+    // Limitar a las últimas 50 sesiones (mantener solo las más recientes)
+    if (existingLogs.length > 50) {
+      // Ordenar por timestamp de sesión y mantener solo las 50 más recientes
+      var sortedKeys = existingLogs.keys.toList()
+        ..sort((a, b) => int.parse(b).compareTo(int.parse(a)));
+      existingLogs = Map.fromEntries(
+        sortedKeys.take(50).map((key) => MapEntry(key, existingLogs[key]!)),
+      );
+    }
+
+    // Actualizar en DynamoDB
+    await service.updateItem(
+      tableName: 'sime-domotica',
+      key: {
+        'product_code': AttributeValue(s: pc),
+        'device_id': AttributeValue(s: sn),
+      },
+      attributeUpdates: {
+        'device_register_ble': AttributeValueUpdate(
+          value: AttributeValue(m: existingLogs),
+        ),
+      },
+    );
+
+    printLog.i('Registros BLE guardados para $pc/$sn bajo sesión $sessionKey');
+  } catch (e) {
+    printLog.e('Error guardando registros BLE: $e');
   }
 }
 

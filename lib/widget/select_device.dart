@@ -81,6 +81,9 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
           // Verificar hasEntry para dispositivos que pueden tener entrada
           // Por defecto true si no existe (para compatibilidad con equipos viejos)
           bool hasEntry = deviceDATA['hasEntry'] ?? true;
+          bool isRiego = deviceDATA['riegoActive'] == true;
+
+          if (isRiego) continue; // Saltar dispositivos de riego
 
           deviceDATA.forEach((key, value) {
             if (key.startsWith('io') && value is String) {
@@ -250,10 +253,7 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
       printLog.d("Guardando widget $_widgetId para: $nickname ($deviceKey)");
 
       // 3. Actualizar el widget nativo (sin renderFlutterWidget)
-      await HomeWidget.updateWidget(
-        qualifiedAndroidName:
-            'com.caldensmart.sime.widget.ControlWidgetProvider',
-      );
+      await updateAllWidgets();
 
       printLog.i("Widget nativo actualizado correctamente");
 

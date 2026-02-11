@@ -395,6 +395,8 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
     subscribeToWifiStatus();
     subToIO();
     processValues(ioValues);
+
+    if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
   }
 
   @override

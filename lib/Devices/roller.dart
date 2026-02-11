@@ -61,6 +61,8 @@ class RollerPageState extends ConsumerState<RollerPage> {
     processValues(varsValues);
     subscribeToWifiStatus();
     subToVars();
+
+    if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
   }
 
   @override
@@ -126,7 +128,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
     final regex = RegExp(r'\((\d+)\)');
     final match = regex.firstMatch(parts[2]);
     int users = int.parse(match!.group(1).toString());
-   // printLog.i('Hay $users conectados');
+    // printLog.i('Hay $users conectados');
     userConnected = users > 1;
 
     final wifiNotifier = ref.read(wifiProvider.notifier);
@@ -190,7 +192,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
   }
 
   void subToVars() async {
-   // printLog.i('Me subscribo a vars');
+    // printLog.i('Me subscribo a vars');
     await bluetoothManager.varsUuid.setNotifyValue(true);
 
     final varsSub =
@@ -232,7 +234,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
 
   void setDistance(int pc) {
     String data = '$pc[7]($pc%)';
-   // printLog.i(data);
+    // printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
@@ -249,7 +251,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
 
   void setMotorSpeed(String rpm) {
     String data = '$pc[10]($rpm)';
-   // printLog.i(data);
+    // printLog.i(data);
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
@@ -875,7 +877,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
             },
           ),
           actions: [
-                        globalDATA['$pc/$sn']?['cstate'] ?? false
+            globalDATA['$pc/$sn']?['cstate'] ?? false
                 ? const ImageIcon(
                     AssetImage(CaldenIcons.cloud),
                     size: 35,

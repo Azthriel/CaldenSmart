@@ -508,6 +508,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
     subscribeToWifiStatus();
     subscribeTrueStatus();
 
+    if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
+
     addDeviceToCore(deviceName);
   }
 
@@ -584,7 +586,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
           loading = true;
         });
 
-      //  printLog.i('Estoy haciendo calculaciones místicas');
+        //  printLog.i('Estoy haciendo calculaciones místicas');
 
         if (valueConsuption != null) {
           result = double.parse(tiempo) *
@@ -598,7 +600,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
 
         await Future.delayed(const Duration(seconds: 1));
 
-       // printLog.i('Calculaciones terminadas');
+        // printLog.i('Calculaciones terminadas');
 
         if (context.mounted) {
           setState(() {
@@ -688,13 +690,13 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
   }
 
   void subscribeTrueStatus() async {
-   // printLog.i('Me subscribo a vars');
+    // printLog.i('Me subscribo a vars');
     await bluetoothManager.varsUuid.setNotifyValue(true);
 
     final trueStatusSub =
         bluetoothManager.varsUuid.onValueReceived.listen((List<int> status) {
       var parts = utf8.decode(status).split(':');
-    //  printLog.i('Llegaron cositas vars: $parts', color: 'Naranja');
+      //  printLog.i('Llegaron cositas vars: $parts', color: 'Naranja');
 
       if (parts.length <= 3) {
         setState(() {
@@ -782,7 +784,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
         // Verificar si hay widgets activos antes de detener el servicio
         await tryStopBackgroundService();
         backTimerDS?.cancel();
-      //  printLog.i('Servicio apagado');
+        //  printLog.i('Servicio apagado');
       }
     }
   }
@@ -1003,7 +1005,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                                 String data = '027000_IOT[15](1)';
                                 bluetoothManager.toolsUuid
                                     .write(data.codeUnits);
-                              //  printLog.i(data);
+                                //  printLog.i(data);
 
                                 HapticFeedback.selectionClick();
                               }
@@ -1021,7 +1023,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
 
                               String data = '027000_IOT[15](0)';
                               bluetoothManager.toolsUuid.write(data.codeUnits);
-                            //  printLog.i(data);
+                              //  printLog.i(data);
                             },
                             child: Container(
                               padding: const EdgeInsets.all(15),
@@ -1207,7 +1209,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                                         });
                                       },
                                       onChangeEnd: (value) {
-                                    //    printLog.i('$value');
+                                        //    printLog.i('$value');
                                         sendTemperature(value.round());
                                       },
                                     ),
@@ -1943,7 +1945,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                       items: const <Widget>[
                         Icon(HugeIcons.strokeRoundedHome11,
                             size: 30, color: color0),
-                            ImageIcon(AssetImage(CaldenIcons.termometro),
+                        ImageIcon(AssetImage(CaldenIcons.termometro),
                             size: 30, color: color0),
                         Icon(HugeIcons.strokeRoundedLocation06,
                             size: 30, color: color0),

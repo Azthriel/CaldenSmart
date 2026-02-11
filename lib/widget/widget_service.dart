@@ -1,14 +1,32 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:caldensmart/master.dart';
 import 'package:caldensmart/logger.dart';
 import 'widget_models.dart';
 
+/// Constantes para widgets iOS
+const String _iOSWidgetName = 'ControlWidget';
+const String _androidWidgetName = 'com.caldensmart.sime.widget.ControlWidgetProvider';
+
 /// Servicio para gestionar widgets de la app
 class WidgetService {
   static const String _widgetConfigPrefix = 'CSWidgetConfig_';
   static const String _widgetListKey = 'CSWidgetList';
+
+  /// Helper para actualizar widgets en ambas plataformas
+  static Future<void> _updatePlatformWidgets() async {
+    if (Platform.isAndroid) {
+      await HomeWidget.updateWidget(
+        qualifiedAndroidName: _androidWidgetName,
+      );
+    } else if (Platform.isIOS) {
+      await HomeWidget.updateWidget(
+        iOSName: _iOSWidgetName,
+      );
+    }
+  }
 
   /// Guardar configuración de un widget
   static Future<void> saveWidgetConfig(WidgetData widgetData) async {
@@ -135,9 +153,7 @@ class WidgetService {
       printLog.i('Datos guardados, actualizando widget nativo ${widgetData.widgetId}');
 
       // Actualizar el widget nativo
-      await HomeWidget.updateWidget(
-        qualifiedAndroidName: 'com.caldensmart.sime.widget.ControlWidgetProvider',
-      );
+      await _updatePlatformWidgets();
 
       printLog.i('Widget ${widgetData.widgetId} actualizado correctamente');
     } catch (e, stackTrace) {

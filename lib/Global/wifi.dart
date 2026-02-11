@@ -20,7 +20,7 @@ class WifiPage extends ConsumerStatefulWidget {
 }
 
 class WifiPageState extends ConsumerState<WifiPage>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   final Map<String, bool> _expandedStates = {};
   final Set<String> _processingGroups = {};
   final Set<String> _processingRiegos = {};
@@ -33,6 +33,8 @@ class WifiPageState extends ConsumerState<WifiPage>
   // Mapa para almacenar permisos de WiFi por dispositivo
   Map<String, bool> _wifiPermissions = {};
 
+    late TabController _tabController;
+
   Timer? _saveOrderTimer;
   List<MapEntry<String, String>> _listaIndividuales = [];
   List<MapEntry<String, String>> _listaEventos = [];
@@ -41,6 +43,14 @@ class WifiPageState extends ConsumerState<WifiPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+        _tabController = TabController(length: 2, vsync: this);
+
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        setState(() {});
+      }
+    });
 
     setState(() {
       _buildDeviceListFromLoadedData();
@@ -76,6 +86,8 @@ class WifiPageState extends ConsumerState<WifiPage>
   @override
   void dispose() {
     _saveOrderTimer?.cancel();
+        _tabController.dispose();
+
     WidgetsBinding.instance.removeObserver(this);
     _riegoCompletedSubscription?.cancel();
     super.dispose();
@@ -1100,93 +1112,206 @@ class WifiPageState extends ConsumerState<WifiPage>
     }
     return false;
   }
-
   //*- Función para habilitar/inhabilitar eventos -*\\
+
+  //*- Funciones y widgets para crear, borrar y añadir equipos a carpetas -*\\
+  // Future<void> _createFolder(
+  //     String name, List<String> selectedDeviceIds) async {
+  //   if (name.trim().isEmpty) return;
+
+  //   setState(() {
+  //     folders[name] = selectedDeviceIds;
+  //   });
+
+  //   await putFolders(currentUserEmail, folders);
+  // }
+
+    //Visual de crear carpeta
+  // void _showCreateFolderDialog() {
+  //   List<String> availableDevices = todosLosDispositivos
+  //       .where((e) => e.key == 'individual')
+  //       .map((e) => e.value)
+  //       .toList();
+
+  //   List<String> selected = [];
+  //   TextEditingController nameCtrl = TextEditingController();
+
+  //   if (availableDevices.isEmpty) {
+  //     showToast('No tienes equipos individuales disponibles para agrupar');
+  //     return;
+  //   }
+
+  //   showDialog(
+  //       context: context,
+  //       builder: (context) {
+  //         return StatefulBuilder(
+  //           builder: (context, setStateDialog) {
+  //             return AlertDialog(
+  //               backgroundColor: color1,
+  //               shape: RoundedRectangleBorder(
+  //                 borderRadius: BorderRadius.circular(20),
+  //                 side: const BorderSide(
+  //                   color: Colors.red,
+  //                   width: 2.0,
+  //                 ),
+  //               ),
+  //               title: Text('Crear carpeta',
+  //                   style: GoogleFonts.poppins(
+  //                       fontWeight: FontWeight.bold, color: color0)),
+  //               content: SizedBox(
+  //                 width: double.maxFinite,
+  //                 child: Column(
+  //                   mainAxisSize: MainAxisSize.min,
+  //                   children: [
+  //                     TextField(
+  //                       controller: nameCtrl,
+  //                       style: GoogleFonts.poppins(color: color0),
+  //                       decoration: InputDecoration(
+  //                         labelText: 'Nombre de la carpeta',
+  //                         labelStyle:
+  //                             TextStyle(color: color0.withValues(alpha: 0.6)),
+  //                         enabledBorder: const UnderlineInputBorder(
+  //                             borderSide: BorderSide(color: color4)),
+  //                         focusedBorder: const UnderlineInputBorder(
+  //                             borderSide: BorderSide(color: color4)),
+  //                       ),
+  //                     ),
+  //                     const SizedBox(height: 20),
+  //                     Text('Selecciona los equipos:',
+  //                         style: GoogleFonts.poppins(
+  //                             color: color0,
+  //                             fontSize: 14,
+  //                             fontWeight: FontWeight.w600)),
+  //                     const SizedBox(height: 10),
+  //                     Flexible(
+  //                       child: Container(
+  //                         decoration: BoxDecoration(
+  //                           border: Border.all(
+  //                               color: color4.withValues(alpha: 0.3)),
+  //                           borderRadius: BorderRadius.circular(10),
+  //                         ),
+  //                         constraints: const BoxConstraints(maxHeight: 250),
+  //                         child: ListView.builder(
+  //                             shrinkWrap: true,
+  //                             itemCount: availableDevices.length,
+  //                             itemBuilder: (context, i) {
+  //                               String dev = availableDevices[i];
+  //                               bool isSelected = selected.contains(dev);
+  //                               return CheckboxListTile(
+  //                                 title: Text(nicknamesMap[dev] ?? dev,
+  //                                     style: GoogleFonts.poppins(
+  //                                         color: color0, fontSize: 14)),
+  //                                 value: isSelected,
+  //                                 activeColor: color4,
+  //                                 checkColor: color1,
+  //                                 side: BorderSide(
+  //                                     color: color0.withValues(alpha: 0.5)),
+  //                                 onChanged: (val) {
+  //                                   setStateDialog(() {
+  //                                     if (val == true) {
+  //                                       selected.add(dev);
+  //                                     } else {
+  //                                       selected.remove(dev);
+  //                                     }
+  //                                   });
+  //                                 },
+  //                               );
+  //                             }),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+  //               actions: [
+  //                 TextButton(
+  //                   child: Text('Cancelar',
+  //                       style: GoogleFonts.poppins(color: color0)),
+  //                   onPressed: () => Navigator.pop(context),
+  //                 ),
+  //                 ElevatedButton(
+  //                   style: ElevatedButton.styleFrom(backgroundColor: color4),
+  //                   child: Text('Crear',
+  //                       style: GoogleFonts.poppins(
+  //                           color: color0, fontWeight: FontWeight.bold)),
+  //                   onPressed: () {
+  //                     if (nameCtrl.text.isEmpty) {
+  //                       showToast('Ingresa un nombre para la carpeta');
+  //                       return;
+  //                     }
+  //                     if (selected.isEmpty) {
+  //                       showToast('Selecciona al menos un equipo');
+  //                       return;
+  //                     }
+  //                     _createFolder(nameCtrl.text, selected);
+  //                     Navigator.pop(context);
+  //                   },
+  //                 )
+  //               ],
+  //             );
+  //           },
+  //         );
+  //       });
+  // }
+
+  //*- Funciones y widgets para crear, borrar y añadir equipos a carpetas -*\\
+
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        extendBody: true,
-        resizeToAvoidBottomInset: false,
-        backgroundColor: color0,
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          title: Text(
-            'Mis equipos registrados',
-            style: GoogleFonts.poppins(color: color0),
-          ),
-          backgroundColor: color1,
-          bottom: TabBar(
-            labelColor: color0,
-            unselectedLabelColor: color0.withValues(alpha: 0.6),
-            indicatorColor: color4,
-            dividerColor: Colors.transparent,
-            labelStyle: GoogleFonts.poppins(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-            unselectedLabelStyle: GoogleFonts.poppins(
-              fontWeight: FontWeight.normal,
-              fontSize: 14,
-            ),
-            tabs: [
-              Tab(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(HugeIcons.strokeRoundedSmartPhone01, size: 18),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        'Individuales (${_listaIndividuales.length})',
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
-                        softWrap: true,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Tab(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(HugeIcons.strokeRoundedUserGroup, size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Eventos (${_listaEventos.length})',
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 2,
-                      softWrap: true,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        body: Container(
-          padding: const EdgeInsets.only(bottom: 100.0),
-          color: color0,
-          child: TabBarView(
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              _buildDeviceList(_listaIndividuales, 'individual'),
-              _buildDeviceList(_listaEventos, 'grupos',
-                  footerWidget: _buildConfigButton()),
-            ],
-          ),
+    return Scaffold(
+      extendBody: false,
+      resizeToAvoidBottomInset: false,
+      backgroundColor: color0,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: Text('Mis equipos registrados',
+            style: GoogleFonts.poppins(color: color0)),
+        backgroundColor: color1,
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: color0,
+          unselectedLabelColor: color0.withValues(alpha: 0.6),
+          indicatorColor: color4,
+          dividerColor: Colors.transparent,
+          labelStyle:
+              GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14),
+          unselectedLabelStyle:
+              GoogleFonts.poppins(fontWeight: FontWeight.normal, fontSize: 14),
+          tabs: [
+            Tab(text: 'Individuales (${_listaIndividuales.length})'),
+            Tab(text: 'Eventos (${_listaEventos.length})'),
+          ],
         ),
       ),
+      body: Container(
+        padding: const EdgeInsets.only(bottom: 100.0),
+        color: color0,
+        child: TabBarView(
+          controller: _tabController,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            _buildDeviceList(_listaIndividuales, 'individual'),
+            _buildDeviceList(_listaEventos, 'grupos',
+                footerWidget: _buildConfigButton()),
+          ],
+        ),
+      ),
+      // floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      // floatingActionButton: _listaIndividuales.isNotEmpty &&
+      //         _tabController.index == 0
+      //     ? Padding(
+      //         padding: const EdgeInsets.only(bottom: 80.0),
+      //         child: FloatingActionButton.extended(
+      //           backgroundColor: color4,
+      //           elevation: 5,
+      //           onPressed: _showCreateFolderDialog,
+      //           icon:
+      //               const Icon(HugeIcons.strokeRoundedFolderAdd, color: color0),
+      //           label: Text('Agrupar',
+      //               style: GoogleFonts.poppins(
+      //                   color: color0, fontWeight: FontWeight.bold)),
+      //         ),
+      //       )
+      //     : null,
     );
   }
 
@@ -6341,8 +6466,21 @@ class WifiPageState extends ConsumerState<WifiPage>
                 String displayName = '';
                 if (equipo.contains('_')) {
                   final parts = equipo.split('_');
-                  displayName = nicknamesMap[equipo.trim()] ??
-                      '${parts[0]} salida ${parts[1]}';
+                  String baseName = parts[0];
+                  String index = parts[1];
+
+                  String pc = DeviceManager.getProductCode(baseName);
+                  String sn = DeviceManager.extractSerialNumber(baseName);
+                  Map<String, dynamic> devData = globalDATA['$pc/$sn'] ?? {};
+
+                  bool hasEntry = devData['hasEntry'] ?? true;
+
+                  if (index == '0' && !hasEntry) {
+                    displayName = nicknamesMap[baseName] ?? baseName;
+                  } else {
+                    displayName = nicknamesMap[equipo.trim()] ??
+                        '${nicknamesMap[baseName] ?? baseName} salida $index';
+                  }
                 } else {
                   displayName = nicknamesMap[equipo.trim()] ?? equipo.trim();
                 }
@@ -6852,8 +6990,22 @@ class WifiPageState extends ConsumerState<WifiPage>
                 String displayName = '';
                 if (equipo.contains('_')) {
                   final parts = equipo.split('_');
-                  displayName = nicknamesMap[equipo.trim()] ??
-                      '${parts[0]} salida ${parts[1]}';
+                  String baseName = parts[0];
+                  String index = parts[1];
+
+                  String pc = DeviceManager.getProductCode(baseName);
+                  String sn = DeviceManager.extractSerialNumber(baseName);
+                  Map<String, dynamic> devData = globalDATA['$pc/$sn'] ?? {};
+
+                  // 2. Verificamos hasEntry
+                  bool hasEntry = devData['hasEntry'] ?? true;
+
+                  if (index == '0' && !hasEntry) {
+                    displayName = nicknamesMap[baseName] ?? baseName;
+                  } else {
+                    displayName = nicknamesMap[equipo.trim()] ??
+                        '${nicknamesMap[baseName] ?? baseName} salida $index';
+                  }
                 } else {
                   displayName = nicknamesMap[equipo.trim()] ?? equipo.trim();
                 }
@@ -7610,8 +7762,21 @@ class WifiPageState extends ConsumerState<WifiPage>
                 String displayName = '';
                 if (equipo.contains('_')) {
                   final parts = equipo.split('_');
-                  displayName = nicknamesMap[equipo.trim()] ??
-                      '${parts[0]} salida ${parts[1]}';
+                  String baseName = parts[0];
+                  String index = parts[1];
+
+                  String pc = DeviceManager.getProductCode(baseName);
+                  String sn = DeviceManager.extractSerialNumber(baseName);
+                  Map<String, dynamic> devData = globalDATA['$pc/$sn'] ?? {};
+
+                  bool hasEntry = devData['hasEntry'] ?? true;
+
+                  if (index == '0' && !hasEntry) {
+                    displayName = nicknamesMap[baseName] ?? baseName;
+                  } else {
+                    displayName = nicknamesMap[equipo.trim()] ??
+                        '${nicknamesMap[baseName] ?? baseName} salida $index';
+                  }
                 } else {
                   displayName = nicknamesMap[equipo.trim()] ?? equipo.trim();
                 }

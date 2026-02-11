@@ -19,9 +19,13 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
   int currentStep = 0;
   TextEditingController title = TextEditingController();
 
+  Map<String, bool> _wifiPermissions = {};
+  bool _isLoadingPermissions = true;
+
   @override
   void initState() {
     super.initState();
+    _loadWifiPermissions();
     _initializeData();
   }
 
@@ -30,9 +34,37 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
     currentStep = 0;
   }
 
+  Future<void> _loadWifiPermissions() async {
+    Map<String, bool> permissions = {};
+
+    for (var device in filterDevices) {
+      String pc = DeviceManager.getProductCode(device);
+      String sn = DeviceManager.extractSerialNumber(device);
+      String key = '$pc/$sn';
+
+      bool hasPermission = await checkAdminWifiPermission(device);
+      permissions[key] = hasPermission;
+    }
+
+    if (mounted) {
+      setState(() {
+        _wifiPermissions = permissions;
+        _isLoadingPermissions = false;
+      });
+    }
+  }
+
   bool _isValidForGroup(String equipo) {
     final displayName = nicknamesMap[equipo] ?? equipo;
     if (displayName.isEmpty) return false;
+
+    final pc = DeviceManager.getProductCode(equipo);
+    final sn = DeviceManager.extractSerialNumber(equipo);
+    final key = '$pc/$sn';
+
+    if (!_isLoadingPermissions && _wifiPermissions.containsKey(key)) {
+      if (_wifiPermissions[key] == false) return false;
+    }
 
     // Excluir detectores, Termometros y patitos
     if (equipo.contains('Detector') ||
@@ -400,6 +432,9 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
   Widget _buildCurrentStepContent() {
     switch (currentStep) {
       case 0:
+        if (_isLoadingPermissions) {
+          return const Center(child: CircularProgressIndicator(color: color4));
+        }
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [

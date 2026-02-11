@@ -23,6 +23,7 @@ import 'package:http/http.dart' as http;
 import 'package:hugeicons/hugeicons.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:msgpack_dart/msgpack_dart.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -154,6 +155,10 @@ List<MapEntry<String, String>> todosLosDispositivos = [];
 late String nickname;
 Map<String, String> nicknamesMap = {};
 //*-Nicknames-*\\
+
+//*-Folders-*\\
+Map<String, List<String>> folders = {};
+//*-Folders-*\\
 
 //*-Notifications-*\\
 Map<String, List<bool>> notificationMap = {};
@@ -2477,6 +2482,56 @@ Future<String> getUserMail() async {
 //*-Background functions-*\\
 Future<void> initializeService() async {
   try {
+    // Solicitar exclusión de optimización de batería para control por distancia
+    if (android) {
+      try {
+        final status = await Permission.ignoreBatteryOptimizations.status;
+        if (!status.isGranted) {
+          final completer = Completer<void>();
+
+          showAlertDialog(
+            navigatorKey.currentContext!,
+            false,
+            const Text(
+              'Optimización de batería',
+              style: TextStyle(color: Color(0xFFFFFFFF)),
+            ),
+            Text(
+              '$appName utiliza un servicio en segundo plano para el control por distancia.\n\nPara que funcione correctamente, es necesario desactivar la optimización de batería.',
+              style: const TextStyle(
+                color: Color(0xFFFFFFFF),
+              ),
+            ),
+            <Widget>[
+              TextButton(
+                style: const ButtonStyle(
+                  foregroundColor: WidgetStatePropertyAll(Color(0xFFFFFFFF)),
+                ),
+                child: const Text('Deshabilitar'),
+                onPressed: () async {
+                  try {
+                    await Permission.ignoreBatteryOptimizations.request();
+                    printLog.i(
+                        'Exclusión de optimización de batería solicitada para control por distancia');
+                    completer.complete();
+                    Navigator.of(navigatorKey.currentContext!).pop();
+                  } catch (e, s) {
+                    printLog.e('Error solicitando exclusión de batería: $e');
+                    printLog.t(s);
+                    completer.completeError(e);
+                  }
+                },
+              ),
+            ],
+          );
+
+          await completer.future;
+        }
+      } catch (e) {
+        printLog.e('Error verificando optimización de batería: $e');
+      }
+    }
+
     final backService = FlutterBackgroundService();
 
     await backService.configure(
@@ -3950,6 +4005,215 @@ String stringifyPrintLog(dynamic message) {
 }
 //*- PrintLogHistorial -*\\
 
+//*- Logger ble -*\\
+/// Variable global para controlar la suscripción al registerLogger
+StreamSubscription<List<int>>? registerLoggerSubscription;
+
+/// Timestamp de cuando se inició la sesión de captura de logs
+int? sessionTimestamp;
+
+/// Función para decodificar MessagePack
+dynamic decodeMessagePack(List<int> data) {
+  try {
+    // Convertimos List<int> a Uint8List para MessagePack
+    final uint8Data = Uint8List.fromList(data);
+    
+    // Usar la librería msgpack_dart para deserializar
+    // En este punto msgpack_dart debe estar instalado
+    // Si no está instalado, ejecutar: flutter pub add msgpack_dart
+    final result = deserialize(uint8Data);
+    return result;
+  } catch (e) {
+    // Si falla MessagePack, intentamos como UTF-8
+    try {
+      String textData = utf8.decode(data, allowMalformed: true);
+      textData = textData.trim();
+
+      if (textData.isNotEmpty && !textData.contains('\uFFFD')) {
+        // Si parece JSON, intentamos parsearlo
+        if (textData.startsWith('{') || textData.startsWith('[')) {
+          try {
+            return jsonDecode(textData);
+          } catch (e) {
+            return textData;
+          }
+        }
+        return textData;
+      }
+    } catch (e) {
+      // Si UTF-8 también falla, continuamos
+    }
+
+    // Como último recurso, mostramos información de debug
+    String hexData =
+        data.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ');
+    String asciiData = data
+        .map((byte) =>
+            (byte >= 32 && byte <= 126) ? String.fromCharCode(byte) : '.')
+        .join('');
+
+    printLog.e('Error decodificando MessagePack: $e');
+    printLog.i('Datos HEX: $hexData');
+    printLog.i('Datos ASCII: $asciiData');
+
+    return {
+      'error': 'Error decodificando datos',
+      'raw_hex': hexData,
+      'raw_ascii': asciiData,
+      'exception': e.toString()
+    };
+  }
+}
+
+/// Función para formatear los datos del log antes de guardar
+Map<String, dynamic> formatLogData(dynamic logData) {
+  try {
+    String content = 'Datos inválidos';
+    String level = 'INFO';
+    int timestampMs = DateTime.now().millisecondsSinceEpoch;
+
+    // Si es un mapa (JSON decodificado), extraemos la información
+    if (logData is Map) {
+      // Extraer el contenido
+      content = logData['content']?.toString() ??
+          logData['message']?.toString() ??
+          logData['msg']?.toString() ??
+          logData['text']?.toString() ??
+          'Sin contenido';
+
+      // Extraer el nivel de log
+      level = logData['log_level']?.toString() ??
+          logData['level']?.toString() ??
+          logData['lvl']?.toString() ??
+          logData['severity']?.toString() ??
+          'INFO';
+
+      // Extraer el timestamp (siempre viene en milisegundos)
+      if (logData['timestamp'] != null) {
+        try {
+          timestampMs = int.parse(logData['timestamp'].toString());
+        } catch (e) {
+          // Si falla el parsing, usar tiempo actual
+          timestampMs = DateTime.now().millisecondsSinceEpoch;
+        }
+      }
+    }
+    // Si es un string directo
+    else if (logData is String) {
+      content = logData;
+    }
+    // Para otros tipos
+    else {
+      content = logData.toString();
+    }
+
+    return {
+      'content': content,
+      'level': level.toUpperCase(),
+      'timestamp': timestampMs,
+    };
+  } catch (e) {
+    return {
+      'content': 'Error formateando: $e',
+      'level': 'ERROR',
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
+  }
+}
+
+/// Se suscribe a la característica de registerLoggerUuid y guarda los datos en DynamoDB
+void getRecordedData(String dvName) async {
+  if (!bluetoothManager.hasLoggerBle) {
+    printLog.i('El dispositivo no tiene servicio de logger BLE');
+    return;
+  }
+
+  try {
+    // Si ya hay una suscripción activa, cancelarla primero
+    await registerLoggerSubscription?.cancel();
+
+    // Asegurarse de que las notificaciones estén habilitadas
+    await bluetoothManager.registerLoggerUuid.setNotifyValue(true);
+
+    // Obtener información del dispositivo
+    final String pc = DeviceManager.getProductCode(dvName);
+    final String sn = DeviceManager.extractSerialNumber(dvName);
+
+    // Crear timestamp de sesión (momento de conexión)
+    sessionTimestamp = DateTime.now().millisecondsSinceEpoch;
+
+    printLog.i('Iniciando suscripción a registerLogger para $pc/$sn con timestamp de sesión: $sessionTimestamp');
+
+    // Suscribirse a la característica
+    registerLoggerSubscription =
+        bluetoothManager.registerLoggerUuid.onValueReceived.listen(
+      (data) async {
+        if (data.isNotEmpty) {
+          try {
+            final decoded = decodeMessagePack(data);
+            List<Map<String, dynamic>> logsToSave = [];
+
+            // Si es una lista de logs, procesamos cada uno
+            if (decoded is List) {
+              for (var logEntry in decoded) {
+                final formattedLog = formatLogData(logEntry);
+                logsToSave.add(formattedLog);
+              }
+            } else {
+              // Si es un solo entry, lo agregamos a la lista
+              final formattedLog = formatLogData(decoded);
+              logsToSave.add(formattedLog);
+            }
+
+            // Guardar todos los logs de esta lectura en DynamoDB
+            if (logsToSave.isNotEmpty) {
+              await saveDeviceRegisterLog(
+                pc,
+                sn,
+                sessionTimestamp!,
+                logsToSave,
+              );
+              printLog.i(
+                  'Se guardaron ${logsToSave.length} registros en DynamoDB para $pc/$sn bajo timestamp $sessionTimestamp');
+            }
+          } catch (e) {
+            printLog.e('Error procesando datos del registerLogger: $e');
+          }
+        }
+      },
+      onError: (error) {
+        printLog.e('Error en suscripción del registro: $error');
+      },
+      cancelOnError: false,
+    );
+
+        // Asegurarse de que las notificaciones estén habilitadas
+    await bluetoothManager.registerLoggerUuid.setNotifyValue(true);
+
+    printLog.i('Suscripción al registerLogger iniciada correctamente');
+  } catch (e) {
+    printLog.e('Error iniciando suscripción del registerLogger: $e');
+  }
+}
+
+/// Detiene la suscripción al registerLogger
+void stopRecordedData() async {
+  try {
+    await registerLoggerSubscription?.cancel();
+    registerLoggerSubscription = null;
+    sessionTimestamp = null;
+
+    if (bluetoothManager.hasLoggerBle) {
+      await bluetoothManager.registerLoggerUuid.setNotifyValue(false);
+    }
+
+    printLog.i('Desuscrito del registerLogger');
+  } catch (e) {
+    printLog.e('Error deteniendo suscripción del registerLogger: $e');
+  }
+}
+//*- Logger ble -*\\
+
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
 //! CLASES !\\
@@ -4045,13 +4309,15 @@ class BluetoothManager {
 
   late BluetoothDevice device;
   late BluetoothCharacteristic infoUuid;
-
+  late BluetoothCharacteristic registerLoggerUuid;
   late BluetoothCharacteristic toolsUuid;
   late BluetoothCharacteristic otaUuid;
   late BluetoothCharacteristic varsUuid;
   late BluetoothCharacteristic workUuid;
   late BluetoothCharacteristic lightUuid;
   late BluetoothCharacteristic ioUuid;
+
+  bool hasLoggerBle = false;
 
   Future<bool> setup(BluetoothDevice connectedDevice) async {
     try {
@@ -4060,6 +4326,17 @@ class BluetoothManager {
       List<BluetoothService> services =
           await device.discoverServices(timeout: 3);
       // printLog.i('Los servicios: $services');
+
+      try {
+        BluetoothService loggerService = services.firstWhere(
+            (s) => s.uuid == Guid('ad04c0c7-6a98-4ab7-a29c-4c59ef1d0077'));
+        registerLoggerUuid = loggerService.characteristics.firstWhere(
+            (c) => c.uuid == Guid('b6abd12d-9b1c-452e-875d-28f99421e17a'));
+        hasLoggerBle = true;
+      } catch (e) {
+        printLog.i("Error al configurar los loggers: $e");
+        hasLoggerBle = false;
+      }
 
       BluetoothService infoService = services.firstWhere(
           (s) => s.uuid == Guid('6a3253b4-48bc-4e97-bacd-325a1d142038'));

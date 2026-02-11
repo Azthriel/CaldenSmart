@@ -53,6 +53,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
     });
     subscribeToWifiStatus();
     subToVars();
+    if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
   }
 
   @override
@@ -182,7 +183,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
   }
 
   void subToVars() async {
-   // printLog.i('Me subscribo a vars');
+    // printLog.i('Me subscribo a vars');
     await bluetoothManager.varsUuid.setNotifyValue(true);
 
     final varsSub =
@@ -404,7 +405,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                         setState(() {
                           workingPosition = actualPosition;
                         });
-                       // printLog.i(data);
+                        // printLog.i(data);
                       },
                       child: Material(
                         color: Colors.transparent,
@@ -880,7 +881,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
             },
           ),
           actions: [
-                   globalDATA['$pc/$sn']?['cstate'] ?? false
+            globalDATA['$pc/$sn']?['cstate'] ?? false
                 ? const ImageIcon(
                     AssetImage(CaldenIcons.cloud),
                     size: 35,

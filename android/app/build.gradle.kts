@@ -124,6 +124,8 @@ dependencies {
     implementation("com.google.firebase:firebase-messaging")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:1.2.2")
     implementation("eu.simonbinder:sqlite3-native-library:3.50.1")
+    // WorkManager para actualizaciones periódicas de widgets
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
     // implementation("com.google.android.gms:play-services-auth:21.3.0")
 }
 

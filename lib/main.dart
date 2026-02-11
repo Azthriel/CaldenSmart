@@ -90,6 +90,11 @@ Future<void> main() async {
 
   HomeWidget.registerInteractivityCallback(backgroundCallback);
 
+  // Configurar App Group para iOS widgets
+  if (Platform.isIOS) {
+    HomeWidget.setAppGroupId(iOSAppGroupId);
+  }
+
   FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
 
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;

@@ -1,16 +1,37 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'dart:ui';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:mqtt_client/mqtt_client.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:caldensmart/aws/mqtt/mqtt.dart';
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
 import 'package:caldensmart/Global/stored_data.dart';
 import 'package:caldensmart/master.dart';
 import 'package:caldensmart/logger.dart';
+
+/// Constantes para widgets iOS
+const String iOSWidgetName = 'ControlWidget';
+const String iOSAppGroupId = 'group.com.caldensmart.sime';
+const String androidWidgetName =
+    'com.caldensmart.sime.widget.ControlWidgetProvider';
+
+/// Helper para actualizar widgets en ambas plataformas
+Future<void> updateAllWidgets() async {
+  if (Platform.isAndroid) {
+    await HomeWidget.updateWidget(
+      qualifiedAndroidName: androidWidgetName,
+    );
+  } else if (Platform.isIOS) {
+    await HomeWidget.updateWidget(
+      iOSName: iOSWidgetName,
+    );
+  }
+}
 
 /// Stream subscription para mensajes MQTT de widgets
 StreamSubscription? _widgetMqttSubscription;
@@ -45,9 +66,7 @@ Future<void> setWidgetServiceReady(bool ready) async {
 
     // Actualizar todos los widgets para reflejar el nuevo estado
     await HomeWidget.saveWidgetData('widget_service_ready', ready);
-    await HomeWidget.updateWidget(
-      qualifiedAndroidName: 'com.caldensmart.sime.widget.ControlWidgetProvider',
-    );
+    await updateAllWidgets();
 
     printLog.i('Widget service ready: $ready');
   } catch (e) {
@@ -146,26 +165,18 @@ Future<void> _handleWidgetToggle(int widgetId) async {
       printLog.i('Widget $widgetId: Servicio no está listo, ignorando toggle');
       // Mostrar estado de inicializando al usuario
       await HomeWidget.saveWidgetData('widget_initializing_$widgetId', true);
-      await HomeWidget.updateWidget(
-        qualifiedAndroidName:
-            'com.caldensmart.sime.widget.ControlWidgetProvider',
-      );
+      await updateAllWidgets();
 
       // Esperar un momento y limpiar el estado
       await Future.delayed(const Duration(seconds: 2));
       await HomeWidget.saveWidgetData('widget_initializing_$widgetId', false);
-      await HomeWidget.updateWidget(
-        qualifiedAndroidName:
-            'com.caldensmart.sime.widget.ControlWidgetProvider',
-      );
+      await updateAllWidgets();
       return;
     }
 
     // Mostrar loading inmediatamente
     await HomeWidget.saveWidgetData('widget_loading_$widgetId', true);
-    await HomeWidget.updateWidget(
-      qualifiedAndroidName: 'com.caldensmart.sime.widget.ControlWidgetProvider',
-    );
+    await updateAllWidgets();
 
     // Leer datos del widget desde SharedPreferences
     final pc = await HomeWidget.getWidgetData<String>('widget_pc_$widgetId');
@@ -274,9 +285,7 @@ Future<void> _handleWidgetToggle(int widgetId) async {
 /// Oculta el indicador de loading del widget
 Future<void> _hideWidgetLoading(int widgetId) async {
   await HomeWidget.saveWidgetData('widget_loading_$widgetId', false);
-  await HomeWidget.updateWidget(
-    qualifiedAndroidName: 'com.caldensmart.sime.widget.ControlWidgetProvider',
-  );
+  await updateAllWidgets();
 }
 
 /// Actualiza todos los widgets que coincidan con el dispositivo dado
@@ -323,9 +332,7 @@ Future<void> updateWidgetsForDevice(
     }
 
     // Actualizar todos los widgets
-    await HomeWidget.updateWidget(
-      qualifiedAndroidName: 'com.caldensmart.sime.widget.ControlWidgetProvider',
-    );
+    await updateAllWidgets();
   } catch (e) {
     printLog.e('Error actualizando widgets: $e');
   }
@@ -530,9 +537,7 @@ Future<void> syncWidgetsWithDatabase() async {
     }
 
     // Actualizar todos los widgets nativos
-    await HomeWidget.updateWidget(
-      qualifiedAndroidName: 'com.caldensmart.sime.widget.ControlWidgetProvider',
-    );
+    await updateAllWidgets();
 
     printLog.i('Sincronización de widgets completada');
   } catch (e) {
@@ -544,6 +549,55 @@ Future<void> syncWidgetsWithDatabase() async {
 /// Se llama cuando se crea un widget para asegurar que el servicio de MQTT esté activo
 Future<void> initializeWidgetService() async {
   try {
+    // Solicitar exclusión de optimización de batería
+    if (android) {
+      try {
+        final status = await Permission.ignoreBatteryOptimizations.status;
+        if (!status.isGranted) {
+          final completer = Completer<void>();
+
+          showAlertDialog(
+            navigatorKey.currentContext!,
+            false,
+            const Text(
+              'Optimización de batería',
+              style: TextStyle(color: Color(0xFFFFFFFF)),
+            ),
+            Text(
+              '$appName utiliza un servicio en segundo plano para mantener los widgets actualizados.\n\nPara que funcionen correctamente, es necesario desactivar la optimización de batería.',
+              style: const TextStyle(
+                color: Color(0xFFFFFFFF),
+              ),
+            ),
+            <Widget>[
+              TextButton(
+                style: const ButtonStyle(
+                  foregroundColor: WidgetStatePropertyAll(Color(0xFFFFFFFF)),
+                ),
+                child: const Text('Deshabilitar'),
+                onPressed: () async {
+                  try {
+                    await Permission.ignoreBatteryOptimizations.request();
+                    printLog.i('Exclusión de optimización de batería solicitada para widgets');
+                    completer.complete();
+                    Navigator.of(navigatorKey.currentContext!).pop();
+                  } catch (e, s) {
+                    printLog.e('Error solicitando exclusión de batería: $e');
+                    printLog.t(s);
+                    completer.completeError(e);
+                  }
+                },
+              ),
+            ],
+          );
+
+          await completer.future;
+        }
+      } catch (e) {
+        printLog.e('Error verificando optimización de batería: $e');
+      }
+    }
+
     final backService = FlutterBackgroundService();
 
     // Marcar que el servicio debe iniciarse por widgets
@@ -657,17 +711,34 @@ void onWidgetServiceStart(ServiceInstance service) async {
   });
 
   // Mantener el servicio activo con un timer periódico para reconexión MQTT si es necesario
+  // Heartbeat cada 5 minutos para mejor disponibilidad del servicio
   Timer.periodic(const Duration(minutes: 5), (timer) async {
-    if (mqttAWSFlutterClient == null ||
-        mqttAWSFlutterClient!.connectionStatus?.state !=
-            MqttConnectionState.connected) {
-      printLog.i('Widget service: Reconectando a MQTT...');
-      await setWidgetServiceReady(false);
-      final reconnected = await setupMqtt();
-      if (reconnected) {
-        await subscribeToWidgetTopics();
-        await setWidgetServiceReady(true);
+    try {
+      if (mqttAWSFlutterClient == null ||
+          mqttAWSFlutterClient!.connectionStatus?.state !=
+              MqttConnectionState.connected) {
+        printLog.i('Widget service: MQTT desconectado, reconectando...');
+        await setWidgetServiceReady(false);
+        
+        final reconnected = await setupMqtt();
+        if (reconnected) {
+          await subscribeToWidgetTopics();
+          await syncWidgetsWithDatabase();
+          await setWidgetServiceReady(true);
+          printLog.i('Widget service: Reconexión exitosa');
+        } else {
+          printLog.e('Widget service: Falló reconexión, reintentando en 30s');
+          await Future.delayed(const Duration(seconds: 30));
+          final retry = await setupMqtt();
+          if (retry) {
+            await subscribeToWidgetTopics();
+            await syncWidgetsWithDatabase();
+            await setWidgetServiceReady(true);
+          }
+        }
       }
+    } catch (e) {
+      printLog.e('Error en heartbeat del servicio: $e');
     }
   });
 }
@@ -869,9 +940,7 @@ Future<void> updateWidgetsForDeviceDisplay(String pc, String sn, bool isOnline,
     }
 
     // Actualizar todos los widgets
-    await HomeWidget.updateWidget(
-      qualifiedAndroidName: 'com.caldensmart.sime.widget.ControlWidgetProvider',
-    );
+    await updateAllWidgets();
   } catch (e) {
     printLog.e('Error actualizando widgets de visualización: $e');
   }

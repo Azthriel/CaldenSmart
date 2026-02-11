@@ -2,13 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>aps-environment</key>
-	<string>development</string>
-	<key>keychain-access-groups</key>
-	<array>
-		<string>$(AppIdentifierPrefix)com.caldensmart.sime</string>
-	</array>
-	<!-- App Group para compartir datos con el widget de iOS -->
+	<!-- App Group para compartir datos con la app principal -->
+	<!-- IMPORTANTE: Este App Group debe coincidir con el de la app principal (Runner.entitlements) -->
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>group.com.caldensmart.sime</string>
