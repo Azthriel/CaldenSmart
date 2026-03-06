@@ -4017,7 +4017,7 @@ dynamic decodeMessagePack(List<int> data) {
   try {
     // Convertimos List<int> a Uint8List para MessagePack
     final uint8Data = Uint8List.fromList(data);
-    
+
     // Usar la librería msgpack_dart para deserializar
     // En este punto msgpack_dart debe estar instalado
     // Si no está instalado, ejecutar: flutter pub add msgpack_dart
@@ -4142,7 +4142,8 @@ void getRecordedData(String dvName) async {
     // Crear timestamp de sesión (momento de conexión)
     sessionTimestamp = DateTime.now().millisecondsSinceEpoch;
 
-    printLog.i('Iniciando suscripción a registerLogger para $pc/$sn con timestamp de sesión: $sessionTimestamp');
+    printLog.i(
+        'Iniciando suscripción a registerLogger para $pc/$sn con timestamp de sesión: $sessionTimestamp');
 
     // Suscribirse a la característica
     registerLoggerSubscription =
@@ -4187,7 +4188,7 @@ void getRecordedData(String dvName) async {
       cancelOnError: false,
     );
 
-        // Asegurarse de que las notificaciones estén habilitadas
+    // Asegurarse de que las notificaciones estén habilitadas
     await bluetoothManager.registerLoggerUuid.setNotifyValue(true);
 
     printLog.i('Suscripción al registerLogger iniciada correctamente');
@@ -6091,7 +6092,7 @@ class DeviceInUseScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Actualmente hay un usuario\nusando el equipo...',
+                    'Actualmente hay un usuario usando el equipo por bluetooth...',
                     style: GoogleFonts.poppins(
                       fontSize: 24,
                       color: color1,
@@ -6118,6 +6119,161 @@ class DeviceInUseScreen extends StatelessWidget {
                     'assets/branch/dragon.gif',
                     width: 150,
                     height: 150,
+                  ),
+                  const SizedBox(height: 30),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20.0),
+                              side: const BorderSide(color: color4, width: 2.0),
+                            ),
+                            backgroundColor: color1,
+                            title: Row(
+                              children: [
+                                const Icon(
+                                  HugeIcons.strokeRoundedInformationCircle,
+                                  color: color0,
+                                  size: 30,
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  '¿Qué hacer?',
+                                  style: GoogleFonts.poppins(
+                                    color: color0,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            content: SingleChildScrollView(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Tienes las siguientes opciones:',
+                                    style: GoogleFonts.poppins(
+                                      color: color0,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Icon(
+                                        HugeIcons.strokeRoundedPowerSocket01,
+                                        color: color3,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Opción 1: Reiniciar el equipo',
+                                              style: GoogleFonts.poppins(
+                                                color: color0,
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 5),
+                                            Text(
+                                              'Desconecta el equipo de la energía, espera unos segundos y vuelve a conectarlo. Esto reiniciará la conexión Bluetooth.',
+                                              style: GoogleFonts.poppins(
+                                                color: color0,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Icon(
+                                        HugeIcons.strokeRoundedSmartPhone01,
+                                        color: color3,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Opción 2: Buscar el teléfono conectado',
+                                              style: GoogleFonts.poppins(
+                                                color: color0,
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 5),
+                                            Text(
+                                              'Busca en las cercanías el teléfono que está actualmente conectado al equipo y pídele al usuario que se desconecte.',
+                                              style: GoogleFonts.poppins(
+                                                color: color0,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text(
+                                  'Entendido',
+                                  style: GoogleFonts.poppins(
+                                    color: color0,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                    icon: const Icon(
+                      HugeIcons.strokeRoundedInformationCircle,
+                      color: color0,
+                    ),
+                    label: Text(
+                      '¿Qué hacer?',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: color0,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color3,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 15,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      elevation: 5,
+                    ),
                   ),
                 ],
               ),

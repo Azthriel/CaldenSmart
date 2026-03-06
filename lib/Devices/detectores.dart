@@ -1396,7 +1396,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Icon(
-                          HugeIcons.strokeRoundedBulb,
+                          HugeIcons.strokeRoundedIdea01,
                           size: iconSize,
                           color: Colors.yellow
                               .withValues(alpha: (brightnessLevel + 20) / 120),
@@ -1657,7 +1657,7 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
                             size: 30, color: color0),
                         Icon(HugeIcons.strokeRoundedChart01,
                             size: 30, color: color0),
-                        Icon(HugeIcons.strokeRoundedBulb,
+                        Icon(HugeIcons.strokeRoundedIdea01,
                             size: 30, color: color0),
                         Icon(HugeIcons.strokeRoundedSettings02,
                             size: 30, color: color0),

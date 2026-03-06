@@ -1058,11 +1058,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                         children: [
                                           Center(
                                             child: Icon(
-                                              alertIO[index]
-                                                  ? HugeIcons
-                                                      .strokeRoundedAlertCircle
-                                                  : HugeIcons
-                                                      .strokeRoundedAlertSquare,
+                                              HugeIcons.strokeRoundedAlertSquare,
                                               color: alertIO[index]
                                                   ? Colors.red
                                                   : Colors.grey,

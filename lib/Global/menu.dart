@@ -111,6 +111,7 @@ class MenuPageState extends State<MenuPage> {
 
       if (currentUserEmail.isNotEmpty) {
         await getDevices(currentUserEmail);
+        folders = await getFolders(currentUserEmail);
         eventosCreados = await getEventos(currentUserEmail);
         nicknamesMap = await getNicknames(currentUserEmail);
         savedOrder = await loadWifiOrderDevices(currentUserEmail);
@@ -118,6 +119,7 @@ class MenuPageState extends State<MenuPage> {
         printLog.i(
             'Datos iniciales cargados - Dispositivos: ${previusConnections.length}');
         printLog.i('Eventos cargados: ${eventosCreados.length}');
+        printLog.i('Carpetas cargadas: ${folders.length}');
       }
 
       setState(() {

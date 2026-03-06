@@ -711,9 +711,8 @@ Future<void> putFolders(
     printLog.e('Error al guardar en Dynamo: $e');
   }
 }
+
 ///*-Guardar y obtener folders de equipos -*\\\
-
-
 
 ///*-Guardar y obtener Nicknames de los equipo-*\\\
 Future<void> putNicknames(String email, Map<String, String> data) async {
@@ -1775,7 +1774,8 @@ void putEventoControlDeRiego(String email, String nombreEvento,
             return AttributeValue(m: {
               'device': AttributeValue(s: paso['device']),
               'duration': AttributeValue(n: paso['duration'].toString()),
-              'duration_seg': AttributeValue(n: paso['duration_seg'].toString()),
+              'duration_seg':
+                  AttributeValue(n: paso['duration_seg'].toString()),
             });
           }).toList(),
         ),
