@@ -464,7 +464,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
     powerIconOff = (pc == '022000_IOT'
         ? HugeIcons.strokeRoundedFlashOff
         : HugeIcons.strokeRoundedFire);
-    hasSpark = globalDATA['$pc/$sn']?['hasSpark'] ?? false;
+    hasSpark = globalDATA['$pc/$sn']?['hasSpark'] ?? true;
 
     _sparkAnimationController = AnimationController(
       duration: const Duration(milliseconds: 150),
@@ -948,10 +948,9 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                     child: turnOn
                         ? AnimatedIconWidget(
                             isHeating: trueStatus,
-                            icon: HugeIcons.strokeRoundedFlash,
+                            icon: powerIconOn,
                           )
-                        : const Icon(HugeIcons.strokeRoundedFlashOff,
-                            size: 80, color: Colors.white),
+                        : Icon(powerIconOff, size: 80, color: Colors.white),
                   ),
                 ),
                 const SizedBox(height: 20),

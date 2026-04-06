@@ -1783,7 +1783,7 @@ dynamic wifiPower(int level) {
   } else if (level >= -80) {
     return CaldenIcons.wifi02;
   } else {
-    return HugeIcons.strokeRoundedWifiDisconnected04;
+    return CaldenIcons.wifi03;
   }
 }
 
@@ -3177,7 +3177,7 @@ void showAlertDialog(
   Widget? title,
   Widget? content,
   List<Widget>? actions, {
-  bool avoidKeyboard = false,
+  bool avoidKeyboard = true,
 }) {
   showGeneralDialog(
     context: context,
@@ -6164,7 +6164,8 @@ class DeviceInUseScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 20),
                                   Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Icon(
                                         HugeIcons.strokeRoundedPowerSocket01,
@@ -6174,7 +6175,8 @@ class DeviceInUseScreen extends StatelessWidget {
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               'Opción 1: Reiniciar el equipo',
@@ -6199,7 +6201,8 @@ class DeviceInUseScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 20),
                                   Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Icon(
                                         HugeIcons.strokeRoundedSmartPhone01,
@@ -6209,7 +6212,8 @@ class DeviceInUseScreen extends StatelessWidget {
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               'Opción 2: Buscar el teléfono conectado',
@@ -8014,3 +8018,301 @@ class CaldenIcons {
   static const String termometroMenos = 'assets/icons/termometroMenos.png';
 }
 //*- iconos -*\\
+
+//*- Pantalla configuración de pines -*\\
+class PinConfigurationScreen extends StatefulWidget {
+  final String deviceName;
+
+  const PinConfigurationScreen({super.key, required this.deviceName});
+
+  @override
+  State<PinConfigurationScreen> createState() => _PinConfigurationScreenState();
+}
+
+class _PinConfigurationScreenState extends State<PinConfigurationScreen> {
+  late String pc;
+  late String sn;
+  late String hardwareVersion;
+
+  List<Map<String, dynamic>> pins = [];
+
+  bool isSpecialRelay = false;
+  bool localIsNC = false;
+
+  @override
+  void initState() {
+    super.initState();
+    pc = DeviceManager.getProductCode(widget.deviceName);
+    sn = DeviceManager.extractSerialNumber(widget.deviceName);
+    hardwareVersion = globalDATA['$pc/$sn']?['HardwareVersion'] ?? '240423A';
+
+    _loadDeviceData();
+  }
+
+  void _loadDeviceData() {
+    if (pc == '023430_IOT') {
+      isSpecialRelay = true;
+      localIsNC = isNC;
+    } else {
+      Map<String, dynamic> deviceData = globalDATA['$pc/$sn'] ?? {};
+      List<int> indices = [];
+
+      for (String key in deviceData.keys) {
+        if (key.startsWith('io') && key.length > 2) {
+          int? index = int.tryParse(key.substring(2));
+          if (index != null) indices.add(index);
+        }
+      }
+      indices.sort();
+
+      for (int i in indices) {
+        try {
+          Map<String, dynamic> ioData = jsonDecode(deviceData['io$i']);
+          pins.add({
+            'index': i,
+            'tipo': ioData['pinType'] == '0' ? 'Salida' : 'Entrada',
+            'common': ioData['r_state'] ?? '0',
+          });
+        } catch (e) {
+          printLog.e('Error al parsear pin $i: $e');
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: color0,
+      appBar: AppBar(
+        backgroundColor: color1,
+        title: Text(
+          'Configuración de Pines',
+          style:
+              GoogleFonts.poppins(color: color0, fontWeight: FontWeight.bold),
+        ),
+        leading: IconButton(
+          icon: const Icon(HugeIcons.strokeRoundedArrowLeft02, color: color0),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (isSpecialRelay) {
+      return _buildRelayCard();
+    }
+
+    if (pins.isEmpty) {
+      return Center(
+        child: Text(
+          'No se encontraron configuraciones para este equipo.',
+          style: GoogleFonts.poppins(color: color1, fontSize: 16),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: pins.length,
+      itemBuilder: (context, index) {
+        final pin = pins[index];
+        return _buildPinCard(pin);
+      },
+    );
+  }
+
+  Widget _buildRelayCard() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Card(
+        color: color1,
+        elevation: 6,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'Relé Principal',
+                style: GoogleFonts.poppins(
+                    color: color0, fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Puedes cambiar entre Normal Abierto (NA) y Normal Cerrado (NC):',
+                style: GoogleFonts.poppins(fontSize: 14, color: color0),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              _buildNANCSelector(
+                isNCState: localIsNC,
+                onTapNA: () {
+                  setState(() => localIsNC = false);
+                  saveNC(pc, sn, false);
+                },
+                onTapNC: () {
+                  setState(() => localIsNC = true);
+                  saveNC(pc, sn, true);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPinCard(Map<String, dynamic> pin) {
+    final int i = pin['index'];
+    final String tipo = pin['tipo'];
+    final String common = pin['common'];
+    final String pinName =
+        nicknamesMap['${widget.deviceName}_$i'] ?? '$tipo $i';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Card(
+        color: color1,
+        elevation: 6,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                pinName,
+                style: GoogleFonts.poppins(
+                    color: color0, fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 15),
+              if (tipo == 'Entrada' ||
+                  Versioner.isPosterior(hardwareVersion, '240423A')) ...[
+                Text(
+                  'Configuración Normal Abierto (NA) / Normal Cerrado (NC):',
+                  style: GoogleFonts.poppins(fontSize: 14, color: color0),
+                ),
+                const SizedBox(height: 15),
+                _buildNANCSelector(
+                  isNCState: common == '1',
+                  onTapNA: () => _sendBluetoothCommand(pin, i, '0'),
+                  onTapNC: () => _sendBluetoothCommand(pin, i, '1'),
+                ),
+              ],
+              if (Versioner.isPrevious(hardwareVersion, '240423A')) ...[
+                if (tipo == 'Entrada') ...[
+                  const Divider(color: color0, height: 30),
+                ],
+                Center(
+                  child: Text(
+                    tipo == 'Entrada'
+                        ? '¿Cambiar de entrada a salida?'
+                        : '¿Cambiar de salida a entrada?',
+                    style: GoogleFonts.poppins(color: color0, fontSize: 14),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Center(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: color1,
+                      backgroundColor: color0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () {
+                      String newTypeNum = tipo == 'Entrada' ? '0' : '1';
+                      String fun = '$pc[13]($i#$newTypeNum)';
+                      bluetoothManager.toolsUuid.write(fun.codeUnits);
+
+                      setState(() {
+                        pin['tipo'] = tipo == 'Entrada' ? 'Salida' : 'Entrada';
+                      });
+
+                      showToast('Configuración actualizada correctamente');
+                    },
+                    child: const Text('CAMBIAR',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNANCSelector(
+      {required bool isNCState,
+      required VoidCallback onTapNA,
+      required VoidCallback onTapNC}) {
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30.0),
+        border: Border.all(color: color0, width: 2),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: onTapNA,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: !isNCState ? color0 : Colors.transparent,
+                  borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(28),
+                      bottomLeft: Radius.circular(28)),
+                ),
+                child: Center(
+                  child: Text(
+                    'Normal Abierto',
+                    style: GoogleFonts.poppins(
+                        fontSize: 14, color: !isNCState ? color1 : color0),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Container(width: 2, color: color0),
+          Expanded(
+            child: GestureDetector(
+              onTap: onTapNC,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isNCState ? color0 : Colors.transparent,
+                  borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(28),
+                      bottomRight: Radius.circular(28)),
+                ),
+                child: Center(
+                  child: Text(
+                    'Normal Cerrado',
+                    style: GoogleFonts.poppins(
+                        fontSize: 14, color: isNCState ? color1 : color0),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _sendBluetoothCommand(
+      Map<String, dynamic> pin, int index, String stateValue) {
+    setState(() {
+      pin['common'] = stateValue;
+    });
+    String data = '$pc[14]($index#$stateValue)';
+    bluetoothManager.toolsUuid.write(data.codeUnits);
+  }
+}
+//*- Pantalla configuración de pines -*\\

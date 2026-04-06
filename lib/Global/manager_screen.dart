@@ -187,7 +187,8 @@ class ManagerScreenState extends State<ManagerScreen> {
                       const SizedBox(height: 20),
                       Text(
                         'Configurar franja horaria permitida:',
-                        style: GoogleFonts.poppins(color: color0, fontWeight: FontWeight.bold),
+                        style: GoogleFonts.poppins(
+                            color: color0, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 20),
                       // Selección de horarios con diseño mejorado
@@ -980,6 +981,109 @@ class ManagerScreenState extends State<ManagerScreen> {
       ),
     );
   }
+
+    Future<void> passwordDialog(BuildContext context) async {
+    final ValueNotifier<String> passNotifier = ValueNotifier<String>('');
+    bool localShowPassword = false;
+
+    return showAlertDialog(
+      context,
+      true,
+      Text(
+        'Seguridad',
+        style: GoogleFonts.poppins(
+            color: color0, fontSize: 18, fontWeight: FontWeight.bold),
+        textAlign: TextAlign.center,
+      ),
+      StatefulBuilder(
+        builder: (BuildContext context, StateSetter setModalState) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Ingresa la contraseña que se encuentra en el manual para acceder a la configuración de pines.',
+                style: GoogleFonts.poppins(color: color0, fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                style: const TextStyle(color: color0, fontSize: 16),
+                cursorColor: color0,
+                obscureText: !localShowPassword,
+                onChanged: (value) {
+                  passNotifier.value = value;
+                },
+                decoration: InputDecoration(
+                  prefixIcon: Icon(
+                    HugeIcons.strokeRoundedKey01,
+                    color: color0.withValues(alpha: 0.7),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      localShowPassword
+                          ? HugeIcons.strokeRoundedView
+                          : HugeIcons.strokeRoundedViewOff,
+                      color: color0.withValues(alpha: 0.7),
+                    ),
+                    onPressed: () {
+                      setModalState(() {
+                        localShowPassword = !localShowPassword;
+                      });
+                    },
+                  ),
+                  hintText: "Contraseña",
+                  hintStyle: TextStyle(
+                    color: color0.withValues(alpha: 0.6),
+                  ),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide:
+                        BorderSide(color: color0.withValues(alpha: 0.5)),
+                  ),
+                  focusedBorder: const UnderlineInputBorder(
+                    borderSide: BorderSide(color: color0),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+      <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('Cancelar', style: GoogleFonts.poppins(color: color0)),
+        ),
+        ValueListenableBuilder<String>(
+          valueListenable: passNotifier,
+          builder: (context, passValue, child) {
+            bool isCorrect = passValue == '53494d45';
+            return ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isCorrect ? color0 : Colors.grey,
+                foregroundColor: color1,
+              ),
+              onPressed: isCorrect
+                  ? () {
+                      Navigator.of(context).pop();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PinConfigurationScreen(
+                            deviceName: widget.deviceName,
+                          ),
+                        ),
+                      );
+                    }
+                  : null,
+              child: Text('Aceptar',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -2511,9 +2615,12 @@ class ManagerScreenState extends State<ManagerScreen> {
                               Versioner.isPosterior(
                                   hardwareVersion, '241220A'))) {
                         if (!quickAccesActivated) {
-                          int? selectedPin =
-                              await showPinSelectionDialog(context);
-
+                          int? selectedPin;
+                          if (pc == '027313_IOT') {
+                            selectedPin = 0;
+                          } else {
+                            selectedPin = await showPinSelectionDialog(context);
+                          }
                           if (selectedPin != null) {
                             pinQuickAccess.addAll(
                                 {widget.deviceName: selectedPin.toString()});
@@ -3121,6 +3228,40 @@ class ManagerScreenState extends State<ManagerScreen> {
                 ),
                 const SizedBox(height: 10),
               ],
+
+               if ((pc == '027313_IOT' ||
+                      pc == '020010_IOT' ||
+                      pc == '020020_IOT') &&
+                  globalDATA['$pc/$sn']?['riegoActive'] == false)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      passwordDialog(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: color0,
+                      backgroundColor: color1,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 11,
+                        horizontal: 20,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    child: Text(
+                      'Cambio modo de pines',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+
+              const SizedBox(height: 10),
 
               Container(
                 width: MediaQuery.of(context).size.width * 1.5,

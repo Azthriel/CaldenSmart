@@ -43,6 +43,10 @@ class ScanPageState extends State<ScanPage>
 
   StreamSubscription<BluetoothAdapterState>? _adapterStateSubscription;
 
+  StreamSubscription<bool>? _isScanningSubscription;
+  bool _isScanning = false;
+  bool _hasFinishedFirstScan = false;
+
   @override
   void initState() {
     super.initState();
@@ -77,12 +81,23 @@ class ScanPageState extends State<ScanPage>
         }
       }
     });
+    _isScanningSubscription = FlutterBluePlus.isScanning.listen((scanning) {
+      if (mounted) {
+        setState(() {
+          if (_isScanning && !scanning) {
+            _hasFinishedFirstScan = true;
+          }
+          _isScanning = scanning;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _adapterStateSubscription?.cancel();
     _updateTimer?.cancel();
+    _isScanningSubscription?.cancel();
     _cleanupTimer?.cancel();
     _animationController.dispose();
     searchController.dispose();
@@ -590,109 +605,149 @@ class ScanPageState extends State<ScanPage>
           child: filteredDevices.isEmpty
               ? ListView(
                   children: [
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              HugeIcons.strokeRoundedSearch01,
-                              size: 80,
-                              color: color1,
-                            ),
-                            const SizedBox(height: 20),
-                            const Text(
-                              'No se encontraron equipos nuevos',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: color1,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Puedes usar el menú de WiFi para controlar tus equipos desde cualquier distancia',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: color1,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: color1.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                    color: color1.withValues(alpha: 0.3)),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    HugeIcons.strokeRoundedDrag01,
-                                    size: 24,
-                                    color: color1,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Flexible(
-                                    child: Text(
-                                      'Desliza hacia abajo para escanear de nuevo',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: color1,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                      textAlign: TextAlign.center,
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.7,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: (_isScanning || !_hasFinishedFirstScan)
+                              ? Column(
+                                  // Quitamos el "const" de aquí
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    // Agregamos tu GIF de dragón
+                                    Image.asset(
+                                      'assets/branch/dragon.gif',
+                                      width: 150,
+                                      height: 150,
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: color1.withValues(alpha: 0.05),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                    color: color1.withValues(alpha: 0.2)),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    HugeIcons.strokeRoundedWifi02,
-                                    size: 24,
-                                    color: color1,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Icon(
-                                    HugeIcons.strokeRoundedSwipeRight01,
-                                    size: 20,
-                                    color: color1,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Flexible(
-                                    child: Text(
-                                      'Desliza hacia la derecha para ir al menú WiFi',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: color1,
-                                        fontWeight: FontWeight.w400,
-                                      ),
+                                    const SizedBox(
+                                        height:
+                                            28), // Volvemos a poner const en los hijos fijos
+                                    const Text(
+                                      'Buscando equipos...',
                                       textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: color1,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                                    const SizedBox(height: 12),
+                                    const Text(
+                                      'Asegurate de que el equipo esté encendido y cerca del teléfono',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: color1,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Column(
+                                  // El estado de "No se encontraron equipos"
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      HugeIcons.strokeRoundedSearch01,
+                                      size: 80,
+                                      color: color1,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    const Text(
+                                      'No se encontraron equipos nuevos',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: color1,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      'Puedes usar el menú de WiFi para controlar tus equipos desde cualquier distancia',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: color1,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 24),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: color1.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                            color:
+                                                color1.withValues(alpha: 0.3)),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            HugeIcons.strokeRoundedDrag01,
+                                            size: 24,
+                                            color: color1,
+                                          ),
+                                          SizedBox(width: 8),
+                                          Flexible(
+                                            child: Text(
+                                              'Desliza hacia abajo para escanear de nuevo',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: color1,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: color1.withValues(alpha: 0.05),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                            color:
+                                                color1.withValues(alpha: 0.2)),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            HugeIcons.strokeRoundedWifi02,
+                                            size: 24,
+                                            color: color1,
+                                          ),
+                                          SizedBox(width: 8),
+                                          Icon(
+                                            HugeIcons.strokeRoundedSwipeRight01,
+                                            size: 20,
+                                            color: color1,
+                                          ),
+                                          SizedBox(width: 8),
+                                          Flexible(
+                                            child: Text(
+                                              'Desliza hacia la derecha para ir al menú WiFi',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: color1,
+                                                fontWeight: FontWeight.w400,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                         ),
                       ),
                     ),

@@ -30,7 +30,6 @@ class RelayPageState extends ConsumerState<RelayPage> {
   bool showSmartResident = false;
   bool dOnOk = false;
   bool dOffOk = false;
-  bool _showPassword = false;
 
   bool showOptions = false;
   bool isPasswordCorrect = false;
@@ -139,30 +138,12 @@ class RelayPageState extends ConsumerState<RelayPage> {
           content: 'Podrás activar esta función y configurar la distancia',
         ),
       ),
-      TutorialItem(
-        globalKey: keys['rele:modoPines']!,
-        shapeFocus: ShapeFocus.roundedSquare,
-        borderRadius: const Radius.circular(15),
-        contentPosition: ContentPosition.below,
-        focusMargin: 15,
-        pageIndex: 2,
-        child: !tenant
-            ? const TutorialItemContent(
-                title: 'Cambio de modo de pines',
-                content:
-                    'si introduces la clave del manual podrás modificar el estado comun de las salidas',
-              )
-            : const TutorialItemContent(
-                title: 'Inquilino',
-                content:
-                    'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
-              ),
-      ),
+
       TutorialItem(
         globalKey: keys['managerScreen:titulo']!,
         borderRadius: const Radius.circular(10),
         shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 3,
+        pageIndex: 2,
         focusMargin: 15,
         contentPosition: ContentPosition.below,
         child: const TutorialItemContent(
@@ -175,7 +156,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
           globalKey: keys['managerScreen:reclamar']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 3,
+          pageIndex: 2,
           contentPosition: ContentPosition.below,
           child: const TutorialItemContent(
             title: 'Reclamar administrador',
@@ -189,7 +170,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
           globalKey: keys['managerScreen:agregarAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 3,
+          pageIndex: 2,
           contentPosition: ContentPosition.below,
           buttonAction: ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -221,7 +202,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
           globalKey: keys['managerScreen:verAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 3,
+          pageIndex: 2,
           contentPosition: ContentPosition.below,
           child: const TutorialItemContent(
             title: 'Ver administradores secundarios',
@@ -232,7 +213,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
           globalKey: keys['managerScreen:alquiler']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 3,
+          pageIndex: 2,
           child: const TutorialItemContent(
             title: 'Alquiler temporario',
             content:
@@ -244,7 +225,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
             globalKey: keys['managerScreen:historialAdmin']!,
             borderRadius: const Radius.circular(15),
             shapeFocus: ShapeFocus.roundedSquare,
-            pageIndex: 4,
+            pageIndex: 2,
             child: const TutorialItemContent(
               title: 'Historial de administradores secundarios',
               content:
@@ -255,7 +236,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
             globalKey: keys['managerScreen:horariosAdmin']!,
             borderRadius: const Radius.circular(15),
             shapeFocus: ShapeFocus.roundedSquare,
-            pageIndex: 4,
+            pageIndex: 2,
             child: const TutorialItemContent(
               title: 'Horarios de administradores secundarios',
               content:
@@ -266,7 +247,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
             globalKey: keys['managerScreen:wifiAdmin']!,
             borderRadius: const Radius.circular(15),
             shapeFocus: ShapeFocus.roundedSquare,
-            pageIndex: 4,
+            pageIndex: 2,
             child: const TutorialItemContent(
               title: 'Wifi de administradores secundarios',
               content:
@@ -280,7 +261,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
           globalKey: keys['managerScreen:accesoRapido']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 3,
+          pageIndex: 2,
           child: const TutorialItemContent(
             title: 'Accesso rápido',
             content: 'Podrás encender y apagar el dispositivo desde el menú',
@@ -290,7 +271,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
           globalKey: keys['managerScreen:desconexionNotificacion']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 3,
+          pageIndex: 2,
           child: const TutorialItemContent(
             title: 'Notificación de desconexión',
             content:
@@ -301,7 +282,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
           globalKey: keys['managerScreen:ejemploNoti']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 3,
+          pageIndex: 2,
           fullBackground: true,
           onStepReached: () {
             setState(() {
@@ -321,7 +302,7 @@ class RelayPageState extends ConsumerState<RelayPage> {
         globalKey: keys['managerScreen:imagen']!,
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 3,
+        pageIndex: 2,
         child: const TutorialItemContent(
           title: 'Imagen del dispositivo',
           content: 'Podrás ajustar la imagen del equipo en el menú',
@@ -1233,279 +1214,6 @@ class RelayPageState extends ConsumerState<RelayPage> {
         ],
       ),
 
-      //*- Página 4: Cambiar pines -*\\
-
-      GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20.0,
-                vertical: 30,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    key: keys['rele:modoPines']!,
-                    'Cambio de Modo de Pines',
-                    style: GoogleFonts.poppins(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: color1,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 40),
-                  Card(
-                    color: color1,
-                    elevation: 8,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 500),
-                            child: isPasswordCorrect
-                                ? const ImageIcon(
-                                    AssetImage(CaldenIcons.unLock),
-                                    color: color0,
-                                    size: 40,
-                                    key: ValueKey('open_lock'),
-                                  )
-                                : const Icon(
-                                    HugeIcons.strokeRoundedSquareLock01,
-                                    color: color0,
-                                    size: 40,
-                                    key: ValueKey('closed_lock'),
-                                  ),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            'Ingresa la contraseña del módulo ubicada en el manual',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontSize: 18,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          TextField(
-                            controller: modulePassController,
-                            style: const TextStyle(color: color0, fontSize: 16),
-                            cursorColor: color0,
-                            obscureText: !_showPassword,
-                            onChanged: (value) {
-                              setState(() {
-                                isPasswordCorrect = value == '53494d45';
-                              });
-                            },
-                            decoration: InputDecoration(
-                              prefixIcon: Icon(
-                                HugeIcons.strokeRoundedKey01,
-                                color: color0.withValues(alpha: 0.7),
-                              ),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _showPassword
-                                      ? HugeIcons.strokeRoundedView
-                                      : HugeIcons.strokeRoundedViewOff,
-                                  color: color0.withValues(alpha: 0.7),
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _showPassword = !_showPassword;
-                                  });
-                                },
-                              ),
-                              hintText: "Contraseña",
-                              hintStyle: TextStyle(
-                                color: color0.withValues(alpha: 0.6),
-                              ),
-                              enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(
-                                  color: color0.withValues(alpha: 0.5),
-                                ),
-                              ),
-                              focusedBorder: const UnderlineInputBorder(
-                                borderSide: BorderSide(
-                                  color: color0,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  if (isPasswordCorrect)
-                    FloatingActionButton.extended(
-                      onPressed: () {
-                        setState(() {
-                          isChangeModeVisible = !isChangeModeVisible;
-                        });
-                      },
-                      backgroundColor: color1,
-                      foregroundColor: color0,
-                      icon: const Icon(HugeIcons.strokeRoundedSettings02,
-                          color: color0),
-                      label: Text(
-                        'Cambiar modo de pines',
-                        style: GoogleFonts.poppins(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  const SizedBox(height: 20),
-                  if (isChangeModeVisible && isPasswordCorrect)
-                    Column(
-                      children: [
-                        Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          elevation: 5,
-                          color: color1,
-                          child: Padding(
-                            padding: const EdgeInsets.all(20.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Puedes cambiar entre Normal Abierto (NA) y Normal Cerrado (NC). Selecciona una opción:',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 16,
-                                    color: color0,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 20),
-                                Container(
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(30.0),
-                                    border: Border.all(
-                                      color: color0,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              isNC = false;
-                                            });
-                                            saveNC(
-                                              pc,
-                                              sn,
-                                              false,
-                                            );
-                                          },
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              color: !isNC
-                                                  ? color0
-                                                  : Colors.transparent,
-                                              borderRadius:
-                                                  const BorderRadius.only(
-                                                topLeft: Radius.circular(28),
-                                                bottomLeft: Radius.circular(28),
-                                              ),
-                                            ),
-                                            child: Center(
-                                              child: Text(
-                                                'Normal Abierto',
-                                                style: GoogleFonts.poppins(
-                                                  fontSize: 14,
-                                                  color:
-                                                      !isNC ? color1 : color0,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      Container(
-                                        width: 2,
-                                        color: color0,
-                                      ),
-                                      Expanded(
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              isNC = true;
-                                            });
-                                            saveNC(
-                                              pc,
-                                              sn,
-                                              true,
-                                            );
-                                          },
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              color: isNC
-                                                  ? color0
-                                                  : Colors.transparent,
-                                              borderRadius:
-                                                  const BorderRadius.only(
-                                                topRight: Radius.circular(28),
-                                                bottomRight:
-                                                    Radius.circular(28),
-                                              ),
-                                            ),
-                                            child: Center(
-                                              child: Text(
-                                                'Normal Cerrado',
-                                                style: GoogleFonts.poppins(
-                                                  fontSize: 14,
-                                                  color: isNC ? color1 : color0,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Padding(
-                          padding:
-                              EdgeInsets.only(bottom: bottomBarHeight + 10),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-            ),
-            if (!deviceOwner && owner != '')
-              Container(
-                color: Colors.black.withValues(alpha: 0.7),
-                child: const Center(
-                  child: Text(
-                    'No tienes acceso a esta función',
-                    style: TextStyle(color: Colors.white, fontSize: 18),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-
       //*- Página 5: Gestión del Equipo -*\\
 
       ManagerScreen(deviceName: deviceName),
@@ -1685,8 +1393,6 @@ class RelayPageState extends ConsumerState<RelayPage> {
                         Icon(HugeIcons.strokeRoundedHome11,
                             size: 30, color: color0),
                         Icon(HugeIcons.strokeRoundedLocation06,
-                            size: 30, color: color0),
-                        Icon(HugeIcons.strokeRoundedShare01,
                             size: 30, color: color0),
                         Icon(HugeIcons.strokeRoundedSettings02,
                             size: 30, color: color0),

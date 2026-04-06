@@ -38,7 +38,6 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
   bool isPasswordCorrect = false;
   bool _isAnimating = false;
   bool _isTutorialActive = false;
-  bool _showPassword = false;
 
   late List<bool> _selectedPins;
   late List<bool> _notis;
@@ -169,29 +168,10 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
         ),
       ),
       TutorialItem(
-        globalKey: keys['rele1i1o:modoPines']!,
-        shapeFocus: ShapeFocus.roundedSquare,
-        borderRadius: const Radius.circular(15),
-        contentPosition: ContentPosition.below,
-        focusMargin: 15,
-        pageIndex: 2,
-        child: !tenant
-            ? const TutorialItemContent(
-                title: 'Cambio de modo de pines',
-                content:
-                    'si introduces la clave del manual podrás modificar el estado comun de las salidas',
-              )
-            : const TutorialItemContent(
-                title: 'Inquilino',
-                content:
-                    'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
-              ),
-      ),
-      TutorialItem(
         globalKey: keys['managerScreen:titulo']!,
         borderRadius: const Radius.circular(15),
         shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 3,
+        pageIndex: 2,
         focusMargin: 15,
         contentPosition: ContentPosition.below,
         child: const TutorialItemContent(
@@ -204,7 +184,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
           globalKey: keys['managerScreen:reclamar']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 3,
+          pageIndex: 2,
           contentPosition: ContentPosition.below,
           child: const TutorialItemContent(
             title: 'Reclamar administrador',
@@ -218,7 +198,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
           globalKey: keys['managerScreen:agregarAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 3,
+          pageIndex: 2,
           contentPosition: ContentPosition.below,
           buttonAction: ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -250,7 +230,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
           globalKey: keys['managerScreen:verAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 3,
+          pageIndex: 2,
           contentPosition: ContentPosition.below,
           child: const TutorialItemContent(
             title: 'Ver administradores secundarios',
@@ -261,7 +241,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
           globalKey: keys['managerScreen:alquiler']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 3,
+          pageIndex: 2,
           child: const TutorialItemContent(
             title: 'Alquiler temporario',
             content:
@@ -273,7 +253,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
             globalKey: keys['managerScreen:historialAdmin']!,
             borderRadius: const Radius.circular(15),
             shapeFocus: ShapeFocus.roundedSquare,
-            pageIndex: 4,
+            pageIndex: 2,
             child: const TutorialItemContent(
               title: 'Historial de administradores secundarios',
               content:
@@ -284,7 +264,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
             globalKey: keys['managerScreen:horariosAdmin']!,
             borderRadius: const Radius.circular(15),
             shapeFocus: ShapeFocus.roundedSquare,
-            pageIndex: 4,
+            pageIndex: 2,
             child: const TutorialItemContent(
               title: 'Horarios de administradores secundarios',
               content:
@@ -295,7 +275,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
             globalKey: keys['managerScreen:wifiAdmin']!,
             borderRadius: const Radius.circular(15),
             shapeFocus: ShapeFocus.roundedSquare,
-            pageIndex: 4,
+            pageIndex: 2,
             child: const TutorialItemContent(
               title: 'Wifi de administradores secundarios',
               content:
@@ -309,7 +289,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
           globalKey: keys['managerScreen:accesoRapido']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 3,
+          pageIndex: 2,
           child: const TutorialItemContent(
             title: 'Accesso rápido',
             content: 'Podrás encender y apagar el dispositivo desde el menú',
@@ -319,7 +299,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
           globalKey: keys['managerScreen:desconexionNotificacion']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 3,
+          pageIndex: 2,
           child: const TutorialItemContent(
             title: 'Notificación de desconexión',
             content:
@@ -330,7 +310,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
           globalKey: keys['managerScreen:ejemploNoti']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 3,
+          pageIndex: 2,
           fullBackground: true,
           onStepReached: () {
             setState(() {
@@ -350,7 +330,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
         globalKey: keys['managerScreen:imagen']!,
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 3,
+        pageIndex: 2,
         child: const TutorialItemContent(
           title: 'Imagen del dispositivo',
           content: 'Podrás ajustar la imagen del equipo en el menú',
@@ -1058,7 +1038,8 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                         children: [
                                           Center(
                                             child: Icon(
-                                              HugeIcons.strokeRoundedAlertSquare,
+                                              HugeIcons
+                                                  .strokeRoundedAlertSquare,
                                               color: alertIO[index]
                                                   ? Colors.red
                                                   : Colors.grey,
@@ -1655,321 +1636,6 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
         ),
       ),
 
-      //*- Página 4: Cambiar pines -*\\
-
-      GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20.0,
-                vertical: 30,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    key: keys['rele1i1o:modoPines']!,
-                    'Cambio de Modo de Pines',
-                    style: GoogleFonts.poppins(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: color1,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 40),
-                  Card(
-                    color: color1,
-                    elevation: 8,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 500),
-                            child: isPasswordCorrect
-                                ? const ImageIcon(
-                                    AssetImage(CaldenIcons.unLock),
-                                    color: color0,
-                                    size: 40,
-                                    key: ValueKey('open_lock'),
-                                  )
-                                : const Icon(
-                                    HugeIcons.strokeRoundedSquareLock01,
-                                    color: color0,
-                                    size: 40,
-                                    key: ValueKey('closed_lock'),
-                                  ),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            'Ingresa la contraseña del módulo ubicada en el manual',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontSize: 18,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          TextField(
-                            controller: modulePassController,
-                            style: const TextStyle(color: color0, fontSize: 16),
-                            cursorColor: color0,
-                            obscureText: !_showPassword,
-                            onChanged: (value) {
-                              setState(() {
-                                isPasswordCorrect = value == '53494d45';
-                              });
-                            },
-                            decoration: InputDecoration(
-                              prefixIcon: Icon(
-                                HugeIcons.strokeRoundedKey01,
-                                color: color0.withValues(alpha: 0.7),
-                              ),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _showPassword
-                                      ? HugeIcons.strokeRoundedView
-                                      : HugeIcons.strokeRoundedViewOff,
-                                  color: color0.withValues(alpha: 0.7),
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _showPassword = !_showPassword;
-                                  });
-                                },
-                              ),
-                              hintText: "Contraseña",
-                              hintStyle: TextStyle(
-                                color: color0.withValues(alpha: 0.6),
-                              ),
-                              enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(
-                                  color: color0.withValues(alpha: 0.5),
-                                ),
-                              ),
-                              focusedBorder: const UnderlineInputBorder(
-                                borderSide: BorderSide(
-                                  color: color0,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  if (isPasswordCorrect)
-                    FloatingActionButton.extended(
-                      onPressed: () {
-                        setState(() {
-                          isChangeModeVisible = !isChangeModeVisible;
-                        });
-                      },
-                      backgroundColor: color1,
-                      foregroundColor: color0,
-                      icon: const Icon(HugeIcons.strokeRoundedSettings02,
-                          color: color0),
-                      label: Text(
-                        'Cambiar modo de pines',
-                        style: GoogleFonts.poppins(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  const SizedBox(height: 20),
-                  if (isChangeModeVisible && isPasswordCorrect)
-                    Column(
-                      children: [
-                        for (var i = 0; i < parts.length; i++) ...[
-                          if (tipo[i] == 'Entrada') ...{
-                            Card(
-                              color: color1,
-                              elevation: 6,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0, vertical: 24.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      nicknamesMap[
-                                              '${deviceName}_${parts[i]}'] ??
-                                          '${tipo[i]} $i',
-                                      style: GoogleFonts.poppins(
-                                        color: color0,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Puedes cambiar entre Normal Abierto (NA) y Normal Cerrado (NC). Selecciona una opción:',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 16,
-                                            color: color0,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        const SizedBox(height: 20),
-                                        Container(
-                                          height: 40,
-                                          decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(30.0),
-                                            border: Border.all(
-                                              color: color0,
-                                              width: 2,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Expanded(
-                                                child: GestureDetector(
-                                                  onTap: () {
-                                                    setState(() {
-                                                      String data =
-                                                          '$pc[14]($i#0)';
-                                                      // printLog.i(data);
-                                                      bluetoothManager.toolsUuid
-                                                          .write(
-                                                              data.codeUnits);
-                                                      common[i] = '0';
-                                                    });
-                                                  },
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      color: common[i] == '0'
-                                                          ? color0
-                                                          : Colors.transparent,
-                                                      borderRadius:
-                                                          const BorderRadius
-                                                              .only(
-                                                        topLeft:
-                                                            Radius.circular(28),
-                                                        bottomLeft:
-                                                            Radius.circular(28),
-                                                      ),
-                                                    ),
-                                                    child: Center(
-                                                      child: Text(
-                                                        'Normal Abierto',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          fontSize: 14,
-                                                          color:
-                                                              common[i] == '0'
-                                                                  ? color1
-                                                                  : color0,
-                                                        ),
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              Container(
-                                                width: 2,
-                                                color: color0,
-                                              ),
-                                              Expanded(
-                                                child: GestureDetector(
-                                                  onTap: () {
-                                                    setState(() {
-                                                      String data =
-                                                          '$pc[14]($i#1)';
-                                                      //printLog.i(data);
-                                                      bluetoothManager.toolsUuid
-                                                          .write(
-                                                              data.codeUnits);
-                                                      common[i] = '1';
-                                                    });
-                                                  },
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      color: common[i] == '1'
-                                                          ? color0
-                                                          : Colors.transparent,
-                                                      borderRadius:
-                                                          const BorderRadius
-                                                              .only(
-                                                        topRight:
-                                                            Radius.circular(28),
-                                                        bottomRight:
-                                                            Radius.circular(28),
-                                                      ),
-                                                    ),
-                                                    child: Center(
-                                                      child: Text(
-                                                        'Normal Cerrado',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          fontSize: 14,
-                                                          color:
-                                                              common[i] == '1'
-                                                                  ? color1
-                                                                  : color0,
-                                                        ),
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            if (i == parts.length - 1) ...{
-                              Padding(
-                                padding: EdgeInsets.only(
-                                    bottom: bottomBarHeight + 10),
-                              ),
-                            }
-                          },
-                        ],
-                      ],
-                    ),
-                ],
-              ),
-            ),
-            if (!deviceOwner && owner != '')
-              Container(
-                color: Colors.black.withValues(alpha: 0.7),
-                child: const Center(
-                  child: Text(
-                    'No tienes acceso a esta función',
-                    style: TextStyle(color: Colors.white, fontSize: 18),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-
       //*- Página 5: Gestión del Equipo -*\\
       ManagerScreen(deviceName: deviceName),
     ];
@@ -2148,8 +1814,6 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                         Icon(HugeIcons.strokeRoundedHome11,
                             size: 30, color: color0),
                         Icon(HugeIcons.strokeRoundedLocation06,
-                            size: 30, color: color0),
-                        Icon(HugeIcons.strokeRoundedShare01,
                             size: 30, color: color0),
                         Icon(HugeIcons.strokeRoundedSettings02,
                             size: 30, color: color0),

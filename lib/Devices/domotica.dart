@@ -8,7 +8,6 @@ import '../aws/dynamo/dynamo.dart';
 import '../aws/mqtt/mqtt.dart';
 import '../master.dart';
 import '../Global/stored_data.dart';
-import 'package:caldensmart/logger.dart';
 
 class DomoticaPage extends ConsumerStatefulWidget {
   const DomoticaPage({super.key});
@@ -26,7 +25,6 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
   bool showSmartResident = false;
   bool dOnOk = false;
   bool dOffOk = false;
-  bool _showPassword = false;
 
   final String pc = DeviceManager.getProductCode(deviceName);
   final String sn = DeviceManager.extractSerialNumber(deviceName);
@@ -137,30 +135,11 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
         ),
       ),
       TutorialItem(
-        globalKey: keys['domotica:modoPines']!,
-        shapeFocus: ShapeFocus.roundedSquare,
-        borderRadius: const Radius.circular(30),
-        contentPosition: ContentPosition.below,
-        focusMargin: 15,
-        pageIndex: 1,
-        child: !tenant
-            ? const TutorialItemContent(
-                title: 'Cambio de modo de pines',
-                content:
-                    'si introduces la clave del manual podrás modificar el estado comun de las salidas',
-              )
-            : const TutorialItemContent(
-                title: 'Inquilino',
-                content:
-                    'Ciertas funciones estan bloqueadas y solo el dueño puede acceder',
-              ),
-      ),
-      TutorialItem(
         globalKey: keys['managerScreen:titulo']!,
         borderRadius: const Radius.circular(15),
         shapeFocus: ShapeFocus.roundedSquare,
         focusMargin: 15,
-        pageIndex: 2,
+        pageIndex: 1,
         contentPosition: ContentPosition.below,
         child: const TutorialItemContent(
           title: 'Gestión',
@@ -172,7 +151,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
           globalKey: keys['managerScreen:reclamar']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 2,
+          pageIndex: 1,
           contentPosition: ContentPosition.below,
           child: const TutorialItemContent(
             title: 'Reclamar administrador',
@@ -185,7 +164,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
           globalKey: keys['managerScreen:agregarAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 2,
+          pageIndex: 1,
           contentPosition: ContentPosition.below,
           buttonAction: ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -217,7 +196,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
           globalKey: keys['managerScreen:verAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 2,
+          pageIndex: 1,
           contentPosition: ContentPosition.below,
           child: const TutorialItemContent(
             title: 'Ver administradores secundarios',
@@ -228,7 +207,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
           globalKey: keys['managerScreen:alquiler']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 2,
+          pageIndex: 1,
           child: const TutorialItemContent(
             title: 'Alquiler temporario',
             content:
@@ -240,7 +219,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
             globalKey: keys['managerScreen:historialAdmin']!,
             borderRadius: const Radius.circular(15),
             shapeFocus: ShapeFocus.roundedSquare,
-            pageIndex: 4,
+            pageIndex: 1,
             child: const TutorialItemContent(
               title: 'Historial de administradores secundarios',
               content:
@@ -251,7 +230,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
             globalKey: keys['managerScreen:horariosAdmin']!,
             borderRadius: const Radius.circular(15),
             shapeFocus: ShapeFocus.roundedSquare,
-            pageIndex: 4,
+            pageIndex: 1,
             child: const TutorialItemContent(
               title: 'Horarios de administradores secundarios',
               content:
@@ -262,7 +241,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
             globalKey: keys['managerScreen:wifiAdmin']!,
             borderRadius: const Radius.circular(15),
             shapeFocus: ShapeFocus.roundedSquare,
-            pageIndex: 4,
+            pageIndex: 1,
             child: const TutorialItemContent(
               title: 'Wifi de administradores secundarios',
               content:
@@ -276,7 +255,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
           globalKey: keys['managerScreen:accesoRapido']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 2,
+          pageIndex: 1,
           child: const TutorialItemContent(
             title: 'Accesso rápido',
             content: 'Podrás encender y apagar el dispositivo desde el menú',
@@ -286,7 +265,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
           globalKey: keys['managerScreen:desconexionNotificacion']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 2,
+          pageIndex: 1,
           child: const TutorialItemContent(
             title: 'Notificación de desconexión',
             content:
@@ -297,7 +276,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
           globalKey: keys['managerScreen:ejemploNoti']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 2,
+          pageIndex: 1,
           fullBackground: true,
           onStepReached: () {
             setState(() {
@@ -317,7 +296,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
         globalKey: keys['managerScreen:imagen']!,
         borderRadius: const Radius.circular(20),
         shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 2,
+        pageIndex: 1,
         child: const TutorialItemContent(
           title: 'Imagen del dispositivo',
           content: 'Podrás ajustar la imagen del equipo en el menú',
@@ -987,370 +966,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
         ),
       ),
 
-      //*- Página 2: Modo de Pines -*\\
-      GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20.0,
-                vertical: 30,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    key: keys['domotica:modoPines']!,
-                    'Cambio de Modo de Pines',
-                    style: GoogleFonts.poppins(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: color1,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 40),
-                  Card(
-                    color: color1,
-                    elevation: 8,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 500),
-                            child: isPasswordCorrect
-                                ? const ImageIcon(
-                                    AssetImage(CaldenIcons.unLock),
-                                    color: color0,
-                                    size: 40,
-                                    key: ValueKey('open_lock'),
-                                  )
-                                : const Icon(
-                                    HugeIcons.strokeRoundedSquareLock01,
-                                    color: color0,
-                                    size: 40,
-                                    key: ValueKey('closed_lock'),
-                                  ),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            'Ingresa la contraseña del módulo ubicada en el manual',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.poppins(
-                              color: color0,
-                              fontSize: 18,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          TextField(
-                            controller: modulePassController,
-                            style: const TextStyle(color: color0, fontSize: 16),
-                            cursorColor: color0,
-                            obscureText: !_showPassword,
-                            onChanged: (value) {
-                              setState(() {
-                                isPasswordCorrect = value == '53494d45';
-                              });
-                            },
-                            decoration: InputDecoration(
-                              prefixIcon: Icon(
-                                HugeIcons.strokeRoundedKey01,
-                                color: color0.withValues(alpha: 0.7),
-                              ),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _showPassword
-                                      ? HugeIcons.strokeRoundedView
-                                      : HugeIcons.strokeRoundedViewOff,
-                                  color: color0.withValues(alpha: 0.7),
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _showPassword = !_showPassword;
-                                  });
-                                },
-                              ),
-                              hintText: "Contraseña",
-                              hintStyle: TextStyle(
-                                color: color0.withValues(alpha: 0.6),
-                              ),
-                              enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(
-                                  color: color0.withValues(alpha: 0.5),
-                                ),
-                              ),
-                              focusedBorder: const UnderlineInputBorder(
-                                borderSide: BorderSide(
-                                  color: color0,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  if (isPasswordCorrect)
-                    FloatingActionButton.extended(
-                      onPressed: () {
-                        setState(() {
-                          isChangeModeVisible = !isChangeModeVisible;
-                          printLog.d(isChangeModeVisible, color: 'naranja');
-                        });
-                      },
-                      backgroundColor: color1,
-                      foregroundColor: color0,
-                      icon: const Icon(HugeIcons.strokeRoundedSettings02,
-                          color: color0),
-                      label: Text(
-                        'Cambiar modo de pines',
-                        style: GoogleFonts.poppins(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  const SizedBox(height: 30),
-                  if (isChangeModeVisible && isPasswordCorrect)
-                    Column(
-                      children: [
-                        for (var i = 0; i < parts.length; i++) ...[
-                          Card(
-                            color: color1,
-                            elevation: 6,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16.0, vertical: 24.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    nicknamesMap['${deviceName}_${parts[i]}'] ??
-                                        '${tipo[i]} $i',
-                                    style: GoogleFonts.poppins(
-                                      color: color0,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  if (tipo[i] == 'Entrada' ||
-                                      Versioner.isPosterior(
-                                          hardwareVersion, '240423A')) ...{
-                                    Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'Puedes cambiar entre Normal Abierto (NA) y Normal Cerrado (NC)',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 16,
-                                            color: color0,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        const SizedBox(height: 20),
-                                        Container(
-                                          height: 40,
-                                          decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(30.0),
-                                            border: Border.all(
-                                              color: color0,
-                                              width: 2,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Expanded(
-                                                child: GestureDetector(
-                                                  onTap: () {
-                                                    setState(() {
-                                                      String data =
-                                                          '$pc[14]($i#0)';
-                                                      // printLog.i(data);
-                                                      bluetoothManager.toolsUuid
-                                                          .write(
-                                                              data.codeUnits);
-                                                      common[i] = '0';
-                                                    });
-                                                  },
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      color: common[i] == '0'
-                                                          ? color0
-                                                          : Colors.transparent,
-                                                      borderRadius:
-                                                          const BorderRadius
-                                                              .only(
-                                                        topLeft:
-                                                            Radius.circular(28),
-                                                        bottomLeft:
-                                                            Radius.circular(28),
-                                                      ),
-                                                    ),
-                                                    child: Center(
-                                                      child: Text(
-                                                        'Normal Abierto',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          fontSize: 14,
-                                                          color:
-                                                              common[i] == '0'
-                                                                  ? color1
-                                                                  : color0,
-                                                        ),
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              Container(
-                                                width: 2,
-                                                color: color0,
-                                              ),
-                                              Expanded(
-                                                child: GestureDetector(
-                                                  onTap: () {
-                                                    setState(() {
-                                                      String data =
-                                                          '$pc[14]($i#1)';
-                                                      // printLog.i(data);
-                                                      bluetoothManager.toolsUuid
-                                                          .write(
-                                                              data.codeUnits);
-                                                      common[i] = '1';
-                                                    });
-                                                  },
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      color: common[i] == '1'
-                                                          ? color0
-                                                          : Colors.transparent,
-                                                      borderRadius:
-                                                          const BorderRadius
-                                                              .only(
-                                                        topRight:
-                                                            Radius.circular(28),
-                                                        bottomRight:
-                                                            Radius.circular(28),
-                                                      ),
-                                                    ),
-                                                    child: Center(
-                                                      child: Text(
-                                                        'Normal Cerrado',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          fontSize: 14,
-                                                          color:
-                                                              common[i] == '1'
-                                                                  ? color1
-                                                                  : color0,
-                                                        ),
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  },
-                                  const SizedBox(height: 10),
-                                  if (Versioner.isPrevious(
-                                      hardwareVersion, '240423A')) ...{
-                                    if (tipo[i] == 'Entrada') ...{
-                                      const Divider(),
-                                      const SizedBox(height: 10),
-                                    },
-                                    Center(
-                                      child: Text(
-                                        tipo[i] == 'Entrada'
-                                            ? '¿Cambiar de entrada a salida?'
-                                            : '¿Cambiar de salida a entrada?',
-                                        style: GoogleFonts.poppins(
-                                          color: color0,
-                                          fontSize: 16,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Center(
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          foregroundColor: color1,
-                                          backgroundColor: color0,
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 24.0, vertical: 12.0),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                        ),
-                                        onPressed: () {
-                                          String fun =
-                                              '$pc[13]($i#${tipo[i] == 'Entrada' ? '0' : '1'})';
-                                          //printLog.i(fun);
-                                          bluetoothManager.toolsUuid
-                                              .write(fun.codeUnits);
-                                        },
-                                        child: const Text(
-                                          'CAMBIAR',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                      ),
-                                    ),
-                                  },
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          if (i == parts.length - 1) ...{
-                            Padding(
-                              padding:
-                                  EdgeInsets.only(bottom: bottomBarHeight + 10),
-                            ),
-                          }
-                        ],
-                      ],
-                    ),
-                ],
-              ),
-            ),
-            if (!deviceOwner && owner != '')
-              Container(
-                color: Colors.black.withValues(alpha: 0.7),
-                child: const Center(
-                  child: Text(
-                    'No tienes acceso a esta función',
-                    style: TextStyle(color: Colors.white, fontSize: 18),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-
-      //*- Página 4: Gestión del Equipo -*\\
+      //*- Página 2: Gestión del Equipo -*\\
       ManagerScreen(deviceName: deviceName),
     ];
 
@@ -1528,8 +1144,6 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
                       height: 75.0,
                       items: const <Widget>[
                         Icon(HugeIcons.strokeRoundedHome11,
-                            size: 30, color: color0),
-                        Icon(HugeIcons.strokeRoundedShare01,
                             size: 30, color: color0),
                         Icon(HugeIcons.strokeRoundedSettings02,
                             size: 30, color: color0),
