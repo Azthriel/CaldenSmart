@@ -15,12 +15,40 @@ import es.antonborri.home_widget.HomeWidgetProvider
 import com.caldensmart.sime.MainActivity
 import com.caldensmart.sime.R
 import org.json.JSONArray
+import org.json.JSONObject
 
 class ControlWidgetProvider : HomeWidgetProvider() {
 
     companion object {
         private const val TAG = "ControlWidgetProvider"
         private const val PREFS_NAME = "HomeWidgetPreferences"
+
+        /**
+         * Umbral de datos obsoletos: si el timestamp del último guardado atómico
+         * supera este valor, el widget muestra el ícono de conexión en estado
+         * "sin datos recientes" (usa ic_widget_offline) aunque el campo online
+         * sea true. Esto evita mostrar "online" cuando el background service
+         * está muerto y los datos en SharedPrefs son viejos.
+         *
+         * Se usa 20 min porque el WorkManager periódico corre cada 15 min;
+         * damos 5 min de margen.
+         */
+        private const val STALE_THRESHOLD_MS = 20 * 60 * 1000L // 20 minutos
+
+        /**
+         * Lee el estado atómico del widget desde la clave widget_state_<id>.
+         * Si no existe (widgets creados con versión anterior del código),
+         * devuelve null para que onUpdate() use el fallback a claves individuales.
+         */
+        private fun readAtomicState(widgetData: SharedPreferences, widgetId: Int): JSONObject? {
+            val json = widgetData.getString("widget_state_$widgetId", null) ?: return null
+            return try {
+                JSONObject(json)
+            } catch (e: Exception) {
+                Log.w(TAG, "widget_state_$widgetId no es JSON válido: ${e.message}")
+                null
+            }
+        }
     }
 
     override fun onEnabled(context: Context?) {
@@ -52,7 +80,10 @@ class ControlWidgetProvider : HomeWidgetProvider() {
         for (widgetId in appWidgetIds) {
             Log.d(TAG, "Limpiando datos del widget $widgetId")
 
-            // Eliminar todos los datos asociados a este widget
+            // FIX: incluir la nueva clave atómica en la limpieza
+            editor.remove("widget_state_$widgetId")
+
+            // Claves legacy (se mantienen por backward compat y se limpian igual)
             editor.remove("widget_device_$widgetId")
             editor.remove("widget_nickname_$widgetId")
             editor.remove("widget_is_control_$widgetId")
@@ -72,7 +103,6 @@ class ControlWidgetProvider : HomeWidgetProvider() {
             editor.remove("widget_display_temp_$widgetId")
             editor.remove("widget_display_alert_$widgetId")
 
-            // Actualizar la lista de widgets activos
             val widgetIdsJson = prefs.getString("active_widget_ids", null)
             if (widgetIdsJson != null) {
                 try {
@@ -98,7 +128,6 @@ class ControlWidgetProvider : HomeWidgetProvider() {
         }
         editor.apply()
 
-        // Notificar al servicio de Flutter para que verifique si debe detenerse
         Log.d(TAG, "Widgets restantes: $remainingWidgets, notificando al servicio Flutter")
         try {
             val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(
@@ -119,47 +148,95 @@ class ControlWidgetProvider : HomeWidgetProvider() {
     ) {
         appWidgetIds.forEach { widgetId ->
             val views = RemoteViews(context.packageName, R.layout.widget_layout)
-            // Leer datos
-            val nickname = widgetData.getString("widget_nickname_$widgetId", null) ?: ""
-            val isControl = widgetData.getBoolean("widget_is_control_$widgetId", true)
-            val isOnline = widgetData.getBoolean("widget_online_$widgetId", false)
-            val isOn = widgetData.getBoolean("widget_status_$widgetId", false)
-            val isLoading = widgetData.getBoolean("widget_loading_$widgetId", false)
-            val isInitializing = widgetData.getBoolean("widget_initializing_$widgetId", false)
-            val isServiceReady = widgetData.getBoolean("widget_service_ready", false)
 
-            views.setViewVisibility(R.id.widget_loading_background, if (isLoading || isInitializing) android.view.View.VISIBLE else android.view.View.GONE)
+            // ── Leer estado desde JSON atómico (nuevo) o claves individuales (legacy) ──
+            val atomicState = readAtomicState(widgetData, widgetId)
 
-            // Datos específicos
-            val productCode = widgetData.getString("widget_pc_$widgetId", null)
-            val displayTemp = widgetData.getString("widget_display_temp_$widgetId", null)
-            val displayAlert = widgetData.getBoolean("widget_display_alert_$widgetId", false)
-            val isDisplayType = widgetData.getBoolean("widget_is_display_type_$widgetId", false)
+            val nickname: String
+            val isControl: Boolean
+            val isOnline: Boolean
+            val isOn: Boolean
+            val isLoading: Boolean
+            val isInitializing: Boolean
+            val productCode: String?
+            val displayTemp: String?
+            val displayAlert: Boolean
+            val isDisplayType: Boolean
+            val ts: Long
 
-            // 1. Overlay de carga
-            if (isLoading) {
-                views.setViewVisibility(R.id.widget_loading_background, android.view.View.VISIBLE)
+            if (atomicState != null) {
+                // ── Camino nuevo: lectura atómica ──────────────────────────────────
+                nickname      = atomicState.optString("nickname", "")
+                isControl     = atomicState.optBoolean("isControl", true)
+                isOnline      = atomicState.optBoolean("online", false)
+                isOn          = atomicState.optBoolean("status", false)
+                isLoading     = atomicState.optBoolean("loading", false)
+                isInitializing = atomicState.optBoolean("initializing", false)
+                productCode   = atomicState.optString("productCode", null)
+                displayTemp   = if (atomicState.has("displayTemp")) atomicState.getString("displayTemp") else null
+                displayAlert  = atomicState.optBoolean("displayAlert", false)
+                isDisplayType = atomicState.optBoolean("isDisplayType", false)
+                ts            = atomicState.optLong("ts", 0L)
             } else {
-                views.setViewVisibility(R.id.widget_loading_background, android.view.View.GONE)
+                // ── Fallback legacy: claves individuales ───────────────────────────
+                nickname      = widgetData.getString("widget_nickname_$widgetId", null) ?: ""
+                isControl     = widgetData.getBoolean("widget_is_control_$widgetId", true)
+                isOnline      = widgetData.getBoolean("widget_online_$widgetId", false)
+                isOn          = widgetData.getBoolean("widget_status_$widgetId", false)
+                isLoading     = widgetData.getBoolean("widget_loading_$widgetId", false)
+                isInitializing = widgetData.getBoolean("widget_initializing_$widgetId", false)
+                productCode   = widgetData.getString("widget_pc_$widgetId", null)
+                displayTemp   = widgetData.getString("widget_display_temp_$widgetId", null)
+                displayAlert  = widgetData.getBoolean("widget_display_alert_$widgetId", false)
+                isDisplayType = widgetData.getBoolean("widget_is_display_type_$widgetId", false)
+                ts            = 0L // sin timestamp en formato legacy → no stale check
             }
 
-            // 2. Lógica Principal
+            val isServiceReady = widgetData.getBoolean("widget_service_ready", false)
+
+            // ── Detección de datos obsoletos ───────────────────────────────────────
+            // Si el último guardado fue hace más de STALE_THRESHOLD_MS, no confiamos
+            // en que el estado "online" sea real (el background service pudo haber
+            // muerto). En ese caso forzamos la apariencia offline para ser honestos
+            // con el usuario.
+            val isStale = ts > 0L &&
+                    (System.currentTimeMillis() - ts) > STALE_THRESHOLD_MS
+
+            if (isStale) {
+                Log.w(TAG, "Widget $widgetId: datos obsoletos (última actualización hace ${(System.currentTimeMillis() - ts) / 60000} min)")
+            }
+
+            // 1. Overlay de carga/inicialización
+            views.setViewVisibility(
+                R.id.widget_loading_background,
+                if (isLoading || isInitializing) android.view.View.VISIBLE else android.view.View.GONE
+            )
+
+            // 2. Lógica principal
             if (nickname.isNotEmpty()) {
 
                 views.setTextViewText(R.id.widget_device_name, nickname)
 
-                if (isOnline) {
-                    views.setImageViewResource(R.id.widget_connection_icon, R.drawable.ic_widget_online)
-                } else {
-                    views.setImageViewResource(R.id.widget_connection_icon, R.drawable.ic_widget_offline)
+                // FIX: si los datos son obsoletos mostramos icono offline aunque
+                // el campo online sea true — no podemos saber el estado real.
+                when {
+                    isStale -> views.setImageViewResource(
+                        R.id.widget_connection_icon, R.drawable.ic_widget_offline)
+                    isOnline -> views.setImageViewResource(
+                        R.id.widget_connection_icon, R.drawable.ic_widget_online)
+                    else -> views.setImageViewResource(
+                        R.id.widget_connection_icon, R.drawable.ic_widget_offline)
                 }
+
+                // La conectividad efectiva para decisiones de UI considera el stale
+                val effectiveOnline = isOnline && !isStale
 
                 if (isControl) {
                     views.setViewVisibility(R.id.widget_power_indicator, android.view.View.GONE)
                     views.setViewVisibility(R.id.widget_status_icon, android.view.View.VISIBLE)
                     views.setInt(R.id.widget_status_icon, "setColorFilter", 0)
 
-                    if (!isServiceReady && isOnline) {
+                    if (!isServiceReady && effectiveOnline) {
                         views.setViewVisibility(R.id.widget_power_indicator, android.view.View.VISIBLE)
                         views.setViewVisibility(R.id.widget_status_icon, android.view.View.GONE)
                         views.setTextViewText(R.id.widget_power_indicator, "Iniciando...")
@@ -171,7 +248,7 @@ class ControlWidgetProvider : HomeWidgetProvider() {
                         views.setImageViewResource(R.id.widget_status_icon, R.drawable.ic_switch_on)
                         views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_on)
 
-                        if (isOnline && !isLoading && isServiceReady) {
+                        if (effectiveOnline && !isLoading && isServiceReady) {
                             val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(
                                 context,
                                 Uri.parse("caldensmart://widget/toggle?widgetId=$widgetId")
@@ -184,13 +261,13 @@ class ControlWidgetProvider : HomeWidgetProvider() {
                     } else {
                         views.setImageViewResource(R.id.widget_status_icon, R.drawable.ic_switch_off)
 
-                        if (isOnline) {
+                        if (effectiveOnline) {
                             views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_off)
                         } else {
                             views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_offline)
                         }
 
-                        if (isOnline && !isLoading && isServiceReady) {
+                        if (effectiveOnline && !isLoading && isServiceReady) {
                             val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(
                                 context,
                                 Uri.parse("caldensmart://widget/toggle?widgetId=$widgetId")
@@ -202,6 +279,7 @@ class ControlWidgetProvider : HomeWidgetProvider() {
                         }
                     }
                 } else {
+                    // Dispositivo de solo visualización
                     views.setViewVisibility(R.id.widget_power_indicator, android.view.View.VISIBLE)
                     views.setViewVisibility(R.id.widget_status_icon, android.view.View.GONE)
 
@@ -211,7 +289,7 @@ class ControlWidgetProvider : HomeWidgetProvider() {
                             views.setTextViewText(R.id.widget_power_indicator, tempText)
                             views.setTextColor(R.id.widget_power_indicator, 0xFF2196F3.toInt())
 
-                            if (isOnline) views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_off)
+                            if (effectiveOnline) views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_off)
                             else views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_offline)
                         }
 
@@ -224,10 +302,11 @@ class ControlWidgetProvider : HomeWidgetProvider() {
                                 views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_alert)
                             } else {
                                 views.setInt(R.id.widget_status_icon, "setColorFilter", 0xFF9E9E9E.toInt())
-                                if (isOnline) views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_off)
+                                if (effectiveOnline) views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_off)
                                 else views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_offline)
                             }
                         }
+
                         isDisplayType -> {
                             views.setViewVisibility(R.id.widget_power_indicator, android.view.View.GONE)
                             views.setViewVisibility(R.id.widget_status_icon, android.view.View.VISIBLE)
@@ -237,13 +316,14 @@ class ControlWidgetProvider : HomeWidgetProvider() {
                                 views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_alert)
                             } else {
                                 views.setInt(R.id.widget_status_icon, "setColorFilter", 0xFF9E9E9E.toInt())
-                                if (isOnline) views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_off)
+                                if (effectiveOnline) views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_off)
                                 else views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_offline)
                             }
                         }
+
                         else -> {
                             views.setTextViewText(R.id.widget_power_indicator, "")
-                            if (isOnline) views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_off)
+                            if (effectiveOnline) views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_off)
                             else views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_offline)
                         }
                     }
@@ -251,10 +331,9 @@ class ControlWidgetProvider : HomeWidgetProvider() {
                     views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
                 }
             } else {
+                // Widget sin configurar
                 views.setTextViewText(R.id.widget_device_name, "CaldenSmart")
-
                 views.setImageViewResource(R.id.widget_connection_icon, R.drawable.ic_widget_settings)
-
                 views.setTextViewText(R.id.widget_power_indicator, "")
                 views.setViewVisibility(R.id.widget_status_icon, android.view.View.GONE)
                 views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_configuring)

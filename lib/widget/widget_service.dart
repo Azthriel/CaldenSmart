@@ -117,42 +117,58 @@ class WidgetService {
     }
   }
 
-  /// Actualizar el estado de un widget en la pantalla de inicio
+  /// Actualizar el estado de un widget en la pantalla de inicio.
+  ///
+  /// FIX: Guardado atómico — todos los campos en un único JSON para evitar
+  /// que onUpdate() lea un estado parcialmente escrito si el WorkManager
+  /// se dispara en medio de los awaits secuenciales.
   static Future<void> updateWidget(
       WidgetData widgetData, WidgetDeviceState state) async {
     try {
-      printLog.i('Actualizando widget ${widgetData.widgetId}: ${widgetData.nickname}, online=${state.online}, status=${state.status}');
-      
-      // Guardar datos usando HomeWidget.saveWidgetData para compatibilidad con widget nativo
-      bool isControl = widgetData.type == WidgetType.control;
-      
-      await HomeWidget.saveWidgetData('widget_nickname_${widgetData.widgetId}', widgetData.nickname);
-      await HomeWidget.saveWidgetData('widget_online_${widgetData.widgetId}', state.online);
-      await HomeWidget.saveWidgetData('widget_status_${widgetData.widgetId}', state.status);
-      await HomeWidget.saveWidgetData('widget_is_control_${widgetData.widgetId}', isControl);
+      printLog.i(
+        'Actualizando widget ${widgetData.widgetId}: ${widgetData.nickname}, '
+        'online=${state.online}, status=${state.status}',
+      );
 
-      // Datos específicos según el tipo (para uso futuro)
-      if (widgetData.type == WidgetType.display) {
-        if (state.temperature != null) {
-          await HomeWidget.saveWidgetData('widget_temperature_${widgetData.widgetId}', state.temperature!);
-        }
+      final bool isControl = widgetData.type == WidgetType.control;
 
-        if (state.alert != null) {
-          await HomeWidget.saveWidgetData('widget_alert_${widgetData.widgetId}', state.alert!);
-        }
+      // ── Construir el estado completo en un único mapa ──────────────────
+      final Map<String, dynamic> stateMap = {
+        'nickname': widgetData.nickname,
+        'isControl': isControl,
+        'online': state.online,
+        'status': state.status,
+        'loading': false,
+        'initializing': false,
+        'productCode': widgetData.productCode,
+        'isDisplayType': widgetData.type == WidgetType.display,
+        // Timestamp de la última actualización (ms desde epoch).
+        // ControlWidgetProvider lo usa para detectar datos obsoletos.
+        'ts': DateTime.now().millisecondsSinceEpoch,
+      };
 
-        if (state.ppmCO != null) {
-          await HomeWidget.saveWidgetData('widget_ppmCO_${widgetData.widgetId}', state.ppmCO!);
-        }
+      if (state.temperature != null) stateMap['displayTemp'] = state.temperature;
+      if (state.alert != null)       stateMap['displayAlert'] = state.alert;
+      if (state.ppmCO != null)       stateMap['ppmCO'] = state.ppmCO;
+      if (state.ppmCH4 != null)      stateMap['ppmCH4'] = state.ppmCH4;
 
-        if (state.ppmCH4 != null) {
-          await HomeWidget.saveWidgetData('widget_ppmCH4_${widgetData.widgetId}', state.ppmCH4!);
-        }
-      }
+      // ── UNA sola escritura → sin race condition ────────────────────────
+      await HomeWidget.saveWidgetData(
+        'widget_state_${widgetData.widgetId}',
+        jsonEncode(stateMap),
+      );
 
-      printLog.i('Datos guardados, actualizando widget nativo ${widgetData.widgetId}');
+      // Mantener claves individuales para backward-compat con _handleWidgetToggle
+      // (lee widget_status y widget_is_control directamente)
+      await HomeWidget.saveWidgetData(
+          'widget_status_${widgetData.widgetId}', state.status);
+      await HomeWidget.saveWidgetData(
+          'widget_is_control_${widgetData.widgetId}', isControl);
 
-      // Actualizar el widget nativo
+      printLog.i(
+          'Datos guardados atómicamente, actualizando widget nativo ${widgetData.widgetId}');
+
+      // ── Disparar redibujado del widget nativo ──────────────────────────
       await _updatePlatformWidgets();
 
       printLog.i('Widget ${widgetData.widgetId} actualizado correctamente');
@@ -184,7 +200,6 @@ class WidgetService {
                 ioMap = Map<String, dynamic>.from(ioData);
               }
 
-              // Verificar si es entrada o salida
               String pinType = ioMap['pinType']?.toString() ?? '0';
               bool isInput = pinType != '0';
               bool wStatus = ioMap['w_status'] ?? false;
@@ -193,14 +208,12 @@ class WidgetService {
               bool? alert;
 
               if (isInput) {
-                // Para entradas, determinar estado de alerta
                 String rState = (ioMap['r_state'] ?? '0').toString();
                 bool isClosed =
                     (wStatus && rState == '1') || (!wStatus && rState != '1');
                 status = isClosed;
                 alert = !isClosed;
               } else {
-                // Para salidas
                 status = wStatus;
                 alert = null;
               }
@@ -211,29 +224,23 @@ class WidgetService {
                 alert: alert,
               );
             } else {
-              state = WidgetDeviceState(
-                online: false,
-                status: false,
-              );
+              state = WidgetDeviceState(online: false, status: false);
             }
           } else {
             // Dispositivos normales
             bool online = deviceData['cstate'] ?? false;
             bool status = deviceData['w_status'] ?? false;
 
-            // Datos específicos según el tipo de dispositivo
             String? temperature;
             bool? alert;
             int? ppmCO;
             int? ppmCH4;
 
             if (widgetData.productCode == '015773_IOT') {
-              // Detector
               ppmCO = deviceData['ppmco'];
               ppmCH4 = deviceData['ppmch4'];
               alert = deviceData['alert'] == 1;
             } else if (widgetData.productCode == '023430_IOT') {
-              // Termómetro
               temperature = deviceData['actualTemp']?.toString();
             }
 
@@ -250,8 +257,6 @@ class WidgetService {
           await updateWidget(widgetData, state);
         }
       }
-
-      // printLog.i('Todos los widgets actualizados');
     } catch (e) {
       printLog.e('Error actualizando todos los widgets: $e');
     }
@@ -267,7 +272,6 @@ class WidgetService {
       return WidgetDeviceState(online: false, status: false);
     }
 
-    // Para dispositivos con múltiples salidas/entradas
     if (ioIndex != null) {
       final ioData = deviceData['io$ioIndex'];
       if (ioData != null) {
@@ -278,29 +282,20 @@ class WidgetService {
           ioMap = Map<String, dynamic>.from(ioData);
         }
 
-        // Verificar si es entrada o salida
         String pinType = ioMap['pinType']?.toString() ?? '0';
-        bool isInput = pinType != '0'; // pinType == '1' es entrada
+        bool isInput = pinType != '0';
         bool wStatus = ioMap['w_status'] ?? false;
 
         bool status;
         bool? alert;
 
         if (isInput) {
-          // Para entradas, el estado de alerta se determina por w_status y r_state
           String rState = (ioMap['r_state'] ?? '0').toString();
-
-          // Lógica de alerta para entradas (mismo que wifi.dart):
-          // - Si w_status == true y r_state == '1' → Cerrado (sin alerta)
-          // - Si w_status == true y r_state != '1' → Abierto (alerta)
-          // - Si w_status == false y r_state == '1' → Abierto (alerta)
-          // - Si w_status == false y r_state != '1' → Cerrado (sin alerta)
           bool isClosed =
               (wStatus && rState == '1') || (!wStatus && rState != '1');
-          status = isClosed; // Cerrado = true, Abierto = false
-          alert = !isClosed; // Alerta cuando está abierto
+          status = isClosed;
+          alert = !isClosed;
         } else {
-          // Para salidas, usar w_status directamente
           status = wStatus;
           alert = null;
         }
@@ -315,23 +310,19 @@ class WidgetService {
       }
     }
 
-    // Dispositivos normales
     bool online = deviceData['cstate'] ?? false;
     bool status = deviceData['w_status'] ?? false;
 
-    // Datos específicos según el tipo de dispositivo
     String? temperature;
     bool? alert;
     int? ppmCO;
     int? ppmCH4;
 
     if (productCode == '015773_IOT') {
-      // Detector
       ppmCO = deviceData['ppmco'];
       ppmCH4 = deviceData['ppmch4'];
       alert = deviceData['alert'] == 1;
     } else if (productCode == '023430_IOT') {
-      // Termómetro
       temperature = deviceData['actualTemp']?.toString();
     }
 

@@ -1,20 +1,26 @@
 package com.caldensmart.sime.widget
 
 import android.content.Context
+import android.net.Uri
 import androidx.work.*
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Build
 import android.util.Log
+import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import java.util.concurrent.TimeUnit
 
 /**
  * Worker para actualizar widgets periódicamente.
  * Garantiza que los widgets se actualicen incluso si el sistema mata el proceso.
- * 
- * Después de un reboot, este worker también intenta reiniciar el 
- * Flutter background service si detecta widgets activos.
+ *
+ * FIX: Además de refrescar visualmente, ahora envía un HomeWidgetBackgroundIntent
+ * con la URI caldensmart://widget/update, que despierta el isolate de Dart
+ * (backgroundCallback en widget_handler.dart) para sincronizar el estado real
+ * desde DynamoDB. Esto resuelve el caso donde el background service de Flutter
+ * está muerto y los datos en SharedPrefs quedaron obsoletos (mostrando "offline"
+ * aunque el dispositivo esté online).
  */
 class WidgetUpdateWorker(
     context: Context,
@@ -32,7 +38,7 @@ class WidgetUpdateWorker(
          */
         fun schedule(context: Context) {
             val workRequest = PeriodicWorkRequestBuilder<WidgetUpdateWorker>(
-                15, TimeUnit.MINUTES // Mínimo 15 minutos en Android
+                15, TimeUnit.MINUTES
             )
                 .setConstraints(
                     Constraints.Builder()
@@ -64,7 +70,7 @@ class WidgetUpdateWorker(
                         .setRequiredNetworkType(NetworkType.CONNECTED)
                         .build()
                 )
-                .setInitialDelay(5, TimeUnit.SECONDS) // Pequeño delay para que el sistema arranque
+                .setInitialDelay(5, TimeUnit.SECONDS)
                 .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(
@@ -86,54 +92,75 @@ class WidgetUpdateWorker(
 
     override fun doWork(): Result {
         Log.d(TAG, "Ejecutando actualización de widgets")
-        
+
         try {
-            // Obtener todos los widget IDs
             val appWidgetManager = AppWidgetManager.getInstance(applicationContext)
             val widgetIds = appWidgetManager.getAppWidgetIds(
                 ComponentName(applicationContext, ControlWidgetProvider::class.java)
             )
-            
+
             if (widgetIds.isEmpty()) {
                 Log.d(TAG, "No hay widgets activos, saltando actualización")
                 return Result.success()
             }
-            
+
             Log.d(TAG, "Actualizando ${widgetIds.size} widgets: ${widgetIds.joinToString()}")
-            
-            // Verificar si el Flutter background service está corriendo
-            // Si no, intentar reiniciarlo (esto cubre el caso post-boot)
+
             val prefs = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val isServiceReady = prefs.getBoolean("widget_service_ready", false)
-            
+
+            // ── Paso 1: intentar despertar el Flutter background service ──────────
+            // Si el servicio no está ready, intentamos reiniciarlo (mismo comportamiento
+            // que antes).
             if (!isServiceReady) {
                 Log.d(TAG, "widget_service_ready=false, intentando reiniciar Flutter background service")
                 tryRestartFlutterService(applicationContext)
             }
-            
-            // Forzar actualización visual de todos los widgets
+
+            // ── Paso 2 (FIX): enviar HomeWidgetBackgroundIntent /update ───────────
+            // Esto despierta el isolate de Dart (backgroundCallback en
+            // widget_handler.dart) para que llame syncWidgetsWithDatabase() y guarde
+            // el estado real de los dispositivos en SharedPrefs.
+            // Es independiente del estado del background service: funciona tanto si
+            // el servicio está vivo como si fue matado por el sistema.
+            try {
+                val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(
+                    applicationContext,
+                    Uri.parse("caldensmart://widget/update")
+                )
+                backgroundIntent.send()
+                Log.d(TAG, "HomeWidgetBackgroundIntent /update enviado → isolate Dart despertado")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error enviando HomeWidgetBackgroundIntent: ${e.message}")
+                // No es fatal: el paso 3 aún refresca visualmente con los datos actuales
+            }
+
+            // ── Paso 3: refrescar visualmente todos los widgets ───────────────────
+            // Esto hace que onUpdate() se ejecute y muestre los datos más recientes
+            // de SharedPrefs (que deberían estar actualizados por el paso 2, aunque
+            // puede haber un pequeño delay ya que el isolate corre async).
             val intent = Intent(applicationContext, ControlWidgetProvider::class.java).apply {
                 action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
                 putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, widgetIds)
             }
             applicationContext.sendBroadcast(intent)
-            
+
             Log.d(TAG, "Actualización de widgets completada exitosamente")
             return Result.success()
-            
+
         } catch (e: Exception) {
             Log.e(TAG, "Error actualizando widgets: ${e.message}", e)
             return Result.retry()
         }
     }
-    
+
     /**
      * Intenta reiniciar el Flutter background service si no está corriendo
      */
     private fun tryRestartFlutterService(context: Context) {
         try {
             val serviceIntent = Intent(context, Class.forName("id.flutter.flutter_background_service.BackgroundService"))
-            
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(serviceIntent)
             } else {

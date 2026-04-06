@@ -21,6 +21,14 @@ firebase.json
 .firebaserc
 firestore.indexes.json
 firestore.rules
+linux/
+web/
+macos/
+windows/
+test/
+.ruby-lsp/
+firebase.json
+lint.markdownlint.json
 
 
 # IntelliJ related
