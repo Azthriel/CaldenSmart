@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform;
 import 'dart:ui';
+import 'package:caldensmart/widget/widget_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:home_widget/home_widget.dart';
@@ -13,6 +14,7 @@ import 'package:caldensmart/aws/dynamo/dynamo.dart';
 import 'package:caldensmart/Global/stored_data.dart';
 import 'package:caldensmart/master.dart';
 import 'package:caldensmart/logger.dart';
+import 'package:caldensmart/widget/widget_service.dart';
 
 /// Constantes para widgets iOS
 const String iOSWidgetName = 'ControlWidget';
@@ -40,10 +42,12 @@ StreamSubscription? _widgetMqttSubscription;
 bool _isWidgetListenerActive = false;
 
 /// Flag para indicar que el servicio está completamente inicializado
+/// Los widgets no deben permitir interacción hasta que esto sea true
 bool _isServiceReady = false;
 
 /// Verifica si el servicio está listo para procesar interacciones de widgets
 Future<bool> isWidgetServiceReady() async {
+  // Primero verificar el caché en memoria
   if (_isServiceReady) return true;
 
   try {
@@ -62,6 +66,7 @@ Future<void> setWidgetServiceReady(bool ready) async {
     await prefs.setBool('widget_service_ready', ready);
     _isServiceReady = ready;
 
+    // Actualizar todos los widgets para reflejar el nuevo estado
     await HomeWidget.saveWidgetData('widget_service_ready', ready);
     await updateAllWidgets();
 
@@ -71,42 +76,11 @@ Future<void> setWidgetServiceReady(bool ready) async {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers para guardado atómico del estado del widget
-// FIX: En lugar de N awaits secuenciales (que crean race conditions cuando
-//      ControlWidgetProvider lee en medio de las escrituras), guardamos todo
-//      el estado en UN ÚNICO JSON bajo la clave widget_state_<id>.
-// ─────────────────────────────────────────────────────────────────────────────
-
-/// Lee el mapa de estado actual para un widget (o {} si no existe)
-Future<Map<String, dynamic>> _readWidgetState(dynamic widgetId) async {
-  final existing =
-      await HomeWidget.getWidgetData<String>('widget_state_$widgetId');
-  if (existing == null || existing.isEmpty) return {};
-  try {
-    return Map<String, dynamic>.from(jsonDecode(existing));
-  } catch (_) {
-    return {};
-  }
-}
-
-/// Escribe atómicamente varios campos del estado del widget.
-/// Siempre actualiza el timestamp para que ControlWidgetProvider sepa
-/// cuándo fue la última actualización real.
-Future<void> _writeWidgetState(
-    dynamic widgetId, Map<String, dynamic> fields) async {
-  final state = await _readWidgetState(widgetId);
-  state.addAll(fields);
-  state['ts'] = DateTime.now().millisecondsSinceEpoch;
-  await HomeWidget.saveWidgetData('widget_state_$widgetId', jsonEncode(state));
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-/// Callback que se ejecuta cuando el widget es presionado en background.
-/// Esta función debe ser top-level (no dentro de una clase).
+/// Callback que se ejecuta cuando el widget es presionado en background
+/// Esta función debe ser top-level (no dentro de una clase)
 @pragma('vm:entry-point')
 Future<void> backgroundCallback(Uri? uri) async {
+  // Asegurar que Flutter esté inicializado (importante para background)
   WidgetsFlutterBinding.ensureInitialized();
 
   printLog.i('Widget background callback: $uri');
@@ -118,8 +92,10 @@ Future<void> backgroundCallback(Uri? uri) async {
 
   printLog.i('URI scheme: ${uri.scheme}, host: ${uri.host}, path: ${uri.path}');
 
+  // Manejar diferentes acciones
   if (uri.host == 'widget') {
     if (uri.path == '/toggle') {
+      // Toggle de un widget
       final widgetIdStr = uri.queryParameters['widgetId'];
       printLog.i('Widget callback: widgetId string = $widgetIdStr');
 
@@ -136,19 +112,8 @@ Future<void> backgroundCallback(Uri? uri) async {
 
       printLog.i('Widget callback: procesando toggle para widget $widgetId');
       await _handleWidgetToggle(widgetId);
-    } else if (uri.path == '/update') {
-      // FIX: WorkManager dispara este intent para que el isolate de Dart
-      //      sincronice el estado real desde la base de datos y actualice
-      //      los widgets. Esto resuelve el caso donde el background service
-      //      fue matado y los datos en SharedPrefs quedaron obsoletos.
-      printLog.i('Widget callback: sincronizando datos desde WorkManager');
-      try {
-        await syncWidgetsWithDatabase();
-        printLog.i('Widget callback: sincronización completada');
-      } catch (e) {
-        printLog.e('Widget callback: error en sincronización: $e');
-      }
     } else if (uri.path == '/checkAndStop') {
+      // Verificar si quedan widgets y detener servicio si es necesario
       printLog.i(
           'Widget callback: verificando widgets y deteniendo servicio si es necesario');
       await _handleCheckAndStopService();
@@ -173,6 +138,7 @@ Future<void> _handleCheckAndStopService() async {
       printLog.i(
           'No hay widgets activos, verificando si se puede detener el servicio');
 
+      // Invocar al servicio de background para que verifique y se detenga
       final backService = FlutterBackgroundService();
       final isRunning = await backService.isRunning();
 
@@ -195,25 +161,26 @@ Future<void> _handleWidgetToggle(int widgetId) async {
   try {
     printLog.i('=== INICIO _handleWidgetToggle para widget $widgetId ===');
 
+    // Verificar si el servicio está listo
     final isReady = await isWidgetServiceReady();
     if (!isReady) {
       printLog.i('Widget $widgetId: Servicio no está listo, ignorando toggle');
-      await _writeWidgetState(widgetId, {'initializing': true});
+      // Mostrar estado de inicializando al usuario
+      await HomeWidget.saveWidgetData('widget_initializing_$widgetId', true);
       await updateAllWidgets();
 
+      // Esperar un momento y limpiar el estado
       await Future.delayed(const Duration(seconds: 2));
-      await _writeWidgetState(widgetId, {'initializing': false});
+      await HomeWidget.saveWidgetData('widget_initializing_$widgetId', false);
       await updateAllWidgets();
       return;
     }
 
-    // Mostrar loading inmediatamente (atómico)
-    await _writeWidgetState(widgetId, {'loading': true});
+    // Mostrar loading inmediatamente
+    await HomeWidget.saveWidgetData('widget_loading_$widgetId', true);
     await updateAllWidgets();
 
-    // Las claves de configuración (pc, sn, isPin, pinIndex, isControl) se leen
-    // individualmente porque son escritas en tiempo de configuración y no tienen
-    // el problema de race condition (no cambian mientras el widget existe).
+    // Leer datos del widget desde SharedPreferences
     final pc = await HomeWidget.getWidgetData<String>('widget_pc_$widgetId');
     final sn = await HomeWidget.getWidgetData<String>('widget_sn_$widgetId');
     final isPin =
@@ -222,33 +189,15 @@ Future<void> _handleWidgetToggle(int widgetId) async {
     final pinIndex =
         await HomeWidget.getWidgetData<String>('widget_pin_index_$widgetId') ??
             '';
+    final currentStatus =
+        await HomeWidget.getWidgetData<bool>('widget_status_$widgetId') ??
+            false;
     final isControl =
         await HomeWidget.getWidgetData<bool>('widget_is_control_$widgetId') ??
             false;
 
-    // FIX: Leer el status actual desde el JSON atómico primero; si no existe,
-    //      fallback a la clave individual (backward compat).
-    bool currentStatus = false;
-    final stateJson =
-        await HomeWidget.getWidgetData<String>('widget_state_$widgetId');
-    if (stateJson != null && stateJson.isNotEmpty) {
-      try {
-        final stateMap = jsonDecode(stateJson) as Map<String, dynamic>;
-        currentStatus = stateMap['status'] as bool? ?? false;
-      } catch (_) {
-        currentStatus =
-            await HomeWidget.getWidgetData<bool>('widget_status_$widgetId') ??
-                false;
-      }
-    } else {
-      currentStatus =
-          await HomeWidget.getWidgetData<bool>('widget_status_$widgetId') ??
-              false;
-    }
-
     printLog.i(
-        'Widget $widgetId datos: pc=$pc, sn=$sn, isPin=$isPin, pinIndex=$pinIndex, '
-        'currentStatus=$currentStatus, isControl=$isControl');
+        'Widget $widgetId datos: pc=$pc, sn=$sn, isPin=$isPin, pinIndex=$pinIndex, currentStatus=$currentStatus, isControl=$isControl');
 
     if (pc == null || sn == null) {
       printLog.e('Widget $widgetId: datos incompletos (pc=$pc, sn=$sn)');
@@ -256,15 +205,18 @@ Future<void> _handleWidgetToggle(int widgetId) async {
       return;
     }
 
+    // Solo toggle si es un dispositivo de control
     if (!isControl) {
       printLog.i('Widget $widgetId: no es un dispositivo de control, saliendo');
       await _hideWidgetLoading(widgetId);
       return;
     }
 
+    // Calcular nuevo estado (toggle)
     final newStatus = !currentStatus;
     printLog.i('Widget $widgetId: toggle de $currentStatus -> $newStatus');
 
+    // Asegurar conexión MQTT (importante para cuando la app está cerrada)
     printLog.i('Widget $widgetId: verificando conexión MQTT...');
     if (mqttAWSFlutterClient == null) {
       printLog
@@ -287,49 +239,54 @@ Future<void> _handleWidgetToggle(int widgetId) async {
       printLog.i('Widget: MQTT conectado exitosamente');
     }
 
+    // Construir topics MQTT
     final topicRx = 'devices_rx/$pc/$sn';
     final topicTx = 'devices_tx/$pc/$sn';
     printLog.i('Widget $widgetId: topics - rx=$topicRx, tx=$topicTx');
 
+    // Construir mensaje según el tipo de dispositivo
     String message;
     if (isPin && pinIndex.isNotEmpty) {
+      // Dispositivo con pin (IO)
       final index = int.tryParse(pinIndex) ?? 0;
       message = jsonEncode({
         'pinType': 0,
         'index': index,
         'w_status': newStatus,
-        'r_state': '0',
+        'r_state': '0', // Por defecto
       });
       printLog.i('Widget $widgetId: Toggle pin $index -> $newStatus');
     } else {
+      // Dispositivo normal
       message = jsonEncode({'w_status': newStatus});
       printLog.i('Widget $widgetId: Toggle dispositivo -> $newStatus');
     }
 
     printLog.i('Widget $widgetId: enviando mensaje MQTT: $message');
+
+    // Enviar mensaje MQTT
     sendMessagemqtt(topicRx, message);
     sendMessagemqtt(topicTx, message);
+
     printLog.i('Widget $widgetId: mensaje MQTT enviado');
 
-    // FIX: Actualizar el estado atómicamente (status + ts en una sola escritura)
-    await _writeWidgetState(widgetId, {
-      'status': newStatus,
-      'loading': false,
-    });
-    // Mantener clave individual para backward compat
+    // Actualizar estado en SharedPreferences para refrescar el widget
     await HomeWidget.saveWidgetData('widget_status_$widgetId', newStatus);
 
-    await updateAllWidgets();
+    // Ocultar loading y actualizar widget
+    await _hideWidgetLoading(widgetId);
+
     printLog.i('Widget $widgetId: Toggle completado exitosamente');
   } catch (e) {
     printLog.e('Error en widget toggle: $e');
+    // Asegurarse de ocultar loading en caso de error
     await _hideWidgetLoading(widgetId);
   }
 }
 
-/// Oculta el indicador de loading del widget (atómico)
+/// Oculta el indicador de loading del widget
 Future<void> _hideWidgetLoading(int widgetId) async {
-  await _writeWidgetState(widgetId, {'loading': false, 'initializing': false});
+  await HomeWidget.saveWidgetData('widget_loading_$widgetId', false);
   await updateAllWidgets();
 }
 
@@ -338,6 +295,10 @@ Future<void> updateWidgetsForDevice(
     String pc, String sn, bool isOn, bool isOnline,
     {int? pinIndex}) async {
   try {
+    // Obtener todos los widget IDs almacenados
+    // home_widget no tiene una API para listar todos los widgets, así que usaremos un enfoque diferente
+    // Guardaremos una lista de widget IDs activos
+
     final widgetIdsJson =
         await HomeWidget.getWidgetData<String>('active_widget_ids');
     if (widgetIdsJson == null || widgetIdsJson.isEmpty) return;
@@ -356,24 +317,23 @@ Future<void> updateWidgetsForDevice(
               'widget_pin_index_$widgetId') ??
           '';
 
+      // Verificar si este widget corresponde al dispositivo que cambió
       if (widgetPc == pc && widgetSn == sn) {
+        // Si es un dispositivo con pin, verificar que sea el mismo pin
         if (pinIndex != null && widgetIsPin) {
           if (widgetPinIndex != pinIndex.toString()) continue;
         }
 
-        // FIX: escritura atómica → una sola operación en SharedPrefs
-        await _writeWidgetState(widgetId, {
-          'status': isOn,
-          'online': isOnline,
-        });
-        // Backward compat para _handleWidgetToggle
+        // Actualizar el estado del widget
         await HomeWidget.saveWidgetData('widget_status_$widgetId', isOn);
+        await HomeWidget.saveWidgetData('widget_online_$widgetId', isOnline);
 
         printLog
             .i('Widget $widgetId actualizado: isOn=$isOn, isOnline=$isOnline');
       }
     }
 
+    // Actualizar todos los widgets
     await updateAllWidgets();
   } catch (e) {
     printLog.e('Error actualizando widgets: $e');
@@ -417,6 +377,7 @@ Future<void> unregisterWidgetId(int widgetId) async {
     printLog
         .i('Widget $widgetId eliminado. Total widgets: ${widgetIds.length}');
 
+    // Si no quedan widgets, detener el servicio
     if (widgetIds.isEmpty) {
       await stopWidgetService();
     }
@@ -465,9 +426,8 @@ Future<Set<String>> getWidgetTopics() async {
   return topics;
 }
 
-/// Obtiene el estado real de cada widget desde DynamoDB y actualiza los widgets.
-/// Es llamada al inicializar el servicio para sincronizar el estado real,
-/// y también desde backgroundCallback cuando WorkManager dispara /update.
+/// Obtiene el estado real de cada widget desde DynamoDB y actualiza los widgets
+/// Esta función se llama al inicializar el servicio para sincronizar el estado real
 Future<void> syncWidgetsWithDatabase() async {
   try {
     printLog.i('Sincronizando widgets con base de datos...');
@@ -500,16 +460,25 @@ Future<void> syncWidgetsWithDatabase() async {
           continue;
         }
 
+        // FIX: Cargar la configuración completa (nickname, tipo, etc.) desde
+        // WidgetService para que el JSON atómico tenga TODOS los campos que
+        // necesita Kotlin. Sin esto, el JSON solo tiene online/status/alert
+        // y Kotlin muestra el estado "sin configurar" por nickname vacío.
+        final widgetConfig =
+            await WidgetService.loadWidgetConfig(widgetId as int);
+
         printLog.i('Widget $widgetId: consultando $pc/$sn');
 
+        // Hacer queryItem para obtener el estado real del dispositivo
         await queryItems(pc, sn);
 
+        // Obtener datos del globalDATA que fue actualizado por queryItems
         final deviceData = globalDATA['$pc/$sn'];
 
         if (deviceData == null) {
           printLog.e('Widget $widgetId: no se encontraron datos para $pc/$sn');
-          // FIX: escritura atómica incluso para el caso de error
-          await _writeWidgetState(widgetId, {'online': false});
+          // Guardar solo online=false pero preservar nickname si existe
+          await HomeWidget.saveWidgetData('widget_online_$widgetId', false);
           continue;
         }
 
@@ -519,6 +488,7 @@ Future<void> syncWidgetsWithDatabase() async {
         bool displayAlert = false;
 
         if (isPin && pinIndex.isNotEmpty) {
+          // Dispositivo con pin (IO)
           final ioData = deviceData['io$pinIndex'];
           if (ioData != null) {
             Map<String, dynamic> ioMap = {};
@@ -534,45 +504,66 @@ Future<void> syncWidgetsWithDatabase() async {
             int rState = int.tryParse(ioMap['r_state']?.toString() ?? '0') ?? 0;
 
             if (pinType == 0) {
+              // Salida (control)
               isOn = wStatus;
             } else {
+              // Entrada (visualización)
               displayAlert =
                   (wStatus && rState == 0) || (!wStatus && rState == 1);
             }
           }
         } else {
+          // Dispositivos normales
           if (pc == '023430_IOT') {
+            // Termómetro
             displayTemp = deviceData['actualTemp']?.toString();
           } else if (pc == '015773_IOT') {
+            // Detector
             int alertValue =
                 int.tryParse(deviceData['alert']?.toString() ?? '0') ?? 0;
             displayAlert = alertValue == 1 || deviceData['alert'] == true;
           } else {
+            // Otros dispositivos de control
             isOn = deviceData['w_status'] ?? false;
           }
         }
 
-        // FIX: todos los campos en una única escritura atómica con timestamp
-        final fieldsToWrite = <String, dynamic>{
-          'online': isOnline,
-          'status': isOn,
-          'displayAlert': displayAlert,
-        };
-        if (displayTemp != null) fieldsToWrite['displayTemp'] = displayTemp;
+        // FIX: Usar WidgetService.updateWidget para escribir el estado completo
+        // (incluyendo nickname, isControl, productCode, ts, etc.) de una sola vez.
+        // Antes solo se guardaban las claves individuales online/status/alert,
+        // y el JSON atómico quedaba sin nickname → Kotlin mostraba "sin configurar".
+        if (widgetConfig != null) {
+          final deviceState = WidgetDeviceState(
+            online: isOnline,
+            status: isOn,
+            temperature: displayTemp,
+            alert: displayAlert ? true : null,
+          );
+          await WidgetService.updateWidget(widgetConfig, deviceState);
+        } else {
+          // Fallback: guardar claves individuales si no hay config
+          await HomeWidget.saveWidgetData('widget_online_$widgetId', isOnline);
+          await HomeWidget.saveWidgetData('widget_status_$widgetId', isOn);
+          if (displayTemp != null) {
+            await HomeWidget.saveWidgetData(
+                'widget_display_temp_$widgetId', displayTemp);
+          }
+          await HomeWidget.saveWidgetData(
+              'widget_display_alert_$widgetId', displayAlert);
+        }
 
-        await _writeWidgetState(widgetId, fieldsToWrite);
-        // Backward compat
-        await HomeWidget.saveWidgetData('widget_status_$widgetId', isOn);
-
-        printLog
-            .i('Widget $widgetId sincronizado: online=$isOnline, status=$isOn, '
-                'temp=$displayTemp, alert=$displayAlert');
+        printLog.i(
+            'Widget $widgetId sincronizado: online=$isOnline, status=$isOn, temp=$displayTemp, alert=$displayAlert');
       } catch (e) {
         printLog.e('Error sincronizando widget $widgetId: $e');
       }
     }
 
+    // Actualizar todos los widgets nativos
+    // (WidgetService.updateWidget ya llama a updateAllWidgets por cada widget,
+    // pero este call final asegura que todos se redibujen si el loop fue rápido)
     await updateAllWidgets();
+
     printLog.i('Sincronización de widgets completada');
   } catch (e) {
     printLog.e('Error en sincronización de widgets: $e');
@@ -580,8 +571,10 @@ Future<void> syncWidgetsWithDatabase() async {
 }
 
 /// Inicializa el servicio de widgets en background
+/// Se llama cuando se crea un widget para asegurar que el servicio de MQTT esté activo
 Future<void> initializeWidgetService() async {
   try {
+    // Solicitar exclusión de optimización de batería
     if (android) {
       try {
         final status = await Permission.ignoreBatteryOptimizations.status;
@@ -633,19 +626,26 @@ Future<void> initializeWidgetService() async {
 
     final backService = FlutterBackgroundService();
 
+    // Marcar que el servicio debe iniciarse por widgets
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('widgetServiceEnabled', true);
 
+    // Verificar si el servicio ya está corriendo
     final isRunning = await backService.isRunning();
     if (isRunning) {
+      // Notificar que debe suscribirse a widgets y sincronizar
       backService.invoke('subscribeAndSyncWidgets');
       printLog.i(
           'Widget service: Servicio ya corriendo, suscribiendo y sincronizando widgets');
       return;
     }
 
+    // Usar initializeService de master.dart que ya configura el servicio correctamente
+    // La función onStart del servicio ya llama a subscribeToWidgetTopics()
     printLog.i('Widget service: Iniciando servicio de background...');
 
+    // Importamos e iniciamos usando la configuración existente de master.dart
+    // El servicio ya está configurado para escuchar 'subscribeWidgets'
     await backService.configure(
       iosConfiguration: IosConfiguration(
         autoStart: false,
@@ -670,27 +670,39 @@ Future<void> initializeWidgetService() async {
 }
 
 /// Función de inicio del servicio específica para widgets
+/// Esta función debe ser top-level (pública) para funcionar como callback del servicio
 @pragma('vm:entry-point')
 void onWidgetServiceStart(ServiceInstance service) async {
   DartPluginRegistrant.ensureInitialized();
 
   printLog.i('Widget background service: iniciando...');
 
+  // Marcar servicio como NO listo mientras se inicializa
   await setWidgetServiceReady(false);
 
+  // Conectar a MQTT
   final mqttConnected = await setupMqtt();
 
   if (!mqttConnected) {
     printLog.e('Widget background service: Error conectando a MQTT');
+    // Intentar reconectar después de un delay
     await Future.delayed(const Duration(seconds: 5));
     await setupMqtt();
   }
 
+  // Suscribirse a los topics de los widgets
   await subscribeToWidgetTopics();
+
+  // Sincronizar widgets con el estado real desde la base de datos
   await syncWidgetsWithDatabase();
+
+  // Marcar servicio como LISTO
   await setWidgetServiceReady(true);
 
   printLog.i('Widget background service: MQTT conectado y suscrito - LISTO');
+
+  // Mostrar notificación para que el usuario sepa que el servicio está activo
+  // Esto es necesario para servicios en primer plano en Android
 
   service.on('stopService').listen((event) async {
     await setWidgetServiceReady(false);
@@ -703,6 +715,7 @@ void onWidgetServiceStart(ServiceInstance service) async {
     await subscribeToWidgetTopics();
   });
 
+  // Listener para suscribir Y sincronizar (cuando se agrega un nuevo widget)
   service.on('subscribeAndSyncWidgets').listen((event) async {
     printLog.i(
         'Widget service: recibida petición para suscribir y sincronizar widgets');
@@ -710,6 +723,7 @@ void onWidgetServiceStart(ServiceInstance service) async {
     await syncWidgetsWithDatabase();
   });
 
+  // Listener para verificar si quedan widgets activos (llamado cuando se elimina un widget)
   service.on('checkWidgetsAndStop').listen((event) async {
     printLog.i('Widget service: verificando si quedan widgets activos');
     final hasWidgets = await hasActiveWidgets();
@@ -722,7 +736,8 @@ void onWidgetServiceStart(ServiceInstance service) async {
     }
   });
 
-  // Heartbeat cada 5 minutos para reconexión MQTT si es necesario
+  // Mantener el servicio activo con un timer periódico para reconexión MQTT si es necesario
+  // Heartbeat cada 5 minutos para mejor disponibilidad del servicio
   Timer.periodic(const Duration(minutes: 5), (timer) async {
     try {
       if (mqttAWSFlutterClient == null ||
@@ -755,11 +770,13 @@ void onWidgetServiceStart(ServiceInstance service) async {
 }
 
 /// Detiene el servicio de widgets si no hay más widgets activos
+/// Verifica si hay equipos de control por distancia antes de detener
 Future<void> stopWidgetService() async {
   try {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('widgetServiceEnabled', false);
 
+    // Verificar si hay equipos de control por distancia activos
     String currentUserEmail = await loadEmail();
     List<String> deviceControl = [];
 
@@ -769,6 +786,7 @@ Future<void> stopWidgetService() async {
       printLog.e('Error obteniendo dispositivos de control por distancia: $e');
     }
 
+    // Solo detener si no hay control por distancia activo
     if (deviceControl.isEmpty) {
       final backService = FlutterBackgroundService();
       final isRunning = await backService.isRunning();
@@ -787,14 +805,15 @@ Future<void> stopWidgetService() async {
 }
 
 /// Suscribe a los topics MQTT necesarios para los widgets
+/// Esta función se llama desde el servicio de background
 Future<void> subscribeToWidgetTopics() async {
   if (_isWidgetListenerActive) return;
 
   try {
     final topics = await getWidgetTopics();
-
     if (topics.isEmpty) return;
 
+    // Asegurar conexión MQTT
     if (mqttAWSFlutterClient == null ||
         mqttAWSFlutterClient!.connectionStatus?.state !=
             MqttConnectionState.connected) {
@@ -806,11 +825,13 @@ Future<void> subscribeToWidgetTopics() async {
       }
     }
 
+    // Suscribirse a cada topic
     for (var topic in topics) {
       printLog.i('Widget MQTT: Suscribiendo a $topic');
       mqttAWSFlutterClient!.subscribe(topic, MqttQos.atMostOnce);
     }
 
+    // Escuchar mensajes para widgets (versión background-safe)
     _widgetMqttSubscription?.cancel();
     _widgetMqttSubscription = mqttAWSFlutterClient!.updates!.listen((c) {
       _handleWidgetMqttMessage(c);
@@ -842,6 +863,7 @@ void _handleWidgetMqttMessage(List<MqttReceivedMessage<MqttMessage>> messages) {
     try {
       final Map<String, dynamic> messageMap = json.decode(messageString) ?? {};
 
+      // Detectar si es un dispositivo con pin (IO)
       bool specialDevice = messageMap.keys.contains('index') &&
           !messageMap.keys.contains('cstate');
 
@@ -852,17 +874,24 @@ void _handleWidgetMqttMessage(List<MqttReceivedMessage<MqttMessage>> messages) {
         int rState = int.tryParse(messageMap['r_state'].toString()) ?? 0;
 
         if (pinType == 0) {
+          // Salida (control) - actualizar estado on/off
           updateWidgetsForDevice(pc, sn, wStatus, true, pinIndex: index);
         } else {
+          // Entrada (visualización) - calcular estado de alerta
+          // Alerta si: (w_status == true && r_state == 0) || (w_status == false && r_state == 1)
           bool isAlert = (wStatus && rState == 0) || (!wStatus && rState == 1);
           updateWidgetsForDeviceDisplay(pc, sn, true,
               pinIndex: index, displayAlert: isAlert);
         }
       } else {
+        // Dispositivos normales
         if (messageMap.containsKey('actualTemp')) {
+          // Termómetro
           String temp = messageMap['actualTemp'].toString();
           updateWidgetsForDeviceDisplay(pc, sn, true, displayTemp: temp);
         } else if (messageMap.containsKey('alert')) {
+          // Detector 015773_IOT
+          // alert viene como 0 o 1 en el mapa
           int alertValue = int.tryParse(messageMap['alert'].toString()) ?? 0;
           bool alert = alertValue == 1;
           updateWidgetsForDeviceDisplay(pc, sn, true, displayAlert: alert);
@@ -908,24 +937,35 @@ Future<void> updateWidgetsForDeviceDisplay(String pc, String sn, bool isOnline,
           await HomeWidget.getWidgetData<bool>('widget_is_control_$widgetId') ??
               false;
 
+      // Solo actualizar widgets de visualización
       if (isControl) continue;
 
+      // Verificar si este widget corresponde al dispositivo que cambió
       if (widgetPc == pc && widgetSn == sn) {
+        // Si es un dispositivo con pin, verificar que sea el mismo pin
         if (pinIndex != null && widgetIsPin) {
           if (widgetPinIndex != pinIndex.toString()) continue;
         }
 
-        // FIX: escritura atómica
-        final fields = <String, dynamic>{'online': isOnline};
-        if (displayTemp != null) fields['displayTemp'] = displayTemp;
-        if (displayAlert != null) fields['displayAlert'] = displayAlert;
-        await _writeWidgetState(widgetId, fields);
+        // Actualizar datos de visualización
+        await HomeWidget.saveWidgetData('widget_online_$widgetId', isOnline);
+
+        if (displayTemp != null) {
+          await HomeWidget.saveWidgetData(
+              'widget_display_temp_$widgetId', displayTemp);
+        }
+
+        if (displayAlert != null) {
+          await HomeWidget.saveWidgetData(
+              'widget_display_alert_$widgetId', displayAlert);
+        }
 
         printLog.i(
             'Widget visualización $widgetId actualizado: temp=$displayTemp, alert=$displayAlert');
       }
     }
 
+    // Actualizar todos los widgets
     await updateAllWidgets();
   } catch (e) {
     printLog.e('Error actualizando widgets de visualización: $e');
@@ -940,8 +980,11 @@ void disposeWidgetListener() {
 }
 
 /// Verifica si se puede detener el servicio de background
+/// Retorna true si no hay widgets activos Y no hay equipos de control por distancia
+/// Esta función debe usarse desde los dispositivos antes de detener el servicio
 Future<bool> canStopBackgroundService() async {
   try {
+    // Verificar widgets activos
     bool widgetsActive = await hasActiveWidgets();
 
     if (widgetsActive) {
@@ -949,6 +992,7 @@ Future<bool> canStopBackgroundService() async {
       return false;
     }
 
+    // Verificar control por distancia
     String currentUserEmail = await loadEmail();
     List<String> deviceControl =
         await getDevicesInDistanceControl(currentUserEmail);
@@ -964,11 +1008,13 @@ Future<bool> canStopBackgroundService() async {
     return true;
   } catch (e) {
     printLog.e('Error verificando si se puede detener el servicio: $e');
+    // En caso de error, es más seguro no detener el servicio
     return false;
   }
 }
 
 /// Intenta detener el servicio de background si no hay widgets ni control por distancia activos
+/// Esta función debe llamarse cuando se cancela el control por distancia
 Future<void> tryStopBackgroundService() async {
   try {
     bool canStop = await canStopBackgroundService();

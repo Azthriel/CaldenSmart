@@ -1,115 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Layout 2x1 del homescreen widget de CaldenSmart.
+    Todo en una sola fila horizontal para aprovechar el espacio reducido.
+
+    Estructura:
+    [ logo ] [ nombre del equipo (flex) ] [ status/temp ] [ conexión ]
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent">
 
-    <LinearLayout
-        android:id="@+id/widget_container"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@drawable/widget_background_off"
-        android:orientation="vertical"
-        android:padding="10dp">
+    <!-- Contenedor principal -->
+    <LinearLayout android:id="@+id/widget_container" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/widget_background_off" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="10dp" android:paddingEnd="10dp" android:paddingTop="6dp" android:paddingBottom="6dp">
 
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="2dp">
+        <!-- Ícono logo CaldenSmart (fijo, izquierda) -->
+        <ImageView android:id="@+id/widget_logo_icon" android:layout_width="20dp" android:layout_height="20dp" android:layout_marginEnd="6dp" android:src="@drawable/dragon_foreground" android:contentDescription="Logo" />
 
-            <ImageView
-                android:id="@+id/widget_logo_icon"
-                android:layout_width="23dp"
-                android:layout_height="23dp"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true"
-                android:src="@drawable/dragon_foreground" />
+        <!-- Nombre del equipo (ocupa todo el espacio disponible) -->
+        <TextView android:id="@+id/widget_device_name" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="" tools:text="Calefactor principal" android:textColor="#FFFFFF" android:textSize="13sp" android:textStyle="bold" android:ellipsize="end" android:maxLines="1" />
 
-            <ImageView
-                android:id="@+id/widget_connection_icon"
-                android:layout_width="25dp"
-                android:layout_height="25dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:src="@drawable/ic_widget_online" />
-        </RelativeLayout>
+        <!-- Indicador de texto (temperatura, "Iniciando...", etc.) -->
+        <TextView android:id="@+id/widget_power_indicator" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:text="" android:textColor="#FF0000" android:textSize="12sp" android:textStyle="bold" tools:text="22°C" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+        <!-- Ícono de estado (on/off/alerta) -->
+        <ImageView android:id="@+id/widget_status_icon" android:layout_width="18dp" android:layout_height="18dp" android:layout_marginStart="4dp" android:src="@drawable/ic_widget_alert" android:visibility="gone" tools:visibility="visible" tools:tint="#9E9E9E" />
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
+        <!-- Ícono de conexión (online/offline/settings) -->
+        <ImageView android:id="@+id/widget_connection_icon" android:layout_width="16dp" android:layout_height="16dp" android:layout_marginStart="6dp" android:src="@drawable/ic_widget_online" android:contentDescription="Conexión" />
 
-                <TextView
-                    android:id="@+id/widget_device_name"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text=""
-                    tools:text="Nombre del Dispositivo"
-                    android:textColor="#FFFFFF"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:ellipsize="end"
-                    android:maxLines="1" />
-
-                <TextView
-                    android:id="@+id/widget_pin_label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=""
-                    tools:text="PIN 1"
-                    android:textColor="#FFD600"
-                    android:textSize="8sp"
-                    android:textStyle="bold"
-                    android:visibility="gone" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="end">
-
-            <ImageView
-                android:id="@+id/widget_status_icon"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_widget_alert"
-                android:visibility="gone"
-                tools:visibility="visible"
-                tools:tint="#9E9E9E" />
-
-            <TextView
-                android:id="@+id/widget_power_indicator"
-                android:layout_width="wrap_content"
-                android:layout_height="20dp"
-                android:text=""
-                android:textColor="#FF0000"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                tools:text="Apagado" />
-        </LinearLayout>
+        <!-- pin_label: oculto, mantenido por compatibilidad -->
+        <TextView android:id="@+id/widget_pin_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:visibility="gone" />
 
     </LinearLayout>
 
-    <FrameLayout
-        android:id="@+id/widget_loading_background"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@drawable/widget_loading_background"
-        android:visibility="gone">
-        <ProgressBar
-            android:id="@+id/widget_progress_bar"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_gravity="center"
-            android:indeterminateTint="#FFFFFF" />
+    <!-- Overlay de carga -->
+    <FrameLayout android:id="@+id/widget_loading_background" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/widget_loading_background" android:visibility="gone">
+
+        <ProgressBar android:id="@+id/widget_progress_bar" android:layout_width="18dp" android:layout_height="18dp" android:layout_gravity="center" android:indeterminateTint="#FFFFFF" />
     </FrameLayout>
+
 </FrameLayout>

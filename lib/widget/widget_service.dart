@@ -8,7 +8,8 @@ import 'widget_models.dart';
 
 /// Constantes para widgets iOS
 const String _iOSWidgetName = 'ControlWidget';
-const String _androidWidgetName = 'com.caldensmart.sime.widget.ControlWidgetProvider';
+const String _androidWidgetName =
+    'com.caldensmart.sime.widget.ControlWidgetProvider';
 
 /// Servicio para gestionar widgets de la app
 class WidgetService {
@@ -35,7 +36,6 @@ class WidgetService {
       final key = '$_widgetConfigPrefix${widgetData.widgetId}';
       await prefs.setString(key, widgetData.toJsonString());
 
-      // Agregar a la lista de widgets
       List<int> widgetIds = await getWidgetIds();
       if (!widgetIds.contains(widgetData.widgetId)) {
         widgetIds.add(widgetData.widgetId);
@@ -73,7 +73,6 @@ class WidgetService {
       final key = '$_widgetConfigPrefix$widgetId';
       await prefs.remove(key);
 
-      // Remover de la lista de widgets
       List<int> widgetIds = await getWidgetIds();
       widgetIds.remove(widgetId);
       await prefs.setStringList(
@@ -119,9 +118,12 @@ class WidgetService {
 
   /// Actualizar el estado de un widget en la pantalla de inicio.
   ///
-  /// FIX: Guardado atómico — todos los campos en un único JSON para evitar
-  /// que onUpdate() lea un estado parcialmente escrito si el WorkManager
-  /// se dispara en medio de los awaits secuenciales.
+  /// Estrategia de escritura:
+  /// 1. JSON atómico (widget_state_$id) con timestamp → elimina race conditions
+  ///    y permite que Kotlin detecte datos obsoletos.
+  /// 2. Claves individuales (widget_nickname_$id, widget_online_$id, etc.) →
+  ///    backward compat con widgets configurados antes de este fix y con
+  ///    _handleWidgetToggle que las lee directamente.
   static Future<void> updateWidget(
       WidgetData widgetData, WidgetDeviceState state) async {
     try {
@@ -131,9 +133,10 @@ class WidgetService {
       );
 
       final bool isControl = widgetData.type == WidgetType.control;
+      final int id = widgetData.widgetId;
 
-      // ── Construir el estado completo en un único mapa ──────────────────
-      final Map<String, dynamic> stateMap = {
+      // ── 1. Guardado atómico ────────────────────────────────────────────
+      final stateMap = <String, dynamic>{
         'nickname': widgetData.nickname,
         'isControl': isControl,
         'online': state.online,
@@ -142,36 +145,40 @@ class WidgetService {
         'initializing': false,
         'productCode': widgetData.productCode,
         'isDisplayType': widgetData.type == WidgetType.display,
-        // Timestamp de la última actualización (ms desde epoch).
-        // ControlWidgetProvider lo usa para detectar datos obsoletos.
         'ts': DateTime.now().millisecondsSinceEpoch,
       };
+      if (state.temperature != null) {
+        stateMap['displayTemp'] = state.temperature;
+      }
+      if (state.alert != null) stateMap['displayAlert'] = state.alert;
+      if (state.ppmCO != null) stateMap['ppmCO'] = state.ppmCO;
+      if (state.ppmCH4 != null) stateMap['ppmCH4'] = state.ppmCH4;
 
-      if (state.temperature != null) stateMap['displayTemp'] = state.temperature;
-      if (state.alert != null)       stateMap['displayAlert'] = state.alert;
-      if (state.ppmCO != null)       stateMap['ppmCO'] = state.ppmCO;
-      if (state.ppmCH4 != null)      stateMap['ppmCH4'] = state.ppmCH4;
+      await HomeWidget.saveWidgetData('widget_state_$id', jsonEncode(stateMap));
 
-      // ── UNA sola escritura → sin race condition ────────────────────────
+      // ── 2. Claves individuales (backward compat) ──────────────────────
       await HomeWidget.saveWidgetData(
-        'widget_state_${widgetData.widgetId}',
-        jsonEncode(stateMap),
-      );
-
-      // Mantener claves individuales para backward-compat con _handleWidgetToggle
-      // (lee widget_status y widget_is_control directamente)
+          'widget_nickname_$id', widgetData.nickname);
+      await HomeWidget.saveWidgetData('widget_online_$id', state.online);
+      await HomeWidget.saveWidgetData('widget_status_$id', state.status);
+      await HomeWidget.saveWidgetData('widget_is_control_$id', isControl);
+      await HomeWidget.saveWidgetData('widget_pc_$id', widgetData.productCode);
+      await HomeWidget.saveWidgetData('widget_sn_$id', widgetData.serialNumber);
       await HomeWidget.saveWidgetData(
-          'widget_status_${widgetData.widgetId}', state.status);
-      await HomeWidget.saveWidgetData(
-          'widget_is_control_${widgetData.widgetId}', isControl);
+          'widget_is_display_type_$id', widgetData.type == WidgetType.display);
 
-      printLog.i(
-          'Datos guardados atómicamente, actualizando widget nativo ${widgetData.widgetId}');
+      if (state.temperature != null) {
+        await HomeWidget.saveWidgetData(
+            'widget_display_temp_$id', state.temperature!);
+      }
+      if (state.alert != null) {
+        await HomeWidget.saveWidgetData(
+            'widget_display_alert_$id', state.alert!);
+      }
 
-      // ── Disparar redibujado del widget nativo ──────────────────────────
+      printLog.i('Datos guardados, actualizando widget nativo $id');
       await _updatePlatformWidgets();
-
-      printLog.i('Widget ${widgetData.widgetId} actualizado correctamente');
+      printLog.i('Widget $id actualizado correctamente');
     } catch (e, stackTrace) {
       printLog.e('Error actualizando widget: $e');
       printLog.e('Stack trace: $stackTrace');
@@ -189,7 +196,6 @@ class WidgetService {
         if (deviceData != null) {
           WidgetDeviceState state;
 
-          // Para dispositivos con múltiples salidas/entradas
           if (widgetData.ioIndex != null) {
             final ioData = deviceData['io${widgetData.ioIndex}'];
             if (ioData != null) {
@@ -227,7 +233,6 @@ class WidgetService {
               state = WidgetDeviceState(online: false, status: false);
             }
           } else {
-            // Dispositivos normales
             bool online = deviceData['cstate'] ?? false;
             bool status = deviceData['w_status'] ?? false;
 

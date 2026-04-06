@@ -1,15 +1,13 @@
-<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="180dp"
-    android:minHeight="40dp"
-    android:targetCellWidth="3"
-    android:targetCellHeight="1"
-    android:maxResizeWidth="250dp"
-    android:maxResizeHeight="180dp"
-    android:updatePeriodMillis="1800000"
-    android:initialLayout="@layout/widget_layout"
-    android:resizeMode="horizontal|vertical"
-    android:widgetCategory="home_screen"
-    android:configure="com.caldensmart.sime.widget.WidgetConfigActivity"
-    android:previewLayout="@layout/widget_preview"
-    android:previewImage="@drawable/preview_image">
-</appwidget-provider>
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AppWidgetProviderInfo para el widget CaldenSmart.
+    Tamaño: 2x1 (2 columnas, 1 fila).
+
+    Fórmula Android: minWidth = (columnas * 70) - 30 dp
+                     minHeight = (filas * 70) - 30 dp
+    2x1 → minWidth = 110dp, minHeight = 40dp
+
+    Para Android 12+ (API 31) se agregan targetCellWidth/Height que son
+    los valores exactos en celdas que usa el picker del launcher moderno.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android" android:minWidth="110dp" android:minHeight="40dp" android:minResizeWidth="110dp" android:minResizeHeight="40dp" android:targetCellWidth="2" android:targetCellHeight="1" android:maxResizeWidth="250dp" android:maxResizeHeight="110dp" android:updatePeriodMillis="0" android:initialLayout="@layout/widget_layout" android:previewLayout="@layout/widget_preview" android:configure="com.caldensmart.sime.widget.WidgetConfigActivity" android:resizeMode="horizontal|vertical" android:widgetCategory="home_screen" android:widgetFeatures="reconfigurable" />
