@@ -179,7 +179,7 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
           content: 'Podrás reclamar el equipo y gestionar sus funciones',
         ),
       ),
-      if (!tenant) ...{
+      if (!tenant && !secondaryAdmin) ...{
         TutorialItem(
           globalKey: keys['managerScreen:reclamar']!,
           borderRadius: const Radius.circular(20),
@@ -1091,7 +1091,6 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                                         ],
                                       )
                                     : Row(
-                                        key: keys['rele1i1o:estado']!,
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
                                         children: [
@@ -1293,7 +1292,6 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
                             ),
                             const SizedBox(height: 20),
                             Text(
-                              key: keys['rele1i1o:estado']!,
                               estado[0] == '1' ? 'ENCENDIDO' : 'APAGADO',
                               style: GoogleFonts.poppins(
                                 fontSize: 24,
@@ -1751,19 +1749,20 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
             },
           ),
           actions: [
-            globalDATA['$pc/$sn']?['cstate'] ?? false
-                ? ImageIcon(
-                    const AssetImage(CaldenIcons.cloud),
-                    color: color0,
-                    size: 35,
-                    key: keys['rele1i1o:servidor']!,
-                  )
-                : ImageIcon(
-                    const AssetImage(CaldenIcons.cloudOff),
-                    color: color0,
-                    size: 25,
-                    key: keys['rele1i1o:servidor']!,
-                  ),
+            SizedBox(
+              key: keys['rele1i1o:servidor']!,
+              child: globalDATA['$pc/$sn']?['cstate'] ?? false
+                  ? const ImageIcon(
+                      AssetImage(CaldenIcons.cloud),
+                      color: color0,
+                      size: 35,
+                    )
+                  : const ImageIcon(
+                      AssetImage(CaldenIcons.cloudOff),
+                      color: color0,
+                      size: 25,
+                    ),
+            ),
             IconButton(
               key: keys['rele1i1o:wifi']!,
               icon: wifiState.wifiIcon is String

@@ -457,12 +457,6 @@ class _WidgetConfigScreenState extends State<WidgetConfigScreen> {
 
       bool hasMultipleOutputs = _hasMultipleOutputs(productCode);
 
-      // Para relés, verificar si realmente tiene io
-      if (productCode == '027313_IOT' && deviceData != null) {
-        int ioCount = _getOutputCount(productCode, deviceData);
-        hasMultipleOutputs = ioCount > 0;
-      }
-
       if (hasMultipleOutputs && deviceData != null) {
         // Crear una entrada para cada io (salida o entrada)
         int ioCount = _getOutputCount(productCode, deviceData);
@@ -658,7 +652,7 @@ class _WidgetConfigScreenState extends State<WidgetConfigScreen> {
     switch (productCode) {
       case '020010_IOT': // Domotica
       case '020020_IOT': // Módulo
-      case '027313_IOT': // Relé (algunos casos)
+      case '027313_IOT': // Relé
         return true;
       default:
         return false;
@@ -672,11 +666,6 @@ class _WidgetConfigScreenState extends State<WidgetConfigScreen> {
       if (deviceData.containsKey('io$i')) {
         count++;
       }
-    }
-
-    // Si no tiene io, el relé se maneja como dispositivo normal
-    if (count == 0 && productCode == '027313_IOT') {
-      return 0; // Indicar que no tiene múltiples salidas
     }
 
     return count > 0

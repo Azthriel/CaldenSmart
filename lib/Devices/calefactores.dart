@@ -280,7 +280,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
           content: 'Podrás reclamar el equipo y gestionar sus funciones',
         ),
       ),
-      if (!tenant) ...{
+      if (!tenant && !secondaryAdmin) ...{
         TutorialItem(
           globalKey: keys['managerScreen:reclamar']!,
           borderRadius: const Radius.circular(20),

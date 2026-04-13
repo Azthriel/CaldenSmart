@@ -258,7 +258,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
           content: 'Podrás reclamar el equipo y gestionar sus funciones',
         ),
       ),
-      if (!tenant) ...{
+      if (!tenant && !secondaryAdmin) ...{
         TutorialItem(
           globalKey: keys['managerScreen:reclamar']!,
           borderRadius: const Radius.circular(20),
@@ -477,9 +477,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
         .where((entry) =>
             (entry.key.startsWith('020020_IOT/') ||
                 entry.key.startsWith('020010_IOT/') ||
-                (entry.key.startsWith('027313_IOT/') &&
-                    Versioner.isPosterior(
-                        entry.value['HardwareVersion'], '241220A'))) &&
+                entry.key.startsWith('027313_IOT/')) &&
             entry.value['owner'] == currentUserEmail &&
             entry.value['riegoActive'] == true &&
             (entry.value['riegoMaster'] == null ||

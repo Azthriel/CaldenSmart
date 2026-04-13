@@ -63,13 +63,8 @@ class LoadState extends State<LoadingPage> {
             navigatorKey.currentState?.pushReplacementNamed('/roller');
             break;
           case '027313_IOT':
-            if (Versioner.isPosterior(hardwareVersion, '241220A')) {
-              navigatorKey.currentState?.pushReplacementNamed('/rele1i1o');
-            } else {
-              navigatorKey.currentState?.pushReplacementNamed('/rele');
-            }
+            navigatorKey.currentState?.pushReplacementNamed('/rele1i1o');
             break;
-
           case '028000_IOT':
             navigatorKey.currentState?.pushReplacementNamed('/heladera');
             break;
@@ -376,19 +371,10 @@ class LoadState extends State<LoadingPage> {
           distOnValue = globalDATA['$pc/$sn']!['distanceOn'] ?? 3000.0;
           break;
         case '027313_IOT':
-          if (Versioner.isPosterior(hardwareVersion, '241220A')) {
-            ioValues = await bluetoothManager.ioUuid.read();
-            printLog.i('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
-            varsValues = await bluetoothManager.varsUuid.read();
-            printLog
-                .i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
-          } else {
-            varsValues = await bluetoothManager.varsUuid.read();
-            printLog
-                .i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
-            var parts2 = utf8.decode(varsValues).split(':');
-            turnOn = parts2[1] == '1';
-          }
+          ioValues = await bluetoothManager.ioUuid.read();
+          printLog.i('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
+          varsValues = await bluetoothManager.varsUuid.read();
+          printLog.i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
 
           distanceControlActive =
               globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;

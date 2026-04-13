@@ -375,12 +375,7 @@ class ScanPageState extends State<ScanPage>
       setState(() {
         if (productCode == '020010_IOT' ||
             productCode == '020020_IOT' ||
-            (productCode == '027313_IOT' &&
-                Versioner.isPosterior(
-                    globalDATA['$productCode/$serialNumber']
-                            ?['HardwareVersion'] ??
-                        '999999A',
-                    '241220A'))) {
+            productCode == '027313_IOT') {
           // Para estos productos, actualizar el JSON específico del pin
           try {
             String pinValue = pinQuickAccess[device.platformName] ?? '0';
@@ -451,12 +446,7 @@ class ScanPageState extends State<ScanPage>
 
           if (productCode == '020010_IOT' ||
               productCode == '020020_IOT' ||
-              (productCode == '027313_IOT' &&
-                  Versioner.isPosterior(
-                      globalDATA['$productCode/$serialNumber']
-                              ?['HardwareVersion'] ??
-                          '999999A',
-                      '241220A'))) {
+              productCode == '027313_IOT') {
             String pinValue = pinQuickAccess[deviceName] ?? '0';
             String fun = '$pinValue#${newValue ? '1' : '0'}';
             bluetoothManager.ioUuid.write(fun.codeUnits);
@@ -789,12 +779,7 @@ class ScanPageState extends State<ScanPage>
 
                       bool estadoWState = (productCode == '020010_IOT' ||
                               productCode == '020020_IOT' ||
-                              (productCode == '027313_IOT' &&
-                                  Versioner.isPosterior(
-                                      globalDATA['$productCode/$serialNumber']
-                                              ?['HardwareVersion'] ??
-                                          '999999A',
-                                      '241220A')))
+                              productCode == '027313_IOT')
                           ? () {
                               try {
                                 String? jsonString = globalDATA[

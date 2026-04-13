@@ -5,7 +5,6 @@ import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:caldensmart/Devices/heladera.dart';
 import 'package:caldensmart/Devices/modulo.dart';
-import 'package:caldensmart/Devices/relay.dart';
 import 'package:caldensmart/Devices/rele1i1o.dart';
 import 'package:caldensmart/Devices/riego.dart';
 import 'package:caldensmart/Devices/termometro.dart';
@@ -393,7 +392,6 @@ class MyAppState extends State<MyApp> {
         '/domotica': (context) => const DomoticaPage(),
         '/profile': (context) => const ProfilePage(),
         '/escenas': (context) => const EscenasPage(),
-        '/rele': (context) => const RelayPage(),
         '/roller': (context) => const RollerPage(),
         '/modulo': (context) => const ModuloPage(),
         '/heladera': (context) => const HeladeraPage(),

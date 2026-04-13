@@ -2698,13 +2698,7 @@ class WifiPageState extends ConsumerState<WifiPage>
             return _buildRiegoCard(deviceName, productCode, serialNumber,
                 deviceDATA, online, owner, index);
           }
-
-          // Código original para equipos normales (cerraduras)
-          bool estado = deviceDATA['w_status'] ?? false;
           bool hasEntry = deviceDATA['hasEntry'] ?? false;
-          String hardv = deviceDATA['HardwareVersion'] ?? '000000A';
-          // bool isNC = deviceDATA['isNC'] ?? false;
-
           return RepaintBoundary(
             key: ValueKey(deviceName),
             child: Card(
@@ -2800,476 +2794,326 @@ class WifiPageState extends ConsumerState<WifiPage>
                     ],
                   ),
                   children: <Widget>[
-                    if (Versioner.isPrevious(hardv, '241220A')) ...{
-                      isRestrictedAdmin
-                          ? Row(
-                              children: [
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16.0, vertical: 5.0),
-                                    child: Text(
-                                      'El dueño del equipo restringió su uso por wifi.',
-                                      style: GoogleFonts.poppins(
-                                        color: color3,
-                                        fontSize: 15,
-                                      ),
+                    isRestrictedAdmin
+                        ? Row(
+                            children: [
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16.0, vertical: 5.0),
+                                  child: Text(
+                                    'El dueño del equipo restringió su uso por wifi.',
+                                    style: GoogleFonts.poppins(
+                                      color: color3,
+                                      fontSize: 15,
                                     ),
                                   ),
                                 ),
-                              ],
-                            )
-                          : Stack(
-                              children: [
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 16.0, vertical: 5.0),
-                                        child: online
-                                            ? Column(
-                                                children: [
-                                                  Row(
-                                                    children: [
-                                                      estado
-                                                          ? Text(
-                                                              'ENCENDIDO',
-                                                              style: GoogleFonts
-                                                                  .poppins(
-                                                                color: Colors
-                                                                    .green,
-                                                                fontSize: 15,
-                                                              ),
-                                                            )
-                                                          : Text(
-                                                              'APAGADO',
-                                                              style: GoogleFonts
-                                                                  .poppins(
-                                                                color: color4,
-                                                                fontSize: 15,
-                                                              ),
-                                                            ),
-                                                      const SizedBox(width: 5),
-                                                      owner
-                                                          ? Switch(
-                                                              activeThumbColor:
-                                                                  const Color(
-                                                                      0xFF9C9D98),
-                                                              activeTrackColor:
-                                                                  const Color(
-                                                                      0xFFB2B5AE),
-                                                              inactiveThumbColor:
-                                                                  const Color(
-                                                                      0xFFB2B5AE),
-                                                              inactiveTrackColor:
-                                                                  const Color(
-                                                                      0xFF9C9D98),
-                                                              value: estado,
-                                                              onChanged:
-                                                                  (newValue) {
-                                                                toggleState(
-                                                                    deviceName,
-                                                                    newValue);
-                                                                setState(() {
-                                                                  estado =
-                                                                      newValue;
-                                                                });
-                                                              },
-                                                            )
-                                                          : const SizedBox
-                                                              .shrink(),
-                                                    ],
-                                                  ),
-                                                  if (!owner) ...[
-                                                    _buildNotOwnerWarning()
-                                                  ],
-                                                ],
-                                              )
-                                            : Padding(
-                                                padding: const EdgeInsets.only(
-                                                    right: 8.0, bottom: 8.0),
-                                                child: Text(
-                                                  'El equipo debe estar\nconectado para su uso',
-                                                  style: GoogleFonts.poppins(
-                                                    color: color3,
-                                                    fontSize: 15,
-                                                  ),
-                                                ),
-                                              ),
-                                      ),
-                                    ),
-                                    if (!online)
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                            right: 8.0, bottom: 8.0),
-                                        child: IconButton(
-                                          icon: const Icon(
-                                            HugeIcons.strokeRoundedDelete02,
-                                            color: color0,
-                                            size: 20,
-                                          ),
-                                          onPressed: () {
-                                            _confirmDelete(
-                                                deviceName, productCode);
-                                          },
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                if (online)
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                          right: 16.0, bottom: 8.0),
-                                      child: IconButton(
-                                        icon: const Icon(
-                                          HugeIcons.strokeRoundedDelete02,
-                                          color: color0,
-                                          size: 20,
-                                        ),
-                                        onPressed: () {
-                                          _confirmDelete(
-                                              deviceName, productCode);
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            )
-                    } else ...{
-                      isRestrictedAdmin
-                          ? Row(
-                              children: [
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16.0, vertical: 5.0),
-                                    child: Text(
-                                      'El dueño del equipo restringió su uso por wifi.',
-                                      style: GoogleFonts.poppins(
-                                        color: color3,
-                                        fontSize: 15,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : online
-                              ? Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // POSICIÓN 0: Salida con switch
+                              ),
+                            ],
+                          )
+                        : online
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // POSICIÓN 0: Salida con switch
+                                  if (deviceDATA['io0'] == null) ...[
+                                    const SizedBox
+                                        .shrink() // No mostrar nada si no hay datos
+                                  ] else ...[
                                     if (deviceDATA['io0'] == null) ...[
                                       const SizedBox
                                           .shrink() // No mostrar nada si no hay datos
                                     ] else ...[
-                                      if (deviceDATA['io0'] == null) ...[
-                                        const SizedBox
-                                            .shrink() // No mostrar nada si no hay datos
-                                      ] else ...[
-                                        if (hasEntry) ...[
-                                          ListTile(
-                                            title: Text(
-                                              nicknamesMap['${deviceName}_0'] ??
-                                                  'Salida 0',
-                                              style: GoogleFonts.poppins(
-                                                color: color0,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            trailing: owner
-                                                ? Switch(
-                                                    activeThumbColor:
-                                                        const Color(0xFF9C9D98),
-                                                    activeTrackColor:
-                                                        const Color(0xFFB2B5AE),
-                                                    inactiveThumbColor:
-                                                        const Color(0xFFB2B5AE),
-                                                    inactiveTrackColor:
-                                                        const Color(0xFF9C9D98),
-                                                    value: (jsonDecode(
-                                                                deviceDATA[
-                                                                    'io0'])[
-                                                            'w_status'] ??
-                                                        false),
-                                                    onChanged: (value) async {
-                                                      final deviceSerialNumber =
-                                                          DeviceManager
-                                                              .extractSerialNumber(
-                                                                  deviceName);
-                                                      final productCode =
-                                                          DeviceManager
-                                                              .getProductCode(
-                                                                  deviceName);
-                                                      final topicRx =
-                                                          'devices_rx/$productCode/$deviceSerialNumber';
-                                                      final topicTx =
-                                                          'devices_tx/$productCode/$deviceSerialNumber';
-                                                      final Map<String, dynamic>
-                                                          io0Map = jsonDecode(
-                                                              deviceDATA[
-                                                                  'io0']);
-                                                      final rState =
-                                                          (io0Map['r_state'] ??
-                                                                  '0')
-                                                              .toString();
-                                                      final message =
-                                                          jsonEncode({
-                                                        'pinType': 0,
-                                                        'index': 0,
-                                                        'w_status': value,
-                                                        'r_state': rState,
-                                                      });
-                                                      bool result =
-                                                          await sendMQTTMessageWithPermission(
-                                                              deviceName,
-                                                              message,
-                                                              topicRx,
-                                                              topicTx,
-                                                              value
-                                                                  ? 'Encendió dispositivo desde WiFi'
-                                                                  : 'Apagó dispositivo desde WiFi');
-
-                                                      if (result) {
-                                                        setState(() {});
-                                                        globalDATA
-                                                            .putIfAbsent(
-                                                                '$productCode/$deviceSerialNumber',
-                                                                () => {})
-                                                            .addAll({
-                                                          'io0': message
-                                                        });
-                                                      } else {
-                                                        showToast(
-                                                          'No tienes permisos para realizar esta acción en este momento',
-                                                        );
-                                                      }
-                                                    },
-                                                  )
-                                                : null,
-                                          ),
-                                        ] else ...[
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 16.0,
-                                              vertical: 5.0,
-                                            ),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                online
-                                                    ? Row(
-                                                        children: [
-                                                          (jsonDecode(deviceDATA[
-                                                                          'io0'])[
-                                                                      'w_status'] ??
-                                                                  false)
-                                                              ? Text(
-                                                                  'ENCENDIDO',
-                                                                  style: GoogleFonts
-                                                                      .poppins(
-                                                                    color: Colors
-                                                                        .green,
-                                                                    fontSize:
-                                                                        15,
-                                                                  ),
-                                                                )
-                                                              : Text(
-                                                                  'APAGADO',
-                                                                  style: GoogleFonts
-                                                                      .poppins(
-                                                                    color:
-                                                                        color4,
-                                                                    fontSize:
-                                                                        15,
-                                                                  ),
-                                                                ),
-                                                          const SizedBox(
-                                                              width: 5),
-                                                          owner
-                                                              ? Switch(
-                                                                  activeThumbColor:
-                                                                      const Color(
-                                                                          0xFF9C9D98),
-                                                                  activeTrackColor:
-                                                                      const Color(
-                                                                          0xFFB2B5AE),
-                                                                  inactiveThumbColor:
-                                                                      const Color(
-                                                                          0xFFB2B5AE),
-                                                                  inactiveTrackColor:
-                                                                      const Color(
-                                                                          0xFF9C9D98),
-                                                                  value: (jsonDecode(
-                                                                              deviceDATA['io0'])[
-                                                                          'w_status'] ??
-                                                                      false),
-                                                                  onChanged:
-                                                                      (value) async {
-                                                                    final topicRx =
-                                                                        'devices_rx/$productCode/$serialNumber';
-                                                                    final topicTx =
-                                                                        'devices_tx/$productCode/$serialNumber';
-                                                                    final Map<
-                                                                            String,
-                                                                            dynamic>
-                                                                        io0Map =
-                                                                        jsonDecode(
-                                                                            deviceDATA['io0']);
-                                                                    final rState =
-                                                                        (io0Map['r_state'] ??
-                                                                                '0')
-                                                                            .toString();
-                                                                    final message =
-                                                                        jsonEncode({
-                                                                      'pinType':
-                                                                          0,
-                                                                      'index':
-                                                                          0,
-                                                                      'w_status':
-                                                                          value,
-                                                                      'r_state':
-                                                                          rState,
-                                                                    });
-                                                                    bool result = await sendMQTTMessageWithPermission(
-                                                                        deviceName,
-                                                                        message,
-                                                                        topicRx,
-                                                                        topicTx,
-                                                                        value
-                                                                            ? 'Encendió dispositivo desde WiFi'
-                                                                            : 'Apagó dispositivo desde WiFi');
-                                                                    if (result) {
-                                                                      setState(
-                                                                          () {});
-                                                                      globalDATA
-                                                                          .putIfAbsent(
-                                                                              '$productCode/$serialNumber',
-                                                                              () =>
-                                                                                  {})
-                                                                          .addAll({
-                                                                        'io0':
-                                                                            message
-                                                                      });
-                                                                    } else {
-                                                                      showToast(
-                                                                        'No tienes permisos para realizar esta acción en este momento',
-                                                                      );
-                                                                    }
-                                                                  },
-                                                                )
-                                                              : const SizedBox(
-                                                                  height: 0,
-                                                                  width: 0),
-                                                        ],
-                                                      )
-                                                    : Text(
-                                                        'El equipo debe estar\nconectado para su uso',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          color: color3,
-                                                          fontSize: 15,
-                                                        ),
-                                                      ),
-                                              ],
-                                            ),
-                                          )
-                                        ],
-                                      ],
-                                    ],
-                                    // POSICIÓN 1: Entrada, solo si hasEntry == true
-                                    if (hasEntry) ...[
-                                      if (deviceDATA['io1'] == null) ...[
-                                        const SizedBox
-                                            .shrink() // No mostrar nada si no hay datos
-                                      ] else ...[
+                                      if (hasEntry) ...[
                                         ListTile(
                                           title: Text(
-                                            nicknamesMap['${deviceName}_1'] ??
-                                                'Entrada 1',
+                                            nicknamesMap['${deviceName}_0'] ??
+                                                'Salida 0',
                                             style: GoogleFonts.poppins(
                                               color: color0,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                          trailing: Icon(
-                                            HugeIcons.strokeRoundedAlertCircle,
-                                            color: (() {
-                                              final io1 =
-                                                  jsonDecode(deviceDATA['io1']);
-                                              final bool wStatus =
-                                                  io1['w_status'] ?? false;
-                                              final String rState =
-                                                  (io1['r_state'] ?? '0')
-                                                      .toString();
-                                              final bool mismatch =
-                                                  (rState == '0' && wStatus) ||
-                                                      (rState == '1' &&
-                                                          !wStatus);
-                                              return mismatch
-                                                  ? color4
-                                                  : const Color(0xFF9C9D98);
-                                            })(),
-                                          ),
+                                          trailing: owner
+                                              ? Switch(
+                                                  activeThumbColor:
+                                                      const Color(0xFF9C9D98),
+                                                  activeTrackColor:
+                                                      const Color(0xFFB2B5AE),
+                                                  inactiveThumbColor:
+                                                      const Color(0xFFB2B5AE),
+                                                  inactiveTrackColor:
+                                                      const Color(0xFF9C9D98),
+                                                  value: (jsonDecode(deviceDATA[
+                                                          'io0'])['w_status'] ??
+                                                      false),
+                                                  onChanged: (value) async {
+                                                    final deviceSerialNumber =
+                                                        DeviceManager
+                                                            .extractSerialNumber(
+                                                                deviceName);
+                                                    final productCode =
+                                                        DeviceManager
+                                                            .getProductCode(
+                                                                deviceName);
+                                                    final topicRx =
+                                                        'devices_rx/$productCode/$deviceSerialNumber';
+                                                    final topicTx =
+                                                        'devices_tx/$productCode/$deviceSerialNumber';
+                                                    final Map<String, dynamic>
+                                                        io0Map = jsonDecode(
+                                                            deviceDATA['io0']);
+                                                    final rState =
+                                                        (io0Map['r_state'] ??
+                                                                '0')
+                                                            .toString();
+                                                    final message = jsonEncode({
+                                                      'pinType': 0,
+                                                      'index': 0,
+                                                      'w_status': value,
+                                                      'r_state': rState,
+                                                    });
+                                                    bool result =
+                                                        await sendMQTTMessageWithPermission(
+                                                            deviceName,
+                                                            message,
+                                                            topicRx,
+                                                            topicTx,
+                                                            value
+                                                                ? 'Encendió dispositivo desde WiFi'
+                                                                : 'Apagó dispositivo desde WiFi');
+
+                                                    if (result) {
+                                                      setState(() {});
+                                                      globalDATA
+                                                          .putIfAbsent(
+                                                              '$productCode/$deviceSerialNumber',
+                                                              () => {})
+                                                          .addAll(
+                                                              {'io0': message});
+                                                    } else {
+                                                      showToast(
+                                                        'No tienes permisos para realizar esta acción en este momento',
+                                                      );
+                                                    }
+                                                  },
+                                                )
+                                              : null,
                                         ),
-                                      ]
-                                    ]
+                                      ] else ...[
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16.0,
+                                            vertical: 5.0,
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              online
+                                                  ? Row(
+                                                      children: [
+                                                        (jsonDecode(deviceDATA[
+                                                                        'io0'])[
+                                                                    'w_status'] ??
+                                                                false)
+                                                            ? Text(
+                                                                'ENCENDIDO',
+                                                                style:
+                                                                    GoogleFonts
+                                                                        .poppins(
+                                                                  color: Colors
+                                                                      .green,
+                                                                  fontSize: 15,
+                                                                ),
+                                                              )
+                                                            : Text(
+                                                                'APAGADO',
+                                                                style:
+                                                                    GoogleFonts
+                                                                        .poppins(
+                                                                  color: color4,
+                                                                  fontSize: 15,
+                                                                ),
+                                                              ),
+                                                        const SizedBox(
+                                                            width: 5),
+                                                        owner
+                                                            ? Switch(
+                                                                activeThumbColor:
+                                                                    const Color(
+                                                                        0xFF9C9D98),
+                                                                activeTrackColor:
+                                                                    const Color(
+                                                                        0xFFB2B5AE),
+                                                                inactiveThumbColor:
+                                                                    const Color(
+                                                                        0xFFB2B5AE),
+                                                                inactiveTrackColor:
+                                                                    const Color(
+                                                                        0xFF9C9D98),
+                                                                value: (jsonDecode(
+                                                                            deviceDATA['io0'])[
+                                                                        'w_status'] ??
+                                                                    false),
+                                                                onChanged:
+                                                                    (value) async {
+                                                                  final topicRx =
+                                                                      'devices_rx/$productCode/$serialNumber';
+                                                                  final topicTx =
+                                                                      'devices_tx/$productCode/$serialNumber';
+                                                                  final Map<
+                                                                          String,
+                                                                          dynamic>
+                                                                      io0Map =
+                                                                      jsonDecode(
+                                                                          deviceDATA[
+                                                                              'io0']);
+                                                                  final rState =
+                                                                      (io0Map['r_state'] ??
+                                                                              '0')
+                                                                          .toString();
+                                                                  final message =
+                                                                      jsonEncode({
+                                                                    'pinType':
+                                                                        0,
+                                                                    'index': 0,
+                                                                    'w_status':
+                                                                        value,
+                                                                    'r_state':
+                                                                        rState,
+                                                                  });
+                                                                  bool result = await sendMQTTMessageWithPermission(
+                                                                      deviceName,
+                                                                      message,
+                                                                      topicRx,
+                                                                      topicTx,
+                                                                      value
+                                                                          ? 'Encendió dispositivo desde WiFi'
+                                                                          : 'Apagó dispositivo desde WiFi');
+                                                                  if (result) {
+                                                                    setState(
+                                                                        () {});
+                                                                    globalDATA
+                                                                        .putIfAbsent(
+                                                                            '$productCode/$serialNumber',
+                                                                            () =>
+                                                                                {})
+                                                                        .addAll({
+                                                                      'io0':
+                                                                          message
+                                                                    });
+                                                                  } else {
+                                                                    showToast(
+                                                                      'No tienes permisos para realizar esta acción en este momento',
+                                                                    );
+                                                                  }
+                                                                },
+                                                              )
+                                                            : const SizedBox(
+                                                                height: 0,
+                                                                width: 0),
+                                                      ],
+                                                    )
+                                                  : Text(
+                                                      'El equipo debe estar\nconectado para su uso',
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        color: color3,
+                                                        fontSize: 15,
+                                                      ),
+                                                    ),
+                                            ],
+                                          ),
+                                        )
+                                      ],
+                                    ],
                                   ],
-                                )
-                              : Row(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(
-                                            left: 16.0, bottom: 16.0),
-                                        child: Text(
-                                          'El equipo debe estar\nconectado para su uso',
+                                  // POSICIÓN 1: Entrada, solo si hasEntry == true
+                                  if (hasEntry) ...[
+                                    if (deviceDATA['io1'] == null) ...[
+                                      const SizedBox
+                                          .shrink() // No mostrar nada si no hay datos
+                                    ] else ...[
+                                      ListTile(
+                                        title: Text(
+                                          nicknamesMap['${deviceName}_1'] ??
+                                              'Entrada 1',
                                           style: GoogleFonts.poppins(
-                                            color: color3,
-                                            fontSize: 15,
+                                            color: color0,
+                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                          right: 8.0, bottom: 8.0),
-                                      child: IconButton(
-                                        icon: const Icon(
-                                          HugeIcons.strokeRoundedDelete02,
-                                          color: color0,
-                                          size: 20,
+                                        trailing: Icon(
+                                          HugeIcons.strokeRoundedAlertCircle,
+                                          color: (() {
+                                            final io1 =
+                                                jsonDecode(deviceDATA['io1']);
+                                            final bool wStatus =
+                                                io1['w_status'] ?? false;
+                                            final String rState =
+                                                (io1['r_state'] ?? '0')
+                                                    .toString();
+                                            final bool mismatch =
+                                                (rState == '0' && wStatus) ||
+                                                    (rState == '1' && !wStatus);
+                                            return mismatch
+                                                ? color4
+                                                : const Color(0xFF9C9D98);
+                                          })(),
                                         ),
-                                        onPressed: () {
-                                          _confirmDelete(
-                                              deviceName, productCode);
-                                        },
+                                      ),
+                                    ]
+                                  ]
+                                ],
+                              )
+                            : Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(
+                                          left: 16.0, bottom: 16.0),
+                                      child: Text(
+                                        'El equipo debe estar\nconectado para su uso',
+                                        style: GoogleFonts.poppins(
+                                          color: color3,
+                                          fontSize: 15,
+                                        ),
                                       ),
                                     ),
-                                  ],
-                                ),
-                      if (online)
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: IconButton(
-                            icon: const Icon(
-                              HugeIcons.strokeRoundedDelete02,
-                              color: color0,
-                              size: 20,
-                            ),
-                            onPressed: () {
-                              _confirmDelete(deviceName, productCode);
-                            },
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        right: 8.0, bottom: 8.0),
+                                    child: IconButton(
+                                      icon: const Icon(
+                                        HugeIcons.strokeRoundedDelete02,
+                                        color: color0,
+                                        size: 20,
+                                      ),
+                                      onPressed: () {
+                                        _confirmDelete(deviceName, productCode);
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                    if (online)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: IconButton(
+                          icon: const Icon(
+                            HugeIcons.strokeRoundedDelete02,
+                            color: color0,
+                            size: 20,
                           ),
+                          onPressed: () {
+                            _confirmDelete(deviceName, productCode);
+                          },
                         ),
-                    }
+                      ),
                   ],
                 ),
               ),
@@ -5740,9 +5584,28 @@ class WifiPageState extends ConsumerState<WifiPage>
                                         String displayName = '';
                                         if (deviceStr.contains('_')) {
                                           final parts = deviceStr.split('_');
-                                          displayName = nicknamesMap[
-                                                  deviceStr] ??
-                                              '${nicknamesMap[parts[0]] ?? parts[0]} salida ${parts[1]}';
+                                          final String baseName = parts[0];
+                                          final String idx = parts[1];
+                                          final String dpc =
+                                              DeviceManager.getProductCode(
+                                                  baseName);
+                                          final String dsn =
+                                              DeviceManager.extractSerialNumber(
+                                                  baseName);
+                                          final Map<String, dynamic> dData =
+                                              globalDATA['$dpc/$dsn'] ?? {};
+                                          final bool hasEntry =
+                                              dData['hasEntry'] ?? true;
+                                          // Si no tiene entrada y es salida 0 → omitir sufijo
+                                          if (idx == '0' && !hasEntry) {
+                                            displayName =
+                                                nicknamesMap[baseName] ??
+                                                    baseName;
+                                          } else {
+                                            displayName = nicknamesMap[
+                                                    deviceStr] ??
+                                                '${nicknamesMap[baseName] ?? baseName} salida $idx';
+                                          }
                                         } else {
                                           displayName =
                                               nicknamesMap[deviceStr] ??
@@ -8450,8 +8313,18 @@ class WifiPageState extends ConsumerState<WifiPage>
             String displayName = '';
             if (equipo.contains('_')) {
               final parts = equipo.split('_');
-              displayName = nicknamesMap[equipo.trim()] ??
-                  '${parts[0]} salida ${parts[1]}';
+              final String baseName = parts[0];
+              final String idx = parts[1];
+              final String gpc = DeviceManager.getProductCode(baseName);
+              final String gsn = DeviceManager.extractSerialNumber(baseName);
+              final Map<String, dynamic> gData = globalDATA['$gpc/$gsn'] ?? {};
+              final bool hasEntry = gData['hasEntry'] ?? true;
+              if (idx == '0' && !hasEntry) {
+                displayName = nicknamesMap[baseName] ?? baseName;
+              } else {
+                displayName = nicknamesMap[equipo.trim()] ??
+                    '${nicknamesMap[baseName] ?? baseName} salida $idx';
+              }
             } else {
               displayName = nicknamesMap[equipo.trim()] ?? equipo.trim();
             }

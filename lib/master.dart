@@ -204,6 +204,8 @@ String currentUserEmail = '';
 //*-Background functions-*\\
 Timer? backTimerDS;
 Timer? backTimerCH;
+Timer? _mqttReconnectTimer; // timer de reconexión MQTT del servicio iOS
+Timer? _mqttReconnectTimerBg; // timer de reconexión MQTT del servicio Android
 //*-Background functions-*\\
 
 //*-Imagenes Scan-*\\
@@ -2645,13 +2647,15 @@ Future<bool> onIosStart(ServiceInstance service) async {
   service.on('distanceControl').listen((event) {
     showNotification('Se inició el control por distancia',
         'Recuerde tener la ubicación del telefono encendida', 'noti');
+    backTimerDS?.cancel();
     backTimerDS = Timer.periodic(const Duration(minutes: 2), (timer) async {
       await backFunctionDS();
     });
   });
 
-  // Timer para mantener MQTT conectado (reconexión automática)
-  Timer.periodic(const Duration(minutes: 5), (timer) async {
+  _mqttReconnectTimer?.cancel();
+  _mqttReconnectTimer =
+      Timer.periodic(const Duration(minutes: 5), (timer) async {
     if (mqttAWSFlutterClient == null ||
         mqttAWSFlutterClient!.connectionStatus?.state !=
             MqttConnectionState.connected) {
@@ -2746,13 +2750,15 @@ void onStart(ServiceInstance service) async {
   service.on('distanceControl').listen((event) {
     showNotification('Se inició el control por distancia',
         'Recuerde tener la ubicación del telefono encendida', 'noti');
+    backTimerDS?.cancel();
     backTimerDS = Timer.periodic(const Duration(minutes: 2), (timer) async {
       await backFunctionDS();
     });
   });
 
-  // Timer para mantener MQTT conectado (reconexión automática)
-  Timer.periodic(const Duration(minutes: 5), (timer) async {
+  _mqttReconnectTimerBg?.cancel();
+  _mqttReconnectTimerBg =
+      Timer.periodic(const Duration(minutes: 5), (timer) async {
     if (mqttAWSFlutterClient == null ||
         mqttAWSFlutterClient!.connectionStatus?.state !=
             MqttConnectionState.connected) {
@@ -3383,9 +3389,7 @@ Future<void> controlDeviceBLE(String name, bool newState) async {
   final String pc = DeviceManager.getProductCode(name);
   final String sn = DeviceManager.extractSerialNumber(name);
 
-  if (pc == '020010_IOT' ||
-      pc == '020020_IOT' ||
-      (pc == '027313_IOT' && globalDATA['$pc/$sn']!.keys.contains('io'))) {
+  if (pc == '020010_IOT' || pc == '020020_IOT' || pc == '027313_IOT') {
     String? pinQuick = pinQuickAccess[name];
     if (pinQuick == null) {
       printLog.e('No se encontró el pin para acceso rápido en $name');
@@ -4420,30 +4424,16 @@ class BluetoothManager {
               (c) => c.uuid == Guid('52a2f121-a8e3-468c-a5de-45dca9a2a207'));
           break;
         case '027313_IOT':
-          if (Versioner.isPosterior(hardwareVersion, '241220A')) {
-            BluetoothService service = services.firstWhere(
-                (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
-            ioUuid = service.characteristics.firstWhere(
-                (c) => c.uuid == Guid('03b1c5d9-534a-4980-aed3-f59615205216'));
-            otaUuid = service.characteristics.firstWhere((c) =>
-                c.uuid ==
-                Guid(
-                    'ae995fcd-2c7a-4675-84f8-332caf784e9f')); //Ota comandos (Solo notify)
-            varsUuid = service.characteristics.firstWhere(
-                (c) => c.uuid == Guid('52a2f121-a8e3-468c-a5de-45dca9a2a207'));
-          } else {
-            BluetoothService espService = services.firstWhere(
-                (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
-
-            varsUuid = espService.characteristics.firstWhere((c) =>
-                c.uuid ==
-                Guid(
-                    '52a2f121-a8e3-468c-a5de-45dca9a2a207')); //DistanceControl:W_Status:EnergyTimer:AwsINIT
-            otaUuid = espService.characteristics.firstWhere((c) =>
-                c.uuid ==
-                Guid(
-                    'ae995fcd-2c7a-4675-84f8-332caf784e9f')); //Ota comandos (Solo notify)
-          }
+          BluetoothService service = services.firstWhere(
+              (s) => s.uuid == Guid('6f2fa024-d122-4fa3-a288-8eca1af30502'));
+          ioUuid = service.characteristics.firstWhere(
+              (c) => c.uuid == Guid('03b1c5d9-534a-4980-aed3-f59615205216'));
+          otaUuid = service.characteristics.firstWhere((c) =>
+              c.uuid ==
+              Guid(
+                  'ae995fcd-2c7a-4675-84f8-332caf784e9f')); //Ota comandos (Solo notify)
+          varsUuid = service.characteristics.firstWhere(
+              (c) => c.uuid == Guid('52a2f121-a8e3-468c-a5de-45dca9a2a207'));
 
           break;
         case '024011_IOT':
@@ -4742,11 +4732,10 @@ class TokenManager {
       // Añadir nuevo token solo si no existe
       if (!userTokens.contains(currentToken)) {
         userTokens.add(currentToken);
-        await putTokensInAlexaDevices(userEmail, userTokens);
         printLog.i('Token añadido a alexa-devices para $userEmail');
-      } else {
-        printLog.i('Token ya existe en alexa-devices');
       }
+
+      await putTokensInAlexaDevicesGuarded(userEmail, userTokens, currentToken);
 
       printLog.i('Setup de tokens del usuario completado');
     } catch (e, s) {
@@ -8191,8 +8180,7 @@ class _PinConfigurationScreenState extends State<PinConfigurationScreen> {
                     color: color0, fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 15),
-              if (tipo == 'Entrada' ||
-                  Versioner.isPosterior(hardwareVersion, '240423A')) ...[
+              if (tipo == 'Entrada') ...[
                 Text(
                   'Configuración Normal Abierto (NA) / Normal Cerrado (NC):',
                   style: GoogleFonts.poppins(fontSize: 14, color: color0),

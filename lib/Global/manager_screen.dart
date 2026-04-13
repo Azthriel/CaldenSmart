@@ -982,7 +982,7 @@ class ManagerScreenState extends State<ManagerScreen> {
     );
   }
 
-    Future<void> passwordDialog(BuildContext context) async {
+  Future<void> passwordDialog(BuildContext context) async {
     final ValueNotifier<String> passNotifier = ValueNotifier<String>('');
     bool localShowPassword = false;
 
@@ -1083,7 +1083,6 @@ class ManagerScreenState extends State<ManagerScreen> {
       ],
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -2611,9 +2610,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                     onPressed: () async {
                       if (pc == '020010_IOT' ||
                           pc == '020020_IOT' ||
-                          (pc == '027313_IOT' &&
-                              Versioner.isPosterior(
-                                  hardwareVersion, '241220A'))) {
+                          pc == '027313_IOT') {
                         if (!quickAccesActivated) {
                           int? selectedPin;
                           if (pc == '027313_IOT') {
@@ -3229,7 +3226,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                 const SizedBox(height: 10),
               ],
 
-               if ((pc == '027313_IOT' ||
+              if ((pc == '027313_IOT' ||
                       pc == '020010_IOT' ||
                       pc == '020020_IOT') &&
                   globalDATA['$pc/$sn']?['riegoActive'] == false)

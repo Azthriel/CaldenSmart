@@ -144,8 +144,19 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
       // 1. Recuperar datos necesarios
       String nickname = '';
       if (deviceKey.contains('_')) {
-        nickname = nicknamesMap[deviceKey] ??
-            '${nicknamesMap[deviceKey.split('_')[0]] ?? deviceKey.split('_')[0]} pin ${deviceKey.split('_')[1]}';
+        final String selBase = deviceKey.split('_')[0];
+        final String selIdx = deviceKey.split('_')[1];
+        final String selPc = DeviceManager.getProductCode(selBase);
+        final String selSn = DeviceManager.extractSerialNumber(selBase);
+        final bool selHasEntry =
+            globalDATA['$selPc/$selSn']?['hasEntry'] ?? true;
+        if (selIdx == '0' && !selHasEntry) {
+          // No tiene entrada → solo el nickname, sin "pin 0"
+          nickname = nicknamesMap[selBase] ?? selBase;
+        } else {
+          nickname = nicknamesMap[deviceKey] ??
+              '${nicknamesMap[selBase] ?? selBase} pin $selIdx';
+        }
       } else {
         nickname = nicknamesMap[deviceKey] ?? deviceKey;
       }
@@ -330,10 +341,23 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
                       device.key.split('_')[0]);
                   bool isOnline = globalDATA['$pc/$sn']?['cstate'] ?? false;
 
-                  String nickname = device.key.contains('_')
-                      ? (nicknamesMap[device.key] ??
-                          '${nicknamesMap[device.key.split('_')[0]] ?? device.key.split('_')[0]} pin ${device.key.split('_')[1]}')
-                      : (nicknamesMap[device.key] ?? device.key);
+                  String nickname;
+                  if (device.key.contains('_')) {
+                    final String bName = device.key.split('_')[0];
+                    final String bIdx = device.key.split('_')[1];
+                    final String bPc = DeviceManager.getProductCode(bName);
+                    final String bSn = DeviceManager.extractSerialNumber(bName);
+                    final bool bHasEntry =
+                        globalDATA['$bPc/$bSn']?['hasEntry'] ?? true;
+                    if (bIdx == '0' && !bHasEntry) {
+                      nickname = nicknamesMap[bName] ?? bName;
+                    } else {
+                      nickname = nicknamesMap[device.key] ??
+                          '${nicknamesMap[bName] ?? bName} pin $bIdx';
+                    }
+                  } else {
+                    nickname = nicknamesMap[device.key] ?? device.key;
+                  }
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),

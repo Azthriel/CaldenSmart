@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:caldensmart/aws/dynamo/dynamo_certificates.dart';
 import 'package:caldensmart/logger.dart';
 import 'package:aws_dynamodb_api/dynamodb-2012-08-10.dart';
 import 'package:caldensmart/aws/mqtt/mqtt.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '/master.dart';
 
 //*-Lee todos los datos de un equipo-*\\
@@ -275,33 +277,6 @@ Future<void> queryItems(String pc, String sn) async {
 //*-Lee todos los datos de un equipo-*\\
 
 //*-Nueva lógica: Tokens en Alexa-Devices y ActiveUsers en sime-domotica-*\\
-
-/// Registra cada escritura en UserTracker para monitoreo de uso
-/// [functionName] es el nombre de la función que originó la escritura
-void trackWrite(String functionName) async {
-  try {
-    final String user =
-        (currentUserEmail.isEmpty) ? 'usuario-anonimo' : currentUserEmail;
-    await service.updateItem(
-      tableName: 'UserTracker',
-      key: {
-        'user': AttributeValue(s: user),
-      },
-      attributeUpdates: {
-        'writeUses': AttributeValueUpdate(
-          value: AttributeValue(n: '1'),
-          action: AttributeAction.add,
-        ),
-        'lastFunctionUsed': AttributeValueUpdate(
-          value: AttributeValue(s: functionName),
-          action: AttributeAction.put,
-        ),
-      },
-    );
-  } catch (e) {
-    printLog.e('Error registrando escritura en UserTracker: $e');
-  }
-}
 
 /// Guarda tokens del usuario en Alexa-Devices (nueva lógica)
 Future<void> putTokensInAlexaDevices(String email, List<String> tokens) async {
@@ -2324,4 +2299,106 @@ void setEventEnabled(
   } catch (e) {
     printLog.e('Error actualizando evento habilitado: $e');
   }
+}
+
+final Map<String, _TrackWriteBuffer> _trackWriteBuffers = {};
+
+class _TrackWriteBuffer {
+  int count = 0;
+  String lastFunction = '';
+  Timer? timer;
+}
+
+/// Versión con debounce: agrupa llamadas rápidas en un solo write a UserTracker.
+/// Ventana: 2 segundos. Si en ese tiempo llegan 8 trackWrites del mismo user,
+/// se ejecuta un solo updateItem con writeUses += 8.
+void trackWrite(String functionName) {
+  final String user =
+      (currentUserEmail.isEmpty) ? 'usuario-anonimo' : currentUserEmail;
+
+  final buffer =
+      _trackWriteBuffers.putIfAbsent(user, () => _TrackWriteBuffer());
+  buffer.count++;
+  buffer.lastFunction = functionName;
+
+  // Reiniciar el timer de debounce
+  buffer.timer?.cancel();
+  buffer.timer = Timer(const Duration(seconds: 2), () async {
+    final pendingCount = buffer.count;
+    final pendingFunction = buffer.lastFunction;
+    buffer.count = 0;
+
+    try {
+      await service.updateItem(
+        tableName: 'UserTracker',
+        key: {
+          'user': AttributeValue(s: user),
+        },
+        attributeUpdates: {
+          'writeUses': AttributeValueUpdate(
+            value: AttributeValue(n: pendingCount.toString()),
+            action: AttributeAction.add,
+          ),
+          'lastFunctionUsed': AttributeValueUpdate(
+            value: AttributeValue(s: pendingFunction),
+            action: AttributeAction.put,
+          ),
+        },
+      );
+    } catch (e) {
+      printLog.e('Error registrando escritura en UserTracker: $e');
+    }
+  });
+}
+
+const _kLastToken = 'token_guard_last_token';
+const _kLastTokenTime = 'token_guard_last_time';
+const _kTokenCooldownHours = 24;
+
+/// Retorna true si hay que escribir en Dynamo, false si se puede saltear.
+Future<bool> _shouldWriteToken(String newToken) async {
+  final prefs = await SharedPreferences.getInstance();
+  final savedToken = prefs.getString(_kLastToken);
+  final savedTimeMs = prefs.getInt(_kLastTokenTime);
+
+  // Token distinto → siempre escribir
+  if (savedToken != newToken) return true;
+
+  // Mismo token, pero pasaron más de 24h → re-validar
+  if (savedTimeMs != null) {
+    final savedTime = DateTime.fromMillisecondsSinceEpoch(savedTimeMs);
+    if (DateTime.now().difference(savedTime).inHours >= _kTokenCooldownHours) {
+      return true;
+    }
+  }
+
+  // Mismo token, dentro del cooldown → skip
+  return false;
+}
+
+Future<void> _markTokenWritten(String token) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(_kLastToken, token);
+  await prefs.setInt(_kLastTokenTime, DateTime.now().millisecondsSinceEpoch);
+}
+
+/// Versión protegida de putTokensInAlexaDevices con guard local.
+/// Usar esta función en lugar de putTokensInAlexaDevices en TokenManager
+/// y en el listener onTokenRefresh de menu.dart.
+Future<void> putTokensInAlexaDevicesGuarded(
+  String email,
+  List<String> tokens,
+  String currentToken,
+) async {
+  final shouldWrite = await _shouldWriteToken(currentToken);
+
+  if (!shouldWrite) {
+    printLog.i(
+        'Token guard: skip — mismo token subido hace menos de $_kTokenCooldownHours hs');
+    return;
+  }
+
+  await putTokensInAlexaDevices(email, tokens);
+  await _markTokenWritten(currentToken);
+  printLog.i('Token guard: token escrito y guardado localmente');
 }

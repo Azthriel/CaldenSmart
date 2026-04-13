@@ -64,9 +64,8 @@ class MenuPageState extends State<MenuPage> {
           // Añadir nuevo token si no existe
           if (!userTokens.contains(newToken)) {
             userTokens.add(newToken);
-            await putTokensInAlexaDevices(userEmail, userTokens);
-            printLog.i('Nuevo token actualizado en alexa-devices');
           }
+          await putTokensInAlexaDevicesGuarded(userEmail, userTokens, newToken);
         }
       } catch (e) {
         printLog.e('Error actualizando token: $e');

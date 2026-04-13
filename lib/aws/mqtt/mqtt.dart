@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:caldensmart/widget/widget_handler.dart';
@@ -13,6 +14,8 @@ import 'package:caldensmart/logger.dart';
 import 'package:caldensmart/Escenas/models/evento_estado.dart';
 
 MqttServerClient? mqttAWSFlutterClient;
+StreamSubscription<List<MqttReceivedMessage<MqttMessage>>>? _mqttSubscription;
+bool _isReconnecting = false;
 
 // Provider para almacenar el estado de los eventos
 final eventosEstadoProvider = riverpod.StateNotifierProvider<
@@ -71,11 +74,9 @@ Future<bool> setupMqtt() async {
     try {
       await mqttAWSFlutterClient!.connect();
       printLog.i('Usuario conectado a mqtt');
-
       return true;
     } catch (e) {
       printLog.e('Error intentando conectar: $e');
-
       return false;
     }
   } catch (e, s) {
@@ -90,17 +91,39 @@ void mqttonDisconnected() {
 }
 
 void reconnectMqtt() async {
-  await setupMqtt().then((value) {
-    if (value) {
+  if (_isReconnecting) {
+    printLog.i('Reconexión ya en progreso, ignorando llamada duplicada');
+    return;
+  }
+
+  _isReconnecting = true;
+  const maxAttempts = 5;
+
+  for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+    printLog.i('Reconexión MQTT — intento $attempt/$maxAttempts');
+
+    final ok = await setupMqtt();
+    if (ok) {
       for (var topic in topicsToSub) {
-        printLog.i('Subscribiendo a $topic');
+        printLog.i('Resubscribiendo a $topic');
         subToTopicMQTT(topic);
       }
-      listenToTopics();
-    } else {
-      reconnectMqtt();
+      listenToTopics(); // safe: cancela el anterior internamente
+      _isReconnecting = false;
+      printLog.i('MQTT reconectado exitosamente en intento $attempt');
+      return;
     }
-  });
+
+    // Backoff exponencial: 5s · 10s · 20s · 40s · 80s
+    if (attempt < maxAttempts) {
+      final waitSeconds = 5 * attempt;
+      printLog.i('Esperando ${waitSeconds}s antes del intento ${attempt + 1}...');
+      await Future.delayed(Duration(seconds: waitSeconds));
+    }
+  }
+
+  printLog.e('No se pudo reconectar a MQTT tras $maxAttempts intentos');
+  _isReconnecting = false;
 }
 //*-Conexión y desconexión IoT Core-*\\
 
@@ -167,7 +190,6 @@ void subscribeToAllUserEventos(
 
     if (nombreEvento == null) continue;
 
-    // Determinar el tipo de evento
     if (evento['evento'] == 'cadena') {
       tipoEvento = 'ControlPorCadena';
     } else if (evento['evento'] == 'riego') {
@@ -184,8 +206,14 @@ void subscribeToAllUserEventos(
 //*-Subscribir y desuscribir a los topics-*\\
 
 //*-Recibe los mensajes que se envían a los topics-*\\
+//! FIX 4: Cancelar _mqttSubscription anterior antes de crear una nueva.
+//  Antes: cada llamada a listenToTopics() agregaba un .listen() adicional
+//  sobre el mismo stream. Con 5 reconexiones → 5 callbacks por mensaje.
 void listenToTopics() {
-  mqttAWSFlutterClient!.updates!.listen((c) {
+  _mqttSubscription?.cancel();
+  _mqttSubscription = null;
+
+  _mqttSubscription = mqttAWSFlutterClient!.updates!.listen((c) {
     printLog.i('LLego algo(mqtt)');
     final MqttPublishMessage recMess = c[0].payload as MqttPublishMessage;
     final String topic = c[0].topic;
@@ -202,10 +230,8 @@ void listenToTopics() {
 
       // 🎯 MANEJO DE MENSAJES DE EVENTOS (Control por Cadena, Riego, Grupos)
       if (topic.startsWith('eventos/')) {
-        // Topic format: eventos/{tipoEvento}/{userEmail}/{nombreEvento}/status
         if (listNames.length >= 5 && listNames[4] == 'status') {
-          final tipoEvento = listNames[
-              1]; // ControlPorCadena, ControlPorRiego, ControlPorGrupos
+          final tipoEvento = listNames[1];
           final userEmail = listNames[2];
           final nombreEvento = listNames[3];
 
@@ -230,7 +256,6 @@ void listenToTopics() {
             if (eventoEstado.isCompleted) {
               printLog.i('🎉 Evento "$nombreEvento" completado!');
 
-              // Remover de la lista de ejecutando según el tipo
               if (tipoEvento == 'ControlPorCadena') {
                 removeCadenaExecuting(nombreEvento, currentUserEmail);
                 cadenaCompletedController.add(nombreEvento);
@@ -240,7 +265,6 @@ void listenToTopics() {
               }
             }
 
-            // Si el evento fue cancelado, también removerlo
             if (eventoEstado.isCancelled) {
               printLog.i('❌ Evento "$nombreEvento" cancelado');
 
@@ -251,7 +275,6 @@ void listenToTopics() {
               }
             }
 
-            // Si hay error, remover y notificar
             if (eventoEstado.hasError) {
               printLog.e(
                   '⚠️ Error en evento "$nombreEvento": ${eventoEstado.error}');
@@ -270,7 +293,7 @@ void listenToTopics() {
       String pc = listNames[1];
       String sn = listNames[2];
 
-      // 🔧 MANEJO DE MENSAJES DE DISPOSITIVOS (lógica existente)
+      // 🔧 MANEJO DE MENSAJES DE DISPOSITIVOS
       String keyName = "$pc/$sn";
       printLog.i('Keyname: $keyName');
 
@@ -291,21 +314,13 @@ void listenToTopics() {
             .read(globalDataProvider.notifier)
             .updateData(keyName, encoded);
 
-        // Actualizar widgets para dispositivos con pin
-        int pinType = messageMap['pinType'] ?? 0;
+        int pinType = int.tryParse(messageMap['pinType'].toString()) ?? 0;
         bool wStatus = messageMap['w_status'] ?? false;
         bool isOnline = globalDATA[keyName]?['cstate'] ?? false;
 
         if (pinType == 0) {
-          // Salida (control) - actualizar estado on/off
           updateWidgetsForDevice(pc, sn, wStatus, isOnline, pinIndex: index);
         } else {
-          // Entrada (visualización) - calcular estado de alerta
-          // Lógica: Cerrado cuando w_status y r_state coinciden
-          // - Si w_status == true y r_state == '1' → Cerrado (sin alerta)
-          // - Si w_status == true y r_state != '1' → Abierto (alerta)
-          // - Si w_status == false y r_state == '1' → Abierto (alerta)
-          // - Si w_status == false y r_state != '1' → Cerrado (sin alerta)
           int rState = int.tryParse(messageMap['r_state'].toString()) ?? 0;
           bool isAlert = (wStatus && rState == 0) || (!wStatus && rState == 1);
           updateWidgetsForDeviceDisplay(pc, sn, isOnline,
@@ -320,7 +335,6 @@ void listenToTopics() {
             .read(globalDataProvider.notifier)
             .updateData(keyName, messageMap);
 
-        // Actualizar widgets para dispositivos normales
         if (messageMap.containsKey('w_status') ||
             messageMap.containsKey('cstate')) {
           bool isOn = messageMap['w_status'] ??
@@ -347,7 +361,6 @@ Future<void> loadInitialEventosState(
   try {
     printLog.i('📥 Cargando estados iniciales de eventos desde DynamoDB...');
 
-    // Consultar eventos de ControlPorCadena
     final eventosCadena = await queryEventosControlPorCadena(userEmail);
 
     for (var evento in eventosCadena) {
@@ -357,14 +370,12 @@ Future<void> loadInitialEventosState(
       if (estadoEjecucion != null) {
         final status = estadoEjecucion['status'];
 
-        // Si el evento está en ejecución o pausado, restaurar su estado
         if (status == 'running' || status == 'paused') {
           final pasoActual = estadoEjecucion['paso_actual'] ?? 0;
           final totalPasos = estadoEjecucion['total_pasos'] ?? 0;
           final pasosCompletados = estadoEjecucion['pasos_completados'] ?? [];
           final pasosCompletadosCount = pasosCompletados.length;
 
-          // Crear mensaje consistente con el formato de ejecución
           final mensaje =
               '$pasosCompletadosCount pasos completados de $totalPasos${status == 'paused' ? ' - Pausado' : ''}';
 
@@ -376,7 +387,6 @@ Future<void> loadInitialEventosState(
             timestamp: DateTime.now().millisecondsSinceEpoch,
           );
 
-          // Actualizar el provider
           ref.read(eventosEstadoProvider.notifier).updateEstado(
                 'ControlPorCadena',
                 nombreEvento,
@@ -389,7 +399,6 @@ Future<void> loadInitialEventosState(
       }
     }
 
-    // Consultar eventos de ControlDeRiego
     final eventosRiego = await queryEventosControlDeRiego(userEmail);
 
     for (var evento in eventosRiego) {
@@ -399,14 +408,12 @@ Future<void> loadInitialEventosState(
       if (estadoEjecucion != null) {
         final status = estadoEjecucion['status'];
 
-        // Si el evento está en ejecución o pausado, restaurar su estado
         if (status == 'running' || status == 'paused') {
           final pasoActual = estadoEjecucion['paso_actual'] ?? 0;
           final totalPasos = estadoEjecucion['total_pasos'] ?? 0;
           final pasosCompletados = estadoEjecucion['pasos_completados'] ?? [];
           final pasosCompletadosCount = pasosCompletados.length;
 
-          // Crear mensaje consistente con el formato de ejecución
           final mensaje =
               '$pasosCompletadosCount pasos completados de $totalPasos${status == 'paused' ? ' - Pausado' : ''}';
 
@@ -418,7 +425,6 @@ Future<void> loadInitialEventosState(
             timestamp: DateTime.now().millisecondsSinceEpoch,
           );
 
-          // Actualizar el provider
           ref.read(eventosEstadoProvider.notifier).updateEstado(
                 'ControlPorRiego',
                 nombreEvento,
