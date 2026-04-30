@@ -4219,6 +4219,28 @@ void stopRecordedData() async {
 }
 //*- Logger ble -*\\
 
+//*- Extraer coordenadas -*\\
+Map<String, double>? extractCoordinates(String locationString) {
+    try {
+      // Formato esperado: "Latitude: -34.6233784, Longitude: -58.5565867"
+      final latMatch =
+          RegExp(r'Latitude:\s*([-+]?\d+\.?\d*)').firstMatch(locationString);
+      final lonMatch =
+          RegExp(r'Longitude:\s*([-+]?\d+\.?\d*)').firstMatch(locationString);
+
+      if (latMatch != null && lonMatch != null) {
+        final lat = double.parse(latMatch.group(1)!);
+        final lon = double.parse(lonMatch.group(1)!);
+        return {'lat': lat, 'lon': lon};
+      }
+      return null;
+    } catch (e) {
+      printLog.e('Error extrayendo coordenadas: $e');
+      return null;
+    }
+  }
+//*- Extraer coordenadas -*\\
+
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
 //! CLASES !\\
@@ -4759,13 +4781,12 @@ class GlobalDataNotifier
 
   // Actualizar datos para un topic específico y notificar a los oyentes
   void updateData(String topic, Map<String, dynamic> newData) {
-    final current = state[topic];
-    if (current != newData) {
-      state = {
-        ...state,
-        topic: newData,
-      };
-    }
+    final current = Map<String, dynamic>.from(state[topic] ?? {});
+    current.addAll(newData);
+    state = {
+      ...state,
+      topic: current,
+    };
   }
 }
 

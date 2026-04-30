@@ -29,6 +29,10 @@ test/
 .ruby-lsp/
 firebase.json
 lint.markdownlint.json
+.metadata
+desktop.ini
+devtools_options.yaml
+pubspec.lock
 
 
 # IntelliJ related

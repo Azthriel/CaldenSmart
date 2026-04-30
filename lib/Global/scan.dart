@@ -109,20 +109,20 @@ class ScanPageState extends State<ScanPage>
 
   Icon _signal(int rssi, {bool isLost = false}) {
     if (isLost) {
-      return const Icon(HugeIcons.strokeRoundedFullSignal,
+      return const Icon(HugeIcons.strokeRoundedSignalNo02,
           color: Colors.white, size: 24);
     }
     if (rssi >= -60) {
       // Mejor señal: FullSignalIconPlus
-      return const Icon(HugeIcons.strokeRoundedMediumSignal,
+      return const Icon(HugeIcons.strokeRoundedFullSignal,
           color: Colors.white, size: 24);
     } else if (rssi >= -75) {
       // Señal media: MediumSignalIcon
-      return const Icon(HugeIcons.strokeRoundedLowSignal,
+      return const Icon(HugeIcons.strokeRoundedMediumSignal,
           color: Colors.white, size: 24);
     } else {
       // Señal baja: LowSignalIcon
-      return const Icon(HugeIcons.strokeRoundedSignalFull02,
+      return const Icon(HugeIcons.strokeRoundedLowSignal,
           color: Colors.white, size: 24);
     }
   }
@@ -1014,8 +1014,19 @@ class ScanPageState extends State<ScanPage>
                                                           scale: 1.33,
                                                           child: Switch(
                                                             value: estadoWState,
+                                                            // ON — verde igual al widget nativo de homescreen
+                                                            activeTrackColor:
+                                                                Colors.green,
                                                             activeThumbColor:
-                                                                color0,
+                                                                Colors.white,
+                                                            // OFF — gris neutro
+                                                            inactiveTrackColor:
+                                                                Colors.grey
+                                                                    .withValues(
+                                                                        alpha:
+                                                                            0.3),
+                                                            inactiveThumbColor:
+                                                                Colors.grey,
                                                             onChanged: (bool
                                                                     newValue) =>
                                                                 _runQuickAction(

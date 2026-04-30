@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'package:caldensmart/aws/dynamo/dynamo_certificates.dart';
 import 'package:caldensmart/logger.dart';
@@ -297,7 +296,6 @@ Future<void> putTokensInAlexaDevices(String email, List<String> tokens) async {
       cleanTokens.add('');
     }
 
-    trackWrite('putTokensInAlexaDevices');
     await service.updateItem(
       tableName: 'Alexa-Devices',
       key: {
@@ -365,7 +363,6 @@ Future<void> putActiveUsers(
       cleanEmails.add('');
     }
 
-    trackWrite('putActiveUsers');
     await service.updateItem(
       tableName: 'sime-domotica',
       key: {
@@ -488,7 +485,6 @@ Future<void> checkAndRemoveFromActiveUsers(
 //*-Guarda el mail del owner de un equipo en dynamo-*\\
 Future<void> putOwner(String pc, String sn, String data) async {
   try {
-    trackWrite('putOwner');
     await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
@@ -509,7 +505,6 @@ Future<void> putSecondaryAdmins(String pc, String sn, List<String> data) async {
     data.add('');
   }
   try {
-    trackWrite('putSecondaryAdmins');
     await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
@@ -525,7 +520,6 @@ Future<void> putSecondaryAdmins(String pc, String sn, List<String> data) async {
 //*-Escribe la distancia de encendido y apagado de el control por distancia de un equipo-*\\
 Future<void> putDistanceOn(String pc, String sn, String data) async {
   try {
-    trackWrite('putDistanceOn');
     await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
@@ -541,7 +535,6 @@ Future<void> putDistanceOn(String pc, String sn, String data) async {
 
 Future<void> putDistanceOff(String pc, String sn, String data) async {
   try {
-    trackWrite('putDistanceOff');
     await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
@@ -560,7 +553,6 @@ Future<void> putDistanceOff(String pc, String sn, String data) async {
 Future<void> saveATData(String pc, String sn, bool activate, String mail,
     String dOn, String dOff) async {
   try {
-    trackWrite('saveATData');
     await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
@@ -582,7 +574,6 @@ Future<void> saveATData(String pc, String sn, bool activate, String mail,
 //*-Guardar si un equipo es NA o NC-*\\
 Future<void> saveNC(String pc, String sn, bool data) async {
   try {
-    trackWrite('saveNC');
     await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
@@ -604,7 +595,6 @@ Future<void> putDevicesForAlexa(String email, List<String> data) async {
   }
   try {
     // Se actualiza el ítem, asignando 'devices' con la lista proporcionada (vacía o no).
-    trackWrite('putDevicesForAlexa');
     final response = await service.updateItem(
       tableName: 'Alexa-Devices',
       key: {
@@ -641,7 +631,6 @@ Future<void> putPreviusConnections(String email, List<String> data,
 
   try {
     // Se actualiza el ítem, asignando 'devices' con la lista proporcionada
-    trackWrite('putPreviusConnections');
     await service.updateItem(
       tableName: 'Alexa-Devices',
       key: {
@@ -708,7 +697,6 @@ Future<void> putFolders(
       );
     });
 
-    trackWrite('putFolders');
     await service.updateItem(
       tableName: 'Alexa-Devices',
       key: {'email': AttributeValue(s: email)},
@@ -731,7 +719,6 @@ Future<void> putFolders(
 ///*-Guardar y obtener Nicknames de los equipo-*\\\
 Future<void> putNicknames(String email, Map<String, String> data) async {
   try {
-    trackWrite('putNicknames');
     await service.updateItem(tableName: 'Alexa-Devices', key: {
       'email': AttributeValue(s: email),
     }, attributeUpdates: {
@@ -812,7 +799,6 @@ Future<List<String>> getPreviusConnections(String email) async {
 ///*-Guardar el largo del Roller-*\\\
 Future<void> putRollerLength(String pc, String sn, String data) async {
   try {
-    trackWrite('putRollerLength');
     await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
@@ -1053,7 +1039,6 @@ void putEventos(
     }).toList();
 
     // Actualizar el item en DynamoDB
-    trackWrite('putEventos');
     await service.updateItem(
       tableName: 'Alexa-Devices',
       key: {'email': AttributeValue(s: email)},
@@ -1186,7 +1171,6 @@ Future<List<Map<String, dynamic>>> getEventos(
 ///Guarda la ubicación del equipo en la base de datos
 Future<void> saveLocation(String pc, String sn, String data) async {
   try {
-    trackWrite('saveLocation');
     await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
@@ -1203,7 +1187,6 @@ Future<void> saveLocation(String pc, String sn, String data) async {
 ///Guarda las versiones de Hardware y Software
 Future<void> putVersions(String pc, String sn, String hard, String soft) async {
   try {
-    trackWrite('putVersions');
     await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
@@ -1301,7 +1284,6 @@ Future<void> putEventoControlPorDisparadores(
   try {
     String sortKey = '$email:$nombreEvento';
 
-    trackWrite('putEventoControlPorDisparadores');
     await service.putItem(
       tableName: 'Eventos_ControlPorDisparadores',
       item: {
@@ -1426,7 +1408,6 @@ Future<void> putDevicesInDistanceControl(
     data.add('');
   }
   try {
-    trackWrite('putDevicesInDistanceControl');
     await service.updateItem(tableName: 'Alexa-Devices', key: {
       'email': AttributeValue(s: email)
     }, attributeUpdates: {
@@ -1470,7 +1451,6 @@ Future<List<String>> getDevicesInDistanceControl(String email) async {
 
 Future<void> putDistanceControl(String pc, String sn, bool status) async {
   try {
-    trackWrite('putDistanceControl');
     await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
@@ -1490,7 +1470,6 @@ Future<void> putDistanceControl(String pc, String sn, bool status) async {
 void putEventoControlPorCadena(
     String email, String nombreEvento, List<Map<String, dynamic>> pasos) async {
   try {
-    trackWrite('putEventoControlPorCadena');
     final response = await service.putItem(
       tableName: 'Eventos_ControlPorCadena',
       item: {
@@ -1644,7 +1623,6 @@ Future<List<Map<String, dynamic>>> queryEventosControlDeRiego(
 void putEventoControlPorGrupos(
     String email, String nombreEvento, List<String> grupo) async {
   try {
-    trackWrite('putEventoControlPorGrupos');
     await service.putItem(
       tableName: 'Eventos_ControlPorGrupos',
       item: {
@@ -1681,7 +1659,6 @@ void deleteEventoControlPorGrupos(String email, String nombreEvento) async {
 void putEventoControlPorClima(String email, String nombreEvento, String clima,
     Map<String, Map<String, bool>> ejecutores, String? windDirection) async {
   try {
-    trackWrite('putEventoControlPorClima');
     await service.putItem(
       tableName: 'Eventos_ControlPorClima',
       item: {
@@ -1734,7 +1711,6 @@ Future<void> putRiegoExtensions(String pc, String sn, List<String> data) async {
     data.add('');
   }
   try {
-    trackWrite('putRiegoExtensions');
     await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
@@ -1751,7 +1727,6 @@ Future<void> putRiegoExtensions(String pc, String sn, List<String> data) async {
 //*- Guarda el estado de freeBomb -*\\
 Future<void> putFreeBomb(String pc, String sn, bool status) async {
   try {
-    trackWrite('putFreeBomb');
     await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
@@ -1770,7 +1745,6 @@ Future<void> putFreeBomb(String pc, String sn, bool status) async {
 Future<void> putRiegoMaster(
     String pc, String sn, String masterDeviceName) async {
   try {
-    trackWrite('putRiegoMaster');
     await service.updateItem(tableName: 'sime-domotica', key: {
       'product_code': AttributeValue(s: pc),
       'device_id': AttributeValue(s: sn),
@@ -1790,7 +1764,6 @@ Future<void> putRiegoMaster(
 void putEventoControlDeRiego(String email, String nombreEvento,
     bool cancelIfRain, String bomba, List<Map<String, dynamic>> pasos) async {
   try {
-    trackWrite('putEventoControlDeRiego');
     await service.putItem(
       tableName: 'Eventos_ControlDeRiego',
       item: {
@@ -1857,7 +1830,6 @@ Future<void> putAdminUsageHistory(
     }
 
     // Guardar en DynamoDB
-    trackWrite('putAdminUsageHistory');
     await service.updateItem(
       tableName: 'sime-domotica',
       key: {
@@ -1955,7 +1927,6 @@ Future<void> putAdminTimeRestrictions(String pc, String sn,
       );
     });
 
-    trackWrite('putAdminTimeRestrictions');
     final response = await service.updateItem(
       tableName: 'sime-domotica',
       key: {
@@ -2073,7 +2044,6 @@ Future<void> saveAdminWifiRestrictions(String pc, String sn, String adminEmail,
       restrictionsMap[email] = AttributeValue(s: jsonEncode(cfg));
     });
 
-    trackWrite('saveAdminWifiRestrictions');
     await service.updateItem(
       tableName: 'sime-domotica',
       key: {
@@ -2157,7 +2127,6 @@ Future<bool> isAdminAllowedToUseWifi(
 /// Guarda un log de impresión en la tabla PrintLogHistorial
 void savePrintLog(String email, String log) async {
   try {
-    trackWrite('savePrintLog');
     final response =
         await service.updateItem(tableName: 'PrintLogHistorial', key: {
       'email': AttributeValue(s: email),
@@ -2229,7 +2198,6 @@ Future<void> saveDeviceRegisterLog(String pc, String sn, int sessionTimestamp,
     }
 
     // Actualizar en DynamoDB
-    trackWrite('saveDeviceRegisterLog');
     await service.updateItem(
       tableName: 'sime-domotica',
       key: {
@@ -2284,7 +2252,6 @@ void setEventEnabled(
         return;
     }
 
-    trackWrite('setEventEnabled');
     final response = await service.updateItem(
       tableName: tableName,
       key: key,
@@ -2299,56 +2266,6 @@ void setEventEnabled(
   } catch (e) {
     printLog.e('Error actualizando evento habilitado: $e');
   }
-}
-
-final Map<String, _TrackWriteBuffer> _trackWriteBuffers = {};
-
-class _TrackWriteBuffer {
-  int count = 0;
-  String lastFunction = '';
-  Timer? timer;
-}
-
-/// Versión con debounce: agrupa llamadas rápidas en un solo write a UserTracker.
-/// Ventana: 2 segundos. Si en ese tiempo llegan 8 trackWrites del mismo user,
-/// se ejecuta un solo updateItem con writeUses += 8.
-void trackWrite(String functionName) {
-  final String user =
-      (currentUserEmail.isEmpty) ? 'usuario-anonimo' : currentUserEmail;
-
-  final buffer =
-      _trackWriteBuffers.putIfAbsent(user, () => _TrackWriteBuffer());
-  buffer.count++;
-  buffer.lastFunction = functionName;
-
-  // Reiniciar el timer de debounce
-  buffer.timer?.cancel();
-  buffer.timer = Timer(const Duration(seconds: 2), () async {
-    final pendingCount = buffer.count;
-    final pendingFunction = buffer.lastFunction;
-    buffer.count = 0;
-
-    try {
-      await service.updateItem(
-        tableName: 'UserTracker',
-        key: {
-          'user': AttributeValue(s: user),
-        },
-        attributeUpdates: {
-          'writeUses': AttributeValueUpdate(
-            value: AttributeValue(n: pendingCount.toString()),
-            action: AttributeAction.add,
-          ),
-          'lastFunctionUsed': AttributeValueUpdate(
-            value: AttributeValue(s: pendingFunction),
-            action: AttributeAction.put,
-          ),
-        },
-      );
-    } catch (e) {
-      printLog.e('Error registrando escritura en UserTracker: $e');
-    }
-  });
 }
 
 const _kLastToken = 'token_guard_last_token';

@@ -91,107 +91,119 @@ class LoadState extends State<LoadingPage> {
   Future<bool> precharge() async {
     try {
       printLog.i('Estoy precargando');
+
+      // ── WAVE 0: BLE setup (secuencial — protocolo lo exige) ──────────────────
       android ? await bluetoothManager.device.requestMtu(255) : null;
       toolsValues = await bluetoothManager.toolsUuid.read();
       printLog.i('Valores tools: $toolsValues');
       printLog.i('Valores info: $infoValues');
 
-      await queryItems(pc, sn);
+      // ── WAVE 1: Todas independientes entre sí → paralelo total ───────────────
+      // safeAddDevice lee Alexa-Devices (distinta tabla que queryItems)
+      // addToActiveUsers escribe un campo distinto en sime-domotica
+      final addF = safeAddDevice(currentUserEmail, deviceName);
+      final activeF = addToActiveUsers(pc, sn, currentUserEmail);
+      final posF = Geolocator.getCurrentPosition();
+      final specialF = isSpecialUser(currentUserEmail);
+      final firmwareF = _safeFetchFirmware(pc, hardwareVersion);
 
-      // Usar la función segura para agregar dispositivos
-      String result = await safeAddDevice(currentUserEmail, deviceName);
+      await Future.wait([
+        queryItems(pc, sn), // void — popula globalDATA
+        addF,
+        activeF, // void — no result needed
+        posF,
+        specialF,
+        firmwareF,
+      ]);
 
-      switch (result) {
+      // Resultados de Wave 1 (todos ya resueltos, await es instantáneo)
+      final String addResult = await addF;
+      final Position position = await posF;
+      specialUser = await specialF;
+      final String? firmwareFile = await firmwareF;
+
+      // ── Campos sincrónicos — globalDATA ya populado ──────────────────────────
+      riego = globalDATA['$pc/$sn']?['riegoActive'] ?? false;
+      labProcessFinished =
+          globalDATA['$pc/$sn']?['LabProcessFinished'] ?? false;
+      discNotfActivated = configNotiDsc.keys.toList().contains(deviceName);
+      quickAccesActivated = quickAccess.contains(deviceName);
+      printLog.i('Riego activo: $riego', color: 'Naranja');
+      printLog.i('Usuario especial: $specialUser');
+
+      // Parse toolsValues (sincrónico)
+      var parts3 = utf8.decode(toolsValues).split(':');
+      final match = RegExp(r'\((\d+)\)').firstMatch(parts3[2]);
+      int users = int.parse(match!.group(1).toString());
+      lastUser = users;
+      userConnected = users > 1;
+      printLog.i('Hay $users conectados');
+
+      // Resultado safeAddDevice
+      switch (addResult) {
         case 'added':
-          // Dispositivo agregado exitosamente - agregar a listas locales
           todosLosDispositivos.add(MapEntry('individual', deviceName));
           topicsToSub.add('devices_tx/$pc/$sn');
           subToTopicMQTT('devices_tx/$pc/$sn');
           printLog.i('Dispositivo $deviceName agregado exitosamente');
-          break;
-
         case 'exists':
-          // Dispositivo ya existía - no hacer nada adicional
           printLog.i('Dispositivo $deviceName ya estaba registrado');
-          break;
-
         case 'error':
           printLog.e(
               'No se pudo agregar el dispositivo $deviceName de forma segura');
-          // Aquí podrías mostrar un mensaje al usuario o implementar lógica de recuperación
-          break;
       }
 
-      await addToActiveUsers(pc, sn, currentUserEmail);
-
-      String ubi = (await Geolocator.getCurrentPosition()).toString();
-
-      await saveLocation(pc, sn, ubi);
-
-      if (softwareVersion != globalDATA['$pc/$sn']?['SoftwareVersion'] ||
-          hardwareVersion != globalDATA['$pc/$sn']?['HardwareVersion']) {
-        await putVersions(
-          pc,
-          sn,
-          hardwareVersion,
-          softwareVersion,
-        );
-        globalDATA
-            .putIfAbsent('$pc/$sn', () => {})
-            .addAll({"SoftwareVersion": softwareVersion});
-        globalDATA
-            .putIfAbsent('$pc/$sn', () => {})
-            .addAll({"HardwareVersion": hardwareVersion});
-      }
-
-      riego = globalDATA['$pc/$sn']?['riegoActive'] ?? false;
-      printLog.i('Riego activo: $riego', color: 'Naranja');
-
-      canUseDevice = await checkAdminTimePermission(deviceName);
-
-      specialUser = await isSpecialUser(currentUserEmail);
-
-      labProcessFinished =
-          globalDATA['$pc/$sn']?['LabProcessFinished'] ?? false;
-
-      printLog.i('Usuario especial: $specialUser');
-
-      discNotfActivated = configNotiDsc.keys.toList().contains(deviceName);
-
-      var parts3 = utf8.decode(toolsValues).split(':');
-      final regex = RegExp(r'\((\d+)\)');
-      final match = regex.firstMatch(parts3[2]);
-      int users = int.parse(match!.group(1).toString());
-      lastUser = users;
-      printLog.i('Hay $users conectados');
-      userConnected = users > 1;
-
-      quickAccesActivated = quickAccess.contains(deviceName);
-      try {
-        final fileName =
-            await Versioner.fetchLatestFirmwareFile(pc, hardwareVersion);
-
-        lastSV = Versioner.extractSV(fileName, hardwareVersion);
-
+      // Firmware
+      if (firmwareFile != null) {
+        lastSV = Versioner.extractSV(firmwareFile, hardwareVersion);
         printLog.i('Ultimo firmware: $lastSV', color: 'Naranja');
-
         if (lastSV != null) {
           shouldUpdateDevice =
               (lastSV != softwareVersion) || softwareVersion.contains('_F');
         }
-      } catch (e) {
-        printLog.e(
-            'No se pudo verificar la versión de firmware desde GitHub: $e',
-            color: 'Amarillo');
-        printLog.i('Continuando sin verificación de actualizaciones...',
-            color: 'Verde');
-
+      } else {
         lastSV = null;
         shouldUpdateDevice = false;
       }
 
-      analizePayment(pc, sn);
+      // ── WAVE 2: Escrituras post-globalDATA + GPS ──────────────────────────────
+      final needsVersionUpdate =
+          softwareVersion != globalDATA['$pc/$sn']?['SoftwareVersion'] ||
+              hardwareVersion != globalDATA['$pc/$sn']?['HardwareVersion'];
 
+      final adminF = checkAdminTimePermission(deviceName);
+
+      final location = extractCoordinates(
+          globalDATA['$pc/$sn']?['deviceLocation'] ?? 'unknown');
+
+      final shouldUpdateLocation = location == null ||
+          Geolocator.distanceBetween(
+                position.latitude,
+                position.longitude,
+                location['lat']!,
+                location['lon']!,
+              ) >
+              50;
+
+      await Future.wait([
+        if (shouldUpdateLocation) saveLocation(pc, sn, position.toString()),
+        adminF,
+        if (needsVersionUpdate)
+          putVersions(pc, sn, hardwareVersion, softwareVersion)
+        else
+          Future.value(),
+      ]);
+
+      canUseDevice = await adminF;
+
+      if (needsVersionUpdate) {
+        globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({
+          'SoftwareVersion': softwareVersion,
+          'HardwareVersion': hardwareVersion
+        });
+      }
+
+      // ── WAVE 3: Lecturas BLE por tipo (secuencial — stack BLE) ───────────────
       switch (pc) {
         case '022000_IOT' || '027000_IOT' || '027345_IOT':
           varsValues = await bluetoothManager.varsUuid.read();
@@ -201,7 +213,6 @@ class LoadState extends State<LoadingPage> {
           if (parts2[0] == '0' || parts2[0] == '1') {
             distanceControlActive =
                 globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;
-
             tempValue = double.parse(parts2[1]);
             turnOn = parts2[2] == '1';
             trueStatus = parts2[4] == '1';
@@ -211,7 +222,6 @@ class LoadState extends State<LoadingPage> {
           } else {
             distanceControlActive =
                 globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;
-
             tempValue = double.parse(parts2[0]);
             turnOn = parts2[1] == '1';
             trueStatus = parts2[3] == '1';
@@ -233,11 +243,7 @@ class LoadState extends State<LoadingPage> {
               deviceOwner = true;
             } else {
               deviceOwner = false;
-              if (adminDevices.contains(currentUserEmail)) {
-                secondaryAdmin = true;
-              } else {
-                secondaryAdmin = false;
-              }
+              secondaryAdmin = adminDevices.contains(currentUserEmail);
             }
           } else {
             deviceOwner = true;
@@ -256,12 +262,8 @@ class LoadState extends State<LoadingPage> {
 
           globalDATA
               .putIfAbsent('$pc/$sn', () => {})
-              .addAll({"w_status": turnOn});
-          globalDATA
-              .putIfAbsent('$pc/$sn', () => {})
-              .addAll({"f_status": trueStatus});
+              .addAll({'w_status': turnOn, 'f_status': trueStatus});
 
-          break;
         case '015773_IOT':
           workValues = await bluetoothManager.workUuid.read();
           printLog.i('Valores work: $workValues');
@@ -274,15 +276,12 @@ class LoadState extends State<LoadingPage> {
           promedioppmCH4 = workValues[19] + (workValues[20] << 8);
           daysToExpire = workValues[21] + (workValues[22] << 8);
 
-          globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({"ppmCO": ppmCO});
-          globalDATA
-              .putIfAbsent('$pc/$sn', () => {})
-              .addAll({"ppmCH4": ppmCH4});
-          globalDATA
-              .putIfAbsent('$pc/$sn', () => {})
-              .addAll({"alert": workValues[4] == 1});
+          globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({
+            'ppmCO': ppmCO,
+            'ppmCH4': ppmCH4,
+            'alert': workValues[4] == 1,
+          });
 
-          break;
         case '020010_IOT':
           ioValues = await bluetoothManager.ioUuid.read();
           printLog.i('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
@@ -305,11 +304,7 @@ class LoadState extends State<LoadingPage> {
               deviceOwner = true;
             } else {
               deviceOwner = false;
-              if (adminDevices.contains(currentUserEmail)) {
-                secondaryAdmin = true;
-              } else {
-                secondaryAdmin = false;
-              }
+              secondaryAdmin = adminDevices.contains(currentUserEmail);
             }
           } else {
             deviceOwner = true;
@@ -326,7 +321,6 @@ class LoadState extends State<LoadingPage> {
           distOffValue = globalDATA['$pc/$sn']!['distanceOff'] ?? 100.0;
           distOnValue = globalDATA['$pc/$sn']!['distanceOn'] ?? 3000.0;
 
-          break;
         case '020020_IOT':
           ioValues = await bluetoothManager.ioUuid.read();
           printLog.i('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
@@ -349,11 +343,7 @@ class LoadState extends State<LoadingPage> {
               deviceOwner = true;
             } else {
               deviceOwner = false;
-              if (adminDevices.contains(currentUserEmail)) {
-                secondaryAdmin = true;
-              } else {
-                secondaryAdmin = false;
-              }
+              secondaryAdmin = adminDevices.contains(currentUserEmail);
             }
           } else {
             deviceOwner = true;
@@ -369,7 +359,7 @@ class LoadState extends State<LoadingPage> {
 
           distOffValue = globalDATA['$pc/$sn']!['distanceOff'] ?? 100.0;
           distOnValue = globalDATA['$pc/$sn']!['distanceOn'] ?? 3000.0;
-          break;
+
         case '027313_IOT':
           ioValues = await bluetoothManager.ioUuid.read();
           printLog.i('Valores IO: $ioValues || ${utf8.decode(ioValues)}');
@@ -380,7 +370,6 @@ class LoadState extends State<LoadingPage> {
               globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;
           distOffValue = globalDATA['$pc/$sn']!['distanceOff'] ?? 100.0;
           distOnValue = globalDATA['$pc/$sn']!['distanceOn'] ?? 3000.0;
-
           isNC = globalDATA['$pc/$sn']!['isNC'] ?? false;
 
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
@@ -396,11 +385,7 @@ class LoadState extends State<LoadingPage> {
               deviceOwner = true;
             } else {
               deviceOwner = false;
-              if (adminDevices.contains(currentUserEmail)) {
-                secondaryAdmin = true;
-              } else {
-                secondaryAdmin = false;
-              }
+              secondaryAdmin = adminDevices.contains(currentUserEmail);
             }
           } else {
             deviceOwner = true;
@@ -414,12 +399,13 @@ class LoadState extends State<LoadingPage> {
             tenant = false;
           }
 
-          break;
         case '024011_IOT':
           varsValues = await bluetoothManager.varsUuid.read();
           printLog.i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
+
           distanceControlActive =
               globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;
+
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
           adminDevices =
@@ -433,11 +419,7 @@ class LoadState extends State<LoadingPage> {
               deviceOwner = true;
             } else {
               deviceOwner = false;
-              if (adminDevices.contains(currentUserEmail)) {
-                secondaryAdmin = true;
-              } else {
-                secondaryAdmin = false;
-              }
+              secondaryAdmin = adminDevices.contains(currentUserEmail);
             }
           } else {
             deviceOwner = true;
@@ -453,17 +435,18 @@ class LoadState extends State<LoadingPage> {
 
           rollerSavedLength = globalDATA['$pc/$sn']!['rollerSavedLength'] ?? '';
 
-          break;
         case '028000_IOT':
           varsValues = await bluetoothManager.varsUuid.read();
           var parts2 = utf8.decode(varsValues).split(':');
           printLog.i('Valores Vars: $parts2');
+
           distanceControlActive =
               globalDATA['$pc/$sn']?['distanceControlActive'] ?? false;
           turnOn = parts2[2] == '1';
           trueStatus = parts2[4] == '1';
           actualTemp = parts2[5];
           printLog.i('Estado: $turnOn');
+
           owner = globalDATA['$pc/$sn']!['owner'] ?? '';
           printLog.i('Owner actual: $owner');
           adminDevices =
@@ -477,11 +460,7 @@ class LoadState extends State<LoadingPage> {
               deviceOwner = true;
             } else {
               deviceOwner = false;
-              if (adminDevices.contains(currentUserEmail)) {
-                secondaryAdmin = true;
-              } else {
-                secondaryAdmin = false;
-              }
+              secondaryAdmin = adminDevices.contains(currentUserEmail);
             }
           } else {
             deviceOwner = true;
@@ -500,36 +479,44 @@ class LoadState extends State<LoadingPage> {
 
           globalDATA
               .putIfAbsent('$pc/$sn', () => {})
-              .addAll({"w_status": turnOn});
-          globalDATA
-              .putIfAbsent('$pc/$sn', () => {})
-              .addAll({"f_status": trueStatus});
+              .addAll({'w_status': turnOn, 'f_status': trueStatus});
 
-          break;
         case '023430_IOT':
           varsValues = await bluetoothManager.varsUuid.read();
           var partes = utf8.decode(varsValues).split(':');
           printLog.i('Valores VARS: $varsValues || ${utf8.decode(varsValues)}');
           actualTemp = partes[0];
-          // offsetTemp = partes[1];
           awsInit = partes[2] == '1';
           alertMaxFlag = partes[3] == '1';
           alertMinFlag = partes[4] == '1';
           alertMaxTemp = partes[5];
           alertMinTemp = partes[6];
-          // tempMap = partes[7] == '1';
-          break;
+
         default:
           printLog.i('Dispositivo no reconocido');
-          return Future.value(false);
+          return false;
       }
 
-      return Future.value(true);
+      analizePayment(pc, sn); // fire-and-forget
+
+      return true;
     } catch (e, stackTrace) {
       printLog.e('Error en la precarga $e $stackTrace');
       showToast('Error en la precarga');
-      // handleManualError('$e', '$stackTrace');
-      return Future.value(false);
+      return false;
+    }
+  }
+
+// ── Helper privado: firmware fetch con error handling propio ─────────────────
+  Future<String?> _safeFetchFirmware(String pc, String hv) async {
+    try {
+      return await Versioner.fetchLatestFirmwareFile(pc, hv);
+    } catch (e) {
+      printLog.e('No se pudo verificar la versión de firmware desde GitHub: $e',
+          color: 'Amarillo');
+      printLog.i('Continuando sin verificación de actualizaciones...',
+          color: 'Verde');
+      return null;
     }
   }
 

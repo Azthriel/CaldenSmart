@@ -1,7 +1,7 @@
 name: caldensmart
 description: "Caldén Smart"
 publish_to: "none"
-version: 1.0.75+93
+version: 1.0.76+94
 
 environment:
   sdk: ^3.5.1
