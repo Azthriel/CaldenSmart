@@ -33,6 +33,14 @@ class WifiPageState extends ConsumerState<WifiPage>
   // Mapa para almacenar permisos de WiFi por dispositivo
   Map<String, bool> _wifiPermissions = {};
 
+  // Cache de "red inestable" por dispositivo. Se carga una vez en initState
+  // y se refresca individualmente cuando un device se desconecta (cstate=false
+  // en el globalDataProvider). Si nada cambia, no hace falta refrescar nada.
+  Map<String, bool> _networkUnstableCache = {};
+  // Para detectar transiciones cstate true→false necesitamos recordar el
+  // estado anterior por device entre rebuilds.
+  final Map<String, bool> _previousCstate = {};
+
   int _totalDispositivosReal = 0;
 
   late TabController _tabController;
@@ -66,6 +74,11 @@ class WifiPageState extends ConsumerState<WifiPage>
 
     // Cargar permisos de WiFi
     _loadWifiPermissions();
+
+    // Cargar estado inicial de "red inestable" por device. Después se
+    // actualiza individualmente vía ref.listen en build() cuando un device
+    // se desconecta (transición cstate true→false).
+    _refreshNetworkUnstableCache();
 
     // 🆕 Suscribirse a los topics de eventos MQTT
     _subscribeToEventosTopics();
@@ -163,6 +176,55 @@ class WifiPageState extends ConsumerState<WifiPage>
       setState(() {
         _wifiPermissions = permissions;
       });
+    }
+  }
+
+  /// Carga el flag "red inestable" para todos los devices y lo cachea.
+  /// Se llama UNA SOLA VEZ en initState. Después la actualización es por
+  /// device individual (ver _refreshNetworkUnstableForDevice).
+  ///
+  /// Antes esto se hacía sincrónicamente leyendo `globalDATA[...]['discTime']`,
+  /// pero ahora `isWifiNetworkUnstable` consulta DynamoDB (`device-connection-events`)
+  /// y es async. `_buildDeviceCard` no puede ser async, así que precargamos
+  /// en un cache.
+  Future<void> _refreshNetworkUnstableCache() async {
+    final Map<String, bool> updated = {};
+
+    for (final device in todosLosDispositivos) {
+      if (device.value.isEmpty) continue;
+      final String deviceName = device.value;
+      final String pc = DeviceManager.getProductCode(deviceName);
+      final String sn = DeviceManager.extractSerialNumber(deviceName);
+      final String key = '$pc/$sn';
+
+      try {
+        updated[key] = await isWifiNetworkUnstable(pc, sn);
+      } catch (e) {
+        printLog.e('Error chequeando red inestable para $deviceName: $e');
+        updated[key] = false; // Ante error, asumimos red estable.
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _networkUnstableCache = updated;
+      });
+    }
+  }
+
+  /// Refresca el flag "red inestable" para UN device puntual.
+  /// Se llama cuando ese device dispara un evento de desconexión por MQTT
+  /// (transición cstate true→false detectada con ref.listen en build).
+  Future<void> _refreshNetworkUnstableForDevice(String pc, String sn) async {
+    try {
+      final unstable = await isWifiNetworkUnstable(pc, sn);
+      if (mounted) {
+        setState(() {
+          _networkUnstableCache['$pc/$sn'] = unstable;
+        });
+      }
+    } catch (e) {
+      printLog.e('Error refrescando red inestable para $pc/$sn: $e');
     }
   }
 
@@ -1631,7 +1693,12 @@ class WifiPageState extends ConsumerState<WifiPage>
         deviceDATA['owner'] != currentUserEmail &&
         !canUseWifi;
 
-    bool networkUnstable = isWifiNetworkUnstable(productCode, serialNumber);
+    // Lectura sincrónica del cache. El cache se carga en initState y se
+    // refresca por device cuando llega un evento MQTT de desconexión
+    // (ver el ref.listen al principio de build). Si todavía no se cargó,
+    // asumimos red estable para no mostrar el warning prematuramente.
+    bool networkUnstable =
+        _networkUnstableCache['$productCode/$serialNumber'] ?? false;
 
     String? riegoMaster = deviceDATA['riegoMaster'];
     if (riegoMaster != null &&
@@ -4680,6 +4747,30 @@ class WifiPageState extends ConsumerState<WifiPage>
 
   @override
   Widget build(BuildContext context) {
+    // Escucha cambios en globalDataProvider para detectar cuando un device
+    // pasa de cstate=true a cstate=false (desconexión). En ese momento
+    // refrescamos el flag de "red inestable" SOLO para ese device.
+    // Si no hay desconexiones, el cache no se toca → cero queries innecesarias.
+    ref.listen(globalDataProvider, (previous, next) {
+      for (final entry in next.entries) {
+        final String key = entry.key; // formato "pc/sn"
+        final dynamic newCstate = entry.value['cstate'];
+        if (newCstate is! bool) continue;
+
+        final bool prevCstate = _previousCstate[key] ?? newCstate;
+
+        // Transición true → false: device se acaba de desconectar.
+        if (prevCstate == true && newCstate == false) {
+          final parts = key.split('/');
+          if (parts.length == 2) {
+            _refreshNetworkUnstableForDevice(parts[0], parts[1]);
+          }
+        }
+
+        _previousCstate[key] = newCstate;
+      }
+    });
+
     final safeAreaBottom = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(

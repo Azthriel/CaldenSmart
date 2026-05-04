@@ -1079,7 +1079,7 @@ void wifiText(BuildContext context) async {
   bool obscureText = true;
   final String pc = DeviceManager.getProductCode(deviceName);
   final String sn = DeviceManager.extractSerialNumber(deviceName);
-  bool redInestable = isWifiNetworkUnstable(
+  bool redInestable = await isWifiNetworkUnstable(
     pc,
     sn,
   );
@@ -1912,60 +1912,29 @@ String getWifiErrorSintax(int errorCode) {
 /// [pc] código del producto
 /// [sn] número de serie
 /// Retorna true si hay red inestable, false en caso contrario
-bool isWifiNetworkUnstable(String pc, String sn) {
+Future<bool> isWifiNetworkUnstable(String pc, String sn) async {
   try {
-    // Obtener la lista de timestamps de desconexión
-    List<dynamic>? discTimeList = globalDATA['$pc/$sn']?['discTime'];
-
     printLog.d("Verificando estabilidad de red para $pc/$sn");
-    // printLog.d("Lista de discTime: $discTimeList");
+    // Lee SOLO los timestamps de desconexión de la última hora.
+    final List<String> timestamps = await getRecentDisconnectTimes(pc, sn,
+        window: const Duration(hours: 1));
 
-    if (discTimeList == null || discTimeList.isEmpty) {
-      return false;
-    }
+    if (timestamps.isEmpty) return false;
 
-    // Convertir a lista de strings
-    List<String> timestamps = discTimeList.map((e) => e.toString()).toList();
-
-    // Obtener el momento actual
-    DateTime now = DateTime.now();
-
-    // Calcular el límite de tiempo (hace 1 hora)
-    DateTime oneHourAgo = now.subtract(const Duration(hours: 1));
-
-    // Contador de desconexiones en la última hora
     int disconnectionsInLastHour = 0;
+    final DateTime oneHourAgo =
+        DateTime.now().subtract(const Duration(hours: 1));
 
-    for (String timestamp in timestamps) {
-      try {
-        // Parsear el timestamp (asumiendo formato de milisegundos desde epoch)
-        int milliseconds = int.parse(timestamp);
-        DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(milliseconds);
-
-        // Si la desconexión ocurrió en la última hora, contarla
-        if (dateTime.isAfter(oneHourAgo)) {
-          disconnectionsInLastHour++;
-          printLog.d(
-              'Desconexión en última hora: $dateTime (${now.difference(dateTime).inMinutes} minutos atrás)');
-        }
-      } catch (e) {
-        printLog.e('Error parseando timestamp $timestamp: $e');
-        continue;
-      }
+    for (final tsString in timestamps) {
+      final int? tsSec = int.tryParse(tsString);
+      if (tsSec == null) continue;
+      final dt = DateTime.fromMillisecondsSinceEpoch(tsSec * 1000);
+      if (dt.isAfter(oneHourAgo)) disconnectionsInLastHour++;
     }
 
-    // Si hay 3 o más desconexiones en la última hora, la red es inestable
-    if (disconnectionsInLastHour >= 3) {
-      printLog.d(
-          'Red inestable detectada: $disconnectionsInLastHour desconexiones en la última hora');
-      return true;
-    }
-
-    printLog.d(
-        'Red estable: $disconnectionsInLastHour desconexiones en la última hora');
-    return false;
+    return disconnectionsInLastHour >= 3;
   } catch (e) {
-    printLog.e('Error verificando estabilidad de red: $e');
+    printLog.e("Error verificando estabilidad de red: $e");
     return false;
   }
 }
@@ -2130,7 +2099,7 @@ Future<void> handleNotifications(RemoteMessage message) async {
           await queryItems(product, number);
           bool cstate = globalDATA['$product/$number']?['cstate'] ?? false;
           printLog.i('El cstate después de la espera es $cstate');
-          bool redUnstable = isWifiNetworkUnstable(product, number);
+          bool redUnstable = await isWifiNetworkUnstable(product, number);
           printLog.i('Red inestable: $redUnstable');
           if (!cstate && !redUnstable) {
             String displayTitle =
@@ -4221,24 +4190,24 @@ void stopRecordedData() async {
 
 //*- Extraer coordenadas -*\\
 Map<String, double>? extractCoordinates(String locationString) {
-    try {
-      // Formato esperado: "Latitude: -34.6233784, Longitude: -58.5565867"
-      final latMatch =
-          RegExp(r'Latitude:\s*([-+]?\d+\.?\d*)').firstMatch(locationString);
-      final lonMatch =
-          RegExp(r'Longitude:\s*([-+]?\d+\.?\d*)').firstMatch(locationString);
+  try {
+    // Formato esperado: "Latitude: -34.6233784, Longitude: -58.5565867"
+    final latMatch =
+        RegExp(r'Latitude:\s*([-+]?\d+\.?\d*)').firstMatch(locationString);
+    final lonMatch =
+        RegExp(r'Longitude:\s*([-+]?\d+\.?\d*)').firstMatch(locationString);
 
-      if (latMatch != null && lonMatch != null) {
-        final lat = double.parse(latMatch.group(1)!);
-        final lon = double.parse(lonMatch.group(1)!);
-        return {'lat': lat, 'lon': lon};
-      }
-      return null;
-    } catch (e) {
-      printLog.e('Error extrayendo coordenadas: $e');
-      return null;
+    if (latMatch != null && lonMatch != null) {
+      final lat = double.parse(latMatch.group(1)!);
+      final lon = double.parse(lonMatch.group(1)!);
+      return {'lat': lat, 'lon': lon};
     }
+    return null;
+  } catch (e) {
+    printLog.e('Error extrayendo coordenadas: $e');
+    return null;
   }
+}
 //*- Extraer coordenadas -*\\
 
 // // -------------------------------------------------------------------------------------------------------------\\ \\

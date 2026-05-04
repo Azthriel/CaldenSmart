@@ -195,16 +195,6 @@ Future<void> queryItems(String pc, String sn) async {
                     .putIfAbsent('$pc/$sn', () => {})
                     .addAll({key: value.s ?? ''});
                 break;
-              case 'admin_usage_history':
-                List<String> history = value.ss ?? [];
-                if (history.contains('') && history.length == 1) {
-                  globalDATA.putIfAbsent('$pc/$sn', () => {}).addAll({key: []});
-                } else {
-                  globalDATA
-                      .putIfAbsent('$pc/$sn', () => {})
-                      .addAll({key: history});
-                }
-                break;
               case 'admin_time_restrictions':
                 Map<String, AttributeValue> restrictionsMap = value.m ?? {};
                 Map<String, dynamic> restrictions = {};
@@ -221,34 +211,10 @@ Future<void> queryItems(String pc, String sn) async {
                     .putIfAbsent('$pc/$sn', () => {})
                     .addAll({key: restrictions});
                 break;
-              case 'historicTemp':
-                Map<String, AttributeValue> tempMap = value.m ?? {};
-                Map<String, dynamic> tempHistory = {};
-                for (String timestamp in tempMap.keys) {
-                  AttributeValue tempValue = tempMap[timestamp]!;
-                  tempHistory[timestamp] =
-                      double.tryParse(tempValue.n ?? '0') ?? 0.0;
-                }
-                globalDATA
-                    .putIfAbsent('$pc/$sn', () => {})
-                    .addAll({key: tempHistory});
-                break;
               case 'historicTempPremium':
                 globalDATA
                     .putIfAbsent('$pc/$sn', () => {})
                     .addAll({key: value.boolValue ?? false});
-                break;
-              case 'discTime':
-                List<AttributeValue> discTimeList = value.l ?? [];
-                List<String> discTimes = [];
-                for (AttributeValue timeValue in discTimeList) {
-                  if (timeValue.n != null) {
-                    discTimes.add(timeValue.n!);
-                  }
-                }
-                globalDATA
-                    .putIfAbsent('$pc/$sn', () => {})
-                    .addAll({key: discTimes});
                 break;
               case 'DateSecAdm':
                 globalDATA
@@ -1806,104 +1772,6 @@ void deleteEventoControlDeRiego(String email, String nombreEvento) async {
   }
 }
 
-//*- Funciones para historial de uso de administradores secundarios -*\\
-
-/// Registra el uso de un dispositivo por un administrador secundario
-Future<void> putAdminUsageHistory(
-    String pc, String sn, String adminEmail, String action) async {
-  try {
-    // Obtener el historial actual
-    List<String> currentHistory = await getAdminUsageHistory(pc, sn);
-
-    // Crear nuevo registro
-    String timestamp = DateTime.now().toIso8601String();
-    String newRecord = jsonEncode({
-      'email': adminEmail,
-      'action': action,
-      'timestamp': timestamp,
-    });
-
-    // Agregar al historial (mantener solo los últimos 100 registros)
-    currentHistory.add(newRecord);
-    if (currentHistory.length > 100) {
-      currentHistory = currentHistory.sublist(currentHistory.length - 100);
-    }
-
-    // Guardar en DynamoDB
-    await service.updateItem(
-      tableName: 'sime-domotica',
-      key: {
-        'product_code': AttributeValue(s: pc),
-        'device_id': AttributeValue(s: sn),
-      },
-      attributeUpdates: {
-        'admin_usage_history': AttributeValueUpdate(
-          value: AttributeValue(
-              ss: currentHistory.isEmpty ? [''] : currentHistory),
-        ),
-      },
-    );
-
-    // printLog.i('Historial de uso guardado: $response');
-  } catch (e) {
-    printLog.e('Error guardando historial de uso: $e');
-  }
-}
-
-/// Obtiene el historial de uso de administradores secundarios
-Future<List<String>> getAdminUsageHistory(String pc, String sn) async {
-  try {
-    final response = await service.getItem(
-      tableName: 'sime-domotica',
-      key: {
-        'product_code': AttributeValue(s: pc),
-        'device_id': AttributeValue(s: sn),
-      },
-    );
-
-    if (response.item != null) {
-      List<String> history = response.item!['admin_usage_history']?.ss ?? [];
-      if (history.contains('') && history.length == 1) {
-        return [];
-      }
-      return history;
-    }
-    return [];
-  } catch (e) {
-    printLog.e('Error obteniendo historial de uso: $e');
-    return [];
-  }
-}
-
-/// Obtiene el historial de uso parseado como lista de maps
-Future<List<Map<String, dynamic>>> getParsedAdminUsageHistory(
-    String pc, String sn) async {
-  try {
-    List<String> rawHistory = await getAdminUsageHistory(pc, sn);
-    List<Map<String, dynamic>> parsedHistory = [];
-
-    for (String record in rawHistory) {
-      if (record.isNotEmpty) {
-        try {
-          Map<String, dynamic> parsed = jsonDecode(record);
-          parsedHistory.add(parsed);
-        } catch (e) {
-          printLog.e('Error parseando registro de historial: $e');
-        }
-      }
-    }
-
-    // Ordenar por timestamp descendente (más recientes primero)
-    parsedHistory.sort((a, b) => DateTime.parse(b['timestamp'])
-        .compareTo(DateTime.parse(a['timestamp'])));
-
-    return parsedHistory;
-  } catch (e) {
-    printLog.e('Error obteniendo historial parseado: $e');
-    return [];
-  }
-}
-
 //*- Funciones para restricciones horarias de administradores secundarios -*\\
 
 /// Guarda las restricciones horarias para un administrador secundario
@@ -2318,4 +2186,159 @@ Future<void> putTokensInAlexaDevicesGuarded(
   await putTokensInAlexaDevices(email, tokens);
   await _markTokenWritten(currentToken);
   printLog.i('Token guard: token escrito y guardado localmente');
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// 1. ADMIN USAGE HISTORY — append-only en device-admin-usage-history
+// ───────────────────────────────────────────────────────────────────────────
+
+/// Registra una entrada de uso de admin secundario.
+/// Reemplaza la antigua `putAdminUsageHistory` que reescribía la lista entera
+/// dentro de sime-domotica (~15 KB por write). Ahora es 1 PutItem ≈ 1 WRU.
+Future<void> putAdminUsageHistory(
+    String pc, String sn, String adminEmail, String action) async {
+  try {
+    final int nowMs = DateTime.now().millisecondsSinceEpoch;
+    final int ttl = (nowMs ~/ 1000) + (90 * 24 * 3600); // 90 días
+
+    await service.putItem(
+      tableName: 'device-admin-usage-history',
+      item: {
+        'device_key': AttributeValue(s: '$pc#$sn'),
+        'timestamp': AttributeValue(n: nowMs.toString()),
+        'email': AttributeValue(s: adminEmail),
+        'action': AttributeValue(s: action),
+        'ttl': AttributeValue(n: ttl.toString()),
+      },
+    );
+  } catch (e) {
+    printLog.e('Error guardando admin usage: $e');
+  }
+}
+
+/// Devuelve los últimos [limit] registros de uso para un device, más nuevos
+/// primero. Cada registro es un Map con `email`, `action`, `timestamp`.
+Future<List<Map<String, dynamic>>> getParsedAdminUsageHistory(
+    String pc, String sn,
+    {int limit = 100}) async {
+  try {
+    final response = await service.query(
+      tableName: 'device-admin-usage-history',
+      keyConditionExpression: 'device_key = :pk',
+      expressionAttributeValues: {
+        ':pk': AttributeValue(s: '$pc#$sn'),
+      },
+      scanIndexForward: false, // descendente: más nuevo primero
+      limit: limit,
+    );
+
+    final items = response.items ?? [];
+    return items.map((item) {
+      final tsString = item['timestamp']?.n ?? '0';
+      final tsMs = int.tryParse(tsString) ?? 0;
+      return <String, dynamic>{
+        'email': item['email']?.s ?? '',
+        'action': item['action']?.s ?? '',
+        // Mantengo el formato ISO8601 para no romper el código consumidor en
+        // manager_screen.dart, que parsea la fecha como string.
+        'timestamp':
+            DateTime.fromMillisecondsSinceEpoch(tsMs).toIso8601String(),
+      };
+    }).toList();
+  } catch (e) {
+    printLog.e('Error leyendo admin usage history: $e');
+    return [];
+  }
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// 2. CONNECTION EVENTS — reader para isWifiNetworkUnstable
+// ───────────────────────────────────────────────────────────────────────────
+
+/// Lee los eventos de desconexión de la última hora desde
+/// device-connection-events. La firma devuelve los timestamps en segundos
+/// (epoch) como strings para mantener la compatibilidad con el consumidor
+/// existente (`isWifiNetworkUnstable` en master.dart).
+Future<List<String>> getRecentDisconnectTimes(String pc, String sn,
+    {Duration window = const Duration(hours: 1)}) async {
+  try {
+    final int nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final int fromSec = nowSec - window.inSeconds;
+
+    final response = await service.query(
+      tableName: 'device-connection-events',
+      keyConditionExpression: 'device_key = :pk AND #ts >= :from',
+      expressionAttributeNames: {'#ts': 'timestamp'},
+      expressionAttributeValues: {
+        ':pk': AttributeValue(s: '$pc#$sn'),
+        ':from': AttributeValue(n: fromSec.toString()),
+      },
+      filterExpression: 'event_type = :etype',
+      // OJO: el filterExpression se aplica DESPUÉS del read; cobra todos los
+      // items leídos, no solo los matcheados. Para la ventana de 1h igual
+      // hay pocos items, así que es aceptable. Si quisiéramos ser más prolijos,
+      // creamos un GSI por event_type.
+    );
+
+    final items = response.items ?? [];
+    return items
+        .where((it) => it['event_type']?.s == 'disconnect')
+        .map((it) => it['timestamp']?.n ?? '0')
+        .toList();
+  } catch (e) {
+    printLog.e('Error leyendo connection events: $e');
+    return [];
+  }
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// 3. TEMPERATURE HISTORY — reader para la página de termómetro
+// ───────────────────────────────────────────────────────────────────────────
+
+/// Lee el historial de temperatura de los últimos [days] días.
+/// Devuelve un Map<String iso8601 timestamp, double temp> para mantener
+/// compatibilidad con el consumidor existente en termometro.dart.
+Future<Map<String, double>> getTemperatureHistory(String pc, String sn,
+    {int days = 30}) async {
+  try {
+    final int nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final int fromSec = nowSec - (days * 24 * 3600);
+
+    final Map<String, double> history = {};
+    Map<String, AttributeValue>? lastKey;
+
+    do {
+      final response = await service.query(
+        tableName: 'device-temperature-history',
+        keyConditionExpression: 'device_key = :pk AND #ts >= :from',
+        expressionAttributeNames: {'#ts': 'timestamp'},
+        expressionAttributeValues: {
+          ':pk': AttributeValue(s: '$pc#$sn'),
+          ':from': AttributeValue(n: fromSec.toString()),
+        },
+        scanIndexForward: true,
+        exclusiveStartKey: lastKey,
+      );
+
+      for (final item in response.items ?? []) {
+        final ts = int.tryParse(item['timestamp']?.n ?? '0') ?? 0;
+        final temp = double.tryParse(item['temp']?.n ?? '0') ?? 0.0;
+        if (ts > 0) {
+          // termometro.dart parsea con DateTime.parse(key), formato
+          // "2026-04-30 12:34:56" (sin TZ). Lo emulamos.
+          final dt =
+              DateTime.fromMillisecondsSinceEpoch(ts * 1000, isUtc: true);
+          final key =
+              dt.toIso8601String().replaceFirst('T', ' ').substring(0, 19);
+          history[key] = temp;
+        }
+      }
+      lastKey = response.lastEvaluatedKey;
+    } while (lastKey != null && lastKey.isNotEmpty);
+
+    return history;
+  } catch (e) {
+    printLog.e('Error leyendo temperature history: $e');
+    return {};
+  }
 }

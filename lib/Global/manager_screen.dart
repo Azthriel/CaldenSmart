@@ -2714,9 +2714,9 @@ class ManagerScreenState extends State<ManagerScreen> {
                       );
                     } else {
                       // Verificar si la red es inestable antes de permitir activar la notificación
-                      bool networkIsUnstable = isWifiNetworkUnstable(pc, sn);
+                      bool networkIsUnstable = await isWifiNetworkUnstable(pc, sn);
 
-                      if (networkIsUnstable) {
+                      if (networkIsUnstable && context.mounted) {
                         showAlertDialog(
                           context,
                           true,

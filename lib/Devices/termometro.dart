@@ -339,6 +339,12 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
     });
   }
 
+  // Historial de temperatura cargado desde device-temperature-history.
+  // Antes vivía en globalDATA['$pc/$sn']?['historicTemp'] (campo del item de
+  // sime-domotica), ahora se carga async desde la tabla nueva.
+  Map<String, double> _historicTemp = {};
+  bool _loadingHistoric = true;
+
   @override
   void initState() {
     super.initState();
@@ -356,6 +362,31 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
     });
 
     if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
+
+    _loadHistoricTemp();
+  }
+
+  /// Carga el histórico de temperatura desde la tabla
+  /// device-temperature-history. Se llama una vez en initState.
+  /// Si después necesitás un refresh manual (ej: pull-to-refresh), llamala
+  /// de nuevo y va a actualizar el state.
+  Future<void> _loadHistoricTemp() async {
+    try {
+      final data = await getTemperatureHistory(pc, sn);
+      if (mounted) {
+        setState(() {
+          _historicTemp = data;
+          _loadingHistoric = false;
+        });
+      }
+    } catch (e) {
+      printLog.e('Error cargando histórico de temperatura: $e');
+      if (mounted) {
+        setState(() {
+          _loadingHistoric = false;
+        });
+      }
+    }
   }
 
   @override
@@ -635,39 +666,33 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
     final String pc = DeviceManager.getProductCode(deviceName);
     final String sn = DeviceManager.extractSerialNumber(deviceName);
 
-    // printLog.i('Building historial page for $pc/$sn');
-    // printLog.i('GlobalDATA keys: ${globalDATA.keys}');
-    // printLog.i('Device data: ${globalDATA['$pc/$sn']}');
-
-    // Obtener datos desde globalDATA
-    Map<String, dynamic> historicTemp =
-        globalDATA['$pc/$sn']?['historicTemp'] ?? {};
+    // historicTempPremium sigue viniendo en globalDATA — es un boolean chico
+    // que NO migró a tabla aparte (no contribuía al costo y mantenerlo evita
+    // un read extra).
     bool historicTempPremium =
         globalDATA['$pc/$sn']?['historicTempPremium'] ?? false;
 
-    // printLog.i('HistoricTemp: $historicTemp');
-    // printLog.i('HistoricTempPremium: $historicTempPremium');
+    // Mientras se carga, mostrar un spinner.
+    if (_loadingHistoric) {
+      return Container(
+        color: color0,
+        child: const Center(
+          child: CircularProgressIndicator(color: color1),
+        ),
+      );
+    }
 
-    // Convertir el mapa a lista de puntos ordenados por timestamp
+    // Convertir el mapa cargado a lista de puntos ordenados por timestamp.
     List<MapEntry<DateTime, double>> dataPoints = [];
 
-    historicTemp.forEach((key, value) {
+    _historicTemp.forEach((key, value) {
       try {
-        // Intentar parsear la fecha en formato "2025-10-27 00:00:51" (UTC)
-        // Convertir a hora de Argentina (UTC-3)
+        // Formato esperado: "2026-04-30 12:34:56" (UTC).
+        // Convertir a hora de Argentina (UTC-3).
         DateTime timestampUTC = DateTime.parse(key);
         DateTime timestamp = timestampUTC.subtract(const Duration(hours: 3));
 
-        // Convertir temperatura a double
-        double temp = 0.0;
-        if (value is num) {
-          temp = value.toDouble();
-        } else if (value is String) {
-          temp = double.tryParse(value) ?? 0.0;
-        }
-
-        dataPoints.add(MapEntry(timestamp, temp));
-        //  printLog.i('Parsed point: $timestamp -> $temp°C');
+        dataPoints.add(MapEntry(timestamp, value));
       } catch (e) {
         printLog.e('Error parsing timestamp "$key": $e');
       }
