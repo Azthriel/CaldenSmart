@@ -76,6 +76,67 @@ Future<void> setWidgetServiceReady(bool ready) async {
   }
 }
 
+/// Refresca el timestamp de todos los widgets y marca el servicio como ready.
+/// Llamado desde WorkManager vía HomeWidgetBackgroundIntent("/update") cada 15 minutos.
+///
+/// NO hace llamadas a DynamoDB (el isolate de backgroundCallback no tiene
+/// credenciales AWS inicializadas). Su objetivo es:
+///   1. Evitar que el dato quede "stale" (ts > 20 min → effectiveOnline = false).
+///   2. Resetear widget_service_ready = true para quitar "Iniciando...".
+///   3. Limpiar flags de loading/initializing que pudieran haber quedado colgados.
+Future<void> _handleWidgetBackgroundUpdate() async {
+  try {
+    printLog.i('Background update: refrescando timestamps de widgets...');
+
+    final widgetIds = await WidgetService.getWidgetIds();
+
+    if (widgetIds.isEmpty) {
+      printLog.i('Background update: no hay widgets configurados');
+      // Igual marcar ready para limpiar cualquier "Iniciando..." huérfano
+      await HomeWidget.saveWidgetData('widget_service_ready', true);
+      await updateAllWidgets();
+      return;
+    }
+
+    int refreshed = 0;
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+
+    for (final widgetId in widgetIds) {
+      try {
+        final jsonStr =
+            await HomeWidget.getWidgetData<String>('widget_state_$widgetId');
+
+        if (jsonStr != null && jsonStr.isNotEmpty) {
+          final map = Map<String, dynamic>.from(jsonDecode(jsonStr));
+
+          // Actualizar timestamp → evita detección de stale en Kotlin
+          map['ts'] = nowMs;
+          // Limpiar flags que podrían haberse quedado colgados
+          map['initializing'] = false;
+          map['loading'] = false;
+
+          await HomeWidget.saveWidgetData(
+              'widget_state_$widgetId', jsonEncode(map));
+          refreshed++;
+        }
+      } catch (e) {
+        printLog.e('Background update: error refrescando widget $widgetId: $e');
+      }
+    }
+
+    // Marcar servicio como ready: hay datos válidos guardados
+    await HomeWidget.saveWidgetData('widget_service_ready', true);
+
+    // Disparar redibujado visual en el launcher
+    await updateAllWidgets();
+
+    printLog.i(
+        'Background update: $refreshed/${widgetIds.length} widgets refrescados');
+  } catch (e) {
+    printLog.e('Error en _handleWidgetBackgroundUpdate: $e');
+  }
+}
+
 /// Callback que se ejecuta cuando el widget es presionado en background
 /// Esta función debe ser top-level (no dentro de una clase)
 @pragma('vm:entry-point')
@@ -112,18 +173,20 @@ Future<void> backgroundCallback(Uri? uri) async {
 
       printLog.i('Widget callback: procesando toggle para widget $widgetId');
       await _handleWidgetToggle(widgetId);
-    } else if (uri.path == '/checkAndStop') {
-      // Verificar si quedan widgets y detener servicio si es necesario
-      printLog.i(
-          'Widget callback: verificando widgets y deteniendo servicio si es necesario');
-      await _handleCheckAndStopService();
-    } else {
-      printLog.i(
-          'Widget callback: URI no coincide con ninguna acción conocida (path=${uri.path})');
     }
+  } else if (uri.path == '/checkAndStop') {
+    printLog.i(
+        'Widget callback: verificando widgets y deteniendo servicio si es necesario');
+    await _handleCheckAndStopService();
+  } else if (uri.path == '/update') {
+    // Llamado por WorkManager (WidgetUpdateWorker) cada 15 min
+    // Refresca el timestamp de los widgets para evitar que queden "stale"
+    // y marca widget_service_ready = true para eliminar "Iniciando..."
+    printLog.i('Widget callback: background update solicitado por WorkManager');
+    await _handleWidgetBackgroundUpdate();
   } else {
-    printLog
-        .i('Widget callback: URI no coincide con widget (host=${uri.host})');
+    printLog.i(
+        'Widget callback: URI no coincide con ninguna acción conocida (path=${uri.path})');
   }
 }
 

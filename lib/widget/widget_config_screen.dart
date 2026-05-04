@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:caldensmart/master.dart';
 import 'package:caldensmart/logger.dart';
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'dart:convert';
 import 'widget_models.dart';
@@ -206,6 +207,8 @@ class _WidgetConfigScreenState extends State<WidgetConfigScreen> {
       printLog.i('Actualizando widget con los datos...');
       await WidgetService.updateWidget(widgetData, deviceState);
       printLog.i('Widget actualizado');
+
+      await HomeWidget.saveWidgetData('widget_service_ready', true);
 
       printLog.i('Widget configurado correctamente');
 
