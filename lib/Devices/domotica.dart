@@ -151,7 +151,7 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
           globalKey: keys['managerScreen:reclamar']!,
           borderRadius: const Radius.circular(20),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 1,
+          pageIndex: 2,
           contentPosition: ContentPosition.below,
           child: const TutorialItemContent(
             title: 'Reclamar administrador',

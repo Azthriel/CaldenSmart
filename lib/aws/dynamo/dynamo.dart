@@ -226,6 +226,24 @@ Future<void> queryItems(String pc, String sn) async {
                     .putIfAbsent('$pc/$sn', () => {})
                     .addAll({key: value.s ?? ''});
                 break;
+              case 'working_position':
+                final String rawWp = value.s ?? '0';
+                final int parsedWp =
+                    int.tryParse(rawWp.replaceAll('%', '')) ?? 0;
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: parsedWp});
+                break;
+              case 'actual_position':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: int.parse(value.n ?? '0')});
+                break;
+              case 'moving':
+                globalDATA
+                    .putIfAbsent('$pc/$sn', () => {})
+                    .addAll({key: value.boolValue ?? false});
+                break;
             }
           }
           printLog.i("$key: $displayValue");

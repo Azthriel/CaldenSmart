@@ -45,6 +45,11 @@ class RollerPageState extends ConsumerState<RollerPage> {
 
   bool endSaved = false;
 
+  bool _isPressingUp = false;
+  bool _isPressingDown = false;
+
+  String? _activeQuickButton; // 'abrir' | 'cerrar' | null
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +63,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
         await showUpdateDialog(context);
       }
     });
+    rollerSavedLength = globalDATA['$pc/$sn']?['rollerSavedLength'] ?? '';
     processValues(varsValues);
     subscribeToWifiStatus();
     subToVars();
@@ -229,13 +235,34 @@ class RollerPageState extends ConsumerState<RollerPage> {
     actualPosition = int.parse(partes[13]);
     workingPosition = int.parse(partes[14]);
     rollerMoving = partes[15] == '1';
+    if (!rollerMoving) {
+      _activeQuickButton = null;
+    }
     // awsInit = partes[16] == '1';
   }
 
-  void setDistance(int pc) {
-    String data = '$pc[7]($pc%)';
-    // printLog.i(data);
+  Future<void> _sendPositionMqtt(int position) async {
+    final String topic = 'devices_rx/$pc/$sn';
+    final String topic2 = 'devices_tx/$pc/$sn';
+    final String message = jsonEncode({'working_position': '$position%'});
+
+    final bool result = await sendMQTTMessageWithPermission(
+      deviceName,
+      message,
+      topic,
+      topic2,
+      'Cambió posición del roller a $position%',
+    );
+
+    if (!result) {
+      showToast('No tienes permisos de controlar el equipo');
+    }
+  }
+
+  void setDistance(int position) {
+    final String data = '$pc[7]($position%)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
+    _sendPositionMqtt(position);
   }
 
   void setLarge(int grades) {
@@ -298,78 +325,187 @@ class RollerPageState extends ConsumerState<RollerPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              CurtainAnimation(
-                position: actualPosition,
-                onTapDown: (details) {
-                  RenderBox box = context.findRenderObject() as RenderBox;
-                  Offset localPosition =
-                      box.globalToLocal(details.globalPosition);
-                  double relativeHeight = (localPosition.dy - 200) / 250;
-                  int newPosition =
-                      (relativeHeight * 100).clamp(0, 100).round();
+              AbsorbPointer(
+                absorbing: _activeQuickButton != null,
+                child: CurtainAnimation(
+                  position: actualPosition,
+                  onTapDown: (details) {
+                    RenderBox box = context.findRenderObject() as RenderBox;
+                    Offset localPosition =
+                        box.globalToLocal(details.globalPosition);
+                    double relativeHeight = (localPosition.dy - 200) / 250;
+                    int newPosition =
+                        (relativeHeight * 100).clamp(0, 100).round();
 
-                  setState(() {
-                    workingPosition = newPosition;
-                    setDistance(newPosition);
-                  });
-                },
+                    setState(() {
+                      workingPosition = newPosition;
+                      setDistance(newPosition);
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+              AbsorbPointer(
+                absorbing: _activeQuickButton != null,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onLongPressStart: (LongPressStartDetails a) {
+                          if (_activeQuickButton != null) return;
+                          setState(() {
+                            workingPosition = 0;
+                            _isPressingUp = true;
+                          });
+                          setDistance(0);
+                        },
+                        onLongPressEnd: (LongPressEndDetails a) {
+                          setState(() {
+                            workingPosition = actualPosition;
+                            _isPressingUp = false;
+                          });
+                          setDistance(actualPosition);
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          decoration: BoxDecoration(
+                            color: _activeQuickButton != null
+                                ? Colors.grey.shade800
+                                : _isPressingUp
+                                    ? color4
+                                    : color1,
+                            borderRadius: BorderRadius.circular(30.0),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black26,
+                                offset: Offset(0, 4),
+                                blurRadius: 5.0,
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 15.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(HugeIcons.strokeRoundedArrowUp02,
+                                  color: _isPressingUp ? color1 : color0),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Subir',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: _isPressingUp ? color1 : color0,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    // DESPUÉS
+                    Expanded(
+                      child: GestureDetector(
+                        onLongPressStart: (LongPressStartDetails a) {
+                          if (_activeQuickButton != null) return;
+                          setState(() {
+                            workingPosition = 100;
+                            _isPressingDown = true;
+                          });
+                          setDistance(100);
+                        },
+                        onLongPressEnd: (LongPressEndDetails a) {
+                          setState(() {
+                            workingPosition = actualPosition;
+                            _isPressingDown = false;
+                          });
+                          setDistance(actualPosition);
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          decoration: BoxDecoration(
+                            color: _activeQuickButton != null
+                                ? Colors.grey.shade800
+                                : _isPressingDown
+                                    ? color4
+                                    : color1,
+                            borderRadius: BorderRadius.circular(30.0),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black26,
+                                offset: Offset(0, 4),
+                                blurRadius: 5.0,
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 15.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(HugeIcons.strokeRoundedArrowDown02,
+                                  color: _isPressingDown ? color1 : color0),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Bajar',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: _isPressingDown ? color1 : color0,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
+                  // ── ABRIR CORTINA ──
                   Expanded(
                     child: GestureDetector(
-                      onLongPressStart: (LongPressStartDetails a) {
-                        String data = '$pc[7](0%)';
-                        bluetoothManager.toolsUuid.write(data.codeUnits);
-                        setState(() {
-                          workingPosition = 0;
-                        });
-                        printLog.i(data);
-                      },
-                      onLongPressEnd: (LongPressEndDetails a) {
-                        String data = '$pc[7]($actualPosition%)';
-                        bluetoothManager.toolsUuid.write(data.codeUnits);
-                        setState(() {
-                          workingPosition = actualPosition;
-                        });
-                        printLog.i(data);
-                      },
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () {},
+                      onTap: _activeQuickButton == 'cerrar'
+                          ? null // el otro está activo, bloqueado
+                          : () {
+                              setState(() => _activeQuickButton = 'abrir');
+                              setDistance(0);
+                              workingPosition = 0;
+                              printLog.i("abrir cortina 0%");
+                            },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        decoration: BoxDecoration(
+                          color: _activeQuickButton == 'abrir'
+                              ? Colors.red.shade600
+                              : _activeQuickButton == 'cerrar'
+                                  ? Colors.grey.shade800
+                                  : color1,
                           borderRadius: BorderRadius.circular(30.0),
-                          splashColor: Colors.white.withValues(alpha: 0.2),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: color1,
-                              borderRadius: BorderRadius.circular(30.0),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black26,
-                                  offset: Offset(0, 4),
-                                  blurRadius: 5.0,
-                                ),
-                              ],
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              offset: Offset(0, 4),
+                              blurRadius: 5.0,
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 15.0),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(HugeIcons.strokeRoundedArrowUp02,
-                                    color: color0),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Subir',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: color0,
-                                  ),
-                                ),
-                              ],
+                          ],
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 15.0),
+                        child: Center(
+                          child: Text(
+                            'Abrir cortina',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: _activeQuickButton == 'cerrar'
+                                  ? Colors.grey.shade600
+                                  : color0,
                             ),
                           ),
                         ),
@@ -377,58 +513,45 @@ class RollerPageState extends ConsumerState<RollerPage> {
                     ),
                   ),
                   const SizedBox(width: 20),
+                  // ── CERRAR CORTINA ──
                   Expanded(
                     child: GestureDetector(
-                      onLongPressStart: (LongPressStartDetails a) {
-                        String data = '$pc[7](100%)';
-                        bluetoothManager.toolsUuid.write(data.codeUnits);
-                        setState(() {
-                          workingPosition = 100;
-                        });
-                        printLog.i(data);
-                      },
-                      onLongPressEnd: (LongPressEndDetails a) {
-                        String data = '$pc[7]($actualPosition%)';
-                        bluetoothManager.toolsUuid.write(data.codeUnits);
-                        setState(() {
-                          workingPosition = actualPosition;
-                        });
-                        printLog.i(data);
-                      },
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () {},
+                      onTap: _activeQuickButton == 'abrir'
+                          ? null // el otro está activo, bloqueado
+                          : () {
+                              setState(() => _activeQuickButton = 'cerrar');
+                              setDistance(100);
+                              workingPosition = 100;
+                              printLog.i("cerrar cortina 100%");
+                            },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        decoration: BoxDecoration(
+                          color: _activeQuickButton == 'cerrar'
+                              ? Colors.red.shade600
+                              : _activeQuickButton == 'abrir'
+                                  ? Colors.grey.shade800
+                                  : color1,
                           borderRadius: BorderRadius.circular(30.0),
-                          splashColor: Colors.white.withValues(alpha: 0.2),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: color1,
-                              borderRadius: BorderRadius.circular(30.0),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black26,
-                                  offset: Offset(0, 4),
-                                  blurRadius: 5.0,
-                                ),
-                              ],
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              offset: Offset(0, 4),
+                              blurRadius: 5.0,
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 15.0),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(HugeIcons.strokeRoundedArrowDown02,
-                                    color: color0),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Bajar',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: color0,
-                                  ),
-                                ),
-                              ],
+                          ],
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 15.0),
+                        child: Center(
+                          child: Text(
+                            'Cerrar cortina',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: _activeQuickButton == 'abrir'
+                                  ? Colors.grey.shade600
+                                  : color0,
                             ),
                           ),
                         ),
@@ -447,322 +570,359 @@ class RollerPageState extends ConsumerState<RollerPage> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Configuración de parámetros',
+                'Configuración',
                 style: GoogleFonts.poppins(
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: color1,
                 ),
-                textAlign: TextAlign.center,
               ),
-              const SizedBox(
-                height: 20,
-              ),
-              // Polaridad del Roller Section
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15.0),
-                ),
-                color: color1,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    spacing: 10,
-                    children: [
-                      const Text(
-                        'Polaridad del Roller',
-                        style: TextStyle(
-                          fontSize: 18.0,
-                          color: color0,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          setRollerConfig(1);
-                          rollerPolarity == '0'
-                              ? rollerPolarity = '1'
-                              : rollerPolarity = '0';
-                          context.mounted ? setState(() {}) : null;
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: color4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: const Text(
-                          'Invertir',
-                          style: TextStyle(color: color0),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-              // Velocidad del Motor Section
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15.0),
+              // TARJETA 1: MOTOR Y VELOCIDAD
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: color1,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                color: color1,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'Velocidad del Motor',
-                        style: TextStyle(
-                          fontSize: 18.0,
-                          color: color0,
-                          fontWeight: FontWeight.bold,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Encabezado Motor
+                    const Row(
+                      children: [
+                        Icon(HugeIcons.strokeRoundedSettings01,
+                            color: color0, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'MOTOR Y MOVIMIENTO',
+                          style: TextStyle(
+                              color: color0,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14),
                         ),
-                      ),
-                      const SizedBox(height: 10),
+                      ],
+                    ),
+                    Divider(color: color0.withValues(alpha: 0.1), height: 24),
+
+                    // Fila: Polaridad
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Sentido de Rotación',
+                                style: TextStyle(color: color0, fontSize: 15)),
+                            Text(
+                              rollerPolarity == '1' ? 'Invertido' : 'Normal',
+                              style: const TextStyle(
+                                  color: color3,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              rollerPolarity =
+                                  rollerPolarity == '0' ? '1' : '0';
+                            });
+                            setRollerConfig(rollerPolarity == '1' ? 1 : 0);
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: rollerPolarity == '1'
+                                  ? color3
+                                  : Colors.transparent,
+                              border: Border.all(
+                                  color: rollerPolarity == '1'
+                                      ? color3
+                                      : color0.withValues(alpha: 0.3)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(HugeIcons.strokeRoundedExchange01,
+                                color: color0, size: 20),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Divider(color: color0.withValues(alpha: 0.1), height: 24),
+
+                    // Fila: Velocidad
+                    const Text('Velocidad',
+                        style: TextStyle(color: color0, fontSize: 15)),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        // Botón Baja
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() => rollerRPM = '70');
+                              setMotorSpeed(rollerRPM);
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 4),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: rollerRPM == '70'
+                                    ? color3
+                                    : Colors.transparent,
+                                border: Border.all(
+                                    color: rollerRPM == '70'
+                                        ? color3
+                                        : color0.withValues(alpha: 0.2)),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'Baja',
+                                style: TextStyle(
+                                    color: rollerRPM == '70'
+                                        ? color0
+                                        : color0.withValues(alpha: 0.6),
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Botón Media
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() => rollerRPM = '150');
+                              setMotorSpeed(rollerRPM);
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: rollerRPM == '150'
+                                    ? color3
+                                    : Colors.transparent,
+                                border: Border.all(
+                                    color: rollerRPM == '150'
+                                        ? color3
+                                        : color0.withValues(alpha: 0.2)),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'Media',
+                                style: TextStyle(
+                                    color: rollerRPM == '150'
+                                        ? color0
+                                        : color0.withValues(alpha: 0.6),
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Botón Alta
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() => rollerRPM = '280');
+                              setMotorSpeed(rollerRPM);
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(left: 4),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: rollerRPM == '280'
+                                    ? color3
+                                    : Colors.transparent,
+                                border: Border.all(
+                                    color: rollerRPM == '280'
+                                        ? color3
+                                        : color0.withValues(alpha: 0.2)),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'Alta',
+                                style: TextStyle(
+                                    color: rollerRPM == '280'
+                                        ? color0
+                                        : color0.withValues(alpha: 0.6),
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // TARJETA 2: CALIBRACIÓN (FLUJO DE PRUEBA AMIGABLE)
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: color1,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(HugeIcons.strokeRoundedRuler,
+                            color: color0, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'CALIBRACIÓN DE RECORRIDO',
+                          style: TextStyle(
+                              color: color0,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14),
+                        ),
+                      ],
+                    ),
+                    Divider(color: color0.withValues(alpha: 0.1), height: 24),
+                    if (rollerSavedLength == '') ...{
+                      if (rollerEnd == null) ...{
+                        const Text('Paso 1 de 2: Límite Inferior',
+                            style: TextStyle(
+                                color: color3,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14)),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Primero, bajá la cortina hasta donde quieras que llegue al cerrarse del todo. Una vez ahí, guardá la posición.',
+                          style: TextStyle(
+                              color: color0.withValues(alpha: 0.8),
+                              fontSize: 14,
+                              height: 1.4),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () async {
+                            final vars = await bluetoothManager.varsUuid.read();
+                            final grades =
+                                int.parse(utf8.decode(vars).split(':')[12]);
+                            rollerEnd = grades;
+                            setState(() {
+                              endSaved = true;
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: color3,
+                            minimumSize: const Size(double.infinity, 45),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8)),
+                          ),
+                          child: const Text('Guardar posición de abajo',
+                              style: TextStyle(
+                                  color: color0, fontWeight: FontWeight.bold)),
+                        ),
+                      } else ...{
+                        // Paso 2
+                        const Text('Paso 2 de 2: Límite Superior',
+                            style: TextStyle(
+                                color: color3,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14)),
+                        const SizedBox(height: 8),
+                        Text(
+                          '¡Genial! Ahora subí la cortina hasta el tope máximo deseado y guardá esta última posición.',
+                          style: TextStyle(
+                              color: color0.withValues(alpha: 0.8),
+                              fontSize: 14,
+                              height: 1.4),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () async {
+                            final vars = await bluetoothManager.varsUuid.read();
+                            final grades =
+                                int.parse(utf8.decode(vars).split(':')[12]);
+                            rollerStart = grades;
+                            setState(() {
+                              rollerSavedLength =
+                                  '${rollerEnd! - rollerStart!}';
+                            });
+                            setLarge(int.parse(rollerSavedLength));
+                            await putRollerLength(pc, sn, rollerSavedLength);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green.shade600,
+                            minimumSize: const Size(double.infinity, 45),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8)),
+                          ),
+                          child: const Text('Guardar posición de arriba',
+                              style: TextStyle(
+                                  color: color0, fontWeight: FontWeight.bold)),
+                        ),
+                      }
+                    } else ...{
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          ElevatedButton(
-                            onPressed: () {
-                              rollerRPM = '50';
-                              setMotorSpeed('50');
-                              showToast("Velocidad baja");
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: const Text(
-                              'Baja',
-                              style: TextStyle(color: color0),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          ElevatedButton(
-                            onPressed: () {
-                              rollerRPM = '150';
-                              setMotorSpeed('150');
-                              showToast('Velocidad media');
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: const Text(
-                              'Media',
-                              style: TextStyle(color: color0),
-                            ),
-                          ),
-                          const SizedBox(
-                            width: 10,
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              rollerRPM = '250';
-                              setMotorSpeed('250');
-                              showToast("Velocidad alta");
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: color3,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: const Text(
-                              'Alta',
-                              style: TextStyle(color: color0),
+                          const Icon(HugeIcons.strokeRoundedCheckmarkBadge01,
+                              color: Colors.green, size: 28),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('¡Cortina configurada!',
+                                    style: TextStyle(
+                                        color: color0,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16)),
+                                Text('Ya guardamos las medidas exactas.',
+                                    style: TextStyle(
+                                        color: color0.withValues(alpha: 0.6),
+                                        fontSize: 13)),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Configuración del Roller Section
-              Text(
-                'Configuración del\nlargo de la cortina',
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: color1,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15.0),
-                ),
-                color: color1,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      if (rollerSavedLength == '') ...{
-                        if (rollerEnd == null && !endSaved) ...{
-                          Text(
-                            'Lo primero que debes hacer es mover la cortina al final de su recorrido y presionar el botón de abajo para guardar la posición.',
-                            style: GoogleFonts.poppins(
-                              fontSize: 18.0,
-                              color: color0,
-                              fontWeight: FontWeight.normal,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(
-                            height: 20,
-                          ),
-                          ElevatedButton(
-                            onPressed: () async {
-                              printLog.i("Guardo fin");
-                              List<int> fun =
-                                  await bluetoothManager.varsUuid.read();
-                              processValues(fun);
-                              rollerEnd = actualPositionGrades;
-                              endSaved = true;
-
-                              printLog.i("Fin en grados: $rollerEnd");
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: color4,
-                              minimumSize: const Size(double.infinity, 50),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: const Text(
-                              'Guardar fin',
-                              style: TextStyle(fontSize: 16, color: color0),
-                            ),
-                          ),
-                        } else if (rollerStart == null && endSaved) ...{
-                          Text(
-                            'Luego de eso se debe mover la cortina al inicio de su recorrido y presionar el botón de abajo para guardar la posición.',
-                            style: GoogleFonts.poppins(
-                              fontSize: 18.0,
-                              color: color0,
-                              fontWeight: FontWeight.normal,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(
-                            height: 20,
-                          ),
-                          ElevatedButton(
-                            onPressed: () async {
-                              printLog.i("Guardo inicio");
-                              List<int> fun =
-                                  await bluetoothManager.varsUuid.read();
-                              processValues(fun);
-                              rollerStart = actualPositionGrades;
-
-                              printLog.i("Inicio en grados: $rollerStart");
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: color4,
-                              minimumSize: const Size(double.infinity, 50),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: const Text(
-                              'Guardar inicio',
-                              style: TextStyle(fontSize: 16, color: color0),
-                            ),
-                          ),
-                        } else if (rollerEnd != null &&
-                            rollerStart != null) ...{
-                          Text(
-                            'Ahora envía el largo de la cortina.',
-                            style: GoogleFonts.poppins(
-                              fontSize: 18.0,
-                              color: color0,
-                              fontWeight: FontWeight.normal,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(
-                            height: 10,
-                          ),
-                          ElevatedButton(
-                            onPressed: () async {
-                              printLog.i("Envio largo");
-                              int largo = rollerEnd! - rollerStart!;
-                              printLog.i("Largo: $largo");
-                              putRollerLength(pc, sn, largo.toString());
-
-                              setLarge(largo);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: color4,
-                              minimumSize: const Size(double.infinity, 50),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: const Text(
-                              'Enviar largo de la cortina',
-                              style: TextStyle(fontSize: 16, color: color0),
-                            ),
-                          ),
-                        },
-                      } else ...{
-                        Text(
-                          rollerSavedLength == rollerlength
-                              ? 'El largo de la cortina se configuro correctamente'
-                              : 'El largo de la cortina no coincide con el configurado, por favor configurarlo nuevamente',
-                          style: GoogleFonts.poppins(
-                            fontSize: 18.0,
-                            color: color0,
-                            fontWeight: FontWeight.normal,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(
-                          height: 20,
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
+                      const SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          // Flujo simulado: Resetear
+                          setState(() {
                             rollerSavedLength = '';
-                            setState(() {});
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: color4,
-                            minimumSize: const Size(double.infinity, 50),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                          ),
-                          child: const Text(
-                            'Volver a configurar largo',
-                            style: TextStyle(fontSize: 16, color: color0),
-                          ),
+                            rollerEnd = null;
+                            rollerStart = null;
+                            endSaved = false;
+                          });
+                        },
+                        icon: const Icon(HugeIcons.strokeRoundedRefresh,
+                            color: color0, size: 18),
+                        label: const Text('Volver a tomar medidas',
+                            style: TextStyle(
+                                color: color0, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          side:
+                              BorderSide(color: color0.withValues(alpha: 0.3)),
+                          minimumSize: const Size(double.infinity, 45),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
                         ),
-                      },
-                      const SizedBox(
-                        height: 10,
                       ),
-                    ],
-                  ),
+                    },
+                  ],
                 ),
               ),
-              const SizedBox(
-                height: 100,
-              ),
+              const SizedBox(height: 40),
             ],
           ),
         ),
@@ -912,23 +1072,35 @@ class RollerPageState extends ConsumerState<RollerPage> {
               left: 0,
               right: 0,
               bottom: 0,
-              child: CurvedNavigationBar(
-                index: _selectedIndex,
-                height: 75.0,
-                items: const <Widget>[
-                  Icon(HugeIcons.strokeRoundedHome11, size: 30, color: color0),
-                  Icon(HugeIcons.strokeRoundedWrench01,
-                      size: 30, color: color0),
-                  Icon(HugeIcons.strokeRoundedSettings02,
-                      size: 30, color: color0),
-                ],
-                color: color1,
-                buttonBackgroundColor: color1,
-                backgroundColor: Colors.transparent,
-                animationCurve: Curves.easeInOut,
-                animationDuration: const Duration(milliseconds: 600),
-                onTap: onItemTapped,
-                letIndexChange: (index) => true,
+              child: SafeArea(
+                child: CurvedNavigationBar(
+                  index: _selectedIndex,
+                  height: 75.0,
+                  items: const <Widget>[
+                    Icon(HugeIcons.strokeRoundedHome11,
+                        size: 30, color: color0),
+                    Icon(HugeIcons.strokeRoundedWrench01,
+                        size: 30, color: color0),
+                    Icon(HugeIcons.strokeRoundedSettings02,
+                        size: 30, color: color0),
+                  ],
+                  color: color1,
+                  buttonBackgroundColor: color1,
+                  backgroundColor: Colors.transparent,
+                  animationCurve: Curves.easeInOut,
+                  animationDuration: const Duration(milliseconds: 600),
+                  onTap: onItemTapped,
+                  letIndexChange: (index) => true,
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: MediaQuery.of(context).padding.bottom,
+                color: Colors.black,
               ),
             ),
           ],

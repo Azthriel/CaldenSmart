@@ -203,7 +203,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
           globalKey: keys['managerScreen:agregarAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 4,
+          pageIndex: 3,
           contentPosition: ContentPosition.below,
           buttonAction: ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -235,7 +235,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
           globalKey: keys['managerScreen:verAdmin']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 4,
+          pageIndex: 3,
           contentPosition: ContentPosition.above,
           child: const TutorialItemContent(
             title: 'Ver administradores secundarios',
@@ -246,7 +246,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
           globalKey: keys['managerScreen:alquiler']!,
           borderRadius: const Radius.circular(15),
           shapeFocus: ShapeFocus.roundedSquare,
-          pageIndex: 4,
+          pageIndex: 3,
           child: const TutorialItemContent(
             title: 'Alquiler temporario',
             content:
@@ -258,7 +258,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
             globalKey: keys['managerScreen:historialAdmin']!,
             borderRadius: const Radius.circular(15),
             shapeFocus: ShapeFocus.roundedSquare,
-            pageIndex: 4,
+            pageIndex: 3,
             child: const TutorialItemContent(
               title: 'Historial de administradores secundarios',
               content:
@@ -269,7 +269,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
             globalKey: keys['managerScreen:horariosAdmin']!,
             borderRadius: const Radius.circular(15),
             shapeFocus: ShapeFocus.roundedSquare,
-            pageIndex: 4,
+            pageIndex: 3,
             child: const TutorialItemContent(
               title: 'Horarios de administradores secundarios',
               content:
@@ -280,7 +280,7 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
             globalKey: keys['managerScreen:wifiAdmin']!,
             borderRadius: const Radius.circular(15),
             shapeFocus: ShapeFocus.roundedSquare,
-            pageIndex: 4,
+            pageIndex: 3,
             child: const TutorialItemContent(
               title: 'Wifi de administradores secundarios',
               content:

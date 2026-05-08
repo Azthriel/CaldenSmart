@@ -427,16 +427,7 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
           ),
         )
       },
-      TutorialItem(
-        globalKey: keys['managerScreen:led']!,
-        borderRadius: const Radius.circular(20),
-        shapeFocus: ShapeFocus.roundedSquare,
-        pageIndex: 4,
-        child: const TutorialItemContent(
-          title: 'Modo del led',
-          content: 'podrás cambiar entre el modo nocturno y diurno',
-        ),
-      ),
+
       TutorialItem(
         globalKey: keys['managerScreen:imagen']!,
         borderRadius: const Radius.circular(20),

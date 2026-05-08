@@ -34,7 +34,7 @@ class MenuPageState extends State<MenuPage> {
       _loadInitialData();
     } else {
       // Si ya se inicializó anteriormente, no mostrar pantalla de carga
-      printLog.i('Datos ya inicializados, evitando recarga', color: 'azul');
+      printLog.i('Datos ya inicializados, evitando recarga');
       _isLoading = false;
     }
   }

@@ -1195,10 +1195,12 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
         ),
       ] else ...[
         SingleChildScrollView(
+          key: keys['rele1i1o:activarNoti']!,
           child: SizedBox(
             height: MediaQuery.of(context).size.height * 0.8,
             child: Center(
               child: Padding(
+                key: keys['rele1i1o:ejemploAlerta']!,
                 padding: const EdgeInsets.symmetric(
                     horizontal: 20.0, vertical: 30.0),
                 // Usamos Column para ordenar el contenido verticalmente

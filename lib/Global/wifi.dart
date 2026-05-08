@@ -179,14 +179,6 @@ class WifiPageState extends ConsumerState<WifiPage>
     }
   }
 
-  /// Carga el flag "red inestable" para todos los devices y lo cachea.
-  /// Se llama UNA SOLA VEZ en initState. Después la actualización es por
-  /// device individual (ver _refreshNetworkUnstableForDevice).
-  ///
-  /// Antes esto se hacía sincrónicamente leyendo `globalDATA[...]['discTime']`,
-  /// pero ahora `isWifiNetworkUnstable` consulta DynamoDB (`device-connection-events`)
-  /// y es async. `_buildDeviceCard` no puede ser async, así que precargamos
-  /// en un cache.
   Future<void> _refreshNetworkUnstableCache() async {
     final Map<String, bool> updated = {};
 
@@ -340,6 +332,35 @@ class WifiPageState extends ConsumerState<WifiPage>
     }
   }
   //*-Prender y apagar los equipos-*\\
+
+  //*-Controlar posición del roller-*\\
+  void _sendRollerCommand(String deviceName, int position) async {
+    String deviceSerialNumber = DeviceManager.extractSerialNumber(deviceName);
+    String productCode = DeviceManager.getProductCode(deviceName);
+
+    globalDATA
+        .putIfAbsent('$productCode/$deviceSerialNumber', () => {})
+        .addAll({'working_position': "$position%"});
+
+    String topic = 'devices_rx/$productCode/$deviceSerialNumber';
+    String topic2 = 'devices_tx/$productCode/$deviceSerialNumber';
+    String message = jsonEncode({'working_position': "$position%"});
+
+    bool result = await sendMQTTMessageWithPermission(
+      deviceName,
+      message,
+      topic,
+      topic2,
+      position == 100 ? 'Cerró cortina desde WiFi' : 'Abrió cortina desde WiFi',
+    );
+
+    if (!result) {
+      showToast('No tienes permisos de controlar el equipo');
+    } else {
+      setState(() {});
+    }
+  }
+//*-Controlar posición del roller-*\\
 
   //*-Borrar equipo de la lista-*\\
   void _confirmDelete(String deviceName, String equipo) {
@@ -4702,7 +4723,326 @@ class WifiPageState extends ConsumerState<WifiPage>
               ),
             ),
           );
+        case '024011_IOT':
+          int actualPosition = deviceDATA['actual_position'] ?? -1;
+          final dynamic rawWp = deviceDATA['working_position'];
+          final int workingPosition = rawWp is int
+              ? rawWp
+              : int.tryParse(rawWp.toString().replaceAll('%', '')) ?? -1;
+          bool moving = deviceDATA['moving'] ?? false;
 
+          // Está en movimiento mientras moving=true O mientras no llegó al destino
+          bool isMoving = moving ||
+              (workingPosition != -1 && actualPosition != workingPosition);
+
+          // Label y color del estado
+          String positionLabel;
+          Color positionColor;
+          if (isMoving) {
+            positionLabel = actualPosition >= 0
+                ? 'Moviendo... $actualPosition%'
+                : 'Moviendo...';
+            positionColor = Colors.grey;
+          } else if (actualPosition == 0) {
+            positionLabel = 'Abierto (0%)';
+            positionColor = Colors.green;
+          } else if (actualPosition == 100) {
+            positionLabel = 'Cerrado (100%)';
+            positionColor = color4;
+          } else if (actualPosition > 0 && actualPosition < 100) {
+            positionLabel = 'Parcial ($actualPosition%)';
+            positionColor = Colors.orange;
+          } else {
+            positionLabel = 'Sin datos';
+            positionColor = Colors.grey;
+          }
+
+          return RepaintBoundary(
+            key: ValueKey(deviceName),
+            child: Card(
+              color: cardColor,
+              margin: cardMargin,
+              elevation: cardElevation,
+              shape: cardShape,
+              child: Theme(
+                data: Theme.of(context)
+                    .copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  iconColor: color4,
+                  collapsedIconColor: color4,
+                  title: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      ReorderableDragStartListener(
+                        index: index,
+                        child: const Icon(HugeIcons.strokeRoundedMenu01,
+                            color: Colors.grey),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              nicknamesMap[deviceName] ?? deviceName,
+                              style: GoogleFonts.poppins(
+                                color: color0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              spacing: 10,
+                              children: [
+                                Text(
+                                  online ? '● CONECTADO' : '● DESCONECTADO',
+                                  style: GoogleFonts.poppins(
+                                    color: online ? Colors.green : color3,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                online
+                                    ? const ImageIcon(
+                                        AssetImage(CaldenIcons.cloud),
+                                        color: Colors.green,
+                                        size: 25,
+                                      )
+                                    : const ImageIcon(
+                                        AssetImage(CaldenIcons.cloudOff),
+                                        color: color3,
+                                        size: 15,
+                                      ),
+                              ],
+                            ),
+                            if (online && networkUnstable) ...[
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(HugeIcons.strokeRoundedAlert02,
+                                      color: Colors.orange, size: 18),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Red inestable',
+                                    style: GoogleFonts.poppins(
+                                        color: Colors.orange, fontSize: 15),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(HugeIcons.strokeRoundedAlert02,
+                                      color: Colors.orange, size: 18),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  children: <Widget>[
+                    isRestrictedAdmin
+                        ? Row(
+                            children: [
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16.0, vertical: 5.0),
+                                  child: Text(
+                                    'El dueño del equipo restringió su uso por wifi.',
+                                    style: GoogleFonts.poppins(
+                                        color: color3, fontSize: 15),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 4, 8, 8),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: online
+                                      ? Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            // ── Estado / porcentaje ──
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  HugeIcons
+                                                      .strokeRoundedOrbit01,
+                                                  color: isMoving
+                                                      ? Colors.grey
+                                                      : positionColor,
+                                                  size: 18,
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  positionLabel,
+                                                  style: GoogleFonts.poppins(
+                                                    color: isMoving
+                                                        ? Colors.grey
+                                                        : positionColor,
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                // Spinner mientras se mueve
+                                                if (isMoving) ...[
+                                                  const SizedBox(width: 8),
+                                                  const SizedBox(
+                                                    width: 14,
+                                                    height: 14,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                            const SizedBox(height: 10),
+
+                                            if (owner) ...[
+                                              Row(
+                                                children: [
+                                                  // ── Botón CERRAR ──
+                                                  Expanded(
+                                                    child: ElevatedButton.icon(
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        // Gris si está moviendo,
+                                                        // gris también si ya está cerrado
+                                                        backgroundColor:
+                                                            isMoving
+                                                                ? Colors.grey
+                                                                    .shade700
+                                                                : color4,
+                                                        foregroundColor:
+                                                            isMoving
+                                                                ? Colors.grey
+                                                                    .shade400
+                                                                : color0,
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(10),
+                                                        ),
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical: 10),
+                                                      ),
+                                                      icon: const Icon(
+                                                          HugeIcons
+                                                              .strokeRoundedArrowDown01,
+                                                          size: 18),
+                                                      label: Text(
+                                                        'Cerrar',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                      ),
+                                                      // Disabled mientras mueve O ya está cerrado
+                                                      onPressed: (isMoving ||
+                                                              actualPosition ==
+                                                                  100)
+                                                          ? null
+                                                          : () =>
+                                                              _sendRollerCommand(
+                                                                  deviceName,
+                                                                  100),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                  // ── Botón ABRIR ──
+                                                  Expanded(
+                                                    child: ElevatedButton.icon(
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            isMoving
+                                                                ? Colors.grey
+                                                                    .shade700
+                                                                : Colors.green,
+                                                        foregroundColor:
+                                                            isMoving
+                                                                ? Colors.grey
+                                                                    .shade400
+                                                                : color0,
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(10),
+                                                        ),
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical: 10),
+                                                      ),
+                                                      icon: const Icon(
+                                                          HugeIcons
+                                                              .strokeRoundedArrowUp01,
+                                                          size: 18),
+                                                      label: Text(
+                                                        'Abrir',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                      ),
+                                                      // Disabled mientras mueve O ya está abierto
+                                                      onPressed: (isMoving ||
+                                                              actualPosition ==
+                                                                  0)
+                                                          ? null
+                                                          : () =>
+                                                              _sendRollerCommand(
+                                                                  deviceName,
+                                                                  0),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ] else ...[
+                                              _buildNotOwnerWarning(),
+                                            ],
+                                          ],
+                                        )
+                                      : Text(
+                                          'El equipo debe estar\nconectado para su uso',
+                                          style: GoogleFonts.poppins(
+                                              color: color3, fontSize: 15),
+                                        ),
+                                ),
+                                // ── Botón delete ──
+                                IconButton(
+                                  icon: const Icon(
+                                    HugeIcons.strokeRoundedDelete02,
+                                    color: color0,
+                                    size: 20,
+                                  ),
+                                  onPressed: () =>
+                                      _confirmDelete(deviceName, productCode),
+                                ),
+                              ],
+                            ),
+                          ),
+                  ],
+                ),
+              ),
+            ),
+          );
         default:
           return Container(
             key: ValueKey(deviceName),

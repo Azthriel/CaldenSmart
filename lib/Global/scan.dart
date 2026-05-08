@@ -334,23 +334,21 @@ class ScanPageState extends State<ScanPage>
       if (state == BluetoothConnectionState.disconnected) {
         Tutorial.clearEntries();
 
-        printLog.e('Dispositivo desconectado - Conexión normal');
+        // Capturar razón ANTES de limpiar variables
+        final reason = device.disconnectReason;
 
-        // Mostrar toast
-        showToast('Dispositivo desconectado');
+        printLog.i(
+          'Dispositivo desconectado — código: ${reason?.code}, '
+          'descripción: ${reason?.description}',
+          color: Colors.red
+        );
 
-        // Limpiar variables globales
         cleanGlobalDeviceVariables();
-
-        // Navegar al menú
         navigatorKey.currentState?.pushReplacementNamed('/menu');
-
-        // Cancelar este listener ya que la conexión terminó
         localConnectionSub?.cancel();
       }
     });
 
-    // Asegurar que el listener se cancele cuando el dispositivo se desconecte
     device.cancelWhenDisconnected(localConnectionSub, delayed: true);
   }
 
