@@ -271,14 +271,19 @@ class RollerPageState extends ConsumerState<RollerPage> {
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
-  void setRollerConfig(int type) {
-    String data = '$pc[8]($type)';
+  void setRollerPolarity() {
+    String data = '$pc[8](1)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
   void setMotorSpeed(String rpm) {
     String data = '$pc[10]($rpm)';
     // printLog.i(data);
+    bluetoothManager.toolsUuid.write(data.codeUnits);
+  }
+
+  void setRollerCalibration() {
+    String data = '$pc[9](0)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
   }
 
@@ -633,7 +638,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                               rollerPolarity =
                                   rollerPolarity == '0' ? '1' : '0';
                             });
-                            setRollerConfig(rollerPolarity == '1' ? 1 : 0);
+                            setRollerPolarity();
                           },
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
@@ -902,6 +907,8 @@ class RollerPageState extends ConsumerState<RollerPage> {
                             rollerStart = null;
                             endSaved = false;
                           });
+                          putRollerLength(pc, sn, rollerSavedLength);
+                          setRollerCalibration();
                         },
                         icon: const Icon(HugeIcons.strokeRoundedRefresh,
                             color: color0, size: 18),
