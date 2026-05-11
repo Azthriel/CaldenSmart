@@ -290,6 +290,7 @@ String rollerPolarity = '';
 bool awsInit = false;
 String rollerRPM = '';
 String rollerSavedLength = '';
+bool isCalibrated = false;
 //*- Roller -*\\
 
 //*-Detectores-*\\

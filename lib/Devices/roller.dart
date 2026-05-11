@@ -239,6 +239,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
       _activeQuickButton = null;
     }
     // awsInit = partes[16] == '1';
+    isCalibrated = partes[17] == '1';
   }
 
   Future<void> _sendPositionMqtt(int position) async {
@@ -315,261 +316,353 @@ class RollerPageState extends ConsumerState<RollerPage> {
 
     final List<Widget> pages = [
       //*- Página 1 cortina -*\\
-      SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Estado de la cortina',
-                style: GoogleFonts.poppins(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: color1,
-                ),
-              ),
-              const SizedBox(height: 20),
-              AbsorbPointer(
-                absorbing: _activeQuickButton != null,
-                child: CurtainAnimation(
-                  position: actualPosition,
-                  onTapDown: (details) {
-                    RenderBox box = context.findRenderObject() as RenderBox;
-                    Offset localPosition =
-                        box.globalToLocal(details.globalPosition);
-                    double relativeHeight = (localPosition.dy - 200) / 250;
-                    int newPosition =
-                        (relativeHeight * 100).clamp(0, 100).round();
+      Stack(
+        children: [
+          Opacity(
+            opacity: isCalibrated ? 1.0 : 0.18,
+            child: AbsorbPointer(
+              absorbing: !isCalibrated,
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20.0, vertical: 30.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Estado de la cortina',
+                        style: GoogleFonts.poppins(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: color1,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      AbsorbPointer(
+                        absorbing: _activeQuickButton != null,
+                        child: CurtainAnimation(
+                          position: actualPosition,
+                          onTapDown: (details) {
+                            RenderBox box =
+                                context.findRenderObject() as RenderBox;
+                            Offset localPosition =
+                                box.globalToLocal(details.globalPosition);
+                            double relativeHeight =
+                                (localPosition.dy - 200) / 250;
+                            int newPosition =
+                                (relativeHeight * 100).clamp(0, 100).round();
 
-                    setState(() {
-                      workingPosition = newPosition;
-                      setDistance(newPosition);
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(height: 20),
-              AbsorbPointer(
-                absorbing: _activeQuickButton != null,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onLongPressStart: (LongPressStartDetails a) {
-                          if (_activeQuickButton != null) return;
-                          setState(() {
-                            workingPosition = 0;
-                            _isPressingUp = true;
-                          });
-                          setDistance(0);
-                        },
-                        onLongPressEnd: (LongPressEndDetails a) {
-                          setState(() {
-                            workingPosition = actualPosition;
-                            _isPressingUp = false;
-                          });
-                          setDistance(actualPosition);
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          decoration: BoxDecoration(
-                            color: _activeQuickButton != null
-                                ? Colors.grey.shade800
-                                : _isPressingUp
-                                    ? color4
-                                    : color1,
-                            borderRadius: BorderRadius.circular(30.0),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black26,
-                                offset: Offset(0, 4),
-                                blurRadius: 5.0,
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 15.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(HugeIcons.strokeRoundedArrowUp02,
-                                  color: _isPressingUp ? color1 : color0),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Subir',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: _isPressingUp ? color1 : color0,
-                                ),
-                              ),
-                            ],
-                          ),
+                            setState(() {
+                              workingPosition = newPosition;
+                              setDistance(newPosition);
+                            });
+                          },
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 20),
-                    // DESPUÉS
-                    Expanded(
-                      child: GestureDetector(
-                        onLongPressStart: (LongPressStartDetails a) {
-                          if (_activeQuickButton != null) return;
-                          setState(() {
-                            workingPosition = 100;
-                            _isPressingDown = true;
-                          });
-                          setDistance(100);
-                        },
-                        onLongPressEnd: (LongPressEndDetails a) {
-                          setState(() {
-                            workingPosition = actualPosition;
-                            _isPressingDown = false;
-                          });
-                          setDistance(actualPosition);
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          decoration: BoxDecoration(
-                            color: _activeQuickButton != null
-                                ? Colors.grey.shade800
-                                : _isPressingDown
-                                    ? color4
-                                    : color1,
-                            borderRadius: BorderRadius.circular(30.0),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black26,
-                                offset: Offset(0, 4),
-                                blurRadius: 5.0,
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 15.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(HugeIcons.strokeRoundedArrowDown02,
-                                  color: _isPressingDown ? color1 : color0),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Bajar',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: _isPressingDown ? color1 : color0,
+                      const SizedBox(height: 20),
+                      AbsorbPointer(
+                        absorbing: _activeQuickButton != null,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onLongPressStart: (LongPressStartDetails a) {
+                                  if (_activeQuickButton != null) return;
+                                  setState(() {
+                                    workingPosition = 0;
+                                    _isPressingUp = true;
+                                  });
+                                  setDistance(0);
+                                },
+                                onLongPressEnd: (LongPressEndDetails a) {
+                                  setState(() {
+                                    workingPosition = actualPosition;
+                                    _isPressingUp = false;
+                                  });
+                                  setDistance(actualPosition);
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  decoration: BoxDecoration(
+                                    color: _activeQuickButton != null
+                                        ? Colors.grey.shade800
+                                        : _isPressingUp
+                                            ? color4
+                                            : color1,
+                                    borderRadius: BorderRadius.circular(30.0),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        color: Colors.black26,
+                                        offset: Offset(0, 4),
+                                        blurRadius: 5.0,
+                                      ),
+                                    ],
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 15.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(HugeIcons.strokeRoundedArrowUp02,
+                                          color:
+                                              _isPressingUp ? color1 : color0),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Subir',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color:
+                                              _isPressingUp ? color1 : color0,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // ── ABRIR CORTINA ──
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: _activeQuickButton == 'cerrar'
-                          ? null // el otro está activo, bloqueado
-                          : () {
-                              setState(() => _activeQuickButton = 'abrir');
-                              setDistance(0);
-                              workingPosition = 0;
-                              printLog.i("abrir cortina 0%");
-                            },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        decoration: BoxDecoration(
-                          color: _activeQuickButton == 'abrir'
-                              ? Colors.red.shade600
-                              : _activeQuickButton == 'cerrar'
-                                  ? Colors.grey.shade800
-                                  : color1,
-                          borderRadius: BorderRadius.circular(30.0),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black26,
-                              offset: Offset(0, 4),
-                              blurRadius: 5.0,
+                            ),
+                            const SizedBox(width: 20),
+                            // DESPUÉS
+                            Expanded(
+                              child: GestureDetector(
+                                onLongPressStart: (LongPressStartDetails a) {
+                                  if (_activeQuickButton != null) return;
+                                  setState(() {
+                                    workingPosition = 100;
+                                    _isPressingDown = true;
+                                  });
+                                  setDistance(100);
+                                },
+                                onLongPressEnd: (LongPressEndDetails a) {
+                                  setState(() {
+                                    workingPosition = actualPosition;
+                                    _isPressingDown = false;
+                                  });
+                                  setDistance(actualPosition);
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  decoration: BoxDecoration(
+                                    color: _activeQuickButton != null
+                                        ? Colors.grey.shade800
+                                        : _isPressingDown
+                                            ? color4
+                                            : color1,
+                                    borderRadius: BorderRadius.circular(30.0),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        color: Colors.black26,
+                                        offset: Offset(0, 4),
+                                        blurRadius: 5.0,
+                                      ),
+                                    ],
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 15.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(HugeIcons.strokeRoundedArrowDown02,
+                                          color: _isPressingDown
+                                              ? color1
+                                              : color0),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Bajar',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color:
+                                              _isPressingDown ? color1 : color0,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 15.0),
-                        child: Center(
-                          child: Text(
-                            'Abrir cortina',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: _activeQuickButton == 'cerrar'
-                                  ? Colors.grey.shade600
-                                  : color0,
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          // ── ABRIR CORTINA ──
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: _activeQuickButton == 'cerrar'
+                                  ? null // el otro está activo, bloqueado
+                                  : () {
+                                      setState(
+                                          () => _activeQuickButton = 'abrir');
+                                      setDistance(0);
+                                      workingPosition = 0;
+                                      printLog.i("abrir cortina 0%");
+                                    },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                decoration: BoxDecoration(
+                                  color: _activeQuickButton == 'abrir'
+                                      ? Colors.red.shade600
+                                      : _activeQuickButton == 'cerrar'
+                                          ? Colors.grey.shade800
+                                          : color1,
+                                  borderRadius: BorderRadius.circular(30.0),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      offset: Offset(0, 4),
+                                      blurRadius: 5.0,
+                                    ),
+                                  ],
+                                ),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 15.0),
+                                child: Center(
+                                  child: Text(
+                                    'Abrir cortina',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: _activeQuickButton == 'cerrar'
+                                          ? Colors.grey.shade600
+                                          : color0,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                  // ── CERRAR CORTINA ──
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: _activeQuickButton == 'abrir'
-                          ? null // el otro está activo, bloqueado
-                          : () {
-                              setState(() => _activeQuickButton = 'cerrar');
-                              setDistance(100);
-                              workingPosition = 100;
-                              printLog.i("cerrar cortina 100%");
-                            },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        decoration: BoxDecoration(
-                          color: _activeQuickButton == 'cerrar'
-                              ? Colors.red.shade600
-                              : _activeQuickButton == 'abrir'
-                                  ? Colors.grey.shade800
-                                  : color1,
-                          borderRadius: BorderRadius.circular(30.0),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black26,
-                              offset: Offset(0, 4),
-                              blurRadius: 5.0,
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 15.0),
-                        child: Center(
-                          child: Text(
-                            'Cerrar cortina',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: _activeQuickButton == 'abrir'
-                                  ? Colors.grey.shade600
-                                  : color0,
+                          const SizedBox(width: 20),
+                          // ── CERRAR CORTINA ──
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: _activeQuickButton == 'abrir'
+                                  ? null // el otro está activo, bloqueado
+                                  : () {
+                                      setState(
+                                          () => _activeQuickButton = 'cerrar');
+                                      setDistance(100);
+                                      workingPosition = 100;
+                                      printLog.i("cerrar cortina 100%");
+                                    },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                decoration: BoxDecoration(
+                                  color: _activeQuickButton == 'cerrar'
+                                      ? Colors.red.shade600
+                                      : _activeQuickButton == 'abrir'
+                                          ? Colors.grey.shade800
+                                          : color1,
+                                  borderRadius: BorderRadius.circular(30.0),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      offset: Offset(0, 4),
+                                      blurRadius: 5.0,
+                                    ),
+                                  ],
+                                ),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 15.0),
+                                child: Center(
+                                  child: Text(
+                                    'Cerrar cortina',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: _activeQuickButton == 'abrir'
+                                          ? Colors.grey.shade600
+                                          : color0,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ],
+            ),
           ),
-        ),
+          if (!isCalibrated) ...{
+            Positioned.fill(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                  child: Card(
+                    color: color1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    elevation: 8,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24.0, vertical: 32.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            HugeIcons.strokeRoundedRuler,
+                            color: color0,
+                            size: 52,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Calibración requerida',
+                            style: GoogleFonts.poppins(
+                              color: color0,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Para controlar la cortina primero debés calibrar el recorrido desde la pestaña Configuración.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              color: color0.withValues(alpha: 0.7),
+                              fontSize: 13,
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () => onItemTapped(1),
+                            icon: const Icon(HugeIcons.strokeRoundedSettings01,
+                                size: 18),
+                            label: Text(
+                              'Ir a Configuración',
+                              style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: color0,
+                              foregroundColor: color1,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          },
+        ],
       ),
-
       //*- Página 2: Configuración de parametros-*\\
       SingleChildScrollView(
         child: Padding(
@@ -797,7 +890,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                       ],
                     ),
                     Divider(color: color0.withValues(alpha: 0.1), height: 24),
-                    if (rollerSavedLength == '') ...{
+                    if (rollerSavedLength == '' || !isCalibrated) ...{
                       if (rollerEnd == null) ...{
                         const Text('Paso 1 de 2: Límite Inferior',
                             style: TextStyle(

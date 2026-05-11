@@ -4730,6 +4730,7 @@ class WifiPageState extends ConsumerState<WifiPage>
               ? rawWp
               : int.tryParse(rawWp.toString().replaceAll('%', '')) ?? -1;
           bool moving = deviceDATA['moving'] ?? false;
+          bool isCalibrated = deviceDATA['isCalibrated'] ?? false;
 
           // Está en movimiento mientras moving=true O mientras no llegó al destino
           bool isMoving = moving ||
@@ -4865,160 +4866,193 @@ class WifiPageState extends ConsumerState<WifiPage>
                               children: [
                                 Expanded(
                                   child: online
-                                      ? Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            // ── Estado / porcentaje ──
-                                            Row(
+                                      ? (!isCalibrated
+                                          ? Row(
                                               children: [
-                                                Icon(
-                                                  HugeIcons
-                                                      .strokeRoundedOrbit01,
-                                                  color: isMoving
-                                                      ? Colors.grey
-                                                      : positionColor,
+                                                const Icon(
+                                                  HugeIcons.strokeRoundedRuler,
+                                                  color: Colors.orange,
                                                   size: 18,
                                                 ),
-                                                const SizedBox(width: 6),
-                                                Text(
-                                                  positionLabel,
-                                                  style: GoogleFonts.poppins(
-                                                    color: isMoving
-                                                        ? Colors.grey
-                                                        : positionColor,
-                                                    fontSize: 15,
-                                                    fontWeight: FontWeight.bold,
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    'El equipo necesita calibración antes de usarse',
+                                                    style: GoogleFonts.poppins(
+                                                      color: Colors.orange,
+                                                      fontSize: 13,
+                                                    ),
                                                   ),
                                                 ),
-                                                // Spinner mientras se mueve
-                                                if (isMoving) ...[
-                                                  const SizedBox(width: 8),
-                                                  const SizedBox(
-                                                    width: 14,
-                                                    height: 14,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: Colors.grey,
+                                              ],
+                                            )
+                                          : Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                // ── Estado / porcentaje ──
+                                                Row(
+                                                  children: [
+                                                    Icon(
+                                                      HugeIcons
+                                                          .strokeRoundedOrbit01,
+                                                      color: isMoving
+                                                          ? Colors.grey
+                                                          : positionColor,
+                                                      size: 18,
                                                     ),
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      positionLabel,
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        color: isMoving
+                                                            ? Colors.grey
+                                                            : positionColor,
+                                                        fontSize: 15,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                    // Spinner mientras se mueve
+                                                    if (isMoving) ...[
+                                                      const SizedBox(width: 8),
+                                                      const SizedBox(
+                                                        width: 14,
+                                                        height: 14,
+                                                        child:
+                                                            CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                          color: Colors.grey,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 10),
+
+                                                if (owner) ...[
+                                                  Row(
+                                                    children: [
+                                                      // ── Botón CERRAR ──
+                                                      Expanded(
+                                                        child:
+                                                            ElevatedButton.icon(
+                                                          style: ElevatedButton
+                                                              .styleFrom(
+                                                            // Gris si está moviendo,
+                                                            // gris también si ya está cerrado
+                                                            backgroundColor:
+                                                                isMoving
+                                                                    ? Colors
+                                                                        .grey
+                                                                        .shade700
+                                                                    : color4,
+                                                            foregroundColor:
+                                                                isMoving
+                                                                    ? Colors
+                                                                        .grey
+                                                                        .shade400
+                                                                    : color0,
+                                                            shape:
+                                                                RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          10),
+                                                            ),
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                                    vertical:
+                                                                        10),
+                                                          ),
+                                                          icon: const Icon(
+                                                              HugeIcons
+                                                                  .strokeRoundedArrowDown01,
+                                                              size: 18),
+                                                          label: Text(
+                                                            'Cerrar',
+                                                            style: GoogleFonts
+                                                                .poppins(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold),
+                                                          ),
+                                                          // Disabled mientras mueve O ya está cerrado
+                                                          onPressed: (isMoving ||
+                                                                  actualPosition ==
+                                                                      100)
+                                                              ? null
+                                                              : () =>
+                                                                  _sendRollerCommand(
+                                                                      deviceName,
+                                                                      100),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 10),
+                                                      // ── Botón ABRIR ──
+                                                      Expanded(
+                                                        child:
+                                                            ElevatedButton.icon(
+                                                          style: ElevatedButton
+                                                              .styleFrom(
+                                                            backgroundColor:
+                                                                isMoving
+                                                                    ? Colors
+                                                                        .grey
+                                                                        .shade700
+                                                                    : Colors
+                                                                        .green,
+                                                            foregroundColor:
+                                                                isMoving
+                                                                    ? Colors
+                                                                        .grey
+                                                                        .shade400
+                                                                    : color0,
+                                                            shape:
+                                                                RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          10),
+                                                            ),
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                                    vertical:
+                                                                        10),
+                                                          ),
+                                                          icon: const Icon(
+                                                              HugeIcons
+                                                                  .strokeRoundedArrowUp01,
+                                                              size: 18),
+                                                          label: Text(
+                                                            'Abrir',
+                                                            style: GoogleFonts
+                                                                .poppins(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold),
+                                                          ),
+                                                          // Disabled mientras mueve O ya está abierto
+                                                          onPressed: (isMoving ||
+                                                                  actualPosition ==
+                                                                      0)
+                                                              ? null
+                                                              : () =>
+                                                                  _sendRollerCommand(
+                                                                      deviceName,
+                                                                      0),
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
+                                                ] else ...[
+                                                  _buildNotOwnerWarning(),
                                                 ],
                                               ],
-                                            ),
-                                            const SizedBox(height: 10),
-
-                                            if (owner) ...[
-                                              Row(
-                                                children: [
-                                                  // ── Botón CERRAR ──
-                                                  Expanded(
-                                                    child: ElevatedButton.icon(
-                                                      style: ElevatedButton
-                                                          .styleFrom(
-                                                        // Gris si está moviendo,
-                                                        // gris también si ya está cerrado
-                                                        backgroundColor:
-                                                            isMoving
-                                                                ? Colors.grey
-                                                                    .shade700
-                                                                : color4,
-                                                        foregroundColor:
-                                                            isMoving
-                                                                ? Colors.grey
-                                                                    .shade400
-                                                                : color0,
-                                                        shape:
-                                                            RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(10),
-                                                        ),
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                                vertical: 10),
-                                                      ),
-                                                      icon: const Icon(
-                                                          HugeIcons
-                                                              .strokeRoundedArrowDown01,
-                                                          size: 18),
-                                                      label: Text(
-                                                        'Cerrar',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold),
-                                                      ),
-                                                      // Disabled mientras mueve O ya está cerrado
-                                                      onPressed: (isMoving ||
-                                                              actualPosition ==
-                                                                  100)
-                                                          ? null
-                                                          : () =>
-                                                              _sendRollerCommand(
-                                                                  deviceName,
-                                                                  100),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 10),
-                                                  // ── Botón ABRIR ──
-                                                  Expanded(
-                                                    child: ElevatedButton.icon(
-                                                      style: ElevatedButton
-                                                          .styleFrom(
-                                                        backgroundColor:
-                                                            isMoving
-                                                                ? Colors.grey
-                                                                    .shade700
-                                                                : Colors.green,
-                                                        foregroundColor:
-                                                            isMoving
-                                                                ? Colors.grey
-                                                                    .shade400
-                                                                : color0,
-                                                        shape:
-                                                            RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(10),
-                                                        ),
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                                vertical: 10),
-                                                      ),
-                                                      icon: const Icon(
-                                                          HugeIcons
-                                                              .strokeRoundedArrowUp01,
-                                                          size: 18),
-                                                      label: Text(
-                                                        'Abrir',
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold),
-                                                      ),
-                                                      // Disabled mientras mueve O ya está abierto
-                                                      onPressed: (isMoving ||
-                                                              actualPosition ==
-                                                                  0)
-                                                          ? null
-                                                          : () =>
-                                                              _sendRollerCommand(
-                                                                  deviceName,
-                                                                  0),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ] else ...[
-                                              _buildNotOwnerWarning(),
-                                            ],
-                                          ],
-                                        )
+                                            ))
                                       : Text(
                                           'El equipo debe estar\nconectado para su uso',
                                           style: GoogleFonts.poppins(
