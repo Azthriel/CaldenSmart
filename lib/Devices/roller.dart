@@ -50,6 +50,8 @@ class RollerPageState extends ConsumerState<RollerPage> {
 
   String? _activeQuickButton; // 'abrir' | 'cerrar' | null
 
+  bool _isCalibrating = false;
+
   @override
   void initState() {
     super.initState();
@@ -209,6 +211,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
         setState(() {
           actualPosition = int.parse(parts[0]);
           rollerMoving = parts[1] == '1';
+          if (!rollerMoving) _activeQuickButton = null;
         });
       }
     });
@@ -243,20 +246,24 @@ class RollerPageState extends ConsumerState<RollerPage> {
   }
 
   Future<void> _sendPositionMqtt(int position) async {
-    final String topic = 'devices_rx/$pc/$sn';
-    final String topic2 = 'devices_tx/$pc/$sn';
-    final String message = jsonEncode({'working_position': '$position%'});
+    try {
+      final String topic = 'devices_rx/$pc/$sn';
+      final String topic2 = 'devices_tx/$pc/$sn';
+      final String message = jsonEncode({'working_position': '$position%'});
 
-    final bool result = await sendMQTTMessageWithPermission(
-      deviceName,
-      message,
-      topic,
-      topic2,
-      'Cambió posición del roller a $position%',
-    );
+      final bool result = await sendMQTTMessageWithPermission(
+        deviceName,
+        message,
+        topic,
+        topic2,
+        'Cambió posición del roller a $position%',
+      );
 
-    if (!result) {
-      showToast('No tienes permisos de controlar el equipo');
+      if (!result) {
+        showToast('No tienes permisos de controlar el equipo');
+      }
+    } catch (e) {
+      printLog.e('Error al enviar mensaje MQTT: $e');
     }
   }
 
@@ -286,6 +293,104 @@ class RollerPageState extends ConsumerState<RollerPage> {
   void setRollerCalibration() {
     String data = '$pc[9](0)';
     bluetoothManager.toolsUuid.write(data.codeUnits);
+  }
+
+  Widget _calibrationMoveButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onLongPressStart: (_) {
+              setState(() => _isPressingUp = true);
+              setDistance(0);
+            },
+            onLongPressEnd: (_) {
+              setState(() {
+                _isPressingUp = false;
+                workingPosition = actualPosition;
+              });
+              setDistance(actualPosition);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: _isPressingUp ? color4 : color1,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: const [
+                  BoxShadow(
+                      color: Colors.black26,
+                      offset: Offset(0, 4),
+                      blurRadius: 5),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(HugeIcons.strokeRoundedArrowUp02,
+                      color: _isPressingUp ? color1 : color0),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Subir',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: _isPressingUp ? color1 : color0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: GestureDetector(
+            onLongPressStart: (_) {
+              setState(() => _isPressingDown = true);
+              setDistance(100);
+            },
+            onLongPressEnd: (_) {
+              setState(() {
+                _isPressingDown = false;
+                workingPosition = actualPosition;
+              });
+              setDistance(actualPosition);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: _isPressingDown ? color4 : color1,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: const [
+                  BoxShadow(
+                      color: Colors.black26,
+                      offset: Offset(0, 4),
+                      blurRadius: 5),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(HugeIcons.strokeRoundedArrowDown02,
+                      color: _isPressingDown ? color1 : color0),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Bajar',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: _isPressingDown ? color1 : color0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
 //! VISUAL
@@ -625,7 +730,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Para controlar la cortina primero debés calibrar el recorrido desde la pestaña Configuración.',
+                            'Para controlar la cortina primero debés calibrar el recorrido desde la pestaña Calibración.',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(
                               color: color0.withValues(alpha: 0.7),
@@ -635,11 +740,11 @@ class RollerPageState extends ConsumerState<RollerPage> {
                           ),
                           const SizedBox(height: 24),
                           ElevatedButton.icon(
-                            onPressed: () => onItemTapped(1),
-                            icon: const Icon(HugeIcons.strokeRoundedSettings01,
+                            onPressed: () => onItemTapped(2),
+                            icon: const Icon(HugeIcons.strokeRoundedRuler,
                                 size: 18),
                             label: Text(
-                              'Ir a Configuración',
+                              'Ir a Calibración',
                               style: GoogleFonts.poppins(
                                   fontWeight: FontWeight.bold),
                             ),
@@ -663,7 +768,307 @@ class RollerPageState extends ConsumerState<RollerPage> {
           },
         ],
       ),
-      //*- Página 2: Configuración de parametros-*\\
+      //*- Página 2: Configuración de parámetros -*\\
+      Stack(
+        children: [
+          Opacity(
+            opacity: isCalibrated ? 1.0 : 0.18,
+            child: AbsorbPointer(
+              absorbing: !isCalibrated,
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Configuración',
+                        style: GoogleFonts.poppins(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: color1,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // TARJETA: MOTOR Y VELOCIDAD
+                      Container(
+                        padding: const EdgeInsets.all(16.0),
+                        decoration: BoxDecoration(
+                          color: color1,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Encabezado Motor
+                            const Row(
+                              children: [
+                                Icon(HugeIcons.strokeRoundedSettings01,
+                                    color: color0, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  'MOTOR Y MOVIMIENTO',
+                                  style: TextStyle(
+                                      color: color0,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14),
+                                ),
+                              ],
+                            ),
+                            Divider(
+                                color: color0.withValues(alpha: 0.1),
+                                height: 24),
+
+                            // Fila: Polaridad
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Sentido de Rotación',
+                                        style: TextStyle(
+                                            color: color0, fontSize: 15)),
+                                    Text(
+                                      rollerPolarity == '1'
+                                          ? 'Invertido'
+                                          : 'Normal',
+                                      style: const TextStyle(
+                                          color: color3,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      rollerPolarity =
+                                          rollerPolarity == '0' ? '1' : '0';
+                                    });
+                                    setRollerPolarity();
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: rollerPolarity == '1'
+                                          ? color3
+                                          : Colors.transparent,
+                                      border: Border.all(
+                                          color: rollerPolarity == '1'
+                                              ? color3
+                                              : color0.withValues(alpha: 0.3)),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(
+                                        HugeIcons.strokeRoundedExchange01,
+                                        color: color0,
+                                        size: 20),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Divider(
+                                color: color0.withValues(alpha: 0.1),
+                                height: 24),
+
+                            // Fila: Velocidad
+                            const Text('Velocidad',
+                                style: TextStyle(color: color0, fontSize: 15)),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                // Botón Baja
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() => rollerRPM = '70');
+                                      setMotorSpeed(rollerRPM);
+                                    },
+                                    child: Container(
+                                      margin: const EdgeInsets.only(right: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: rollerRPM == '70'
+                                            ? color3
+                                            : Colors.transparent,
+                                        border: Border.all(
+                                            color: rollerRPM == '70'
+                                                ? color3
+                                                : color0.withValues(
+                                                    alpha: 0.2)),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        'Baja',
+                                        style: TextStyle(
+                                            color: rollerRPM == '70'
+                                                ? color0
+                                                : color0.withValues(alpha: 0.6),
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Botón Media
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() => rollerRPM = '150');
+                                      setMotorSpeed(rollerRPM);
+                                    },
+                                    child: Container(
+                                      margin: const EdgeInsets.symmetric(
+                                          horizontal: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: rollerRPM == '150'
+                                            ? color3
+                                            : Colors.transparent,
+                                        border: Border.all(
+                                            color: rollerRPM == '150'
+                                                ? color3
+                                                : color0.withValues(
+                                                    alpha: 0.2)),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        'Media',
+                                        style: TextStyle(
+                                            color: rollerRPM == '150'
+                                                ? color0
+                                                : color0.withValues(alpha: 0.6),
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Botón Alta
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() => rollerRPM = '280');
+                                      setMotorSpeed(rollerRPM);
+                                    },
+                                    child: Container(
+                                      margin: const EdgeInsets.only(left: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: rollerRPM == '280'
+                                            ? color3
+                                            : Colors.transparent,
+                                        border: Border.all(
+                                            color: rollerRPM == '280'
+                                                ? color3
+                                                : color0.withValues(
+                                                    alpha: 0.2)),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        'Alta',
+                                        style: TextStyle(
+                                            color: rollerRPM == '280'
+                                                ? color0
+                                                : color0.withValues(alpha: 0.6),
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (!isCalibrated) ...{
+            Positioned.fill(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                  child: Card(
+                    color: color1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    elevation: 8,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24.0, vertical: 32.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            HugeIcons.strokeRoundedRuler,
+                            color: color0,
+                            size: 52,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Calibración requerida',
+                            style: GoogleFonts.poppins(
+                              color: color0,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Para modificar la configuración primero debés calibrar el recorrido desde la pestaña Calibración.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              color: color0.withValues(alpha: 0.7),
+                              fontSize: 13,
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () => onItemTapped(2),
+                            icon: const Icon(HugeIcons.strokeRoundedRuler,
+                                size: 18),
+                            label: Text(
+                              'Ir a Calibración',
+                              style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: color0,
+                              foregroundColor: color1,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          },
+        ],
+      ),
+
+      //*- Página 3: Calibración de recorrido -*\\
       SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -671,7 +1076,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Configuración',
+                'Calibración',
                 style: GoogleFonts.poppins(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -680,192 +1085,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
               ),
               const SizedBox(height: 16),
 
-              // TARJETA 1: MOTOR Y VELOCIDAD
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: color1,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Encabezado Motor
-                    const Row(
-                      children: [
-                        Icon(HugeIcons.strokeRoundedSettings01,
-                            color: color0, size: 20),
-                        SizedBox(width: 8),
-                        Text(
-                          'MOTOR Y MOVIMIENTO',
-                          style: TextStyle(
-                              color: color0,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14),
-                        ),
-                      ],
-                    ),
-                    Divider(color: color0.withValues(alpha: 0.1), height: 24),
-
-                    // Fila: Polaridad
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Sentido de Rotación',
-                                style: TextStyle(color: color0, fontSize: 15)),
-                            Text(
-                              rollerPolarity == '1' ? 'Invertido' : 'Normal',
-                              style: const TextStyle(
-                                  color: color3,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              rollerPolarity =
-                                  rollerPolarity == '0' ? '1' : '0';
-                            });
-                            setRollerPolarity();
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: rollerPolarity == '1'
-                                  ? color3
-                                  : Colors.transparent,
-                              border: Border.all(
-                                  color: rollerPolarity == '1'
-                                      ? color3
-                                      : color0.withValues(alpha: 0.3)),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(HugeIcons.strokeRoundedExchange01,
-                                color: color0, size: 20),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Divider(color: color0.withValues(alpha: 0.1), height: 24),
-
-                    // Fila: Velocidad
-                    const Text('Velocidad',
-                        style: TextStyle(color: color0, fontSize: 15)),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        // Botón Baja
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() => rollerRPM = '70');
-                              setMotorSpeed(rollerRPM);
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.only(right: 4),
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              decoration: BoxDecoration(
-                                color: rollerRPM == '70'
-                                    ? color3
-                                    : Colors.transparent,
-                                border: Border.all(
-                                    color: rollerRPM == '70'
-                                        ? color3
-                                        : color0.withValues(alpha: 0.2)),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                'Baja',
-                                style: TextStyle(
-                                    color: rollerRPM == '70'
-                                        ? color0
-                                        : color0.withValues(alpha: 0.6),
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Botón Media
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() => rollerRPM = '150');
-                              setMotorSpeed(rollerRPM);
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              decoration: BoxDecoration(
-                                color: rollerRPM == '150'
-                                    ? color3
-                                    : Colors.transparent,
-                                border: Border.all(
-                                    color: rollerRPM == '150'
-                                        ? color3
-                                        : color0.withValues(alpha: 0.2)),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                'Media',
-                                style: TextStyle(
-                                    color: rollerRPM == '150'
-                                        ? color0
-                                        : color0.withValues(alpha: 0.6),
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Botón Alta
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() => rollerRPM = '280');
-                              setMotorSpeed(rollerRPM);
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.only(left: 4),
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              decoration: BoxDecoration(
-                                color: rollerRPM == '280'
-                                    ? color3
-                                    : Colors.transparent,
-                                border: Border.all(
-                                    color: rollerRPM == '280'
-                                        ? color3
-                                        : color0.withValues(alpha: 0.2)),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                'Alta',
-                                style: TextStyle(
-                                    color: rollerRPM == '280'
-                                        ? color0
-                                        : color0.withValues(alpha: 0.6),
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // TARJETA 2: CALIBRACIÓN (FLUJO DE PRUEBA AMIGABLE)
+              // TARJETA: CALIBRACIÓN (FLUJO AMIGABLE)
               Container(
                 padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
@@ -890,29 +1110,71 @@ class RollerPageState extends ConsumerState<RollerPage> {
                       ],
                     ),
                     Divider(color: color0.withValues(alpha: 0.1), height: 24),
-                    if (rollerSavedLength == '' || !isCalibrated) ...{
-                      if (rollerEnd == null) ...{
-                        const Text('Paso 1 de 2: Límite Inferior',
-                            style: TextStyle(
-                                color: color3,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14)),
+                    if (rollerSavedLength == '' || !isCalibrated) ...[
+                      if (!_isCalibrating) ...{
+                        // ── PASO 1: Iniciar ──
+                        const Text(
+                          'Paso 1 de 3: Iniciar calibración',
+                          style: TextStyle(
+                              color: color3,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14),
+                        ),
                         const SizedBox(height: 8),
                         Text(
-                          'Primero, bajá la cortina hasta donde quieras que llegue al cerrarse del todo. Una vez ahí, guardá la posición.',
+                          'Antes de comenzar, iniciá el modo de calibración. Esto te habilitará los controles para mover la cortina manualmente.',
                           style: TextStyle(
                               color: color0.withValues(alpha: 0.8),
                               fontSize: 14,
                               height: 1.4),
                         ),
                         const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            setState(() => _isCalibrating = true);
+                            // setRollerCalibration();
+                          },
+                          icon: const Icon(HugeIcons.strokeRoundedRuler,
+                              color: color0, size: 18),
+                          label: const Text(
+                            'Iniciar calibración',
+                            style: TextStyle(
+                                color: color0, fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: color3,
+                            minimumSize: const Size(double.infinity, 45),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                      } else if (rollerEnd == null) ...[
+                        // ── PASO 2: Límite inferior ──
+                        const Text(
+                          'Paso 2 de 3: Límite Inferior',
+                          style: TextStyle(
+                              color: color3,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Bajá la cortina hasta donde quieras que llegue al cerrarse del todo. Una vez ahí, guardá la posición.',
+                          style: TextStyle(
+                              color: color0.withValues(alpha: 0.8),
+                              fontSize: 14,
+                              height: 1.4),
+                        ),
+                        const SizedBox(height: 16),
+                        _calibrationMoveButtons(),
+                        const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () async {
                             final vars = await bluetoothManager.varsUuid.read();
                             final grades =
                                 int.parse(utf8.decode(vars).split(':')[12]);
-                            rollerEnd = grades;
                             setState(() {
+                              rollerEnd = grades;
                               endSaved = true;
                             });
                           },
@@ -926,13 +1188,15 @@ class RollerPageState extends ConsumerState<RollerPage> {
                               style: TextStyle(
                                   color: color0, fontWeight: FontWeight.bold)),
                         ),
-                      } else ...{
-                        // Paso 2
-                        const Text('Paso 2 de 2: Límite Superior',
-                            style: TextStyle(
-                                color: color3,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14)),
+                      ] else ...[
+                        // ── PASO 3: Límite superior ──
+                        const Text(
+                          'Paso 3 de 3: Límite Superior',
+                          style: TextStyle(
+                              color: color3,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14),
+                        ),
                         const SizedBox(height: 8),
                         Text(
                           '¡Genial! Ahora subí la cortina hasta el tope máximo deseado y guardá esta última posición.',
@@ -942,16 +1206,20 @@ class RollerPageState extends ConsumerState<RollerPage> {
                               height: 1.4),
                         ),
                         const SizedBox(height: 16),
+                        _calibrationMoveButtons(),
+                        const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () async {
                             final vars = await bluetoothManager.varsUuid.read();
                             final grades =
                                 int.parse(utf8.decode(vars).split(':')[12]);
-                            rollerStart = grades;
                             setState(() {
+                              rollerStart = grades;
                               rollerSavedLength =
                                   '${rollerEnd! - rollerStart!}';
+                              _isCalibrating = false;
                             });
+                            _sendPositionMqtt(0);
                             setLarge(int.parse(rollerSavedLength));
                             await putRollerLength(pc, sn, rollerSavedLength);
                           },
@@ -965,8 +1233,8 @@ class RollerPageState extends ConsumerState<RollerPage> {
                               style: TextStyle(
                                   color: color0, fontWeight: FontWeight.bold)),
                         ),
-                      }
-                    } else ...{
+                      ]
+                    ] else ...[
                       Row(
                         children: [
                           const Icon(HugeIcons.strokeRoundedCheckmarkBadge01,
@@ -976,15 +1244,19 @@ class RollerPageState extends ConsumerState<RollerPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('¡Cortina configurada!',
-                                    style: TextStyle(
-                                        color: color0,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16)),
-                                Text('Ya guardamos las medidas exactas.',
-                                    style: TextStyle(
-                                        color: color0.withValues(alpha: 0.6),
-                                        fontSize: 13)),
+                                const Text(
+                                  '¡Cortina calibrada!',
+                                  style: TextStyle(
+                                      color: color0,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16),
+                                ),
+                                Text(
+                                  'Ya guardamos las medidas exactas.',
+                                  style: TextStyle(
+                                      color: color0.withValues(alpha: 0.6),
+                                      fontSize: 13),
+                                ),
                               ],
                             ),
                           ),
@@ -993,32 +1265,35 @@ class RollerPageState extends ConsumerState<RollerPage> {
                       const SizedBox(height: 20),
                       ElevatedButton.icon(
                         onPressed: () {
-                          // Flujo simulado: Resetear
                           setState(() {
                             rollerSavedLength = '';
                             rollerEnd = null;
                             rollerStart = null;
                             endSaved = false;
+                            _isCalibrating = false;
                           });
                           putRollerLength(pc, sn, rollerSavedLength);
                           setRollerCalibration();
                         },
                         icon: const Icon(HugeIcons.strokeRoundedRefresh,
                             color: color0, size: 18),
-                        label: const Text('Volver a tomar medidas',
-                            style: TextStyle(
-                                color: color0, fontWeight: FontWeight.bold)),
+                        label: const Text(
+                          'Volver a tomar medidas',
+                          style: TextStyle(
+                              color: color0, fontWeight: FontWeight.bold),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
-                          side:
-                              BorderSide(color: color0.withValues(alpha: 0.3)),
+                          side: BorderSide(
+                            color: color0.withValues(alpha: 0.3),
+                          ),
                           minimumSize: const Size(double.infinity, 45),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8)),
                         ),
                       ),
-                    },
+                    ],
                   ],
                 ),
               ),
@@ -1028,7 +1303,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
         ),
       ),
 
-      //*- Página 3: Gestión del Equipo -*\\
+      //*- Página 4: Gestión del Equipo -*\\
       ManagerScreen(deviceName: deviceName),
     ];
 
@@ -1179,8 +1454,9 @@ class RollerPageState extends ConsumerState<RollerPage> {
                   items: const <Widget>[
                     Icon(HugeIcons.strokeRoundedHome11,
                         size: 30, color: color0),
-                    Icon(HugeIcons.strokeRoundedWrench01,
+                    Icon(HugeIcons.strokeRoundedSettings01,
                         size: 30, color: color0),
+                    Icon(HugeIcons.strokeRoundedRuler, size: 30, color: color0),
                     Icon(HugeIcons.strokeRoundedSettings02,
                         size: 30, color: color0),
                   ],

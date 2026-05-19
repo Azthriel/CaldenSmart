@@ -427,7 +427,6 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
           ),
         )
       },
-
       TutorialItem(
         globalKey: keys['managerScreen:imagen']!,
         borderRadius: const Radius.circular(20),
@@ -941,7 +940,11 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                             isHeating: trueStatus,
                             icon: powerIconOn,
                           )
-                        : Icon(powerIconOff, size: 80, color: Colors.white),
+                        : HugeIcon(
+                            icon: powerIconOff,
+                            color: Colors.white,
+                            size: 80,
+                          ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -1031,8 +1034,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                                   ),
                                 ],
                               ),
-                              child: const Icon(
-                                HugeIcons.strokeRoundedSparkles,
+                              child: const HugeIcon(
+                                icon: HugeIcons.strokeRoundedSparkles,
                                 size: 22,
                                 color: Colors.white,
                               ),
@@ -1306,8 +1309,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                             ),
                           ],
                         ),
-                        child: Icon(
-                            distanceControlActive
+                        child: HugeIcon(
+                            icon: distanceControlActive
                                 ? HugeIcons.strokeRoundedCheckmarkCircle02
                                 : HugeIcons.strokeRoundedCancelCircle,
                             size: 80,
@@ -1860,8 +1863,8 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                   ),
                 ),
                 const SizedBox(width: 3),
-                const Icon(HugeIcons.strokeRoundedPen01,
-                    size: 20, color: color0)
+                const HugeIcon(
+                    icon: HugeIcons.strokeRoundedPen01, size: 20, color: color0)
               ],
             ),
           ),
@@ -1933,16 +1936,24 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                       index: _selectedIndex,
                       height: 75.0,
                       items: const <Widget>[
-                        Icon(HugeIcons.strokeRoundedHome11,
-                            size: 30, color: color0),
+                        HugeIcon(
+                            icon: HugeIcons.strokeRoundedHome11,
+                            size: 30,
+                            color: color0),
                         ImageIcon(AssetImage(CaldenIcons.termometro),
                             size: 30, color: color0),
-                        Icon(HugeIcons.strokeRoundedLocation06,
-                            size: 30, color: color0),
-                        Icon(HugeIcons.strokeRoundedCalculate,
-                            size: 30, color: color0),
-                        Icon(HugeIcons.strokeRoundedSettings02,
-                            size: 30, color: color0),
+                        HugeIcon(
+                            icon: HugeIcons.strokeRoundedLocation06,
+                            size: 30,
+                            color: color0),
+                        HugeIcon(
+                            icon: HugeIcons.strokeRoundedCalculate,
+                            size: 30,
+                            color: color0),
+                        HugeIcon(
+                            icon: HugeIcons.strokeRoundedSettings02,
+                            size: 30,
+                            color: color0),
                       ],
                       color: color1,
                       buttonBackgroundColor: color1,
@@ -2011,8 +2022,10 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
                 },
                 backgroundColor: color4,
                 shape: const CircleBorder(),
-                child: const Icon(HugeIcons.strokeRoundedHelpCircle,
-                    size: 30, color: color0),
+                child: const HugeIcon(
+                    icon: HugeIcons.strokeRoundedHelpCircle,
+                    size: 30,
+                    color: color0),
               ),
             ),
           ),

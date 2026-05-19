@@ -113,16 +113,16 @@ class ScanPageState extends State<ScanPage>
           color: Colors.white, size: 24);
     }
     if (rssi >= -60) {
-      // Mejor señal: FullSignalIconPlus
-      return const Icon(HugeIcons.strokeRoundedFullSignal,
+      // Mejor señal: FullSignalIconPlu
+      return const Icon(Icons.signal_cellular_alt_rounded,
           color: Colors.white, size: 24);
     } else if (rssi >= -75) {
       // Señal media: MediumSignalIcon
-      return const Icon(HugeIcons.strokeRoundedMediumSignal,
+      return const Icon(Icons.signal_cellular_alt_2_bar_rounded,
           color: Colors.white, size: 24);
     } else {
       // Señal baja: LowSignalIcon
-      return const Icon(HugeIcons.strokeRoundedLowSignal,
+      return const Icon(Icons.signal_cellular_alt_1_bar,
           color: Colors.white, size: 24);
     }
   }
@@ -338,10 +338,9 @@ class ScanPageState extends State<ScanPage>
         final reason = device.disconnectReason;
 
         printLog.i(
-          'Dispositivo desconectado — código: ${reason?.code}, '
-          'descripción: ${reason?.description}',
-          color: Colors.red
-        );
+            'Dispositivo desconectado — código: ${reason?.code}, '
+            'descripción: ${reason?.description}',
+            color: Colors.red);
 
         cleanGlobalDeviceVariables();
         navigatorKey.currentState?.pushReplacementNamed('/menu');
@@ -753,7 +752,9 @@ class ScanPageState extends State<ScanPage>
                           DeviceManager.getProductCode(device.platformName);
                       final serialNumber = DeviceManager.extractSerialNumber(
                           device.platformName);
-                      final rssi = deviceRssi[device.remoteId.toString()] ?? 0;
+
+                      // printLog.i(
+                      //     'Construyendo dispositivo: ${device.platformName} con RSSI: $rssi');
 
                       final isLost =
                           lostDevices.contains(device.remoteId.toString());
@@ -995,7 +996,11 @@ class ScanPageState extends State<ScanPage>
                                                       color: Colors.white,
                                                     ),
                                                     const SizedBox(width: 10),
-                                                    _signal(rssi,
+                                                    _signal(
+                                                        deviceRssi[device
+                                                                .remoteId
+                                                                .toString()] ??
+                                                            0,
                                                         isLost: isLost),
                                                   ],
                                                 ),

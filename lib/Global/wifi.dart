@@ -4733,8 +4733,7 @@ class WifiPageState extends ConsumerState<WifiPage>
           bool isCalibrated = deviceDATA['isCalibrated'] ?? false;
 
           // Está en movimiento mientras moving=true O mientras no llegó al destino
-          bool isMoving = moving ||
-              (workingPosition != -1 && actualPosition != workingPosition);
+          bool isMoving = moving;
 
           // Label y color del estado
           String positionLabel;
@@ -4932,121 +4931,14 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                 const SizedBox(height: 10),
 
                                                 if (owner) ...[
-                                                  Row(
-                                                    children: [
-                                                      // ── Botón CERRAR ──
-                                                      Expanded(
-                                                        child:
-                                                            ElevatedButton.icon(
-                                                          style: ElevatedButton
-                                                              .styleFrom(
-                                                            // Gris si está moviendo,
-                                                            // gris también si ya está cerrado
-                                                            backgroundColor:
-                                                                isMoving
-                                                                    ? Colors
-                                                                        .grey
-                                                                        .shade700
-                                                                    : color4,
-                                                            foregroundColor:
-                                                                isMoving
-                                                                    ? Colors
-                                                                        .grey
-                                                                        .shade400
-                                                                    : color0,
-                                                            shape:
-                                                                RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          10),
-                                                            ),
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .symmetric(
-                                                                    vertical:
-                                                                        10),
-                                                          ),
-                                                          icon: const Icon(
-                                                              HugeIcons
-                                                                  .strokeRoundedArrowDown01,
-                                                              size: 18),
-                                                          label: Text(
-                                                            'Cerrar',
-                                                            style: GoogleFonts
-                                                                .poppins(
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .bold),
-                                                          ),
-                                                          // Disabled mientras mueve O ya está cerrado
-                                                          onPressed: (isMoving ||
-                                                                  actualPosition ==
-                                                                      100)
-                                                              ? null
-                                                              : () =>
-                                                                  _sendRollerCommand(
-                                                                      deviceName,
-                                                                      100),
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 10),
-                                                      // ── Botón ABRIR ──
-                                                      Expanded(
-                                                        child:
-                                                            ElevatedButton.icon(
-                                                          style: ElevatedButton
-                                                              .styleFrom(
-                                                            backgroundColor:
-                                                                isMoving
-                                                                    ? Colors
-                                                                        .grey
-                                                                        .shade700
-                                                                    : Colors
-                                                                        .green,
-                                                            foregroundColor:
-                                                                isMoving
-                                                                    ? Colors
-                                                                        .grey
-                                                                        .shade400
-                                                                    : color0,
-                                                            shape:
-                                                                RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          10),
-                                                            ),
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .symmetric(
-                                                                    vertical:
-                                                                        10),
-                                                          ),
-                                                          icon: const Icon(
-                                                              HugeIcons
-                                                                  .strokeRoundedArrowUp01,
-                                                              size: 18),
-                                                          label: Text(
-                                                            'Abrir',
-                                                            style: GoogleFonts
-                                                                .poppins(
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .bold),
-                                                          ),
-                                                          // Disabled mientras mueve O ya está abierto
-                                                          onPressed: (isMoving ||
-                                                                  actualPosition ==
-                                                                      0)
-                                                              ? null
-                                                              : () =>
-                                                                  _sendRollerCommand(
-                                                                      deviceName,
-                                                                      0),
-                                                        ),
-                                                      ),
-                                                    ],
+                                                  // ── Slider de posición ──
+                                                  _RollerPositionSlider(
+                                                    initialValue:
+                                                        workingPosition,
+                                                    isMoving: isMoving,
+                                                    onChangeEnd: (v) =>
+                                                        _sendRollerCommand(
+                                                            deviceName, v),
                                                   ),
                                                 ] else ...[
                                                   _buildNotOwnerWarning(),
@@ -10106,5 +9998,103 @@ class WifiPageState extends ConsumerState<WifiPage>
     });
 
     return count;
+  }
+}
+
+// ── Slider de posición para roller (024011_IOT) ──
+class _RollerPositionSlider extends StatefulWidget {
+  final int initialValue;
+  final bool isMoving;
+  final void Function(int) onChangeEnd;
+
+  const _RollerPositionSlider({
+    required this.initialValue,
+    required this.isMoving,
+    required this.onChangeEnd,
+  });
+
+  @override
+  State<_RollerPositionSlider> createState() => _RollerPositionSliderState();
+}
+
+class _RollerPositionSliderState extends State<_RollerPositionSlider> {
+  late double _value;
+
+  @override
+  void initState() {
+    super.initState();
+    _value = widget.initialValue.clamp(0, 100).toDouble();
+  }
+
+  @override
+  void didUpdateWidget(_RollerPositionSlider oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Sólo sincroniza si el usuario NO está arrastrando
+    // (cuando isMoving pasa a false, actualiza la posición real)
+    if (!widget.isMoving && oldWidget.isMoving) {
+      setState(() => _value = widget.initialValue.clamp(0, 100).toDouble());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Posición',
+              style: GoogleFonts.poppins(
+                color: color0.withValues(alpha: 0.7),
+                fontSize: 13,
+              ),
+            ),
+            Text(
+              '${_value.toInt()}%',
+              style: GoogleFonts.poppins(
+                color: color0,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: widget.isMoving ? Colors.grey.shade600 : color4,
+            inactiveTrackColor: color0.withValues(alpha: 0.15),
+            thumbColor: widget.isMoving ? Colors.grey.shade500 : color4,
+            overlayColor: color4.withValues(alpha: 0.15),
+            tickMarkShape: const RoundSliderTickMarkShape(tickMarkRadius: 3),
+            activeTickMarkColor: color0.withValues(alpha: 0.5),
+            inactiveTickMarkColor: color0.withValues(alpha: 0.2),
+          ),
+          child: Slider(
+            value: _value,
+            min: 0,
+            max: 100,
+            divisions: 4,
+            onChanged:
+                widget.isMoving ? null : (v) => setState(() => _value = v),
+            onChangeEnd:
+                widget.isMoving ? null : (v) => widget.onChangeEnd(v.toInt()),
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: ['0', '25', '50', '75', '100']
+              .map((l) => Text(
+                    l,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: color0.withValues(alpha: 0.4),
+                    ),
+                  ))
+              .toList(),
+        ),
+      ],
+    );
   }
 }

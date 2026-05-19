@@ -117,7 +117,8 @@ void reconnectMqtt() async {
     // Backoff exponencial: 5s · 10s · 20s · 40s · 80s
     if (attempt < maxAttempts) {
       final waitSeconds = 5 * attempt;
-      printLog.i('Esperando ${waitSeconds}s antes del intento ${attempt + 1}...');
+      printLog
+          .i('Esperando ${waitSeconds}s antes del intento ${attempt + 1}...');
       await Future.delayed(Duration(seconds: waitSeconds));
     }
   }
@@ -128,14 +129,36 @@ void reconnectMqtt() async {
 //*-Conexión y desconexión IoT Core-*\\
 
 //*-Envíar mensaje a los topics-*\\
-void sendMessagemqtt(String topic, String message) {
-  printLog.i('Voy a mandar $message');
-  printLog.i('A el topic $topic');
+Future<void> sendMessagemqtt(String topic, String message) async {
+  printLog.i('Voy a mandar $message al topic $topic');
+
+  // Si no está conectado, esperar reconexión o dispararla
+  if (mqttAWSFlutterClient?.connectionStatus?.state !=
+      MqttConnectionState.connected) {
+    printLog.i('MQTT desconectado al intentar enviar. Esperando reconexión...');
+
+    if (!_isReconnecting) reconnectMqtt();
+
+    const pollInterval = Duration(milliseconds: 500);
+    const timeout = Duration(seconds: 30);
+    final deadline = DateTime.now().add(timeout);
+
+    while (mqttAWSFlutterClient?.connectionStatus?.state !=
+        MqttConnectionState.connected) {
+      if (DateTime.now().isAfter(deadline)) {
+        printLog.e(
+            'Timeout esperando reconexión MQTT. Mensaje descartado: $message');
+        return;
+      }
+      await Future.delayed(pollInterval);
+    }
+
+    printLog.i('MQTT reconectado. Enviando mensaje pendiente...');
+  }
+
   final MqttClientPayloadBuilder builder = MqttClientPayloadBuilder();
   builder.addString(message);
-
   printLog.i('${builder.payload} : ${utf8.decode(builder.payload!)}');
-
   try {
     mqttAWSFlutterClient!.publishMessage(
         topic, MqttQos.atLeastOnce, builder.payload!,
