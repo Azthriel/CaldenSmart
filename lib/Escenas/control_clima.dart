@@ -857,6 +857,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
             itemBuilder: (context, index) {
               final device = deviceGroup[index];
               final isOn = deviceActions[device] ?? false;
+              final bool isRollerDev = _isRoller(device);
 
               String displayName = device;
               String deviceType = 'Dispositivo';
@@ -993,11 +994,11 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                                   MediaQuery.of(context).size.width * 0.25,
                             ),
                             children: [
-                              Text('Encender',
+                              Text(isRollerDev ? 'Abrir' : 'Encender',
                                   style: GoogleFonts.poppins(
                                       fontWeight: FontWeight.w500,
                                       fontSize: 12)),
-                              Text('Apagar',
+                              Text(isRollerDev ? 'Cerrar' : 'Apagar',
                                   style: GoogleFonts.poppins(
                                       fontWeight: FontWeight.w500,
                                       fontSize: 12)),
@@ -1041,7 +1042,9 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
             fillColor: color0,
             errorText: title.text.contains(':')
                 ? 'No se permiten dos puntos (:)'
-                : null,
+                : _nombreDuplicado(title.text)
+                    ? 'Ya existe un evento con ese nombre'
+                    : null,
           ),
           style: GoogleFonts.poppins(color: color1),
           onChanged: (value) {
@@ -1050,6 +1053,21 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
         ),
         const SizedBox(height: 16),
       ],
+    );
+  }
+
+  // Detecta si un device es un roller (024011_IOT)
+  bool _isRoller(String device) {
+    final cleanName = device.contains('_') ? device.split('_')[0] : device;
+    return DeviceManager.getProductCode(cleanName) == '024011_IOT';
+  }
+
+  bool _nombreDuplicado(String nombre) {
+    if (nombre.trim().isEmpty) return false;
+    return eventosCreados.any(
+      (e) =>
+          (e['title'] as String?)?.toLowerCase().trim() ==
+          nombre.toLowerCase().trim(),
     );
   }
 
@@ -1080,7 +1098,9 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
 
         return deviceActions.isNotEmpty && configuredActions >= requiredActions;
       case 3:
-        return title.text.isNotEmpty && !title.text.contains(':');
+        return title.text.isNotEmpty &&
+            !title.text.contains(':') &&
+            !_nombreDuplicado(title.text);
       default:
         return false;
     }

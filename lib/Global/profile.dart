@@ -10,6 +10,7 @@ import 'package:caldensmart/aws/mqtt/mqtt.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:caldensmart/logger.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:in_app_review/in_app_review.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -846,6 +847,39 @@ class ProfilePageState extends State<ProfilePage> {
                     crossFadeState: isSocialOpen
                         ? CrossFadeState.showSecond
                         : CrossFadeState.showFirst,
+                  ),
+                  const Divider(color: color1),
+                                    ListTile(
+                    leading:
+                        const Icon(HugeIcons.strokeRoundedStar, color: color1),
+                    title: Text(
+                      "Puntúa la app",
+                      style: GoogleFonts.poppins(
+                        color: color1,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      "Déjanos tu opinión en la tienda",
+                      style: GoogleFonts.poppins(
+                        color: color1,
+                      ),
+                    ),
+                    trailing: const Icon(
+                      HugeIcons.strokeRoundedShare01,
+                      color: color1,
+                      size: 20,
+                    ),
+                    onTap: () async {
+                      try {
+                        final InAppReview inAppReview = InAppReview.instance;
+                        await inAppReview.openStoreListing(
+                            appStoreId: '6737855207');
+                      } catch (e) {
+                        printLog.e('Error al abrir la tienda: $e');
+                        showToast('No se pudo abrir la tienda de aplicaciones');
+                      }
+                    },
                   ),
                   const Divider(color: color1),
                 ],

@@ -884,18 +884,49 @@ class ScanPageState extends State<ScanPage>
                                         child: Stack(
                                           children: [
                                             Positioned.fill(
-                                              child: imagePath != null
+                                              child: (imagePath != null &&
+                                                      (deviceImageStyles[device
+                                                              .platformName] ??
+                                                          false))
                                                   ? Image.file(
                                                       File(imagePath),
                                                       fit: BoxFit.cover,
                                                     )
                                                   : Image.asset(
                                                       ImageManager.rutaDeImagen(
-                                                        device.platformName,
-                                                      ),
+                                                          device.platformName),
                                                       fit: BoxFit.cover,
                                                     ),
                                             ),
+                                            if (imagePath != null &&
+                                                !(deviceImageStyles[
+                                                        device.platformName] ??
+                                                    false))
+                                              LayoutBuilder(
+                                                builder:
+                                                    (context, constraints) {
+                                                  final double circleSize =
+                                                      constraints.maxHeight *
+                                                          0.505;
+                                                  return Align(
+                                                    alignment: Alignment.center,
+                                                    child: Container(
+                                                      width: circleSize,
+                                                      height: circleSize,
+                                                      decoration:
+                                                          const BoxDecoration(
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      clipBehavior:
+                                                          Clip.antiAlias,
+                                                      child: Image.file(
+                                                        File(imagePath),
+                                                        fit: BoxFit.cover,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
                                             Positioned.fill(
                                               child: Container(
                                                 decoration: BoxDecoration(

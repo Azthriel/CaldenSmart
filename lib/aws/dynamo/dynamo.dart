@@ -2292,22 +2292,16 @@ Future<List<String>> getRecentDisconnectTimes(String pc, String sn,
       tableName: 'device-connection-events',
       keyConditionExpression: 'device_key = :pk AND #ts >= :from',
       expressionAttributeNames: {'#ts': 'timestamp'},
+      filterExpression: 'event_type = :etype',
       expressionAttributeValues: {
         ':pk': AttributeValue(s: '$pc#$sn'),
         ':from': AttributeValue(n: fromSec.toString()),
+        ':etype': AttributeValue(s: 'disconnect'),
       },
-      filterExpression: 'event_type = :etype',
-      // OJO: el filterExpression se aplica DESPUÉS del read; cobra todos los
-      // items leídos, no solo los matcheados. Para la ventana de 1h igual
-      // hay pocos items, así que es aceptable. Si quisiéramos ser más prolijos,
-      // creamos un GSI por event_type.
     );
 
     final items = response.items ?? [];
-    return items
-        .where((it) => it['event_type']?.s == 'disconnect')
-        .map((it) => it['timestamp']?.n ?? '0')
-        .toList();
+    return items.map((it) => it['timestamp']?.n ?? '0').toList();
   } catch (e) {
     printLog.e('Error leyendo connection events: $e');
     return [];

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,6 +52,383 @@ class RollerPageState extends ConsumerState<RollerPage> {
   String? _activeQuickButton; // 'abrir' | 'cerrar' | null
 
   bool _isCalibrating = false;
+
+  ///*- Elementos para tutoriales -*\\\
+  bool _isTutorialActive = false;
+  List<TutorialItem> items = [];
+
+  void initItems() {
+    // ----------------------------------------------------
+    // PÁGINA 0: INICIO (HOME)
+    // ----------------------------------------------------
+    items.addAll({
+      TutorialItem(
+        globalKey: keys['roller:titulo']!,
+        shapeFocus: ShapeFocus.roundedSquare,
+        borderRadius: const Radius.circular(30.0),
+        contentPosition: ContentPosition.below,
+        focusMargin: 15.0,
+        pageIndex: 0,
+        child: const TutorialItemContent(
+          title: 'Nombre del equipo',
+          content:
+              'Podrás ponerle un apodo tocando en cualquier parte del nombre.',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['roller:wifi']!,
+        shapeFocus: ShapeFocus.oval,
+        borderRadius: const Radius.circular(15.0),
+        contentPosition: ContentPosition.below,
+        pageIndex: 0,
+        focusMargin: 5.0,
+        child: const TutorialItemContent(
+          title: 'Menú Wifi',
+          content:
+              'Podrás observar y configurar el estado de la conexión wifi del dispositivo.',
+        ),
+      ),
+      TutorialItem(
+        globalKey: keys['roller:servidor']!,
+        shapeFocus: ShapeFocus.oval,
+        borderRadius: const Radius.circular(15.0),
+        contentPosition: ContentPosition.below,
+        pageIndex: 0,
+        focusMargin: 15.0,
+        child: const TutorialItemContent(
+          title: 'Conexión al servidor',
+          content:
+              'Podrás observar el estado de la conexión del dispositivo con el servidor en la nube.',
+        ),
+      ),
+    });
+
+    if (isCalibrated) {
+      items.addAll({
+        TutorialItem(
+          globalKey: keys['roller:animacion']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          contentPosition: ContentPosition.below,
+          focusMargin: 15.0,
+          pageIndex: 0,
+          child: const TutorialItemContent(
+            title: 'Estado de la cortina',
+            content:
+                'Aquí verás la posición actual de tu cortina. Puedes presionar sobre ella para ajustarla a la altura deseada, lo cual se verá reflejado con una sombra.',
+          ),
+        ),
+        TutorialItem(
+          globalKey: keys['roller:botonesManuales']!,
+          borderRadius: const Radius.circular(30),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 0,
+          focusMargin: 10.0,
+          child: const TutorialItemContent(
+            title: 'Control manual',
+            content:
+                'Mantén presionados estos botones para subir o bajar la cortina, la cual se mantendrá en verde hasta que llegue a su tope y cambiará a rojo.',
+          ),
+        ),
+        TutorialItem(
+          globalKey: keys['roller:botonesAutomaticos']!,
+          borderRadius: const Radius.circular(30),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 0,
+          focusMargin: 10.0,
+          child: const TutorialItemContent(
+            title: 'Control automático',
+            content:
+                'Toca una sola vez para abrir o cerrar la cortina por completo de forma automática.',
+          ),
+        ),
+      });
+    } else {
+      items.addAll({
+        TutorialItem(
+          globalKey: keys['roller:alertaCalibracionHome']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 0,
+          focusMargin: 10.0,
+          child: const TutorialItemContent(
+            title: 'Equipo sin calibrar',
+            content:
+                'Para poder controlar tu cortina, primero deberás configurarle las medidas de recorrido.',
+          ),
+        ),
+      });
+    }
+
+    // ----------------------------------------------------
+    // PÁGINA 1: CONFIGURACIÓN
+    // ----------------------------------------------------
+    if (tenant) {
+      items.addAll({
+        TutorialItem(
+          globalKey: keys['roller:titulo']!,
+          shapeFocus: ShapeFocus.roundedSquare,
+          borderRadius: const Radius.circular(30.0),
+          contentPosition: ContentPosition.below,
+          focusMargin: 15.0,
+          pageIndex: 1,
+          child: const TutorialItemContent(
+            title: 'Modo Inquilino',
+            content:
+                'La pestaña de configuración está restringida. Solo el dueño puede ajustar el motor.',
+          ),
+        ),
+      });
+    } else if (!isCalibrated) {
+      items.addAll({
+        TutorialItem(
+          globalKey: keys['roller:alertaCalibracionConfig']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 1,
+          focusMargin: 10.0,
+          child: const TutorialItemContent(
+            title: 'Configuración Bloqueada',
+            content:
+                'No puedes cambiar la velocidad ni rotación del motor hasta que lo calibres.',
+          ),
+        ),
+      });
+    } else {
+      // Normal
+      items.addAll({
+        TutorialItem(
+          globalKey: keys['roller:configuracion']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          contentPosition: ContentPosition.below,
+          focusMargin: 15.0,
+          pageIndex: 1,
+          child: const TutorialItemContent(
+            title: 'Configuración del Motor',
+            content:
+                'En esta pestaña podrás ajustar la velocidad de la cortina y el sentido de rotación.',
+          ),
+        ),
+      });
+    }
+
+    // ----------------------------------------------------
+    // PÁGINA 2: CALIBRACIÓN
+    // ----------------------------------------------------
+    if (tenant) {
+      items.addAll({
+        TutorialItem(
+          globalKey: keys['roller:titulo']!,
+          shapeFocus: ShapeFocus.roundedSquare,
+          borderRadius: const Radius.circular(30.0),
+          contentPosition: ContentPosition.below,
+          focusMargin: 15.0,
+          pageIndex: 2,
+          child: const TutorialItemContent(
+            title: 'Modo Inquilino',
+            content:
+                'La pestaña de calibración está restringida para inquilinos.',
+          ),
+        ),
+      });
+    } else {
+      items.addAll({
+        TutorialItem(
+          globalKey: keys['roller:calibracion']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          contentPosition: ContentPosition.below,
+          focusMargin: 15.0,
+          pageIndex: 2,
+          child: const TutorialItemContent(
+            title: 'Calibración de recorrido',
+            content:
+                'Aquí podrás establecer los topes de arriba y abajo para que el motor sepa exactamente dónde detenerse.',
+          ),
+        ),
+      });
+    }
+
+    // ----------------------------------------------------
+    // PÁGINA 3: MANAGER (Gestión completa)
+    // ----------------------------------------------------
+    items.addAll({
+      TutorialItem(
+        globalKey: keys['managerScreen:titulo']!,
+        borderRadius: const Radius.circular(30),
+        focusMargin: 15.0,
+        shapeFocus: ShapeFocus.roundedSquare,
+        pageIndex: 3,
+        contentPosition: ContentPosition.below,
+        child: const TutorialItemContent(
+          title: 'Gestión',
+          content: 'Podrás reclamar el equipo y gestionar sus funciones.',
+        ),
+      ),
+    });
+
+    if (!tenant && !secondaryAdmin) {
+      items.addAll({
+        TutorialItem(
+          globalKey: keys['managerScreen:reclamar']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 3,
+          contentPosition: ContentPosition.below,
+          child: const TutorialItemContent(
+            title: 'Reclamar administrador',
+            content:
+                'Presiona este botón para reclamar la administración del equipo.',
+          ),
+        ),
+      });
+    }
+
+    if (owner == currentUserEmail) {
+      items.addAll({
+        TutorialItem(
+          globalKey: keys['managerScreen:agregarAdmin']!,
+          borderRadius: const Radius.circular(15),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 3, // PÁGINA 3
+          contentPosition: ContentPosition.below,
+          buttonAction: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 17),
+            ),
+            onPressed: () {
+              launchEmail(
+                'comercial@caldensmart.com',
+                'Habilitación Administradores secundarios extras en $appName',
+                '¡Hola! Me comunico porque busco habilitar la opción de "Administradores secundarios extras" en mi equipo ${DeviceManager.getComercialName(deviceName)}\nCódigo de Producto: ${DeviceManager.getProductCode(deviceName)}\nNúmero de Serie: ${DeviceManager.extractSerialNumber(deviceName)}\nDueño actual del equipo: $owner',
+              );
+            },
+            child: const Text('Enviar mail', style: TextStyle(color: color1)),
+          ),
+          child: const TutorialItemContent(
+            title: 'Añadir administradores secundarios',
+            content:
+                'Podrás agregar correos secundarios hasta un límite de tres, en caso de querer extenderlo debes contactarte con ventas.',
+          ),
+        ),
+        TutorialItem(
+          globalKey: keys['managerScreen:verAdmin']!,
+          borderRadius: const Radius.circular(15),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 3,
+          contentPosition: ContentPosition.above,
+          child: const TutorialItemContent(
+            title: 'Ver administradores secundarios',
+            content: 'Podrás ver o quitar los correos adicionales añadidos.',
+          ),
+        ),
+        TutorialItem(
+          globalKey: keys['managerScreen:alquiler']!,
+          borderRadius: const Radius.circular(15),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 3,
+          child: const TutorialItemContent(
+            title: 'Alquiler temporario',
+            content:
+                'Puedes agregar el correo de tu inquilino al equipo y ajustarlo.',
+          ),
+        ),
+      });
+
+      if (adminDevices.isNotEmpty) {
+        items.addAll({
+          TutorialItem(
+            globalKey: keys['managerScreen:historialAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 3,
+            child: const TutorialItemContent(
+              title: 'Historial de administradores',
+              content:
+                  'Se verán las acciones ejecutadas por cada uno con su respectiva flecha.',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:horariosAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 3,
+            child: const TutorialItemContent(
+              title: 'Horarios de administradores',
+              content:
+                  'Configura el rango de horarios y días que podrán accionar el equipo.',
+            ),
+          ),
+          TutorialItem(
+            globalKey: keys['managerScreen:wifiAdmin']!,
+            borderRadius: const Radius.circular(15),
+            shapeFocus: ShapeFocus.roundedSquare,
+            pageIndex: 3,
+            child: const TutorialItemContent(
+              title: 'Wifi de administradores',
+              content:
+                  'Podrás restringirle a los administradores secundarios el uso del menú wifi.',
+            ),
+          ),
+        });
+      }
+    }
+
+    if (!tenant) {
+      items.addAll({
+        TutorialItem(
+          globalKey: keys['managerScreen:desconexionNotificacion']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 3,
+          child: const TutorialItemContent(
+            title: 'Notificación de desconexión',
+            content: 'Puedes establecer una alerta si el equipo se desconecta.',
+          ),
+        ),
+        TutorialItem(
+          globalKey: keys['managerScreen:ejemploNoti']!,
+          borderRadius: const Radius.circular(20),
+          shapeFocus: ShapeFocus.roundedSquare,
+          pageIndex: 3,
+          fullBackground: true,
+          onStepReached: () {
+            setState(() {
+              showNotification(
+                  '¡El equipo ${nicknamesMap[deviceName] ?? deviceName} se desconecto!',
+                  'Se detecto una desconexión a las ${DateTime.now().hour >= 10 ? DateTime.now().hour : '0${DateTime.now().hour}'}:${DateTime.now().minute >= 10 ? DateTime.now().minute : '0${DateTime.now().minute}'} del ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                  'noti');
+            });
+          },
+          child: const TutorialItemContent(
+            title: 'Ejemplo de notificación',
+            content: '',
+          ),
+        ),
+      });
+    }
+
+    items.addAll({
+      TutorialItem(
+        globalKey: keys['managerScreen:imagen']!,
+        borderRadius: const Radius.circular(20),
+        shapeFocus: ShapeFocus.roundedSquare,
+        pageIndex: 3,
+        child: const TutorialItemContent(
+          title: 'Imagen del dispositivo',
+          content:
+              'Podrás ajustar la imagen del equipo en el menú de dispositivos.',
+        ),
+      ),
+    });
+  }
+
+  ///*- Elementos para tutoriales -*\\\
 
   @override
   void initState() {
@@ -444,9 +822,11 @@ class RollerPageState extends ConsumerState<RollerPage> {
                       ),
                       const SizedBox(height: 20),
                       AbsorbPointer(
+                        key: keys['roller:animacion']!,
                         absorbing: _activeQuickButton != null,
                         child: CurtainAnimation(
                           position: actualPosition,
+                          workingPosition: workingPosition,
                           onTapDown: (details) {
                             RenderBox box =
                                 context.findRenderObject() as RenderBox;
@@ -466,35 +846,53 @@ class RollerPageState extends ConsumerState<RollerPage> {
                       ),
                       const SizedBox(height: 20),
                       AbsorbPointer(
+                        key: keys['roller:botonesManuales']!,
                         absorbing: _activeQuickButton != null,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             Expanded(
-                              child: GestureDetector(
-                                onLongPressStart: (LongPressStartDetails a) {
-                                  if (_activeQuickButton != null) return;
-                                  setState(() {
-                                    workingPosition = 0;
-                                    _isPressingUp = true;
-                                  });
-                                  setDistance(0);
-                                },
-                                onLongPressEnd: (LongPressEndDetails a) {
-                                  setState(() {
-                                    workingPosition = actualPosition;
-                                    _isPressingUp = false;
-                                  });
-                                  setDistance(actualPosition);
+                              child: RawGestureDetector(
+                                gestures: {
+                                  LongPressGestureRecognizer:
+                                      GestureRecognizerFactoryWithHandlers<
+                                          LongPressGestureRecognizer>(
+                                    () => LongPressGestureRecognizer(
+                                      duration:
+                                          const Duration(milliseconds: 150),
+                                    ),
+                                    (instance) {
+                                      instance
+                                        ..onLongPressStart = (_) {
+                                          if (_activeQuickButton != null) {
+                                            return;
+                                          }
+                                          setState(() {
+                                            workingPosition = 0;
+                                            _isPressingUp = true;
+                                          });
+                                          setDistance(0);
+                                        }
+                                        ..onLongPressEnd = (_) {
+                                          setState(() {
+                                            workingPosition = actualPosition;
+                                            _isPressingUp = false;
+                                          });
+                                          setDistance(actualPosition);
+                                        };
+                                    },
+                                  ),
                                 },
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 150),
                                   decoration: BoxDecoration(
                                     color: _activeQuickButton != null
                                         ? Colors.grey.shade800
-                                        : _isPressingUp
+                                        : (_isPressingUp && actualPosition <= 0)
                                             ? color4
-                                            : color1,
+                                            : _isPressingUp
+                                                ? Colors.green.shade600
+                                                : color1,
                                     borderRadius: BorderRadius.circular(30.0),
                                     boxShadow: const [
                                       BoxShadow(
@@ -530,30 +928,48 @@ class RollerPageState extends ConsumerState<RollerPage> {
                             const SizedBox(width: 20),
                             // DESPUÉS
                             Expanded(
-                              child: GestureDetector(
-                                onLongPressStart: (LongPressStartDetails a) {
-                                  if (_activeQuickButton != null) return;
-                                  setState(() {
-                                    workingPosition = 100;
-                                    _isPressingDown = true;
-                                  });
-                                  setDistance(100);
-                                },
-                                onLongPressEnd: (LongPressEndDetails a) {
-                                  setState(() {
-                                    workingPosition = actualPosition;
-                                    _isPressingDown = false;
-                                  });
-                                  setDistance(actualPosition);
+                              child: RawGestureDetector(
+                                gestures: {
+                                  LongPressGestureRecognizer:
+                                      GestureRecognizerFactoryWithHandlers<
+                                          LongPressGestureRecognizer>(
+                                    () => LongPressGestureRecognizer(
+                                      duration:
+                                          const Duration(milliseconds: 150),
+                                    ),
+                                    (instance) {
+                                      instance
+                                        ..onLongPressStart = (_) {
+                                          if (_activeQuickButton != null) {
+                                            return;
+                                          }
+                                          setState(() {
+                                            workingPosition = 100;
+                                            _isPressingDown = true;
+                                          });
+                                          setDistance(100);
+                                        }
+                                        ..onLongPressEnd = (_) {
+                                          setState(() {
+                                            workingPosition = actualPosition;
+                                            _isPressingDown = false;
+                                          });
+                                          setDistance(actualPosition);
+                                        };
+                                    },
+                                  ),
                                 },
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 150),
                                   decoration: BoxDecoration(
                                     color: _activeQuickButton != null
                                         ? Colors.grey.shade800
-                                        : _isPressingDown
+                                        : (_isPressingDown &&
+                                                actualPosition >= 100)
                                             ? color4
-                                            : color1,
+                                            : _isPressingDown
+                                                ? Colors.green.shade600
+                                                : color1,
                                     borderRadius: BorderRadius.circular(30.0),
                                     boxShadow: const [
                                       BoxShadow(
@@ -592,6 +1008,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                       ),
                       const SizedBox(height: 20),
                       Row(
+                        key: keys['roller:botonesAutomaticos']!,
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           // ── ABRIR CORTINA ──
@@ -703,6 +1120,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 32.0),
                   child: Card(
+                    key: keys['roller:alertaCalibracionHome']!,
                     color: color1,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -793,6 +1211,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
 
                       // TARJETA: MOTOR Y VELOCIDAD
                       Container(
+                        key: keys['roller:configuracion']!,
                         padding: const EdgeInsets.all(16.0),
                         decoration: BoxDecoration(
                           color: color1,
@@ -1002,6 +1421,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 32.0),
                   child: Card(
+                    key: keys['roller:alertaCalibracionConfig']!,
                     color: color1,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -1087,6 +1507,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
 
               // TARJETA: CALIBRACIÓN (FLUJO AMIGABLE)
               Container(
+                key: keys['roller:calibracion']!,
                 padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
                   color: color1,
@@ -1310,6 +1731,8 @@ class RollerPageState extends ConsumerState<RollerPage> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, A) {
+        if (_isTutorialActive) return;
+
         showDisconnectDialog(context);
         Future.delayed(const Duration(seconds: 2), () async {
           await bluetoothManager.device.disconnect();
@@ -1325,6 +1748,8 @@ class RollerPageState extends ConsumerState<RollerPage> {
           backgroundColor: color1,
           title: GestureDetector(
             onTap: () async {
+              if (_isTutorialActive) return;
+
               TextEditingController nicknameController =
                   TextEditingController(text: nickname);
               showAlertDialog(
@@ -1381,6 +1806,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
             child: Row(
               children: [
                 Expanded(
+                  key: keys['roller:titulo']!,
                   child: Text(
                     nickname,
                     overflow: TextOverflow.ellipsis,
@@ -1413,19 +1839,23 @@ class RollerPageState extends ConsumerState<RollerPage> {
           ),
           actions: [
             globalDATA['$pc/$sn']?['cstate'] ?? false
-                ? const ImageIcon(
-                    AssetImage(CaldenIcons.cloud),
+                ? ImageIcon(
+                    const AssetImage(CaldenIcons.cloud),
                     size: 35,
                     color: color0,
+                    key: keys['roller:servidor']!,
                   )
-                : const ImageIcon(
-                    AssetImage(CaldenIcons.cloudOff),
+                : ImageIcon(
+                    const AssetImage(CaldenIcons.cloudOff),
                     size: 25,
                     color: color0,
+                    key: keys['roller:servidor']!,
                   ),
             IconButton(
+              key: keys['roller:wifi']!,
               icon: Icon(wifiState.wifiIcon, color: color0),
               onPressed: () {
+                if (_isTutorialActive) return;
                 wifiText(context);
               },
             ),
@@ -1437,7 +1867,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
           children: [
             PageView(
               controller: _pageController,
-              physics: _isAnimating
+              physics: _isAnimating || _isTutorialActive
                   ? const NeverScrollableScrollPhysics()
                   : const BouncingScrollPhysics(),
               onPageChanged: onItemChanged,
@@ -1448,25 +1878,29 @@ class RollerPageState extends ConsumerState<RollerPage> {
               right: 0,
               bottom: 0,
               child: SafeArea(
-                child: CurvedNavigationBar(
-                  index: _selectedIndex,
-                  height: 75.0,
-                  items: const <Widget>[
-                    Icon(HugeIcons.strokeRoundedHome11,
-                        size: 30, color: color0),
-                    Icon(HugeIcons.strokeRoundedSettings01,
-                        size: 30, color: color0),
-                    Icon(HugeIcons.strokeRoundedRuler, size: 30, color: color0),
-                    Icon(HugeIcons.strokeRoundedSettings02,
-                        size: 30, color: color0),
-                  ],
-                  color: color1,
-                  buttonBackgroundColor: color1,
-                  backgroundColor: Colors.transparent,
-                  animationCurve: Curves.easeInOut,
-                  animationDuration: const Duration(milliseconds: 600),
-                  onTap: onItemTapped,
-                  letIndexChange: (index) => true,
+                child: IgnorePointer(
+                  ignoring: _isTutorialActive,
+                  child: CurvedNavigationBar(
+                    index: _selectedIndex,
+                    height: 75.0,
+                    items: const <Widget>[
+                      Icon(HugeIcons.strokeRoundedHome11,
+                          size: 30, color: color0),
+                      Icon(HugeIcons.strokeRoundedSettings01,
+                          size: 30, color: color0),
+                      Icon(HugeIcons.strokeRoundedRuler,
+                          size: 30, color: color0),
+                      Icon(HugeIcons.strokeRoundedSettings02,
+                          size: 30, color: color0),
+                    ],
+                    color: color1,
+                    buttonBackgroundColor: color1,
+                    backgroundColor: Colors.transparent,
+                    animationCurve: Curves.easeInOut,
+                    animationDuration: const Duration(milliseconds: 600),
+                    onTap: onItemTapped,
+                    letIndexChange: (index) => true,
+                  ),
                 ),
               ),
             ),
@@ -1481,6 +1915,58 @@ class RollerPageState extends ConsumerState<RollerPage> {
             ),
           ],
         ),
+        floatingActionButton: Visibility(
+          visible: tutorial,
+          child: AnimatedSlide(
+            offset: _isTutorialActive ? const Offset(1.5, 0) : Offset.zero,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: bottomBarHeight + 20),
+              child: FloatingActionButton(
+                onPressed: () {
+                  items = [];
+                  initItems();
+                  setState(() {
+                    _isAnimating = true;
+                    _selectedIndex = 0;
+                    _isTutorialActive = true;
+                  });
+                  _pageController
+                      .animateToPage(
+                    0,
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.easeInOut,
+                  )
+                      .then((_) {
+                    setState(() {
+                      _isAnimating = false;
+                    });
+                    if (context.mounted) {
+                      Tutorial.showTutorial(
+                        context,
+                        items,
+                        _pageController,
+                        onTutorialComplete: () {
+                          setState(() {
+                            _isTutorialActive = false;
+                          });
+                        },
+                      );
+                    }
+                  });
+                },
+                backgroundColor: color4,
+                shape: const CircleBorder(),
+                child: const HugeIcon(
+                    icon: HugeIcons.strokeRoundedHelpCircle,
+                    size: 30,
+                    color: color0),
+              ),
+            ),
+          ),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }
@@ -1489,17 +1975,21 @@ class RollerPageState extends ConsumerState<RollerPage> {
 //*- Diseño de la cortina Roller-*\\
 class CurtainAnimation extends StatelessWidget {
   final int position;
+  final int workingPosition;
   final Function(TapDownDetails) onTapDown;
 
   const CurtainAnimation({
     super.key,
     required this.position,
+    required this.workingPosition,
     required this.onTapDown,
   });
 
   @override
   Widget build(BuildContext context) {
     double curtainHeight = (position / 100) * 250;
+    double ghostHeight = (workingPosition / 100) * 250;
+    bool showGhost = workingPosition != position;
 
     return GestureDetector(
       onTapDown: onTapDown,
@@ -1519,6 +2009,7 @@ class CurtainAnimation extends StatelessWidget {
         child: Stack(
           alignment: Alignment.topCenter,
           children: [
+            // Fondo superior
             Positioned(
               top: 0,
               left: 0,
@@ -1529,6 +2020,30 @@ class CurtainAnimation extends StatelessWidget {
                 fit: BoxFit.cover,
               ),
             ),
+
+            // Ghost: imagen semitransparente del destino (solo si va a bajar)
+            if (showGhost && ghostHeight > 0)
+              Positioned(
+                top: 19,
+                left: 20,
+                right: 20,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  height: ghostHeight,
+                  child: Opacity(
+                    opacity: 0.28,
+                    child: Image.asset(
+                      'assets/misc/persiana.jpg',
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: ghostHeight,
+                    ),
+                  ),
+                ),
+              ),
+
+            // Cortina real (posición actual)
             Positioned(
               top: 19,
               left: 20,
@@ -1544,6 +2059,29 @@ class CurtainAnimation extends StatelessWidget {
                 ),
               ),
             ),
+
+            // Línea indicadora — AL FINAL para quedar siempre encima de la cortina real
+            if (showGhost)
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                top: 19 + ghostHeight,
+                left: 20,
+                right: 20,
+                child: Container(
+                  height: 2.5,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),

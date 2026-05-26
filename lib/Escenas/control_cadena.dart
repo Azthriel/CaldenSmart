@@ -116,6 +116,11 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
     }
   }
 
+  bool _isRoller(String device) {
+    final cleanName = device.contains('_') ? device.split('_')[0] : device;
+    return DeviceManager.getProductCode(cleanName) == '024011_IOT';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -464,6 +469,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                 itemBuilder: (context, index) {
                   final device = tempDeviceGroup[index];
                   final isOn = tempDeviceActions[device] ?? false;
+                  final bool isRoller = _isRoller(device);
 
                   return Card(
                     elevation: 4,
@@ -500,37 +506,36 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                           SizedBox(
                             width: double.infinity,
                             child: ToggleButtons(
-                              isSelected: [isOn == true, isOn == false],
-                              onPressed: (i) => setState(() {
-                                tempDeviceActions[device] =
-                                    i == 0 ? true : false;
-                              }),
-                              borderRadius: BorderRadius.circular(12),
-                              selectedColor: color0,
-                              fillColor: isOn
-                                  ? Colors.green.withValues(alpha: 0.8)
-                                  : color3.withValues(alpha: 0.8),
-                              color: color1,
-                              borderColor: color1,
-                              selectedBorderColor: isOn
-                                  ? Colors.green.withValues(alpha: 0.8)
-                                  : color3.withValues(alpha: 0.8),
-                              constraints: BoxConstraints(
-                                minHeight: 36,
-                                minWidth:
-                                    MediaQuery.of(context).size.width * 0.25,
-                              ),
-                              children: [
-                                Text('Encender',
-                                    style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 12)),
-                                Text('Apagar',
-                                    style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 12)),
-                              ],
-                            ),
+                                isSelected: [isOn == true, isOn == false],
+                                onPressed: (i) => setState(() {
+                                      tempDeviceActions[device] =
+                                          i == 0 ? true : false;
+                                    }),
+                                borderRadius: BorderRadius.circular(12),
+                                selectedColor: color0,
+                                fillColor: isOn
+                                    ? Colors.green.withValues(alpha: 0.8)
+                                    : color3.withValues(alpha: 0.8),
+                                color: color1,
+                                borderColor: color1,
+                                selectedBorderColor: isOn
+                                    ? Colors.green.withValues(alpha: 0.8)
+                                    : color3.withValues(alpha: 0.8),
+                                constraints: BoxConstraints(
+                                  minHeight: 36,
+                                  minWidth:
+                                      MediaQuery.of(context).size.width * 0.25,
+                                ),
+                                children: [
+                                  Text(isRoller ? 'Abrir' : 'Encender',
+                                      style: GoogleFonts.poppins(
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 12)),
+                                  Text(isRoller ? 'Cerrar' : 'Apagar',
+                                      style: GoogleFonts.poppins(
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 12)),
+                                ]),
                           ),
                         ],
                       ),
@@ -566,8 +571,14 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                 ),
                 filled: true,
                 fillColor: color0,
+                errorText: _nombreDuplicado(title.text)
+                    ? 'Ya existe un evento con ese nombre'
+                    : null,
               ),
               style: GoogleFonts.poppins(color: color1),
+              onChanged: (value) {
+                setState(() {});
+              },
             ),
             const SizedBox(height: 16),
           ],
@@ -974,7 +985,13 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
                                                     BorderRadius.circular(8),
                                               ),
                                               child: Text(
-                                                action ? 'ENCENDER' : 'APAGAR',
+                                                _isRoller(device)
+                                                    ? (action
+                                                        ? 'ABRIR'
+                                                        : 'CERRAR')
+                                                    : (action
+                                                        ? 'ENCENDER'
+                                                        : 'APAGAR'),
                                                 style: GoogleFonts.poppins(
                                                   color: actionColor,
                                                   fontSize: 9,
@@ -1255,6 +1272,15 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
     }).toList();
   }
 
+  bool _nombreDuplicado(String nombre) {
+    if (nombre.trim().isEmpty) return false;
+    return eventosCreados.any(
+      (e) =>
+          (e['title'] as String?)?.toLowerCase().trim() ==
+          nombre.toLowerCase().trim(),
+    );
+  }
+
   bool _canContinue() {
     switch (currentStep) {
       case 0:
@@ -1265,7 +1291,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
       case 2:
         return pasosCadena.isNotEmpty;
       case 3:
-        return title.text.isNotEmpty;
+        return title.text.isNotEmpty && !_nombreDuplicado(title.text);
       default:
         return false;
     }

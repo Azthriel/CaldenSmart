@@ -292,6 +292,8 @@ class WifiPageState extends ConsumerState<WifiPage>
 
           if (!processedKeys.contains('event:$key:$value')) {
             listaFinal.add(MapEntry(key, value));
+            processedKeys.add(
+                'event:$key:$value'); // evita duplicados si eventosCreados tiene el mismo evento más de una vez
           }
         }
       }
@@ -307,6 +309,12 @@ class WifiPageState extends ConsumerState<WifiPage>
       printLog.e('Error construyendo lista de dispositivos: $e');
       printLog.t(s);
     }
+  }
+
+  // Detecta si un device es un roller (024011_IOT)
+  bool _isRollerDevice(String device) {
+    final cleanName = device.contains('_') ? device.split('_')[0] : device;
+    return DeviceManager.getProductCode(cleanName) == '024011_IOT';
   }
 
   //*-Prender y apagar los equipos-*\\
@@ -4726,11 +4734,15 @@ class WifiPageState extends ConsumerState<WifiPage>
         case '024011_IOT':
           int actualPosition = deviceDATA['actual_position'] ?? -1;
           final dynamic rawWp = deviceDATA['working_position'];
-          final int workingPosition = rawWp is int
+          int workingPosition = rawWp is int
               ? rawWp
               : int.tryParse(rawWp.toString().replaceAll('%', '')) ?? -1;
           bool moving = deviceDATA['moving'] ?? false;
           bool isCalibrated = deviceDATA['isCalibrated'] ?? false;
+
+          if (moving == false && actualPosition != workingPosition) {
+            workingPosition = actualPosition;
+          }
 
           // Está en movimiento mientras moving=true O mientras no llegó al destino
           bool isMoving = moving;
@@ -5999,7 +6011,11 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                       BorderRadius.circular(12),
                                                 ),
                                                 child: Text(
-                                                  action ? 'ON' : 'OFF',
+                                                  _isRollerDevice(deviceStr)
+                                                      ? (action
+                                                          ? 'ABRIR'
+                                                          : 'CERRAR')
+                                                      : (action ? 'ON' : 'OFF'),
                                                   style: GoogleFonts.poppins(
                                                     color: action
                                                         ? Colors.green
@@ -7055,7 +7071,13 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 } else {
                                   final action =
                                       devicesActions[equipo] ?? false;
-                                  actionText = action ? "Encenderá" : "Apagará";
+                                  final bool isRollerEquipo = _isRollerDevice(
+                                      equipo.trim().contains('_')
+                                          ? equipo.trim().split('_')[0]
+                                          : equipo.trim());
+                                  actionText = isRollerEquipo
+                                      ? (action ? "Abrirá" : "Cerrará")
+                                      : (action ? "Encenderá" : "Apagará");
                                   actionIcon = (action
                                       ? HugeIcons.strokeRoundedPlug01
                                       : HugeIcons.strokeRoundedPlugSocket);
@@ -7766,8 +7788,17 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       final action =
                                           devicesActions[equipoOriginal] ??
                                               false;
-                                      actionText =
-                                          action ? "Encenderá" : "Apagará";
+                                      final bool isRollerEquipo =
+                                          _isRollerDevice(equipoOriginal
+                                                  .trim()
+                                                  .contains('_')
+                                              ? equipoOriginal
+                                                  .trim()
+                                                  .split('_')[0]
+                                              : equipoOriginal.trim());
+                                      actionText = isRollerEquipo
+                                          ? (action ? "Abrirá" : "Cerrará")
+                                          : (action ? "Encenderá" : "Apagará");
                                       fullActionText = 'Se $actionText';
                                       actionIcon = (action
                                           ? HugeIcons.strokeRoundedPlug01
@@ -8387,7 +8418,13 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   final action =
                                       devicesActions['$equipo:dispositivo'] ??
                                           false;
-                                  actionText = action ? "Encenderá" : "Apagará";
+                                  final bool isRollerEquipo = _isRollerDevice(
+                                      equipo.trim().contains('_')
+                                          ? equipo.trim().split('_')[0]
+                                          : equipo.trim());
+                                  actionText = isRollerEquipo
+                                      ? (action ? "Abrirá" : "Cerrará")
+                                      : (action ? "Encenderá" : "Apagará");
                                   actionIcon = (action
                                       ? HugeIcons.strokeRoundedPlug01
                                       : HugeIcons.strokeRoundedPlugSocket);

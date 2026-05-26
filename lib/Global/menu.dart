@@ -9,6 +9,7 @@ import 'package:hugeicons/hugeicons.dart';
 import '/Global/scan.dart';
 import '/Global/wifi.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:in_app_review/in_app_review.dart';
 import '../master.dart';
 
 class MenuPage extends StatefulWidget {
@@ -24,6 +25,8 @@ class MenuPageState extends State<MenuPage> {
   late Future<int> _initialPageFuture;
   bool _isLoading = true;
   static bool hasInitialized = false;
+  final InAppReview _inAppReview = InAppReview.instance;
+
 
   @override
   void initState() {
@@ -124,6 +127,23 @@ class MenuPageState extends State<MenuPage> {
       setState(() {
         _isLoading = false;
       });
+      if (!hasCheckedReviewThisSession) {
+        hasCheckedReviewThisSession = true;
+
+        int openCount = await incrementAndGetAppOpens();
+        printLog.d('La app se ha abierto $openCount veces', color: 'verde');
+
+        if (openCount == 3 ||
+            openCount == 10 ||
+            openCount == 25 ||
+            openCount == 50) {
+          if (await _inAppReview.isAvailable()) {
+            printLog.d('Solicitando In-App Review de forma automática',
+                color: 'verde');
+            await _requestReview();
+          }
+        }
+      }
     } catch (e) {
       printLog.e('Error cargando datos iniciales: $e');
 
@@ -172,6 +192,9 @@ class MenuPageState extends State<MenuPage> {
     });
     saveLastPage(index);
   }
+
+    Future<void> _requestReview() => _inAppReview.requestReview();
+
 
   @override
   Widget build(BuildContext context) {

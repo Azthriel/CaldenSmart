@@ -479,7 +479,9 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
                 fillColor: color0,
                 errorText: title.text.contains(':')
                     ? 'No se permiten dos puntos (:)'
-                    : null,
+                    : _nombreDuplicado(title.text)
+                        ? 'Ya existe un evento con ese nombre'
+                        : null,
               ),
               style: GoogleFonts.poppins(color: color1),
               onChanged: (value) {
@@ -496,12 +498,23 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
     }
   }
 
+  bool _nombreDuplicado(String nombre) {
+    if (nombre.trim().isEmpty) return false;
+    return eventosCreados.any(
+      (e) =>
+          (e['title'] as String?)?.toLowerCase().trim() ==
+          nombre.toLowerCase().trim(),
+    );
+  }
+
   bool _canContinue() {
     switch (currentStep) {
       case 0:
         return deviceGroup.length >= 2;
       case 1:
-        return title.text.isNotEmpty && !title.text.contains(':');
+        return title.text.isNotEmpty &&
+            !title.text.contains(':') &&
+            !_nombreDuplicado(title.text);
       default:
         return false;
     }

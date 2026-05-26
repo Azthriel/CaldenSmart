@@ -636,6 +636,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
             itemBuilder: (context, index) {
               final device = ejecutores[index];
               final isOn = deviceActions[device] ?? false;
+              final bool isRollerDev = _isRoller(device);
               String displayName = device;
               String deviceType = 'Dispositivo';
               IconData iconData = HugeIcons.strokeRoundedLaptopPhoneSync;
@@ -781,14 +782,16 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 12),
-                                    child: Text('Encender',
+                                    child: Text(
+                                        isRollerDev ? 'Abrir' : 'Encender',
                                         style: GoogleFonts.poppins(
                                             fontWeight: FontWeight.w500)),
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 12),
-                                    child: Text('Apagar',
+                                    child: Text(
+                                        isRollerDev ? 'Cerrar' : 'Apagar',
                                         style: GoogleFonts.poppins(
                                             fontWeight: FontWeight.w500)),
                                   ),
@@ -1149,7 +1152,9 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
                 fillColor: color0,
                 errorText: title.text.contains(':')
                     ? 'No se permiten dos puntos (:)'
-                    : null,
+                    : _nombreDuplicado(title.text)
+                        ? 'Ya existe un evento con ese nombre'
+                        : null,
               ),
               style: GoogleFonts.poppins(color: color1),
               onChanged: (value) {
@@ -1162,6 +1167,21 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
       default:
         return const SizedBox();
     }
+  }
+
+  // Detecta si un device es un roller (024011_IOT)
+  bool _isRoller(String device) {
+    final cleanName = device.contains('_') ? device.split('_')[0] : device;
+    return DeviceManager.getProductCode(cleanName) == '024011_IOT';
+  }
+
+  bool _nombreDuplicado(String nombre) {
+    if (nombre.trim().isEmpty) return false;
+    return eventosCreados.any(
+      (e) =>
+          (e['title'] as String?)?.toLowerCase().trim() ==
+          nombre.toLowerCase().trim(),
+    );
   }
 
   bool _canContinue() {
@@ -1201,7 +1221,9 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
 
         return deviceActions.isNotEmpty && configuredActions >= requiredActions;
       case 4:
-        return title.text.isNotEmpty && !title.text.contains(':');
+        return title.text.isNotEmpty &&
+            !title.text.contains(':') &&
+            !_nombreDuplicado(title.text);
       default:
         return false;
     }

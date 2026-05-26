@@ -210,6 +210,7 @@ Timer? _mqttReconnectTimerBg; // timer de reconexión MQTT del servicio Android
 
 //*-Imagenes Scan-*\\
 Map<String, String> deviceImages = {};
+Map<String, bool> deviceImageStyles = {};
 //*-Imagenes Scan-*\\
 
 //*-CurvedNavigationBar-*\\
@@ -515,6 +516,17 @@ Map<String, GlobalKey> keys = {
   'termotanque:consumoManual': GlobalKey(),
   'termotanque:calcular': GlobalKey(),
   'termotanque:mes': GlobalKey(),
+  //Roller
+  'roller:titulo': GlobalKey(),
+  'roller:wifi': GlobalKey(),
+  'roller:servidor': GlobalKey(),
+  'roller:animacion': GlobalKey(),
+  'roller:botonesManuales': GlobalKey(),
+  'roller:botonesAutomaticos': GlobalKey(),
+  'roller:configuracion': GlobalKey(),
+  'roller:calibracion': GlobalKey(),
+  'roller:alertaCalibracionHome': GlobalKey(),
+  'roller:alertaCalibracionConfig': GlobalKey(),
 };
 //*-Guía de usuario -*\\
 
@@ -556,6 +568,10 @@ bool canUseDevice = true;
 //*-Logs guardados-*\\
 int printLogHistorialKey = DateTime.now().millisecondsSinceEpoch;
 //*-Logs guardados-*\\
+
+//*- In App Review -*\\
+bool hasCheckedReviewThisSession = false;
+//*- In App Review -*\\
 
 // // -------------------------------------------------------------------------------------------------------------\\ \\
 
@@ -6479,8 +6495,6 @@ class LabProcessNotFinished extends StatelessWidget {
 
 //*- imagenes de los equipos -*\\
 class ImageManager {
-  /// Función para abrir el menú de opciones de imagen
-  /// [onImageChanged] es un callback que se ejecuta después de cambiar la imagen
   static void openImageOptions(
       BuildContext context, String deviceName, VoidCallback onImageChanged) {
     showModalBottomSheet(
@@ -6499,13 +6513,11 @@ class ImageManager {
               ListTile(
                 leading:
                     const Icon(HugeIcons.strokeRoundedAlbum02, color: color0),
-                title: const Text(
-                  'Elegir de la galería',
-                  style: TextStyle(color: color0),
-                ),
+                title: const Text('Elegir de la galería',
+                    style: TextStyle(color: color0)),
                 onTap: () async {
                   Navigator.of(context).pop();
-                  await pickFromGallery(deviceName);
+                  await pickFromGallery(deviceName, context);
                   onImageChanged();
                 },
               ),
@@ -6513,27 +6525,38 @@ class ImageManager {
               ListTile(
                 leading:
                     const Icon(HugeIcons.strokeRoundedCamera01, color: color0),
-                title: const Text(
-                  'Tomar una foto',
-                  style: TextStyle(color: color0),
-                ),
+                title: const Text('Tomar una foto',
+                    style: TextStyle(color: color0)),
                 onTap: () async {
                   Navigator.of(context).pop();
-                  await takePhoto(deviceName);
+                  await takePhoto(deviceName, context);
                   onImageChanged();
                 },
               ),
+              if (deviceImages.containsKey(deviceName)) ...[
+                const Divider(color: color0),
+                ListTile(
+                  leading:
+                      const Icon(HugeIcons.strokeRoundedImage02, color: color0),
+                  title: const Text('Cambiar estilo (Centro / Completo)',
+                      style: TextStyle(color: color0)),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    await _askImageStyle(context, deviceName);
+                    onImageChanged();
+                  },
+                ),
+              ],
               const Divider(color: color0),
               ListTile(
                 leading:
                     const Icon(HugeIcons.strokeRoundedReload, color: color0),
-                title: const Text(
-                  'Restablecer imagen',
-                  style: TextStyle(color: color0),
-                ),
+                title: const Text('Restablecer imagen',
+                    style: TextStyle(color: color0)),
                 onTap: () {
                   Navigator.of(context).pop();
                   removeDeviceImage(deviceName);
+                  removeDeviceImageStyle(deviceName);
                   onImageChanged();
                 },
               ),
@@ -6545,26 +6568,72 @@ class ImageManager {
   }
 
   /// Función para elegir una imagen de la galería
-  static Future<void> pickFromGallery(String deviceName) async {
+  static Future<void> pickFromGallery(
+      String deviceName, BuildContext context) async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
     if (image != null) {
       final String savedPath = await _saveImageLocally(image);
-      deviceImages[deviceName] = savedPath;
-      await saveDeviceImage(deviceName, deviceImages[deviceName]!);
+      await saveDeviceImage(deviceName, savedPath);
+      if (context.mounted) await _askImageStyle(context, deviceName);
     }
   }
 
   /// Función para tomar una foto
-  static Future<void> takePhoto(String deviceName) async {
+  static Future<void> takePhoto(String deviceName, BuildContext context) async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.camera);
 
     if (image != null) {
       final String savedPath = await _saveImageLocally(image);
-      deviceImages[deviceName] = savedPath;
-      await saveDeviceImage(deviceName, deviceImages[deviceName]!);
+      await saveDeviceImage(deviceName, savedPath);
+      if (context.mounted) await _askImageStyle(context, deviceName);
+    }
+  }
+
+  /// Diálogo para preguntar el estilo de la imagen
+  static Future<void> _askImageStyle(
+      BuildContext context, String deviceName) async {
+    bool? isFullCover = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext ctx) {
+        return AlertDialog(
+          backgroundColor: color1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.0),
+            side: const BorderSide(color: color4, width: 2.0),
+          ),
+          title: Text(
+            'Estilo de imagen',
+            style:
+                GoogleFonts.poppins(color: color0, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          content: Text(
+            '¿Deseas que la imagen ocupe toda la tarjeta o solo el centro?',
+            style: GoogleFonts.poppins(color: color0),
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text('Centro', style: GoogleFonts.poppins(color: color0)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text('Fondo completo',
+                  style: GoogleFonts.poppins(
+                      color: color0, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (isFullCover != null) {
+      await saveDeviceImageStyle(deviceName, isFullCover);
     }
   }
 
@@ -6578,7 +6647,7 @@ class ImageManager {
     return localImage.path;
   }
 
-  /// Función para obtener la ruta de la imagen (personalizada o predeterminada)
+  /// Función para obtener la ruta de la imagen
   static String getImagePath(String deviceName) {
     return deviceImages[deviceName] ?? rutaDeImagen(deviceName);
   }
@@ -6616,6 +6685,7 @@ class ImageManager {
     }
   }
 }
+
 //*- imagenes de los equipos -*\\
 
 //*- icono en el boton de la slide -*\\

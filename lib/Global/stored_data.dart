@@ -9,6 +9,7 @@ Future<void> loadValues() async {
   deviceImages = await loadDeviceImages();
   soundOfNotification = await loadSounds();
   configNotiDsc = await loadconfigNotiDsc();
+    deviceImageStyles = await loadDeviceImageStyles();
   quickAccess = await loadquickAccess();
   pinQuickAccess = await loadpinQuickAccess();
   lastPage = await loadLastPage();
@@ -299,3 +300,40 @@ Future<List<String>> getExecutingRiegos(String email) async {
   return executingRiegos;
 }
 //*- Manejar riegos en ejecución -*\\
+
+//*- In App Review Counter -*\\
+Future<int> incrementAndGetAppOpens() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  int currentCount = (prefs.getInt('CSAppOpenCount') ?? 0) + 1;
+
+  await prefs.setInt('CSAppOpenCount', currentCount);
+  return currentCount;
+}
+//*- In App Review Counter -*\\
+
+//*-Estilos de Imagenes Scan-*\\
+Future<Map<String, bool>> loadDeviceImageStyles() async {
+  final prefs = await SharedPreferences.getInstance();
+  final jsonString = prefs.getString('CSdeviceImageStyles');
+  if (jsonString != null) {
+    return Map<String, bool>.from(jsonDecode(jsonString));
+  } else {
+    return {};
+  }
+}
+
+Future<void> saveDeviceImageStyle(String deviceId, bool isFullCover) async {
+  final prefs = await SharedPreferences.getInstance();
+  deviceImageStyles[deviceId] = isFullCover;
+  final jsonString = jsonEncode(deviceImageStyles);
+  await prefs.setString('CSdeviceImageStyles', jsonString);
+}
+
+Future<void> removeDeviceImageStyle(String deviceId) async {
+  final prefs = await SharedPreferences.getInstance();
+  deviceImageStyles.remove(deviceId);
+  final jsonString = jsonEncode(deviceImageStyles);
+  await prefs.setString('CSdeviceImageStyles', jsonString);
+}
+//*-Estilos de Imagenes Scan-*\\

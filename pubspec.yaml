@@ -1,7 +1,7 @@
 name: caldensmart
 description: "Caldén Smart"
 publish_to: "none"
-version: 1.0.81+99
+version: 1.0.82+99
 
 environment:
   sdk: ^3.5.1
@@ -40,6 +40,7 @@ dependencies:
   flutter_riverpod: ^2.6.1
   fl_chart: ^0.69.0
   msgpack_dart: ^1.0.1
+  in_app_review: ^2.0.12
 
 dev_dependencies:
   flutter_test:
