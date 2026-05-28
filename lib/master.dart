@@ -932,11 +932,11 @@ String generateRandomNumbers(int length) {
 
 Future<void> sendWhatsAppMessage(String phoneNumber, String message) async {
   var whatsappUrl =
-      "whatsapp://send?phone=$phoneNumber&text=${Uri.encodeFull(message)}";
+      'https://api.whatsapp.com/send?phone=$phoneNumber&text=${Uri.encodeComponent(message)}';
   Uri uri = Uri.parse(whatsappUrl);
 
   if (await canLaunchUrl(uri)) {
-    await launchUrl(uri);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   } else {
     showToast('No se pudo abrir WhatsApp');
   }
@@ -964,7 +964,7 @@ void launchEmail(
   );
 
   if (await canLaunchUrl(emailLaunchUri)) {
-    await launchUrl(emailLaunchUri);
+    await launchUrl(emailLaunchUri, mode: LaunchMode.externalApplication);
   } else {
     showToast('No se pudo abrir el correo electrónico');
   }
@@ -980,7 +980,7 @@ String encodeQueryParameters(Map<String, String> params) {
 void launchWebURL(String url) async {
   var uri = Uri.parse(url);
   if (await canLaunchUrl(uri)) {
-    await launchUrl(uri);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   } else {
     printLog.i('No se pudo abrir $url');
   }
