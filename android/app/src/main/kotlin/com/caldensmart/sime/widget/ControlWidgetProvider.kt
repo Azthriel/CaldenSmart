@@ -175,6 +175,8 @@ class ControlWidgetProvider : HomeWidgetProvider() {
             editor.remove("widget_is_display_type_$widgetId")
             editor.remove("widget_display_temp_$widgetId")
             editor.remove("widget_display_alert_$widgetId")
+            editor.remove("widget_is_calibrated_$widgetId")
+            editor.remove("widget_roller_position_$widgetId")
 
             val widgetIdsJson = prefs.getString("active_widget_ids", null)
             if (widgetIdsJson != null) {
@@ -254,6 +256,10 @@ class ControlWidgetProvider : HomeWidgetProvider() {
             val displayAlert: Boolean
             val isDisplayType: Boolean
             val ts: Long
+            val isCalibrated: Boolean   // Roller: true si el dispositivo está calibrado
+            val rollerPosition: Int     // Roller: 0-100, -1 = desconocido
+            val isMoving: Boolean       // Roller: true mientras se desplaza
+            val rollerDirection: Int    // Roller: 1 = subiendo ↑, -1 = bajando ↓, 0 = desconocido
 
             if (atomic != null) {
                 nickname       = atomic.optString("nickname", "")
@@ -267,6 +273,10 @@ class ControlWidgetProvider : HomeWidgetProvider() {
                 displayAlert   = atomic.optBoolean("displayAlert", false)
                 isDisplayType  = atomic.optBoolean("isDisplayType", false)
                 ts             = atomic.optLong("ts", 0L)
+                isCalibrated   = atomic.optBoolean("isCalibrated", true)
+                rollerPosition = atomic.optInt("rollerPosition", -1)
+                isMoving       = atomic.optBoolean("isMoving", false)
+                rollerDirection = atomic.optInt("rollerDirection", 0)
             } else {
                 nickname       = widgetData.getString("widget_nickname_$widgetId", null) ?: ""
                 isControl      = widgetData.getBoolean("widget_is_control_$widgetId", true)
@@ -279,6 +289,10 @@ class ControlWidgetProvider : HomeWidgetProvider() {
                 displayAlert   = widgetData.getBoolean("widget_display_alert_$widgetId", false)
                 isDisplayType  = widgetData.getBoolean("widget_is_display_type_$widgetId", false)
                 ts             = 0L
+                isCalibrated   = widgetData.getBoolean("widget_is_calibrated_$widgetId", true)
+                rollerPosition = widgetData.getInt("widget_roller_position_$widgetId", -1)
+                isMoving       = widgetData.getBoolean("widget_roller_moving_$widgetId", false)
+                rollerDirection = 0
             }
 
             val isServiceReady  = widgetData.getBoolean("widget_service_ready", false)
@@ -300,7 +314,13 @@ class ControlWidgetProvider : HomeWidgetProvider() {
                     if (effectiveOnline) R.drawable.ic_widget_online else R.drawable.ic_widget_offline
                 )
 
-                if (isControl) {
+                if (productCode == "024011_IOT") {
+                    renderRollerWidget(
+                        context, views, widgetId,
+                        effectiveOnline, isCalibrated, rollerPosition,
+                        isMoving, rollerDirection, isLoading, isServiceReady
+                    )
+                } else if (isControl) {
                     renderControlWidget(context, views, widgetId, isOn, effectiveOnline, isLoading, isServiceReady)
                 } else {
                     renderDisplayWidget(context, views, widgetId, productCode, displayTemp, displayAlert, isDisplayType, effectiveOnline)
@@ -371,6 +391,91 @@ class ControlWidgetProvider : HomeWidgetProvider() {
                 views.setOnClickPendingIntent(R.id.widget_container, intent)
             }
         }
+    }
+
+    private fun renderRollerWidget(
+        context: Context,
+        views: RemoteViews,
+        widgetId: Int,
+        effectiveOnline: Boolean,
+        isCalibrated: Boolean,
+        rollerPosition: Int,
+        isMoving: Boolean,
+        rollerDirection: Int,   // 1 = subiendo ↑, -1 = bajando ↓, 0 = desconocido
+        isLoading: Boolean,
+        isServiceReady: Boolean
+    ) {
+        views.setViewVisibility(R.id.widget_status_icon, android.view.View.GONE)
+        views.setViewVisibility(R.id.widget_power_indicator, android.view.View.VISIBLE)
+
+        val dirEmoji = when {
+            isMoving && rollerDirection == 1  -> " ↑"
+            isMoving && rollerDirection == -1 -> " ↓"
+            else -> ""
+        }
+
+        val posLabel = when {
+            !isCalibrated         -> "Sin calibrar"
+            isMoving              -> "Moviéndose$dirEmoji (${if (rollerPosition >= 0) "$rollerPosition%" else "..."})"
+            rollerPosition < 0    -> "—"
+            rollerPosition == 0   -> "Abierto"
+            rollerPosition == 100 -> "Cerrado"
+            else                  -> "Parcial ($rollerPosition%)"
+        }
+        views.setTextViewText(R.id.widget_power_indicator, posLabel)
+
+        val labelColor = when {
+            !effectiveOnline      -> 0xFF9E9E9E.toInt()  // gris offline
+            !isCalibrated         -> 0xFF9E9E9E.toInt()  // gris sin calibrar
+            isMoving              -> 0xFFFFB300.toInt()  // ámbar
+            rollerPosition == 0   -> 0xFF4CAF50.toInt()  // verde abierto
+            rollerPosition == 100 -> 0xFFFF7043.toInt()  // naranja cerrado
+            else                  -> 0xFF64B5F6.toInt()  // azul parcial
+        }
+        views.setTextColor(R.id.widget_power_indicator, labelColor)
+
+        val bgRes = when {
+            !effectiveOnline    -> R.drawable.widget_background_offline
+            rollerPosition == 0 -> R.drawable.widget_background_on
+            else                -> R.drawable.widget_background_off
+        }
+        views.setInt(R.id.widget_container, "setBackgroundResource", bgRes)
+
+        // ── Lógica de tap ──────────────────────────────────────────────────
+        // canInteract: online + servicio listo + calibrado + no cargando
+        val canInteract = effectiveOnline && isServiceReady && isCalibrated && !isLoading
+
+        val intent = when {
+            // Sin interacción posible → abre app
+            !canInteract ->
+                HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
+
+            // Moviéndose → frenar en posición actual
+            // Si la posición es desconocida (-1), abre app (no podemos frenar sin saber dónde está)
+            isMoving ->
+                if (rollerPosition >= 0)
+                    HomeWidgetBackgroundIntent.getBroadcast(context,
+                        Uri.parse("caldensmart://widget/position?widgetId=$widgetId&pos=$rollerPosition"))
+                else
+                    HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
+
+            // Posición desconocida → abre app
+            rollerPosition < 0 ->
+                HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
+
+            // Abierto o parcial < 50 → cerrar
+            rollerPosition < 50 ->
+                HomeWidgetBackgroundIntent.getBroadcast(context,
+                    Uri.parse("caldensmart://widget/close?widgetId=$widgetId"))
+
+            // Cerrado o parcial >= 50 → abrir
+            else ->
+                HomeWidgetBackgroundIntent.getBroadcast(context,
+                    Uri.parse("caldensmart://widget/open?widgetId=$widgetId"))
+        }
+        views.setOnClickPendingIntent(R.id.widget_container, intent)
+
+        Log.d(TAG, "Roller $widgetId: label='$posLabel', calibrated=$isCalibrated, moving=$isMoving, pos=$rollerPosition, canInteract=$canInteract")
     }
 
     private fun renderDisplayWidget(

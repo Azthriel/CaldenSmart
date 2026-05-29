@@ -133,6 +133,7 @@ class WidgetService {
       );
 
       final bool isControl = widgetData.type == WidgetType.control;
+      final bool isPin = widgetData.ioIndex != null;
       final int id = widgetData.widgetId;
 
       // ── 1. Guardado atómico ────────────────────────────────────────────
@@ -145,6 +146,8 @@ class WidgetService {
         'initializing': false,
         'productCode': widgetData.productCode,
         'isDisplayType': widgetData.type == WidgetType.display,
+        'isPin': isPin,
+        'pinIndex': widgetData.ioIndex?.toString() ?? '',
         'ts': DateTime.now().millisecondsSinceEpoch,
       };
       if (state.temperature != null) {
@@ -153,6 +156,15 @@ class WidgetService {
       if (state.alert != null) stateMap['displayAlert'] = state.alert;
       if (state.ppmCO != null) stateMap['ppmCO'] = state.ppmCO;
       if (state.ppmCH4 != null) stateMap['ppmCH4'] = state.ppmCH4;
+      if (state.isCalibrated != null) {
+        stateMap['isCalibrated'] = state.isCalibrated;
+      }
+      if (state.rollerPosition != null) {
+        stateMap['rollerPosition'] = state.rollerPosition;
+      }
+      if (state.isMoving != null) {
+        stateMap['isMoving'] = state.isMoving;
+      }
 
       await HomeWidget.saveWidgetData('widget_state_$id', jsonEncode(stateMap));
 
@@ -167,6 +179,11 @@ class WidgetService {
       await HomeWidget.saveWidgetData(
           'widget_is_display_type_$id', widgetData.type == WidgetType.display);
 
+      // ── Pin / IO index (usado por _handleWidgetToggle en backgroundCallback) ──
+      await HomeWidget.saveWidgetData('widget_is_pin_$id', isPin);
+      await HomeWidget.saveWidgetData(
+          'widget_pin_index_$id', widgetData.ioIndex?.toString() ?? '');
+
       if (state.temperature != null) {
         await HomeWidget.saveWidgetData(
             'widget_display_temp_$id', state.temperature!);
@@ -174,6 +191,18 @@ class WidgetService {
       if (state.alert != null) {
         await HomeWidget.saveWidgetData(
             'widget_display_alert_$id', state.alert!);
+      }
+      if (state.isCalibrated != null) {
+        await HomeWidget.saveWidgetData(
+            'widget_is_calibrated_$id', state.isCalibrated!);
+      }
+      if (state.rollerPosition != null) {
+        await HomeWidget.saveWidgetData(
+            'widget_roller_position_$id', state.rollerPosition!);
+      }
+      if (state.isMoving != null) {
+        await HomeWidget.saveWidgetData(
+            'widget_roller_moving_$id', state.isMoving!);
       }
 
       printLog.i('Datos guardados, actualizando widget nativo $id');
@@ -234,29 +263,44 @@ class WidgetService {
             }
           } else {
             bool online = deviceData['cstate'] ?? false;
-            bool status = deviceData['w_status'] ?? false;
 
-            String? temperature;
-            bool? alert;
-            int? ppmCO;
-            int? ppmCH4;
+            // ── Roller ──────────────────────────────────────────────────────
+            if (widgetData.productCode == '024011_IOT') {
+              final bool calibrated = deviceData['isCalibrated'] ?? false;
+              final int position = deviceData['actual_position'] ?? -1;
+              final bool moving = deviceData['moving'] ?? false;
+              state = WidgetDeviceState(
+                online: online,
+                status: position >= 50,
+                isCalibrated: calibrated,
+                rollerPosition: position,
+                isMoving: moving,
+              );
+            } else {
+              // Lógica original para los demás dispositivos
+              bool status = deviceData['w_status'] ?? false;
+              String? temperature;
+              bool? alert;
+              int? ppmCO;
+              int? ppmCH4;
 
-            if (widgetData.productCode == '015773_IOT') {
-              ppmCO = deviceData['ppmco'];
-              ppmCH4 = deviceData['ppmch4'];
-              alert = deviceData['alert'] == 1;
-            } else if (widgetData.productCode == '023430_IOT') {
-              temperature = deviceData['actualTemp']?.toString();
+              if (widgetData.productCode == '015773_IOT') {
+                ppmCO = deviceData['ppmco'];
+                ppmCH4 = deviceData['ppmch4'];
+                alert = deviceData['alert'] == 1;
+              } else if (widgetData.productCode == '023430_IOT') {
+                temperature = deviceData['actualTemp']?.toString();
+              }
+
+              state = WidgetDeviceState(
+                online: online,
+                status: status,
+                temperature: temperature,
+                alert: alert,
+                ppmCO: ppmCO,
+                ppmCH4: ppmCH4,
+              );
             }
-
-            state = WidgetDeviceState(
-              online: online,
-              status: status,
-              temperature: temperature,
-              alert: alert,
-              ppmCO: ppmCO,
-              ppmCH4: ppmCH4,
-            );
           }
 
           await updateWidget(widgetData, state);
@@ -275,6 +319,20 @@ class WidgetService {
 
     if (deviceData == null) {
       return WidgetDeviceState(online: false, status: false);
+    }
+
+    if (productCode == '024011_IOT') {
+      final bool online = deviceData['cstate'] ?? false;
+      final bool calibrated = deviceData['isCalibrated'] ?? false;
+      final int position = deviceData['actual_position'] ?? -1;
+      final bool moving = deviceData['moving'] ?? false;
+      return WidgetDeviceState(
+        online: online,
+        status: position >= 50,
+        isCalibrated: calibrated,
+        rollerPosition: position,
+        isMoving: moving,
+      );
     }
 
     if (ioIndex != null) {

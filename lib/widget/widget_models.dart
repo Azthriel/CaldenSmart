@@ -8,7 +8,8 @@ class WidgetData {
   final String serialNumber;
   final String nickname;
   final WidgetType type;
-  final int? ioIndex; // Para dispositivos de múltiples salidas (domotica, modulo, etc)
+  final int?
+      ioIndex; // Para dispositivos de múltiples salidas (domotica, modulo, etc)
 
   WidgetData({
     required this.widgetId,
@@ -57,11 +58,9 @@ class WidgetData {
 
 /// Tipos de widgets disponibles
 enum WidgetType {
-  /// Widget de visualización de datos (termómetros, detectores)
-  display,
-
-  /// Widget de control (todos los demás dispositivos)
-  control,
+  display, // termómetros, detectores
+  control, // switch on/off
+  roller, // 024011_IOT: botones Abrir/Cerrar  // ← NUEVO
 }
 
 /// Determinar el tipo de widget según el código de producto
@@ -70,6 +69,8 @@ WidgetType getWidgetType(String productCode) {
     case '015773_IOT': // Detector
     case '023430_IOT': // Termómetro
       return WidgetType.display;
+    case '024011_IOT':
+      return WidgetType.roller;
 
     default:
       return WidgetType.control;
@@ -80,8 +81,6 @@ WidgetType getWidgetType(String productCode) {
 bool shouldHaveWidget(String productCode) {
   switch (productCode) {
     case '027131_IOT': // Riel - NO tiene widget
-    case '024011_IOT': // Roll - NO tiene widget
-      return false;
     default:
       return true;
   }
@@ -95,6 +94,9 @@ class WidgetDeviceState {
   final bool? alert; // Para detectores
   final int? ppmCO; // Para detectores
   final int? ppmCH4; // Para detectores
+  final bool? isCalibrated; // Para roller
+  final int? rollerPosition; // 0-100 para roller
+  final bool? isMoving; // Para roller: true mientras se desplaza
 
   WidgetDeviceState({
     required this.online,
@@ -103,6 +105,9 @@ class WidgetDeviceState {
     this.alert,
     this.ppmCO,
     this.ppmCH4,
+    this.isCalibrated,
+    this.rollerPosition,
+    this.isMoving,
   });
 
   Map<String, dynamic> toJson() {
@@ -113,6 +118,9 @@ class WidgetDeviceState {
       'alert': alert,
       'ppmCO': ppmCO,
       'ppmCH4': ppmCH4,
+      'isCalibrated': isCalibrated,
+      'rollerPosition': rollerPosition,
+      'isMoving': isMoving,
     };
   }
 
@@ -124,6 +132,9 @@ class WidgetDeviceState {
       alert: json['alert'],
       ppmCO: json['ppmCO'],
       ppmCH4: json['ppmCH4'],
+      isCalibrated: json['isCalibrated'],
+      rollerPosition: json['rollerPosition'],
+      isMoving: json['isMoving'],
     );
   }
 }

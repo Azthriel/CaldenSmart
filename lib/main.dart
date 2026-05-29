@@ -380,7 +380,13 @@ class MyAppState extends State<MyApp> {
         ),
         useMaterial3: true,
       ),
-      initialRoute: '/perm',
+      // Lee la ruta que Android le pasó al engine de Flutter.
+      // - App normal: defaultRouteName == '/' → usamos '/perm'
+      // - WidgetConfigActivity: defaultRouteName == '/widget_config_selection' → va directo ahí
+      //   sin pasar por PermissionHandler, que nunca llamaría finishConfig.
+      initialRoute: WidgetsBinding.instance.platformDispatcher.defaultRouteName == '/'
+          ? '/perm'
+          : WidgetsBinding.instance.platformDispatcher.defaultRouteName,
       routes: {
         '/perm': (context) => const PermissionHandler(),
         '/welcome': (context) => const WelcomePage(),

@@ -682,6 +682,8 @@ class _WidgetConfigScreenState extends State<WidgetConfigScreen> {
         return HugeIcons.strokeRoundedCellularNetwork;
       case WidgetType.control:
         return HugeIcons.strokeRoundedPlugSocket;
+      case WidgetType.roller:
+        return HugeIcons.strokeRoundedArrowUpDown;
     }
   }
 
@@ -700,6 +702,11 @@ class _WidgetConfigScreenState extends State<WidgetConfigScreen> {
         badgeColor = Colors.orange;
         label = 'Control';
         icon = HugeIcons.strokeRoundedTap07;
+        break;
+      case WidgetType.roller:
+        badgeColor = Colors.teal;
+        label = 'Cortina';
+        icon = HugeIcons.strokeRoundedArrowUpDown;
         break;
     }
 

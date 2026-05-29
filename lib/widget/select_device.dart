@@ -4,10 +4,11 @@ import 'package:caldensmart/aws/dynamo/dynamo.dart';
 import 'package:caldensmart/logger.dart';
 import 'package:caldensmart/master.dart';
 import 'package:caldensmart/widget/widget_handler.dart';
+import 'package:caldensmart/widget/widget_models.dart';
+import 'package:caldensmart/widget/widget_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Para MethodChannel
 import 'package:google_fonts/google_fonts.dart';
-import 'package:home_widget/home_widget.dart';
 import 'package:hugeicons/hugeicons.dart';
 
 class SelectDeviceScreen extends StatefulWidget {
@@ -109,16 +110,14 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
           });
 
           if (!ioDevice) {
-            // Dispositivos que no son IO
-            // Estos dispositivos no tienen control on/off:
-            // 023430_IOT = Termómetro (visualización)
-            // 015773_IOT = Detector (visualización)
-            // 024011_IOT = Modulo (sin control directo)
-            // 027131_IOT = Termotanque (sin control on/off)
-            bool onOffDevice = pc != '023430_IOT' &&
-                pc != '015773_IOT' &&
-                pc != '024011_IOT' &&
-                pc != '027131_IOT';
+            // Dispositivos que no son IO.
+            // Excluir los que no deben tener widget (Riel, etc.)
+            if (!shouldHaveWidget(pc)) continue;
+
+            // Solo estos son de visualización pura (sin control on/off):
+            // 023430_IOT = Termómetro, 015773_IOT = Detector
+            // El roller (024011_IOT) SÍ es controlable (abre/cierra)
+            bool onOffDevice = pc != '023430_IOT' && pc != '015773_IOT';
             devicesToShow.addAll({device: onOffDevice});
           }
         }
@@ -141,137 +140,94 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
     try {
       setState(() => _isLoading = true);
 
-      // 1. Recuperar datos necesarios
-      String nickname = '';
+      final String pc = DeviceManager.getProductCode(deviceKey.split('_')[0]);
+      final String sn =
+          DeviceManager.extractSerialNumber(deviceKey.split('_')[0]);
+
+      // ── Nickname ────────────────────────────────────────────────────────
+      String nickname;
       if (deviceKey.contains('_')) {
-        final String selBase = deviceKey.split('_')[0];
-        final String selIdx = deviceKey.split('_')[1];
-        final String selPc = DeviceManager.getProductCode(selBase);
-        final String selSn = DeviceManager.extractSerialNumber(selBase);
-        final bool selHasEntry =
-            globalDATA['$selPc/$selSn']?['hasEntry'] ?? true;
-        if (selIdx == '0' && !selHasEntry) {
-          // No tiene entrada → solo el nickname, sin "pin 0"
-          nickname = nicknamesMap[selBase] ?? selBase;
+        final String bName = deviceKey.split('_')[0];
+        final String bIdx = deviceKey.split('_')[1];
+        final String bPc = DeviceManager.getProductCode(bName);
+        final String bSn = DeviceManager.extractSerialNumber(bName);
+        final bool bHasEntry = globalDATA['$bPc/$bSn']?['hasEntry'] ?? true;
+        if (bIdx == '0' && !bHasEntry) {
+          nickname = nicknamesMap[bName] ?? bName;
         } else {
           nickname = nicknamesMap[deviceKey] ??
-              '${nicknamesMap[selBase] ?? selBase} pin $selIdx';
+              '${nicknamesMap[bName] ?? bName} pin $bIdx';
         }
       } else {
         nickname = nicknamesMap[deviceKey] ?? deviceKey;
       }
 
-      bool isControl = devicesToShow[deviceKey] ?? false;
+      // ── Tipo e índice IO ────────────────────────────────────────────────
+      final WidgetType widgetType;
+      int? ioIndex;
 
-      // LOGICA DE ESTADO INICIAL
-      // Intentamos obtener el estado actual de globalDATA para que el widget nazca actualizado
-      String pc = DeviceManager.getProductCode(deviceKey.split('_')[0]);
-      String sn = DeviceManager.extractSerialNumber(deviceKey.split('_')[0]);
-
-      // Estado de conexión
-      bool isOnline = globalDATA['$pc/$sn']?['cstate'] ?? false;
-
-      // Estado encendido/apagado
-      bool isOn = false;
-
-      // Variables para widgets de visualización
-      String? displayTemp;
-      bool displayAlert = false;
-      bool isDisplayType = false;
-
-      if (isControl) {
-        // Dispositivos de control
-        if (deviceKey.contains('_')) {
-          // Es un pin de salida (control)
-          String pinIndex = deviceKey.split('_')[1];
-          String ioKey = 'io$pinIndex';
-          String? ioData = globalDATA['$pc/$sn']?[ioKey];
-          if (ioData != null) {
-            var decoded = jsonDecode(ioData);
-            isOn = decoded['w_status'] == true;
-          }
+      if (deviceKey.contains('_')) {
+        final int idx = int.tryParse(deviceKey.split('_')[1]) ?? 0;
+        ioIndex = idx;
+        final String ioKey = 'io$idx';
+        final deviceData = globalDATA['$pc/$sn'];
+        final ioRaw = deviceData?[ioKey];
+        if (ioRaw != null) {
+          final Map<String, dynamic> ioMap = ioRaw is String
+              ? jsonDecode(ioRaw)
+              : Map<String, dynamic>.from(ioRaw as Map);
+          final bool isInput = (ioMap['pinType']?.toString() ?? '0') != '0';
+          widgetType = isInput ? WidgetType.display : WidgetType.control;
         } else {
-          // Dispositivo principal
-          isOn = globalDATA['$pc/$sn']?['w_status'] == true;
+          widgetType = WidgetType.control;
         }
       } else {
-        // Dispositivos de visualización (solo lectura)
-        isDisplayType = true;
-
-        if (pc == '023430_IOT') {
-          // Termómetro - mostrar temperatura
-          var temp = globalDATA['$pc/$sn']?['actualTemp'];
-          if (temp != null) {
-            displayTemp = temp.toString();
-          }
-        } else if (pc == '015773_IOT') {
-          // Detector - mostrar alerta
-          displayAlert = globalDATA['$pc/$sn']?['alert'] == 1 ||
-              globalDATA['$pc/$sn']?['alert'] == true;
-        } else if (deviceKey.contains('_')) {
-          // Dispositivo IO con entrada (sensor de apertura, etc.)
-          // Para 020010_IOT, 020020_IOT, 027313_IOT con pinType == 1
-          String pinIndex = deviceKey.split('_')[1];
-          String ioKey = 'io$pinIndex';
-          String? ioData = globalDATA['$pc/$sn']?[ioKey];
-          if (ioData != null) {
-            var decoded = jsonDecode(ioData);
-            bool wStatus = decoded['w_status'] == true;
-            int rState = int.tryParse(decoded['r_state'].toString()) ?? 0;
-
-            // Lógica de alerta para entradas:
-            // Alerta si: (w_status == true && r_state == 0) || (w_status == false && r_state == 1)
-            displayAlert =
-                (wStatus && rState == 0) || (!wStatus && rState == 1);
-          }
-        }
+        widgetType = getWidgetType(pc);
+        ioIndex = null;
       }
 
-      // Determinar si es un dispositivo con pin
-      bool isPin = deviceKey.contains('_');
-      String pinIndex = isPin ? deviceKey.split('_')[1] : '';
+      // ── Crear WidgetData ────────────────────────────────────────────────
+      final widgetData = WidgetData(
+        widgetId: _widgetId!,
+        deviceName: deviceKey,
+        productCode: pc,
+        serialNumber: sn,
+        nickname: nickname,
+        type: widgetType,
+        ioIndex: ioIndex,
+      );
 
-      // 2. Guardar las preferencias para el widget nativo
-      await HomeWidget.saveWidgetData('widget_device_$_widgetId', deviceKey);
-      await HomeWidget.saveWidgetData('widget_nickname_$_widgetId', nickname);
-      await HomeWidget.saveWidgetData(
-          'widget_is_control_$_widgetId', isControl);
-      await HomeWidget.saveWidgetData('widget_online_$_widgetId', isOnline);
-      await HomeWidget.saveWidgetData('widget_status_$_widgetId', isOn);
+      // ── Construir estado inicial ─────────────────────────────────────────
+      final WidgetDeviceState deviceState =
+          WidgetService.extractDeviceState(pc, sn, ioIndex);
 
-      // Datos adicionales para el toggle MQTT
-      await HomeWidget.saveWidgetData('widget_pc_$_widgetId', pc);
-      await HomeWidget.saveWidgetData('widget_sn_$_widgetId', sn);
-      await HomeWidget.saveWidgetData('widget_is_pin_$_widgetId', isPin);
-      await HomeWidget.saveWidgetData('widget_pin_index_$_widgetId', pinIndex);
-
-      // Datos de visualización específicos
-      await HomeWidget.saveWidgetData(
-          'widget_is_display_type_$_widgetId', isDisplayType);
-      if (displayTemp != null) {
-        await HomeWidget.saveWidgetData(
-            'widget_display_temp_$_widgetId', displayTemp);
-      }
-      await HomeWidget.saveWidgetData(
-          'widget_display_alert_$_widgetId', displayAlert);
-
-      // Registrar el widget ID para poder actualizarlo desde MQTT
+      // ── Guardar config y estado atómico ─────────────────────────────────
+      // CRÍTICO: estos dos deben completarse antes de finishConfig
+      await WidgetService.saveWidgetConfig(widgetData);
+      await WidgetService.updateWidget(widgetData, deviceState);
       await registerWidgetId(_widgetId!);
 
-      // Iniciar el servicio de background para mantener el widget actualizado
-      await initializeWidgetService();
+      printLog.i(
+          'Widget $_widgetId guardado: $nickname ($deviceKey) tipo=$widgetType');
 
-      printLog.d("Guardando widget $_widgetId para: $nickname ($deviceKey)");
+      // ── Iniciar servicio de background (no bloquea el resultado) ─────────
+      try {
+        await initializeWidgetService().timeout(
+          const Duration(seconds: 8),
+          onTimeout: () => printLog
+              .i('initializeWidgetService timeout, continúa de todas formas'),
+        );
+      } catch (e) {
+        // No crítico: el WorkManager periódico lo levantará en el siguiente ciclo
+        printLog.i('initializeWidgetService falló (no crítico): $e');
+      }
 
-      // 3. Actualizar el widget nativo (sin renderFlutterWidget)
-      await updateAllWidgets();
-
-      printLog.i("Widget nativo actualizado correctamente");
-
-      // 4. Finalizar
+      // ── Cerrar la actividad de config PRIMERO ────────────────────────────
+      // finishConfig va antes de initializeWidgetService para que Android nunca
+      // devuelva RESULT_CANCELED si el servicio tarda o falla.
       await platform.invokeMethod('finishConfig');
     } catch (e) {
-      printLog.e("Error guardando configuración: $e");
+      printLog.e('Error guardando configuración: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -384,13 +340,20 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
                               child: Row(
                                 children: [
                                   Icon(
-                                      device.value
-                                          ? HugeIcons.strokeRoundedToggleOn
-                                          : HugeIcons.strokeRoundedView,
+                                      pc == '024011_IOT'
+                                          ? HugeIcons.strokeRoundedArrowUpDown
+                                          : device.value
+                                              ? HugeIcons.strokeRoundedToggleOn
+                                              : HugeIcons.strokeRoundedView,
                                       color: color0,
                                       size: 16),
                                   const SizedBox(width: 8),
-                                  Text(device.value ? 'CONTROL' : 'LECTURA',
+                                  Text(
+                                      pc == '024011_IOT'
+                                          ? 'CORTINA'
+                                          : device.value
+                                              ? 'CONTROL'
+                                              : 'LECTURA',
                                       style: GoogleFonts.poppins(
                                           color: color0,
                                           fontSize: 11,

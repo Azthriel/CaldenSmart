@@ -173,6 +173,21 @@ Future<void> backgroundCallback(Uri? uri) async {
 
       printLog.i('Widget callback: procesando toggle para widget $widgetId');
       await _handleWidgetToggle(widgetId);
+    } else if (uri.path == '/open') {
+      // ← NUEVO
+      final widgetId = int.tryParse(uri.queryParameters['widgetId'] ?? '');
+      if (widgetId != null) await _handleRollerCommand(widgetId, 0);
+    } else if (uri.path == '/close') {
+      // ← NUEVO
+      final widgetId = int.tryParse(uri.queryParameters['widgetId'] ?? '');
+      if (widgetId != null) await _handleRollerCommand(widgetId, 100);
+    } else if (uri.path == '/position') {
+      // Roller: frenar en posición actual (isMoving → manda posición corriente)
+      final widgetId = int.tryParse(uri.queryParameters['widgetId'] ?? '');
+      final pos = int.tryParse(uri.queryParameters['pos'] ?? '');
+      if (widgetId != null && pos != null) {
+        await _handleRollerCommand(widgetId, pos);
+      }
     }
   } else if (uri.path == '/checkAndStop') {
     printLog.i(
@@ -187,6 +202,88 @@ Future<void> backgroundCallback(Uri? uri) async {
   } else {
     printLog.i(
         'Widget callback: URI no coincide con ninguna acción conocida (path=${uri.path})');
+  }
+}
+
+/// Envía comando de posición MQTT para un widget roller (024011_IOT)
+/// position: 0 = abrir, 100 = cerrar
+Future<void> _handleRollerCommand(int widgetId, int position) async {
+  try {
+    printLog.i('=== ROLLER COMMAND widget $widgetId → $position% ===');
+
+    final isReady = await isWidgetServiceReady();
+    if (!isReady) {
+      printLog.i('Roller widget $widgetId: servicio no listo, ignorando');
+      return;
+    }
+
+    // Loading visual
+    await HomeWidget.saveWidgetData('widget_loading_$widgetId', true);
+    await updateAllWidgets();
+
+    // Leer pc/sn del widget
+    final pc = await HomeWidget.getWidgetData<String>('widget_pc_$widgetId');
+    final sn = await HomeWidget.getWidgetData<String>('widget_sn_$widgetId');
+
+    if (pc == null || sn == null) {
+      printLog.e('Roller widget $widgetId: datos incompletos');
+      await _hideWidgetLoading(widgetId);
+      return;
+    }
+
+    // Verificar calibración desde el estado atómico guardado
+    final jsonStr =
+        await HomeWidget.getWidgetData<String>('widget_state_$widgetId');
+    if (jsonStr != null && jsonStr.isNotEmpty) {
+      try {
+        final map = Map<String, dynamic>.from(jsonDecode(jsonStr));
+        final bool calibrated = map['isCalibrated'] ?? false;
+        if (!calibrated) {
+          printLog
+              .i('Roller widget $widgetId: no calibrado, ignorando comando');
+          await _hideWidgetLoading(widgetId);
+          return;
+        }
+      } catch (_) {}
+    }
+
+    // Conectar MQTT si hace falta
+    if (mqttAWSFlutterClient == null ||
+        mqttAWSFlutterClient!.connectionStatus?.state !=
+            MqttConnectionState.connected) {
+      final connected = await setupMqtt();
+      if (!connected) {
+        printLog.e('Roller widget $widgetId: no se pudo conectar a MQTT');
+        await _hideWidgetLoading(widgetId);
+        return;
+      }
+    }
+
+    final topicRx = 'devices_rx/$pc/$sn';
+    final topicTx = 'devices_tx/$pc/$sn';
+    final message = jsonEncode({'working_position': '$position%'});
+
+    sendMessagemqtt(topicRx, message);
+    sendMessagemqtt(topicTx, message);
+
+    printLog.i('Roller widget $widgetId: MQTT enviado → $position%');
+
+    // Actualizar estado optimista en SharedPrefs
+    if (jsonStr != null && jsonStr.isNotEmpty) {
+      try {
+        final map = Map<String, dynamic>.from(jsonDecode(jsonStr));
+        map['rollerPosition'] = position;
+        map['status'] = position >= 50;
+        map['ts'] = DateTime.now().millisecondsSinceEpoch;
+        await HomeWidget.saveWidgetData(
+            'widget_state_$widgetId', jsonEncode(map));
+      } catch (_) {}
+    }
+
+    await _hideWidgetLoading(widgetId);
+  } catch (e) {
+    printLog.e('Error en roller command widget $widgetId: $e');
+    await _hideWidgetLoading(widgetId);
   }
 }
 
@@ -333,8 +430,21 @@ Future<void> _handleWidgetToggle(int widgetId) async {
 
     printLog.i('Widget $widgetId: mensaje MQTT enviado');
 
-    // Actualizar estado en SharedPreferences para refrescar el widget
+    // Actualizar estado optimista: legacy key Y JSON atómico.
+    // Kotlin lee el JSON atómico primero; sin esto el widget no refleja el toggle.
     await HomeWidget.saveWidgetData('widget_status_$widgetId', newStatus);
+    final _toggleJsonStr =
+        await HomeWidget.getWidgetData<String>('widget_state_$widgetId');
+    if (_toggleJsonStr != null && _toggleJsonStr.isNotEmpty) {
+      try {
+        final _toggleMap =
+            Map<String, dynamic>.from(jsonDecode(_toggleJsonStr));
+        _toggleMap['status'] = newStatus;
+        _toggleMap['ts'] = DateTime.now().millisecondsSinceEpoch;
+        await HomeWidget.saveWidgetData(
+            'widget_state_$widgetId', jsonEncode(_toggleMap));
+      } catch (_) {}
+    }
 
     // Ocultar loading y actualizar widget
     await _hideWidgetLoading(widgetId);
@@ -387,9 +497,25 @@ Future<void> updateWidgetsForDevice(
           if (widgetPinIndex != pinIndex.toString()) continue;
         }
 
-        // Actualizar el estado del widget
+        // Actualizar legacy keys
         await HomeWidget.saveWidgetData('widget_status_$widgetId', isOn);
         await HomeWidget.saveWidgetData('widget_online_$widgetId', isOnline);
+
+        // Actualizar JSON atómico: Kotlin lo lee con prioridad sobre legacy keys.
+        // Sin esto los cambios de estado por MQTT nunca se reflejan visualmente.
+        final _atomicStr =
+            await HomeWidget.getWidgetData<String>('widget_state_$widgetId');
+        if (_atomicStr != null && _atomicStr.isNotEmpty) {
+          try {
+            final _atomicMap =
+                Map<String, dynamic>.from(jsonDecode(_atomicStr));
+            _atomicMap['status'] = isOn;
+            _atomicMap['online'] = isOnline;
+            _atomicMap['ts'] = DateTime.now().millisecondsSinceEpoch;
+            await HomeWidget.saveWidgetData(
+                'widget_state_$widgetId', jsonEncode(_atomicMap));
+          } catch (_) {}
+        }
 
         printLog
             .i('Widget $widgetId actualizado: isOn=$isOn, isOnline=$isOnline');
@@ -550,6 +676,11 @@ Future<void> syncWidgetsWithDatabase() async {
         String? displayTemp;
         bool displayAlert = false;
 
+        // Campos específicos del roller (se rellenan solo para 024011_IOT)
+        bool? rollerCalibrated;
+        int? rollerPos;
+        bool? rollerMovingState;
+
         if (isPin && pinIndex.isNotEmpty) {
           // Dispositivo con pin (IO)
           final ioData = deviceData['io$pinIndex'];
@@ -575,6 +706,14 @@ Future<void> syncWidgetsWithDatabase() async {
                   (wStatus && rState == 0) || (!wStatus && rState == 1);
             }
           }
+        } else if (pc == '024011_IOT') {
+          // ── Roller ────────────────────────────────────────────────────────
+          rollerCalibrated = deviceData['isCalibrated'] ?? false;
+          rollerPos = deviceData['actual_position'] ?? -1;
+          rollerMovingState = deviceData['moving'] ?? false;
+          isOn = (rollerPos != null && rollerPos >= 50);
+          printLog.i(
+              'Widget $widgetId roller: calibrated=$rollerCalibrated, pos=$rollerPos, moving=$rollerMovingState');
         } else {
           // Dispositivos normales
           if (pc == '023430_IOT') {
@@ -601,6 +740,9 @@ Future<void> syncWidgetsWithDatabase() async {
             status: isOn,
             temperature: displayTemp,
             alert: displayAlert ? true : null,
+            isCalibrated: rollerCalibrated,
+            rollerPosition: rollerPos,
+            isMoving: rollerMovingState,
           );
           await WidgetService.updateWidget(widgetConfig, deviceState);
         } else {
@@ -782,8 +924,10 @@ void onWidgetServiceStart(ServiceInstance service) async {
   service.on('subscribeAndSyncWidgets').listen((event) async {
     printLog.i(
         'Widget service: recibida petición para suscribir y sincronizar widgets');
+    _isWidgetListenerActive = false; // nuevo widget → forzar re-suscripción
     await subscribeToWidgetTopics();
     await syncWidgetsWithDatabase();
+    await setWidgetServiceReady(true);
   });
 
   // Listener para verificar si quedan widgets activos (llamado cuando se elimina un widget)
@@ -811,6 +955,10 @@ void onWidgetServiceStart(ServiceInstance service) async {
 
         final reconnected = await setupMqtt();
         if (reconnected) {
+          // Resetear flag: el cliente MQTT es nuevo y necesita re-suscribirse.
+          // Sin esto subscribeToWidgetTopics() retorna inmediatamente y no
+          // recibe mensajes del nuevo cliente.
+          _isWidgetListenerActive = false;
           await subscribeToWidgetTopics();
           await syncWidgetsWithDatabase();
           await setWidgetServiceReady(true);
@@ -820,6 +968,7 @@ void onWidgetServiceStart(ServiceInstance service) async {
           await Future.delayed(const Duration(seconds: 30));
           final retry = await setupMqtt();
           if (retry) {
+            _isWidgetListenerActive = false;
             await subscribeToWidgetTopics();
             await syncWidgetsWithDatabase();
             await setWidgetServiceReady(true);
@@ -908,7 +1057,8 @@ Future<void> subscribeToWidgetTopics() async {
 }
 
 /// Maneja los mensajes MQTT para actualizar widgets (versión background-safe)
-void _handleWidgetMqttMessage(List<MqttReceivedMessage<MqttMessage>> messages) {
+void _handleWidgetMqttMessage(
+    List<MqttReceivedMessage<MqttMessage>> messages) async {
   try {
     final MqttPublishMessage recMess =
         messages[0].payload as MqttPublishMessage;
@@ -966,6 +1116,74 @@ void _handleWidgetMqttMessage(List<MqttReceivedMessage<MqttMessage>> messages) {
         }
       }
 
+      // ── Roller MQTT ──────────────────────────────────────────────────────────
+      // El device manda 'is_calibrated' (snake_case), no 'isCalibrated'.
+      final bool isRollerMessage = messageMap.containsKey('actual_position') ||
+          messageMap.containsKey('isCalibrated') ||
+          messageMap.containsKey('is_calibrated') ||
+          messageMap.containsKey('moving');
+
+      if (isRollerMessage) {
+        // BUG FIX: usar active_widget_ids (HomeWidget SharedPrefs, siempre fresco)
+        // en vez de WidgetService.getWidgetIds() (SharedPreferences normal con caché
+        // por isolate → en el background service puede estar vacío).
+        final rollerWidgetIdsJson =
+            await HomeWidget.getWidgetData<String>('active_widget_ids');
+        if (rollerWidgetIdsJson != null && rollerWidgetIdsJson.isNotEmpty) {
+          final List<dynamic> rollerWidgetIds = jsonDecode(rollerWidgetIdsJson);
+          for (final wid in rollerWidgetIds) {
+            final wpc =
+                await HomeWidget.getWidgetData<String>('widget_pc_$wid');
+            final wsn =
+                await HomeWidget.getWidgetData<String>('widget_sn_$wid');
+            if (wpc == pc && wsn == sn) {
+              final jsonStr =
+                  await HomeWidget.getWidgetData<String>('widget_state_$wid');
+              if (jsonStr != null && jsonStr.isNotEmpty) {
+                try {
+                  final map = Map<String, dynamic>.from(jsonDecode(jsonStr));
+                  if (messageMap.containsKey('actual_position')) {
+                    final int pos =
+                        messageMap['actual_position'] as int? ?? -1;
+                    final int prevPos = map['rollerPosition'] as int? ?? -1;
+                    map['rollerPosition'] = pos;
+                    map['status'] = pos >= 50;
+                    // Calcular dirección comparando posición anterior vs actual
+                    // pos 0 = abierto (arriba), pos 100 = cerrado (abajo)
+                    // pos disminuye → está subiendo (abriendo) ↑
+                    // pos aumenta  → está bajando (cerrando) ↓
+                    if (pos >= 0 && prevPos >= 0 && pos != prevPos) {
+                      map['rollerDirection'] = pos < prevPos ? 1 : -1;
+                    }
+                    printLog.i(
+                        'Roller widget $wid: actual_position=$pos, status=${pos >= 50}');
+                  }
+                  // El device manda 'is_calibrated' (snake_case)
+                  if (messageMap.containsKey('is_calibrated') ||
+                      messageMap.containsKey('isCalibrated')) {
+                    final calibrated = messageMap['is_calibrated'] ??
+                        messageMap['isCalibrated'];
+                    map['isCalibrated'] = calibrated == true;
+                  }
+                  if (messageMap.containsKey('moving')) {
+                    map['isMoving'] = messageMap['moving'] == true;
+                    printLog.i(
+                        'Roller widget $wid: moving=${messageMap['moving']}');
+                  }
+                  map['ts'] = DateTime.now().millisecondsSinceEpoch;
+                  await HomeWidget.saveWidgetData(
+                      'widget_state_$wid', jsonEncode(map));
+                } catch (e) {
+                  printLog.e('Roller widget $wid: error actualizando JSON: $e');
+                }
+              }
+            }
+          }
+        }
+        await updateAllWidgets();
+        return;
+      }
+
       printLog.i('Widget MQTT: Procesado mensaje de $pc/$sn');
     } catch (e) {
       printLog.e('Widget MQTT: Error decodificando mensaje: $e');
@@ -1010,7 +1228,7 @@ Future<void> updateWidgetsForDeviceDisplay(String pc, String sn, bool isOnline,
           if (widgetPinIndex != pinIndex.toString()) continue;
         }
 
-        // Actualizar datos de visualización
+        // Actualizar datos de visualización (legacy keys)
         await HomeWidget.saveWidgetData('widget_online_$widgetId', isOnline);
 
         if (displayTemp != null) {
@@ -1021,6 +1239,22 @@ Future<void> updateWidgetsForDeviceDisplay(String pc, String sn, bool isOnline,
         if (displayAlert != null) {
           await HomeWidget.saveWidgetData(
               'widget_display_alert_$widgetId', displayAlert);
+        }
+
+        // Actualizar JSON atómico: Kotlin lo lee con prioridad sobre legacy keys.
+        final _dispAtomicStr =
+            await HomeWidget.getWidgetData<String>('widget_state_$widgetId');
+        if (_dispAtomicStr != null && _dispAtomicStr.isNotEmpty) {
+          try {
+            final _dispMap =
+                Map<String, dynamic>.from(jsonDecode(_dispAtomicStr));
+            _dispMap['online'] = isOnline;
+            if (displayTemp != null) _dispMap['displayTemp'] = displayTemp;
+            if (displayAlert != null) _dispMap['displayAlert'] = displayAlert;
+            _dispMap['ts'] = DateTime.now().millisecondsSinceEpoch;
+            await HomeWidget.saveWidgetData(
+                'widget_state_$widgetId', jsonEncode(_dispMap));
+          } catch (_) {}
         }
 
         printLog.i(

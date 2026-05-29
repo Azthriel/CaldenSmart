@@ -35,14 +35,13 @@ class WidgetUpdateWorker(
         private const val ONE_TIME_WORK_NAME = "widget_boot_restart"
 
         fun schedule(context: Context) {
+            // ⚠️ Sin NetworkType.CONNECTED: el callback solo refresca el timestamp
+            // en SharedPrefs (no necesita red). Sin esta constraint, el worker
+            // se ejecuta aunque no haya internet, evitando que el ts quede stale
+            // >20 min y el widget se congele.
             val workRequest = PeriodicWorkRequestBuilder<WidgetUpdateWorker>(
                 15, TimeUnit.MINUTES
             )
-                .setConstraints(
-                    Constraints.Builder()
-                        .setRequiredNetworkType(NetworkType.CONNECTED)
-                        .build()
-                )
                 .setBackoffCriteria(
                     BackoffPolicy.LINEAR,
                     WorkRequest.MIN_BACKOFF_MILLIS,
@@ -55,7 +54,7 @@ class WidgetUpdateWorker(
                 ExistingPeriodicWorkPolicy.KEEP,
                 workRequest
             )
-            Log.d(TAG, "WorkManager periódico programado (15 min)")
+            Log.d(TAG, "WorkManager periódico programado (15 min, sin req. de red)")
         }
 
         fun scheduleOneTime(context: Context) {
