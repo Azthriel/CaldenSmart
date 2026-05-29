@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
-import 'package:caldensmart/logger.dart';
 import 'package:caldensmart/master.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,7 +8,10 @@ import 'package:hugeicons/hugeicons.dart';
 
 class ControlHorarioWidget extends StatefulWidget {
   final VoidCallback? onBackToMain;
-  const ControlHorarioWidget({super.key, this.onBackToMain});
+  final Map<String, dynamic>? eventoExistente;
+
+  const ControlHorarioWidget(
+      {super.key, this.onBackToMain, this.eventoExistente});
 
   @override
   ControlHorarioWidgetState createState() => ControlHorarioWidgetState();
@@ -22,7 +24,8 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
   TimeOfDay? selectedTime;
   Map<String, bool> deviceActions = {};
   TextEditingController title = TextEditingController();
-
+  String? nombreOriginal;
+  String? horaOriginal;
   Map<String, bool> _wifiPermissions = {};
   bool _isLoadingPermissions = true;
 
@@ -35,11 +38,40 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
   }
 
   void _initializeData() {
-    selectedDevices.clear();
-    selectedDays.clear();
-    selectedTime = null;
-    deviceActions.clear();
-    currentStep = 0;
+    if (widget.eventoExistente != null) {
+      title.text = widget.eventoExistente!['title'] ?? '';
+      nombreOriginal = title.text;
+      horaOriginal = widget.eventoExistente!['selectedTime'];
+
+      selectedDevices =
+          List<String>.from(widget.eventoExistente!['deviceGroup'] ?? []);
+      selectedDays =
+          List<String>.from(widget.eventoExistente!['selectedDays'] ?? []);
+
+      String horaGuardada = widget.eventoExistente!['selectedTime'] ?? '12:00';
+      List<String> partesHora = horaGuardada.split(':');
+      if (partesHora.length == 2) {
+        selectedTime = TimeOfDay(
+            hour: int.tryParse(partesHora[0]) ?? 12,
+            minute: int.tryParse(partesHora[1]) ?? 0);
+      }
+
+      Map<String, bool> savedActions = Map<String, bool>.from(
+          widget.eventoExistente!['deviceActions'] ?? {});
+      deviceActions.clear();
+      savedActions.forEach((key, value) {
+        String originalName = key.split(':').first;
+        deviceActions[originalName] = value;
+      });
+
+      currentStep = 0;
+    } else {
+      selectedDevices.clear();
+      selectedDays.clear();
+      selectedTime = null;
+      deviceActions.clear();
+      currentStep = 0;
+    }
   }
 
   bool _isRoller(String device) {
@@ -454,13 +486,29 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
               fontSize: 12,
               fontWeight: FontWeight.w500,
               days: [
-                DayInWeek("L", dayKey: "Lunes"),
-                DayInWeek("M", dayKey: "Martes"),
-                DayInWeek("X", dayKey: "Miércoles"),
-                DayInWeek("J", dayKey: "Jueves"),
-                DayInWeek("V", dayKey: "Viernes"),
-                DayInWeek("S", dayKey: "Sábado"),
-                DayInWeek("D", dayKey: "Domingo"),
+                DayInWeek("L",
+                    dayKey: "Lunes",
+                    isSelected: selectedDays.contains("Lunes")),
+                DayInWeek("M",
+                    dayKey: "Martes",
+                    isSelected: selectedDays.contains("Martes")),
+                DayInWeek("X",
+                    dayKey: "Miércoles",
+                    isSelected: selectedDays.contains("Miércoles") ||
+                        selectedDays.contains("Miercoles")),
+                DayInWeek("J",
+                    dayKey: "Jueves",
+                    isSelected: selectedDays.contains("Jueves")),
+                DayInWeek("V",
+                    dayKey: "Viernes",
+                    isSelected: selectedDays.contains("Viernes")),
+                DayInWeek("S",
+                    dayKey: "Sábado",
+                    isSelected: selectedDays.contains("Sábado") ||
+                        selectedDays.contains("Sabado")),
+                DayInWeek("D",
+                    dayKey: "Domingo",
+                    isSelected: selectedDays.contains("Domingo")),
               ],
               unSelectedDayTextColor: color1,
               selectedDayTextColor: color1,
@@ -982,7 +1030,6 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
     String horario =
         '${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}';
 
-    // Convertir días de strings a números (0=Domingo, 1=Lunes, etc.)
     List<int> daysAsNumbers = selectedDays
         .map((day) {
           switch (day.toLowerCase()) {
@@ -1001,13 +1048,12 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
             case 'sabado' || 'sábado':
               return 6;
             default:
-              return -1; // Error
+              return -1;
           }
         })
         .where((day) => day != -1)
         .toList();
 
-    // Obtener información de timezone del dispositivo
     DateTime now = DateTime.now();
     int timezoneOffset = now.timeZoneOffset.inHours;
     String timezoneName = now.timeZoneName;
@@ -1015,59 +1061,68 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
     Map<String, bool> finalDeviceActions = {};
 
     for (String item in selectedDevices) {
-      // Verificar si es un evento (grupo o cadena)
       final eventoEncontrado = eventosCreados.firstWhere(
         (evento) => evento['title'] == item,
         orElse: () => <String, dynamic>{},
       );
 
-      String finalKey;
-      if (eventoEncontrado.isNotEmpty) {
-        // Es un evento, agregar el tipo
-        final eventoType = eventoEncontrado['evento'] as String;
-        finalKey = '$item:$eventoType';
-      } else {
-        // Es un dispositivo individual, agregar el tipo 'dispositivo'
-        finalKey = '$item:dispositivo';
-      }
+      String finalKey = eventoEncontrado.isNotEmpty
+          ? '$item:${eventoEncontrado['evento']}'
+          : '$item:dispositivo';
 
       finalDeviceActions[finalKey] = deviceActions[item] ?? false;
     }
 
-    printLog.i("=== CONTROL HORARIO CREADO ===");
-    printLog.i("Nombre: ${title.text}");
-    printLog.i("Dispositivos/Eventos seleccionados: $selectedDevices");
-    printLog.i("Días originales: $selectedDays");
-    printLog.i("Días como números: $daysAsNumbers");
-    printLog.i("Hora: $horario");
-    printLog.i("Acciones (con tipo): $finalDeviceActions");
-    printLog.i("Timezone offset: $timezoneOffset");
-    printLog.i("Timezone name: $timezoneName");
-
-    Map<String, dynamic> eventoData = {
-      'evento': 'horario',
-      'title': title.text,
-      'selectedDays': List<String>.from(selectedDays),
-      'selectedTime': horario,
-      'deviceActions': Map<String, bool>.from(finalDeviceActions),
-      'deviceGroup': List<String>.from(selectedDevices),
-    };
-
-    eventosCreados.add(eventoData);
-
-    showToast("Control horario creado exitosamente");
-    printLog.d("$eventosCreados", color: 'verde');
-
-    putEventos(currentUserEmail, eventosCreados);
-
-    if (selectedDevices.isNotEmpty) {
-      putEventoControlPorHorarios(horario, currentUserEmail, title.text,
-          finalDeviceActions, daysAsNumbers, timezoneOffset, timezoneName);
-    }
-
     setState(() {
-      _initializeData();
-      title.clear();
+      if (widget.eventoExistente != null) {
+        if (nombreOriginal != null &&
+            horaOriginal != null &&
+            (nombreOriginal != title.text || horaOriginal != horario)) {
+          deleteEventoControlPorHorarios(
+              horaOriginal!, currentUserEmail, nombreOriginal!);
+          todosLosDispositivos.removeWhere((e) => e.key == nombreOriginal);
+          savedOrder.removeWhere((e) => e['key'] == nombreOriginal);
+        }
+        eventosCreados.removeWhere(
+            (e) => e['title'] == nombreOriginal && e['evento'] == 'horario');
+      }
+
+      Map<String, dynamic> eventoData = {
+        'evento': 'horario',
+        'title': title.text,
+        'selectedDays': List<String>.from(selectedDays),
+        'selectedTime': horario,
+        'deviceActions': Map<String, bool>.from(finalDeviceActions),
+        'deviceGroup': List<String>.from(selectedDevices),
+      };
+
+      eventosCreados.add(eventoData);
+
+      int indexDisp = todosLosDispositivos
+          .indexWhere((e) => e.key == (nombreOriginal ?? title.text));
+      if (indexDisp != -1) {
+        todosLosDispositivos[indexDisp] =
+            MapEntry(title.text, selectedDevices.join(','));
+      } else {
+        todosLosDispositivos
+            .add(MapEntry(title.text.trim(), selectedDevices.join(',')));
+      }
+
+      putEventos(currentUserEmail, eventosCreados);
+
+      if (selectedDevices.isNotEmpty) {
+        putEventoControlPorHorarios(horario, currentUserEmail, title.text,
+            finalDeviceActions, daysAsNumbers, timezoneOffset, timezoneName);
+      }
+
+      showToast(widget.eventoExistente != null
+          ? "Horario actualizado"
+          : "Control horario creado");
+
+      if (widget.eventoExistente == null) {
+        _initializeData();
+        title.clear();
+      }
     });
 
     Navigator.pop(context, true);

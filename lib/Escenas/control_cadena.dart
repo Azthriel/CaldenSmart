@@ -12,7 +12,9 @@ import 'package:hugeicons/hugeicons.dart';
 
 class ControlCadenaWidget extends StatefulWidget {
   final VoidCallback? onBackToMain;
-  const ControlCadenaWidget({super.key, this.onBackToMain});
+  final Map<String, dynamic>? eventoExistente;
+  const ControlCadenaWidget(
+      {super.key, this.onBackToMain, this.eventoExistente});
 
   @override
   ControlCadenaWidgetState createState() => ControlCadenaWidgetState();
@@ -22,7 +24,7 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
   int currentStep = 0;
   int currentStepIndex = 0;
   TextEditingController title = TextEditingController();
-
+  String? nombreOriginal;
   List<Map<String, dynamic>> pasosCadena = [];
 
   List<String> tempDeviceGroup = [];
@@ -41,17 +43,45 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
   }
 
   void _initializeData() {
-    deviceGroup.clear();
-    deviceActions.clear();
-    deviceDelays.clear();
-    deviceUnits.clear();
-    pasosCadena.clear();
-    tempDeviceGroup.clear();
-    tempDeviceActions.clear();
-    tempStepDelay = Duration.zero;
-    tempStepDelayUnit = 'seg';
-    currentStep = 0;
-    currentStepIndex = 0;
+    if (widget.eventoExistente != null) {
+      title.text = widget.eventoExistente!['title'] ?? '';
+      nombreOriginal = title.text;
+
+      if (widget.eventoExistente!['pasos'] != null) {
+        pasosCadena = List<Map<String, dynamic>>.from(
+          widget.eventoExistente!['pasos'].map((paso) {
+            return {
+              'devices': List<String>.from(paso['devices']),
+              'actions': Map<String, bool>.from(paso['actions']),
+              'stepDelay': paso['stepDelay'] is Duration
+                  ? paso['stepDelay']
+                  : Duration.zero,
+              'stepDelayUnit': paso['stepDelayUnit'] ?? 'seg',
+            };
+          }),
+        );
+      }
+
+      currentStep = 2;
+      currentStepIndex = pasosCadena.length;
+
+      tempDeviceGroup.clear();
+      tempDeviceActions.clear();
+      tempStepDelay = Duration.zero;
+      tempStepDelayUnit = 'seg';
+    } else {
+      deviceGroup.clear();
+      deviceActions.clear();
+      deviceDelays.clear();
+      deviceUnits.clear();
+      pasosCadena.clear();
+      tempDeviceGroup.clear();
+      tempDeviceActions.clear();
+      tempStepDelay = Duration.zero;
+      tempStepDelayUnit = 'seg';
+      currentStep = 0;
+      currentStepIndex = 0;
+    }
   }
 
   bool _isValidForCascada(String equipo) {
@@ -1316,19 +1346,15 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
   }
 
   void _confirmarCascada() async {
-    printLog.i("=== CONTROL POR CASCADA CREADO ===");
-    printLog.i("Nombre: ${title.text}");
+    printLog.i("=== CONTROL POR CASCADA GUARDADO ===");
+    final nuevoNombre = title.text.trim();
+    printLog.i("Nombre: $nuevoNombre");
     printLog.i("Número de pasos: ${pasosCadena.length}");
 
     final List<String> allDevices = [];
     List<Map<String, dynamic>> stepsToDynamo = [];
     for (int i = 0; i < pasosCadena.length; i++) {
       final paso = pasosCadena[i];
-      printLog.d(paso);
-      printLog.i("Paso ${i + 1}:");
-      printLog.i("  Equipos: ${paso['devices']}");
-      printLog.i("  Acciones: ${paso['actions']}");
-      printLog.i("  Delay del paso: ${paso['stepDelay']}");
       allDevices.addAll(paso['devices'] as List<String>);
       final Duration stepDelay = paso['stepDelay'] as Duration;
       stepsToDynamo.add({
@@ -1340,50 +1366,61 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
       });
     }
 
-    printLog.i("A dynamo se envia: $stepsToDynamo");
+    setState(() {
+      if (widget.eventoExistente != null) {
+        if (nombreOriginal != null && nombreOriginal != nuevoNombre) {
+          deleteEventoControlPorCadena(currentUserEmail, nombreOriginal!);
+          todosLosDispositivos.removeWhere((e) => e.key == nombreOriginal);
+          savedOrder.removeWhere((e) => e['key'] == nombreOriginal);
+          unsubscribeFromEventoStatus(
+              'ControlPorCadena', currentUserEmail, nombreOriginal!);
+        }
+        eventosCreados.removeWhere(
+            (e) => e['title'] == nombreOriginal && e['evento'] == 'cadena');
+      }
 
-    // Crear el evento y agregarlo a eventosCreados
-    final cadenaEvent = {
-      'evento': 'cadena',
-      'title': title.text.trim(),
-      'deviceGroup': allDevices,
-      'pasos': pasosCadena
-          .map((paso) => {
-                'devices': List<String>.from(paso['devices']),
-                'actions': Map<String, bool>.from(paso['actions']),
-                'stepDelay': paso['stepDelay'] as Duration,
-                'stepDelayUnit': paso['stepDelayUnit'] as String,
-              })
-          .toList(),
-    };
+      final cadenaEvent = {
+        'evento': 'cadena',
+        'title': nuevoNombre,
+        'deviceGroup': allDevices,
+        'pasos': pasosCadena
+            .map((paso) => {
+                  'devices': List<String>.from(paso['devices']),
+                  'actions': Map<String, bool>.from(paso['actions']),
+                  'stepDelay': paso['stepDelay'] as Duration,
+                  'stepDelayUnit': paso['stepDelayUnit'] as String,
+                })
+            .toList(),
+      };
 
-    eventosCreados.add(cadenaEvent);
+      eventosCreados.add(cadenaEvent);
 
-    todosLosDispositivos.add(MapEntry(
-      cadenaEvent['title'] as String? ?? 'Cadena',
-      (cadenaEvent['deviceGroup'] as List<dynamic>).join(','),
-    ));
+      int indexDisp = todosLosDispositivos
+          .indexWhere((e) => e.key == (nombreOriginal ?? nuevoNombre));
+      if (indexDisp != -1) {
+        todosLosDispositivos[indexDisp] =
+            MapEntry(nuevoNombre, allDevices.join(','));
+      } else {
+        todosLosDispositivos.add(MapEntry(nuevoNombre, allDevices.join(',')));
+      }
 
-    // Guardar en DynamoDB
-    putEventoControlPorCadena(
-        currentUserEmail, title.text.trim(), stepsToDynamo);
-    putEventos(currentUserEmail, eventosCreados);
+      putEventoControlPorCadena(currentUserEmail, nuevoNombre, stepsToDynamo);
+      putEventos(currentUserEmail, eventosCreados);
 
-    // Suscribirse al topic MQTT del nuevo evento
-    subscribeToEventoStatus(
-        'ControlPorCadena', currentUserEmail, title.text.trim());
+      subscribeToEventoStatus(
+          'ControlPorCadena', currentUserEmail, nuevoNombre);
 
-    _initializeData();
-    title.clear();
-    showToast("Cascada confirmada");
+      showToast(widget.eventoExistente != null
+          ? "Cascada actualizada"
+          : "Cascada confirmada");
 
-    if (widget.onBackToMain != null) {
-      widget.onBackToMain!();
-    }
+      if (widget.eventoExistente == null) {
+        _initializeData();
+        title.clear();
+      }
+    });
 
     Navigator.pop(context, true);
-
-    //printLog.i(eventosCreados);
   }
 
   IconData _getContinueIcon() {

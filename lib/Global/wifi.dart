@@ -1527,11 +1527,23 @@ class WifiPageState extends ConsumerState<WifiPage>
             side: const BorderSide(color: color4, width: 1)),
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          leading: CircleAvatar(
-            backgroundColor: color4.withValues(alpha: 0.1),
-            child: const Icon(HugeIcons.strokeRoundedFolder01, color: color4),
+          leading: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ReorderableDragStartListener(
+                index: index,
+                child: const Icon(HugeIcons.strokeRoundedMenu01,
+                    color: Colors.grey),
+              ),
+              const SizedBox(width: 12),
+              CircleAvatar(
+                backgroundColor: color4.withValues(alpha: 0.1),
+                child:
+                    const Icon(HugeIcons.strokeRoundedFolder01, color: color4),
+              ),
+            ],
           ),
-          title: Text(folderName, // Usamos el nombre directo
+          title: Text(folderName,
               style: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold, color: color0, fontSize: 16)),
           subtitle: Text('${devices.length} dispositivos',
@@ -1664,9 +1676,46 @@ class WifiPageState extends ConsumerState<WifiPage>
                 ),
               ),
               padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: devices.map((deviceName) {
-                  return _buildDeviceCard(deviceName, 0, isInsideFolder: true);
+              child: ReorderableListView(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                buildDefaultDragHandles: false,
+                proxyDecorator:
+                    (Widget child, int index, Animation<double> animation) {
+                  return Theme(
+                    data: Theme.of(context).copyWith(
+                      cardTheme: Theme.of(context).cardTheme.copyWith(
+                            surfaceTintColor: Colors.transparent,
+                            color: color1,
+                            shadowColor: Colors.transparent,
+                          ),
+                    ),
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: child,
+                    ),
+                  );
+                },
+                onReorder: (int oldIndex, int newIndex) async {
+                  if (newIndex > oldIndex) newIndex -= 1;
+
+                  setState(() {
+                    final item = devices.removeAt(oldIndex);
+                    devices.insert(newIndex, item);
+                    folders[folderName] = devices;
+                  });
+
+                  await putFolders(currentUserEmail, folders);
+                },
+                children: devices.asMap().entries.map((entry) {
+                  final int innerIndex = entry.key;
+                  final String deviceName = entry.value;
+
+                  return KeyedSubtree(
+                    key: ValueKey('folder_${folderName}_inner_$deviceName'),
+                    child: _buildDeviceCard(deviceName, innerIndex,
+                        isInsideFolder: true),
+                  );
                 }).toList(),
               ),
             ),
@@ -6035,67 +6084,103 @@ class WifiPageState extends ConsumerState<WifiPage>
                               }),
                               Align(
                                 alignment: Alignment.centerRight,
-                                child: IconButton(
-                                  icon: const Icon(
-                                    HugeIcons.strokeRoundedDelete02,
-                                    color: color0,
-                                  ),
-                                  tooltip: 'Eliminar evento de cadena',
-                                  onPressed: () {
-                                    showAlertDialog(
-                                      context,
-                                      false,
-                                      const Text(
-                                        '¿Eliminar este evento de cadena?',
-                                        style: TextStyle(color: color0),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(
+                                        HugeIcons.strokeRoundedPen01,
+                                        color: color4,
                                       ),
-                                      const Text(
-                                        'Esta acción no se puede deshacer.',
-                                        style: TextStyle(color: color0),
-                                      ),
-                                      <Widget>[
-                                        TextButton(
-                                          style: ButtonStyle(
-                                            foregroundColor:
-                                                WidgetStateProperty.all(color0),
-                                          ),
-                                          child: const Text('Cancelar'),
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                        ),
-                                        TextButton(
-                                          style: ButtonStyle(
-                                            foregroundColor:
-                                                WidgetStateProperty.all(color0),
-                                          ),
-                                          child: const Text('Confirmar'),
-                                          onPressed: () {
-                                            setState(() {
-                                              eventosCreados.removeWhere((e) =>
-                                                  e['title'] == grupo &&
-                                                  e['evento'] == 'cadena');
-                                              putEventos(currentUserEmail,
-                                                  eventosCreados);
-                                              printLog.d(grupo,
-                                                  color: 'naranja');
-                                              deleteEventoControlPorCadena(
-                                                  currentUserEmail, grupo);
-                                              todosLosDispositivos.removeWhere(
-                                                  (entry) =>
-                                                      entry.key == grupo);
-                                              savedOrder.removeWhere((item) =>
-                                                  item['key'] == grupo);
+                                      tooltip: 'Editar evento',
+                                      onPressed: () async {
+                                        final eventoAEditar =
+                                            eventosCreados.firstWhere(
+                                          (e) => e['title'] == grupo,
+                                          orElse: () => <String, dynamic>{},
+                                        );
 
-                                              _actualizarListasUI();
-                                            });
-                                            _saveOrder();
-                                            Navigator.of(context).pop();
-                                          },
-                                        ),
-                                      ],
-                                    );
-                                  },
+                                        if (eventoAEditar.isNotEmpty) {
+                                          final result =
+                                              await Navigator.pushNamed(
+                                            context,
+                                            '/escenas',
+                                            arguments: eventoAEditar,
+                                          );
+                                          if (result == true && mounted) {
+                                            _buildDeviceListFromLoadedData();
+                                          }
+                                        }
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        HugeIcons.strokeRoundedDelete02,
+                                        color: color0,
+                                      ),
+                                      tooltip: 'Eliminar evento de cadena',
+                                      onPressed: () {
+                                        showAlertDialog(
+                                          context,
+                                          false,
+                                          const Text(
+                                            '¿Eliminar este evento de cadena?',
+                                            style: TextStyle(color: color0),
+                                          ),
+                                          const Text(
+                                            'Esta acción no se puede deshacer.',
+                                            style: TextStyle(color: color0),
+                                          ),
+                                          <Widget>[
+                                            TextButton(
+                                              style: ButtonStyle(
+                                                foregroundColor:
+                                                    WidgetStateProperty.all(
+                                                        color0),
+                                              ),
+                                              child: const Text('Cancelar'),
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                            ),
+                                            TextButton(
+                                              style: ButtonStyle(
+                                                foregroundColor:
+                                                    WidgetStateProperty.all(
+                                                        color0),
+                                              ),
+                                              child: const Text('Confirmar'),
+                                              onPressed: () {
+                                                setState(() {
+                                                  eventosCreados.removeWhere(
+                                                      (e) =>
+                                                          e['title'] == grupo &&
+                                                          e['evento'] ==
+                                                              'cadena');
+                                                  putEventos(currentUserEmail,
+                                                      eventosCreados);
+                                                  printLog.d(grupo,
+                                                      color: 'naranja');
+                                                  deleteEventoControlPorCadena(
+                                                      currentUserEmail, grupo);
+                                                  todosLosDispositivos
+                                                      .removeWhere((entry) =>
+                                                          entry.key == grupo);
+                                                  savedOrder.removeWhere(
+                                                      (item) =>
+                                                          item['key'] == grupo);
+
+                                                  _actualizarListasUI();
+                                                });
+                                                _saveOrder();
+                                                Navigator.of(context).pop();
+                                              },
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -7153,64 +7238,109 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(child: _buildNotOwnerWarning()),
-                                    IconButton(
-                                      icon: const Icon(
-                                        HugeIcons.strokeRoundedDelete02,
-                                        color: color0,
-                                        size: 24,
-                                      ),
-                                      onPressed: () {
-                                        showAlertDialog(
-                                          context,
-                                          false,
-                                          const Text(
-                                              '¿Eliminar este evento clima?',
-                                              style: TextStyle(color: color0)),
-                                          const Text(
-                                              'Esta acción no se puede deshacer.',
-                                              style: TextStyle(color: color0)),
-                                          <Widget>[
-                                            TextButton(
-                                              style: ButtonStyle(
-                                                  foregroundColor:
-                                                      WidgetStateProperty.all(
-                                                          color0)),
-                                              child: const Text('Cancelar'),
-                                              onPressed: () =>
-                                                  Navigator.of(context).pop(),
-                                            ),
-                                            TextButton(
-                                              style: ButtonStyle(
-                                                  foregroundColor:
-                                                      WidgetStateProperty.all(
-                                                          color0)),
-                                              child: const Text('Confirmar'),
-                                              onPressed: () {
-                                                setState(() {
-                                                  eventosCreados.removeWhere(
-                                                      (e) =>
-                                                          e['title'] == grupo &&
-                                                          e['evento'] ==
-                                                              'clima');
-                                                  putEventos(currentUserEmail,
-                                                      eventosCreados);
-                                                  deleteEventoControlPorClima(
-                                                      currentUserEmail, grupo);
-                                                  todosLosDispositivos
-                                                      .removeWhere((entry) =>
-                                                          entry.key == grupo);
-                                                  savedOrder.removeWhere(
-                                                      (item) =>
-                                                          item['key'] == grupo);
-                                                  _actualizarListasUI();
-                                                });
-                                                _saveOrder();
-                                                Navigator.of(context).pop();
-                                              },
-                                            ),
-                                          ],
-                                        );
-                                      },
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        // ✏️ Botón de Editar para Administrador Restringido
+                                        IconButton(
+                                          icon: const Icon(
+                                            HugeIcons.strokeRoundedPen01,
+                                            color: color4,
+                                          ),
+                                          tooltip: 'Editar evento',
+                                          onPressed: () async {
+                                            final eventoAEditar =
+                                                eventosCreados.firstWhere(
+                                              (e) => e['title'] == grupo,
+                                              orElse: () => <String, dynamic>{},
+                                            );
+
+                                            if (eventoAEditar.isNotEmpty) {
+                                              final result =
+                                                  await Navigator.pushNamed(
+                                                context,
+                                                '/escenas',
+                                                arguments: eventoAEditar,
+                                              );
+                                              if (result == true && mounted) {
+                                                _buildDeviceListFromLoadedData();
+                                              }
+                                            }
+                                          },
+                                        ),
+                                        // 🗑️ Botón de Eliminar original
+                                        IconButton(
+                                          icon: const Icon(
+                                            HugeIcons.strokeRoundedDelete02,
+                                            color: color0,
+                                            size: 24,
+                                          ),
+                                          onPressed: () {
+                                            showAlertDialog(
+                                              context,
+                                              false,
+                                              const Text(
+                                                '¿Eliminar este evento clima?',
+                                                style: TextStyle(color: color0),
+                                              ),
+                                              const Text(
+                                                'Esta acción no se puede deshacer.',
+                                                style: TextStyle(color: color0),
+                                              ),
+                                              <Widget>[
+                                                TextButton(
+                                                  style: ButtonStyle(
+                                                    foregroundColor:
+                                                        WidgetStateProperty.all(
+                                                            color0),
+                                                  ),
+                                                  child: const Text('Cancelar'),
+                                                  onPressed: () =>
+                                                      Navigator.of(context)
+                                                          .pop(),
+                                                ),
+                                                TextButton(
+                                                  style: ButtonStyle(
+                                                    foregroundColor:
+                                                        WidgetStateProperty.all(
+                                                            color0),
+                                                  ),
+                                                  child:
+                                                      const Text('Confirmar'),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      eventosCreados
+                                                          .removeWhere((e) =>
+                                                              e['title'] ==
+                                                                  grupo &&
+                                                              e['evento'] ==
+                                                                  'clima');
+                                                      putEventos(
+                                                          currentUserEmail,
+                                                          eventosCreados);
+                                                      deleteEventoControlPorClima(
+                                                          currentUserEmail,
+                                                          grupo);
+                                                      todosLosDispositivos
+                                                          .removeWhere(
+                                                              (entry) =>
+                                                                  entry.key ==
+                                                                  grupo);
+                                                      savedOrder.removeWhere(
+                                                          (item) =>
+                                                              item['key'] ==
+                                                              grupo);
+                                                      _actualizarListasUI();
+                                                    });
+                                                    _saveOrder();
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 )
@@ -7239,78 +7369,112 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       ),
                                     ),
                                     const Spacer(),
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: IconButton(
-                                        icon: const Icon(
-                                          HugeIcons.strokeRoundedDelete02,
-                                          color: Colors.redAccent,
-                                          size: 20,
-                                        ),
-                                        onPressed: () {
-                                          showAlertDialog(
-                                            context,
-                                            false,
-                                            const Text(
-                                              '¿Eliminar este evento clima?',
-                                              style: TextStyle(color: color0),
-                                            ),
-                                            const Text(
-                                              'Esta acción no se puede deshacer.',
-                                              style: TextStyle(color: color0),
-                                            ),
-                                            <Widget>[
-                                              TextButton(
-                                                style: ButtonStyle(
-                                                  foregroundColor:
-                                                      WidgetStateProperty.all(
-                                                          color0),
-                                                ),
-                                                child: const Text('Cancelar'),
-                                                onPressed: () {
-                                                  Navigator.of(context).pop();
-                                                },
-                                              ),
-                                              TextButton(
-                                                style: ButtonStyle(
-                                                  foregroundColor:
-                                                      WidgetStateProperty.all(
-                                                          color0),
-                                                ),
-                                                child: const Text('Confirmar'),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    eventosCreados.removeWhere(
-                                                        (e) =>
-                                                            e['title'] ==
-                                                                grupo &&
-                                                            e['evento'] ==
-                                                                'clima');
-                                                    putEventos(currentUserEmail,
-                                                        eventosCreados);
-                                                    printLog.d(grupo,
-                                                        color: 'naranja');
-                                                    deleteEventoControlPorClima(
-                                                        currentUserEmail,
-                                                        grupo);
-                                                    todosLosDispositivos
-                                                        .removeWhere((entry) =>
-                                                            entry.key == grupo);
-                                                    savedOrder.removeWhere(
-                                                        (item) =>
-                                                            item['key'] ==
-                                                            grupo);
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        // ✏️ Botón de Editar para el Dueño
+                                        IconButton(
+                                          icon: const Icon(
+                                            HugeIcons.strokeRoundedPen01,
+                                            color: color4,
+                                          ),
+                                          tooltip: 'Editar evento',
+                                          onPressed: () async {
+                                            final eventoAEditar =
+                                                eventosCreados.firstWhere(
+                                              (e) => e['title'] == grupo,
+                                              orElse: () => <String, dynamic>{},
+                                            );
 
-                                                    _actualizarListasUI();
-                                                  });
-                                                  _saveOrder();
-                                                  Navigator.of(context).pop();
-                                                },
+                                            if (eventoAEditar.isNotEmpty) {
+                                              final result =
+                                                  await Navigator.pushNamed(
+                                                context,
+                                                '/escenas',
+                                                arguments: eventoAEditar,
+                                              );
+                                              if (result == true && mounted) {
+                                                _buildDeviceListFromLoadedData();
+                                              }
+                                            }
+                                          },
+                                        ),
+                                        // 🗑️ Botón de Eliminar original
+                                        IconButton(
+                                          onPressed: () {
+                                            showAlertDialog(
+                                              context,
+                                              false,
+                                              const Text(
+                                                '¿Eliminar este evento clima?',
+                                                style: TextStyle(color: color0),
                                               ),
-                                            ],
-                                          );
-                                        },
-                                      ),
+                                              const Text(
+                                                'Esta acción no se puede deshacer.',
+                                                style: TextStyle(color: color0),
+                                              ),
+                                              <Widget>[
+                                                TextButton(
+                                                  style: ButtonStyle(
+                                                    foregroundColor:
+                                                        WidgetStateProperty.all(
+                                                            color0),
+                                                  ),
+                                                  child: const Text('Cancelar'),
+                                                  onPressed: () {
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                ),
+                                                TextButton(
+                                                  style: ButtonStyle(
+                                                    foregroundColor:
+                                                        WidgetStateProperty.all(
+                                                            color0),
+                                                  ),
+                                                  child:
+                                                      const Text('Confirmar'),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      eventosCreados
+                                                          .removeWhere((e) =>
+                                                              e['title'] ==
+                                                                  grupo &&
+                                                              e['evento'] ==
+                                                                  'clima');
+                                                      putEventos(
+                                                          currentUserEmail,
+                                                          eventosCreados);
+                                                      printLog.d(grupo,
+                                                          color: 'naranja');
+                                                      deleteEventoControlPorClima(
+                                                          currentUserEmail,
+                                                          grupo);
+                                                      todosLosDispositivos
+                                                          .removeWhere(
+                                                              (entry) =>
+                                                                  entry.key ==
+                                                                  grupo);
+                                                      savedOrder.removeWhere(
+                                                          (item) =>
+                                                              item['key'] ==
+                                                              grupo);
+
+                                                      _actualizarListasUI();
+                                                    });
+                                                    _saveOrder();
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                          icon: const Icon(
+                                            HugeIcons.strokeRoundedDelete02,
+                                            color: Colors.redAccent,
+                                            size: 20,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -8007,88 +8171,121 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           ),
                                         ),
                                         const Spacer(),
-                                        Align(
-                                          alignment: Alignment.centerRight,
-                                          child: IconButton(
-                                            icon: const Icon(
-                                              HugeIcons.strokeRoundedDelete02,
-                                              color: Colors.redAccent,
-                                              size: 20,
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            // ✏️ Botón de Editar para el Dueño
+                                            IconButton(
+                                              icon: const Icon(
+                                                HugeIcons.strokeRoundedPen01,
+                                                color: color4,
+                                              ),
+                                              tooltip: 'Editar evento',
+                                              onPressed: () async {
+                                                final eventoAEditar =
+                                                    eventosCreados.firstWhere(
+                                                  (e) => e['title'] == grupo,
+                                                  orElse: () =>
+                                                      <String, dynamic>{},
+                                                );
+
+                                                if (eventoAEditar.isNotEmpty) {
+                                                  final result =
+                                                      await Navigator.pushNamed(
+                                                    context,
+                                                    '/escenas',
+                                                    arguments: eventoAEditar,
+                                                  );
+                                                  if (result == true &&
+                                                      mounted) {
+                                                    _buildDeviceListFromLoadedData();
+                                                  }
+                                                }
+                                              },
                                             ),
-                                            onPressed: () {
-                                              showAlertDialog(
-                                                context,
-                                                false,
-                                                const Text(
-                                                  '¿Eliminar este evento de control por disparador?',
-                                                  style:
-                                                      TextStyle(color: color0),
-                                                ),
-                                                const Text(
-                                                  'Esta acción no se puede deshacer.',
-                                                  style:
-                                                      TextStyle(color: color0),
-                                                ),
-                                                <Widget>[
-                                                  TextButton(
-                                                    style: ButtonStyle(
-                                                      foregroundColor:
-                                                          WidgetStateProperty
-                                                              .all(color0),
-                                                    ),
-                                                    child:
-                                                        const Text('Cancelar'),
-                                                    onPressed: () {
-                                                      Navigator.of(context)
-                                                          .pop();
-                                                    },
+                                            // 🗑️ Botón de Eliminar original
+                                            IconButton(
+                                              onPressed: () {
+                                                showAlertDialog(
+                                                  context,
+                                                  false,
+                                                  const Text(
+                                                    '¿Eliminar este evento de control por disparador?',
+                                                    style: TextStyle(
+                                                        color: color0),
                                                   ),
-                                                  TextButton(
-                                                    style: ButtonStyle(
-                                                      foregroundColor:
-                                                          WidgetStateProperty
-                                                              .all(color0),
-                                                    ),
-                                                    child:
-                                                        const Text('Confirmar'),
-                                                    onPressed: () {
-                                                      setState(() {
-                                                        eventosCreados
-                                                            .removeWhere((e) =>
-                                                                e['title'] ==
-                                                                    grupo &&
-                                                                e['evento'] ==
-                                                                    'disparador');
-                                                        putEventos(
-                                                            currentUserEmail,
-                                                            eventosCreados);
-
-                                                        deleteEventoControlPorDisparadores(
-                                                            activador,
-                                                            currentUserEmail,
-                                                            grupo);
-
-                                                        todosLosDispositivos
-                                                            .removeWhere(
-                                                                (entry) =>
-                                                                    entry.key ==
-                                                                    grupo);
-                                                        savedOrder.removeWhere(
-                                                            (item) =>
-                                                                item['key'] ==
-                                                                grupo);
-
-                                                        _actualizarListasUI();
-                                                      });
-                                                      _saveOrder();
-                                                      Navigator.of(context)
-                                                          .pop();
-                                                    },
+                                                  const Text(
+                                                    'Esta acción no se puede deshacer.',
+                                                    style: TextStyle(
+                                                        color: color0),
                                                   ),
-                                                ],
-                                              );
-                                            },
-                                          ),
+                                                  <Widget>[
+                                                    TextButton(
+                                                      style: ButtonStyle(
+                                                        foregroundColor:
+                                                            WidgetStateProperty
+                                                                .all(color0),
+                                                      ),
+                                                      child: const Text(
+                                                          'Cancelar'),
+                                                      onPressed: () {
+                                                        Navigator.of(context)
+                                                            .pop();
+                                                      },
+                                                    ),
+                                                    TextButton(
+                                                      style: ButtonStyle(
+                                                        foregroundColor:
+                                                            WidgetStateProperty
+                                                                .all(color0),
+                                                      ),
+                                                      child: const Text(
+                                                          'Confirmar'),
+                                                      onPressed: () {
+                                                        setState(() {
+                                                          eventosCreados
+                                                              .removeWhere((e) =>
+                                                                  e['title'] ==
+                                                                      grupo &&
+                                                                  e['evento'] ==
+                                                                      'disparador');
+                                                          putEventos(
+                                                              currentUserEmail,
+                                                              eventosCreados);
+
+                                                          deleteEventoControlPorDisparadores(
+                                                              activador,
+                                                              currentUserEmail,
+                                                              grupo);
+
+                                                          todosLosDispositivos
+                                                              .removeWhere(
+                                                                  (entry) =>
+                                                                      entry
+                                                                          .key ==
+                                                                      grupo);
+                                                          savedOrder.removeWhere(
+                                                              (item) =>
+                                                                  item['key'] ==
+                                                                  grupo);
+
+                                                          _actualizarListasUI();
+                                                        });
+                                                        _saveOrder();
+                                                        Navigator.of(context)
+                                                            .pop();
+                                                      },
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                              icon: const Icon(
+                                                HugeIcons.strokeRoundedDelete02,
+                                                color: Colors.redAccent,
+                                                size: 20,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
@@ -8501,163 +8698,243 @@ class WifiPageState extends ConsumerState<WifiPage>
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(child: _buildNotOwnerWarning()),
-                                    IconButton(
-                                      icon: const Icon(
-                                        HugeIcons.strokeRoundedDelete02,
-                                        color: color0,
-                                        size: 24,
-                                      ),
-                                      onPressed: () {
-                                        showAlertDialog(
-                                          context,
-                                          false,
-                                          const Text('¿Eliminar este horario?',
-                                              style: TextStyle(color: color0)),
-                                          const Text(
-                                              'Esta acción no se puede deshacer.',
-                                              style: TextStyle(color: color0)),
-                                          <Widget>[
-                                            TextButton(
-                                              style: ButtonStyle(
-                                                  foregroundColor:
-                                                      WidgetStateProperty.all(
-                                                          color0)),
-                                              child: const Text('Cancelar'),
-                                              onPressed: () =>
-                                                  Navigator.of(context).pop(),
-                                            ),
-                                            TextButton(
-                                              style: ButtonStyle(
-                                                  foregroundColor:
-                                                      WidgetStateProperty.all(
-                                                          color0)),
-                                              child: const Text('Confirmar'),
-                                              onPressed: () {
-                                                setState(() {
-                                                  eventosCreados.removeWhere(
-                                                      (e) =>
-                                                          e['title'] == grupo &&
-                                                          e['evento'] ==
-                                                              'horario');
-                                                  putEventos(currentUserEmail,
-                                                      eventosCreados);
-                                                  deleteEventoControlPorHorarios(
-                                                      selectedTime,
-                                                      currentUserEmail,
-                                                      grupo);
-                                                  todosLosDispositivos
-                                                      .removeWhere((entry) =>
-                                                          entry.key == grupo);
-                                                  savedOrder.removeWhere(
-                                                      (item) =>
-                                                          item['key'] == grupo);
-                                                  _actualizarListasUI();
-                                                });
-                                                _saveOrder();
-                                                Navigator.of(context).pop();
-                                              },
-                                            ),
-                                          ],
-                                        );
-                                      },
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                            HugeIcons.strokeRoundedPen01,
+                                            color: color4,
+                                          ),
+                                          tooltip: 'Editar evento',
+                                          onPressed: () async {
+                                            final eventoAEditar =
+                                                eventosCreados.firstWhere(
+                                              (e) => e['title'] == grupo,
+                                              orElse: () => <String, dynamic>{},
+                                            );
+
+                                            if (eventoAEditar.isNotEmpty) {
+                                              final result =
+                                                  await Navigator.pushNamed(
+                                                context,
+                                                '/escenas',
+                                                arguments: eventoAEditar,
+                                              );
+                                              if (result == true && mounted) {
+                                                _buildDeviceListFromLoadedData();
+                                              }
+                                            }
+                                          },
+                                        ),
+                                        // 🗑️ Botón de Eliminar original
+                                        IconButton(
+                                          icon: const Icon(
+                                            HugeIcons.strokeRoundedDelete02,
+                                            color: color0,
+                                            size: 24,
+                                          ),
+                                          onPressed: () {
+                                            showAlertDialog(
+                                              context,
+                                              false,
+                                              const Text(
+                                                  '¿Eliminar este horario?',
+                                                  style:
+                                                      TextStyle(color: color0)),
+                                              const Text(
+                                                  'Esta acción no se puede deshacer.',
+                                                  style:
+                                                      TextStyle(color: color0)),
+                                              <Widget>[
+                                                TextButton(
+                                                  style: ButtonStyle(
+                                                      foregroundColor:
+                                                          WidgetStateProperty
+                                                              .all(color0)),
+                                                  child: const Text('Cancelar'),
+                                                  onPressed: () =>
+                                                      Navigator.of(context)
+                                                          .pop(),
+                                                ),
+                                                TextButton(
+                                                  style: ButtonStyle(
+                                                      foregroundColor:
+                                                          WidgetStateProperty
+                                                              .all(color0)),
+                                                  child:
+                                                      const Text('Confirmar'),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      eventosCreados
+                                                          .removeWhere((e) =>
+                                                              e['title'] ==
+                                                                  grupo &&
+                                                              e['evento'] ==
+                                                                  'horario');
+                                                      putEventos(
+                                                          currentUserEmail,
+                                                          eventosCreados);
+                                                      deleteEventoControlPorHorarios(
+                                                          selectedTime,
+                                                          currentUserEmail,
+                                                          grupo);
+                                                      todosLosDispositivos
+                                                          .removeWhere(
+                                                              (entry) =>
+                                                                  entry.key ==
+                                                                  grupo);
+                                                      savedOrder.removeWhere(
+                                                          (item) =>
+                                                              item['key'] ==
+                                                              grupo);
+                                                      _actualizarListasUI();
+                                                    });
+                                                    _saveOrder();
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 )
                               ] else ...[
-                                Row(children: [
-                                  Switch(
-                                    value: isEnabled,
-                                    activeThumbColor: Colors.green,
-                                    activeTrackColor:
-                                        Colors.green.withValues(alpha: 0.3),
-                                    inactiveThumbColor: Colors.grey,
-                                    inactiveTrackColor:
-                                        Colors.grey.withValues(alpha: 0.3),
-                                    onChanged: (val) =>
-                                        _toggleEventEnabled(eventoHorario, val),
-                                  ),
-                                  Text(
-                                    isEnabled ? 'Habilitado' : 'Inhabilitado',
-                                    style: GoogleFonts.poppins(
-                                      color: isEnabled
-                                          ? color0
-                                          : color0.withValues(alpha: 0.6),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
+                                Row(
+                                  children: [
+                                    Switch(
+                                      value: isEnabled,
+                                      activeThumbColor: Colors.green,
+                                      activeTrackColor:
+                                          Colors.green.withValues(alpha: 0.3),
+                                      inactiveThumbColor: Colors.grey,
+                                      inactiveTrackColor:
+                                          Colors.grey.withValues(alpha: 0.3),
+                                      onChanged: (val) => _toggleEventEnabled(
+                                          eventoHorario, val),
                                     ),
-                                  ),
-                                  const Spacer(),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: IconButton(
-                                      onPressed: () {
-                                        showAlertDialog(
-                                          context,
-                                          false,
-                                          const Text(
-                                            '¿Eliminar este evento de control por horario?',
-                                            style: TextStyle(color: color0),
-                                          ),
-                                          const Text(
-                                            'Esta acción no se puede deshacer.',
-                                            style: TextStyle(color: color0),
-                                          ),
-                                          <Widget>[
-                                            TextButton(
-                                              style: ButtonStyle(
-                                                foregroundColor:
-                                                    WidgetStateProperty.all(
-                                                        color0),
-                                              ),
-                                              child: const Text('Cancelar'),
-                                              onPressed: () {
-                                                Navigator.of(context).pop();
-                                              },
-                                            ),
-                                            TextButton(
-                                              style: ButtonStyle(
-                                                foregroundColor:
-                                                    WidgetStateProperty.all(
-                                                        color0),
-                                              ),
-                                              child: const Text('Confirmar'),
-                                              onPressed: () {
-                                                setState(() {
-                                                  eventosCreados.removeWhere(
-                                                      (e) =>
-                                                          e['title'] == grupo &&
-                                                          e['evento'] ==
-                                                              'horario');
-                                                  putEventos(currentUserEmail,
-                                                      eventosCreados);
-                                                  deleteEventoControlPorHorarios(
-                                                      selectedTime,
-                                                      currentUserEmail,
-                                                      grupo);
-                                                  todosLosDispositivos
-                                                      .removeWhere((entry) =>
-                                                          entry.key == grupo);
-                                                  savedOrder.removeWhere(
-                                                      (item) =>
-                                                          item['key'] == grupo);
-                                                  _actualizarListasUI();
-                                                });
-                                                _saveOrder();
-                                                Navigator.of(context).pop();
-                                              },
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                      icon: const Icon(
-                                        HugeIcons.strokeRoundedDelete02,
-                                        color: Colors.redAccent,
-                                        size: 20,
+                                    Text(
+                                      isEnabled ? 'Habilitado' : 'Inhabilitado',
+                                      style: GoogleFonts.poppins(
+                                        color: isEnabled
+                                            ? color0
+                                            : color0.withValues(alpha: 0.6),
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                  ),
-                                ]),
-                              ]
+                                    const Spacer(),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        // ✏️ Botón de Editar para Dueño
+                                        IconButton(
+                                          icon: const Icon(
+                                            HugeIcons.strokeRoundedPen01,
+                                            color: color4,
+                                          ),
+                                          tooltip: 'Editar evento',
+                                          onPressed: () async {
+                                            final eventoAEditar =
+                                                eventosCreados.firstWhere(
+                                              (e) => e['title'] == grupo,
+                                              orElse: () => <String, dynamic>{},
+                                            );
+
+                                            if (eventoAEditar.isNotEmpty) {
+                                              final result =
+                                                  await Navigator.pushNamed(
+                                                context,
+                                                '/escenas',
+                                                arguments: eventoAEditar,
+                                              );
+                                              if (result == true && mounted) {
+                                                _buildDeviceListFromLoadedData();
+                                              }
+                                            }
+                                          },
+                                        ),
+                                        // 🗑️ Botón de Eliminar original
+                                        IconButton(
+                                          onPressed: () {
+                                            showAlertDialog(
+                                              context,
+                                              false,
+                                              const Text(
+                                                '¿Eliminar este evento de control por horario?',
+                                                style: TextStyle(color: color0),
+                                              ),
+                                              const Text(
+                                                'Esta acción no se puede deshacer.',
+                                                style: TextStyle(color: color0),
+                                              ),
+                                              <Widget>[
+                                                TextButton(
+                                                  style: ButtonStyle(
+                                                    foregroundColor:
+                                                        WidgetStateProperty.all(
+                                                            color0),
+                                                  ),
+                                                  child: const Text('Cancelar'),
+                                                  onPressed: () {
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                ),
+                                                TextButton(
+                                                  style: ButtonStyle(
+                                                    foregroundColor:
+                                                        WidgetStateProperty.all(
+                                                            color0),
+                                                  ),
+                                                  child:
+                                                      const Text('Confirmar'),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      eventosCreados
+                                                          .removeWhere((e) =>
+                                                              e['title'] ==
+                                                                  grupo &&
+                                                              e['evento'] ==
+                                                                  'horario');
+                                                      putEventos(
+                                                          currentUserEmail,
+                                                          eventosCreados);
+                                                      deleteEventoControlPorHorarios(
+                                                          selectedTime,
+                                                          currentUserEmail,
+                                                          grupo);
+                                                      todosLosDispositivos
+                                                          .removeWhere(
+                                                              (entry) =>
+                                                                  entry.key ==
+                                                                  grupo);
+                                                      savedOrder.removeWhere(
+                                                          (item) =>
+                                                              item['key'] ==
+                                                              grupo);
+                                                      _actualizarListasUI();
+                                                    });
+                                                    _saveOrder();
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                          icon: const Icon(
+                                            HugeIcons.strokeRoundedDelete02,
+                                            color: Colors.redAccent,
+                                            size: 20,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -8973,64 +9250,100 @@ class WifiPageState extends ConsumerState<WifiPage>
                             const SizedBox(height: 10),
                             Align(
                               alignment: Alignment.centerRight,
-                              child: IconButton(
-                                icon: const Icon(
-                                  HugeIcons.strokeRoundedDelete02,
-                                  color: color0,
-                                ),
-                                tooltip: 'Eliminar evento de grupos',
-                                onPressed: () {
-                                  showAlertDialog(
-                                    context,
-                                    false,
-                                    const Text(
-                                      '¿Eliminar este evento de control por grupos?',
-                                      style: TextStyle(color: color0),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(
+                                      HugeIcons.strokeRoundedPen01,
+                                      color: color4,
                                     ),
-                                    const Text(
-                                      'Esta acción no se puede deshacer.',
-                                      style: TextStyle(color: color0),
+                                    tooltip: 'Editar evento',
+                                    onPressed: () async {
+                                      final eventoAEditar =
+                                          eventosCreados.firstWhere(
+                                        (e) => e['title'] == grupo,
+                                        orElse: () => <String, dynamic>{},
+                                      );
+
+                                      if (eventoAEditar.isNotEmpty) {
+                                        final result =
+                                            await Navigator.pushNamed(
+                                          context,
+                                          '/escenas',
+                                          arguments: eventoAEditar,
+                                        );
+                                        if (result == true && mounted) {
+                                          _buildDeviceListFromLoadedData();
+                                        }
+                                      }
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      HugeIcons.strokeRoundedDelete02,
+                                      color: color0,
                                     ),
-                                    <Widget>[
-                                      TextButton(
-                                        style: ButtonStyle(
-                                          foregroundColor:
-                                              WidgetStateProperty.all(color0),
+                                    tooltip: 'Eliminar evento de grupos',
+                                    onPressed: () {
+                                      showAlertDialog(
+                                        context,
+                                        false,
+                                        const Text(
+                                          '¿Eliminar este evento de control por grupos?',
+                                          style: TextStyle(color: color0),
                                         ),
-                                        child: const Text('Cancelar'),
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                        },
-                                      ),
-                                      TextButton(
-                                        style: ButtonStyle(
-                                          foregroundColor:
-                                              WidgetStateProperty.all(color0),
+                                        const Text(
+                                          'Esta acción no se puede deshacer.',
+                                          style: TextStyle(color: color0),
                                         ),
-                                        child: const Text('Confirmar'),
-                                        onPressed: () {
-                                          setState(() {
-                                            eventosCreados.removeWhere((e) =>
-                                                e['title'] == grupo &&
-                                                e['evento'] == 'grupo');
-                                            putEventos(currentUserEmail,
-                                                eventosCreados);
-                                            printLog.d(grupo, color: 'naranja');
-                                            deleteEventoControlPorGrupos(
-                                                currentUserEmail, grupo);
-                                            todosLosDispositivos.removeWhere(
-                                                (entry) => entry.key == grupo);
-                                            savedOrder.removeWhere(
-                                                (item) => item['key'] == grupo);
-                                            _actualizarListasUI();
-                                          });
-                                          _saveOrder();
-                                          Navigator.of(context).pop();
-                                        },
-                                      ),
-                                    ],
-                                  );
-                                },
+                                        <Widget>[
+                                          TextButton(
+                                            style: ButtonStyle(
+                                              foregroundColor:
+                                                  WidgetStateProperty.all(
+                                                      color0),
+                                            ),
+                                            child: const Text('Cancelar'),
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                          TextButton(
+                                            style: ButtonStyle(
+                                              foregroundColor:
+                                                  WidgetStateProperty.all(
+                                                      color0),
+                                            ),
+                                            child: const Text('Confirmar'),
+                                            onPressed: () {
+                                              setState(() {
+                                                eventosCreados.removeWhere(
+                                                    (e) =>
+                                                        e['title'] == grupo &&
+                                                        e['evento'] == 'grupo');
+                                                putEventos(currentUserEmail,
+                                                    eventosCreados);
+                                                printLog.d(grupo,
+                                                    color: 'naranja');
+                                                deleteEventoControlPorGrupos(
+                                                    currentUserEmail, grupo);
+                                                todosLosDispositivos
+                                                    .removeWhere((entry) =>
+                                                        entry.key == grupo);
+                                                savedOrder.removeWhere((item) =>
+                                                    item['key'] == grupo);
+                                                _actualizarListasUI();
+                                              });
+                                              _saveOrder();
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
                           ],

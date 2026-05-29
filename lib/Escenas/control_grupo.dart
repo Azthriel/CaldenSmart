@@ -9,7 +9,9 @@ import 'package:hugeicons/hugeicons.dart';
 
 class ControlPorGrupoWidget extends StatefulWidget {
   final VoidCallback? onBackToMain;
-  const ControlPorGrupoWidget({super.key, this.onBackToMain});
+    final Map<String, dynamic>? eventoExistente;
+  const ControlPorGrupoWidget(
+      {super.key, this.onBackToMain, this.eventoExistente});
 
   @override
   ControlPorGrupoWidgetState createState() => ControlPorGrupoWidgetState();
@@ -21,7 +23,7 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
 
   Map<String, bool> _wifiPermissions = {};
   bool _isLoadingPermissions = true;
-
+ String? nombreOriginal;
   @override
   void initState() {
     super.initState();
@@ -30,9 +32,21 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
   }
 
   void _initializeData() {
-    deviceGroup.clear();
-    currentStep = 0;
+    if (widget.eventoExistente != null) {
+      title.text = widget.eventoExistente!['title'] ?? '';
+      nombreOriginal = title.text;
+
+      final devices = widget.eventoExistente!['deviceGroup'];
+      if (devices != null) {
+        deviceGroup = List<String>.from(devices);
+      }
+      currentStep = 0;
+    } else {
+      deviceGroup.clear();
+      currentStep = 0;
+    }
   }
+
 
   Future<void> _loadWifiPermissions() async {
     Map<String, bool> permissions = {};
@@ -531,43 +545,54 @@ class ControlPorGrupoWidgetState extends State<ControlPorGrupoWidget> {
   }
 
   void _confirmarGrupo() {
-    printLog.i("=== CONTROL POR GRUPO CREADO ===");
-    printLog.i("Nombre: ${title.text}");
+    printLog.i("=== CONTROL POR GRUPO GUARDADO ===");
+    final nuevoNombre = title.text.trim();
+    printLog.i("Nombre: $nuevoNombre");
     printLog.i("Equipos seleccionados: $deviceGroup");
 
     setState(() {
+      if (widget.eventoExistente != null) {
+        if (nombreOriginal != null && nombreOriginal != nuevoNombre) {
+          deleteEventoControlPorGrupos(currentUserEmail, nombreOriginal!);
+          todosLosDispositivos.removeWhere((e) => e.key == nombreOriginal);
+          savedOrder.removeWhere((e) => e['key'] == nombreOriginal);
+        }
+        eventosCreados.removeWhere(
+            (e) => e['title'] == nombreOriginal && e['evento'] == 'grupo');
+      }
+
       eventosCreados.add({
         'evento': 'grupo',
-        'title': title.text,
+        'title': nuevoNombre,
         'deviceGroup': List<String>.from(deviceGroup),
       });
 
-      putEventos(
-        currentUserEmail,
-        eventosCreados,
-      );
+      putEventos(currentUserEmail, eventosCreados);
 
-      todosLosDispositivos.add(
-        MapEntry(
-          title.text.trim(),
-          deviceGroup.toString(),
-        ),
-      );
+      int indexDisp = todosLosDispositivos
+          .indexWhere((e) => e.key == (nombreOriginal ?? nuevoNombre));
+      if (indexDisp != -1) {
+        todosLosDispositivos[indexDisp] =
+            MapEntry(nuevoNombre, deviceGroup.toString());
+      } else {
+        todosLosDispositivos.add(MapEntry(nuevoNombre, deviceGroup.toString()));
+      }
 
-      putEventoControlPorGrupos(
-          currentUserEmail, title.text.trim(), deviceGroup);
+      putEventoControlPorGrupos(currentUserEmail, nuevoNombre, deviceGroup);
 
-      deviceGroup.clear();
-      showToast("Grupo confirmado");
+      showToast(widget.eventoExistente != null
+          ? "Grupo actualizado"
+          : "Grupo confirmado");
 
-      _initializeData();
-      title.clear();
+      if (widget.eventoExistente == null) {
+        _initializeData();
+        title.clear();
+      }
     });
 
     Navigator.pop(context, true);
-
-    printLog.i(eventosCreados);
   }
+
 
   @override
   void dispose() {

@@ -9,7 +9,10 @@ import 'package:hugeicons/hugeicons.dart';
 
 class ControlDisparadorWidget extends StatefulWidget {
   final VoidCallback? onBackToMain;
-  const ControlDisparadorWidget({super.key, this.onBackToMain});
+  final Map<String, dynamic>? eventoExistente;
+
+  const ControlDisparadorWidget(
+      {super.key, this.onBackToMain, this.eventoExistente});
 
   @override
   ControlDisparadorWidgetState createState() => ControlDisparadorWidgetState();
@@ -25,7 +28,8 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
   String estadoTermometro = "1";
   Map<String, bool> _wifiPermissions = {};
   bool _isLoadingPermissions = true;
-
+  String? nombreOriginal;
+  String? activadorOriginal;
   @override
   void initState() {
     super.initState();
@@ -34,10 +38,38 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
   }
 
   void _initializeData() {
-    activadores.clear();
-    ejecutores.clear();
-    deviceActions.clear();
-    currentStep = 0;
+    if (widget.eventoExistente != null) {
+      title.text = widget.eventoExistente!['title'] ?? '';
+      nombreOriginal = title.text;
+
+      activadores =
+          List<String>.from(widget.eventoExistente!['activadores'] ?? []);
+      if (activadores.isNotEmpty) activadorOriginal = activadores.first;
+
+      ejecutores =
+          List<String>.from(widget.eventoExistente!['ejecutores'] ?? []);
+
+      Map<String, bool> savedActions = Map<String, bool>.from(
+          widget.eventoExistente!['deviceActions'] ?? {});
+      deviceActions.clear();
+      savedActions.forEach((key, value) {
+        String originalName = key.split(':').first;
+        deviceActions[originalName] = value;
+      });
+
+      estadoAlerta = widget.eventoExistente!['estadoAlerta']?.toString() ?? "1";
+      estadoTermometro =
+          widget.eventoExistente!['estadoTermometro']?.toString() ?? "1";
+
+      currentStep = 0;
+    } else {
+      activadores.clear();
+      ejecutores.clear();
+      deviceActions.clear();
+      currentStep = 0;
+      estadoAlerta = "1";
+      estadoTermometro = "1";
+    }
   }
 
   Future<void> _loadWifiPermissions() async {
@@ -1255,29 +1287,20 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
   }
 
   void _confirmarDisparador() async {
-    printLog.i("=== CONTROL POR DISPARADOR CREADO ===");
-    printLog.i("Nombre: ${title.text}");
-    printLog.i("Activadores: $activadores");
-    printLog.i("Ejecutores: $ejecutores");
-    printLog.i("Acciones: $deviceActions");
-
+    printLog.i("=== CONTROL POR DISPARADOR GUARDADO ===");
     List<String> deviceGroup = [];
     Map<String, bool> finalDeviceActions = {};
 
     deviceGroup.addAll(activadores);
-
     deviceGroup.addAll(ejecutores);
 
     for (String item in ejecutores) {
       finalDeviceActions[item] = deviceActions[item] ?? false;
     }
 
-    printLog.i("DeviceGroup completo: $deviceGroup");
-    printLog.i("Acciones finales: $finalDeviceActions");
-
     Map<String, dynamic> eventoData = {
       'evento': 'disparador',
-      'title': title.text,
+      'title': title.text.trim(),
       'activadores': List<String>.from(activadores),
       'ejecutores': List<String>.from(ejecutores),
       'deviceGroup': List<String>.from(deviceGroup),
@@ -1286,64 +1309,86 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
       'estadoTermometro': estadoTermometro,
     };
 
-    eventosCreados.add(eventoData);
-    putEventos(currentUserEmail, eventosCreados);
-
-    if (ejecutores.isNotEmpty) {
-      Map<String, bool> ejecutoresMap = {};
-      for (String item in ejecutores) {
-        final eventoEncontrado = eventosCreados.firstWhere(
-          (evento) => evento['title'] == item,
-          orElse: () => <String, dynamic>{},
-        );
-
-        String finalKey;
-        if (eventoEncontrado.isNotEmpty) {
-          // Es un evento, agregar el tipo
-          final eventoType = eventoEncontrado['evento'] as String;
-          finalKey = '$item:$eventoType';
-        } else {
-          // Es un dispositivo individual, agregar el tipo 'dispositivo'
-          finalKey = '$item:dispositivo';
-        }
-        ejecutoresMap[finalKey] = finalDeviceActions[item] ?? false;
-      }
-
-      String tipoAlerta;
-      String activador = activadores.first;
-      bool isTermometro = activador.contains('Termometro');
-
-      if (isTermometro) {
-        if (estadoTermometro == "1") {
-          tipoAlerta = estadoAlerta == "1"
-              ? 'ejecutoresMAX_true'
-              : 'ejecutoresMAX_false';
-        } else {
-          tipoAlerta = estadoAlerta == "1"
-              ? 'ejecutoresMIN_true'
-              : 'ejecutoresMIN_false';
-        }
-      } else {
-        tipoAlerta = estadoAlerta == "1"
-            ? 'ejecutoresAlert_true'
-            : 'ejecutoresAlert_false';
-      }
-
-      putEventoControlPorDisparadores(
-        activadores.first,
-        currentUserEmail,
-        title.text,
-        ejecutoresMap,
-        tipoAlerta: tipoAlerta,
+    Map<String, bool> ejecutoresMap = {};
+    for (String item in ejecutores) {
+      final eventoEncontrado = eventosCreados.firstWhere(
+        (evento) => evento['title'] == item,
+        orElse: () => <String, dynamic>{},
       );
+
+      String finalKey;
+      if (eventoEncontrado.isNotEmpty) {
+        final eventoType = eventoEncontrado['evento'] as String;
+        finalKey = '$item:$eventoType';
+      } else {
+        finalKey = '$item:dispositivo';
+      }
+      ejecutoresMap[finalKey] = finalDeviceActions[item] ?? false;
     }
 
-    showToast("Evento creado exitosamente");
-    printLog.i("$eventosCreados", color: 'verde');
+    String tipoAlerta;
+    String activador = activadores.first;
+    bool isTermometro = activador.contains('Termometro');
+
+    if (isTermometro) {
+      if (estadoTermometro == "1") {
+        tipoAlerta =
+            estadoAlerta == "1" ? 'ejecutoresMAX_true' : 'ejecutoresMAX_false';
+      } else {
+        tipoAlerta =
+            estadoAlerta == "1" ? 'ejecutoresMIN_true' : 'ejecutoresMIN_false';
+      }
+    } else {
+      tipoAlerta = estadoAlerta == "1"
+          ? 'ejecutoresAlert_true'
+          : 'ejecutoresAlert_false';
+    }
 
     setState(() {
-      _initializeData();
-      title.clear();
+      if (widget.eventoExistente != null) {
+        if (nombreOriginal != null &&
+            activadorOriginal != null &&
+            (nombreOriginal != title.text || activadorOriginal != activador)) {
+          deleteEventoControlPorDisparadores(
+              activadorOriginal!, currentUserEmail, nombreOriginal!);
+          todosLosDispositivos.removeWhere((e) => e.key == nombreOriginal);
+          savedOrder.removeWhere((e) => e['key'] == nombreOriginal);
+        }
+        eventosCreados.removeWhere(
+            (e) => e['title'] == nombreOriginal && e['evento'] == 'disparador');
+      }
+
+      eventosCreados.add(eventoData);
+
+      int indexDisp = todosLosDispositivos
+          .indexWhere((e) => e.key == (nombreOriginal ?? title.text));
+      if (indexDisp != -1) {
+        todosLosDispositivos[indexDisp] =
+            MapEntry(title.text, deviceGroup.join(','));
+      } else {
+        todosLosDispositivos
+            .add(MapEntry(title.text.trim(), deviceGroup.join(',')));
+      }
+
+      putEventos(currentUserEmail, eventosCreados);
+      if (ejecutores.isNotEmpty) {
+        putEventoControlPorDisparadores(
+          activador,
+          currentUserEmail,
+          title.text.trim(),
+          ejecutoresMap,
+          tipoAlerta: tipoAlerta,
+        );
+      }
+
+      showToast(widget.eventoExistente != null
+          ? "Disparador actualizado"
+          : "Disparador creado");
+
+      if (widget.eventoExistente == null) {
+        _initializeData();
+        title.clear();
+      }
     });
 
     Navigator.pop(context, true);

@@ -433,16 +433,16 @@ Future<void> _handleWidgetToggle(int widgetId) async {
     // Actualizar estado optimista: legacy key Y JSON atómico.
     // Kotlin lee el JSON atómico primero; sin esto el widget no refleja el toggle.
     await HomeWidget.saveWidgetData('widget_status_$widgetId', newStatus);
-    final _toggleJsonStr =
+    final toggleJsonStr =
         await HomeWidget.getWidgetData<String>('widget_state_$widgetId');
-    if (_toggleJsonStr != null && _toggleJsonStr.isNotEmpty) {
+    if (toggleJsonStr != null && toggleJsonStr.isNotEmpty) {
       try {
-        final _toggleMap =
-            Map<String, dynamic>.from(jsonDecode(_toggleJsonStr));
-        _toggleMap['status'] = newStatus;
-        _toggleMap['ts'] = DateTime.now().millisecondsSinceEpoch;
+        final toggleMap =
+            Map<String, dynamic>.from(jsonDecode(toggleJsonStr));
+        toggleMap['status'] = newStatus;
+        toggleMap['ts'] = DateTime.now().millisecondsSinceEpoch;
         await HomeWidget.saveWidgetData(
-            'widget_state_$widgetId', jsonEncode(_toggleMap));
+            'widget_state_$widgetId', jsonEncode(toggleMap));
       } catch (_) {}
     }
 
@@ -503,17 +503,17 @@ Future<void> updateWidgetsForDevice(
 
         // Actualizar JSON atómico: Kotlin lo lee con prioridad sobre legacy keys.
         // Sin esto los cambios de estado por MQTT nunca se reflejan visualmente.
-        final _atomicStr =
+        final atomicStr =
             await HomeWidget.getWidgetData<String>('widget_state_$widgetId');
-        if (_atomicStr != null && _atomicStr.isNotEmpty) {
+        if (atomicStr != null && atomicStr.isNotEmpty) {
           try {
-            final _atomicMap =
-                Map<String, dynamic>.from(jsonDecode(_atomicStr));
-            _atomicMap['status'] = isOn;
-            _atomicMap['online'] = isOnline;
-            _atomicMap['ts'] = DateTime.now().millisecondsSinceEpoch;
+            final atomicMap =
+                Map<String, dynamic>.from(jsonDecode(atomicStr));
+            atomicMap['status'] = isOn;
+            atomicMap['online'] = isOnline;
+            atomicMap['ts'] = DateTime.now().millisecondsSinceEpoch;
             await HomeWidget.saveWidgetData(
-                'widget_state_$widgetId', jsonEncode(_atomicMap));
+                'widget_state_$widgetId', jsonEncode(atomicMap));
           } catch (_) {}
         }
 
@@ -1242,18 +1242,18 @@ Future<void> updateWidgetsForDeviceDisplay(String pc, String sn, bool isOnline,
         }
 
         // Actualizar JSON atómico: Kotlin lo lee con prioridad sobre legacy keys.
-        final _dispAtomicStr =
+        final dispAtomicStr =
             await HomeWidget.getWidgetData<String>('widget_state_$widgetId');
-        if (_dispAtomicStr != null && _dispAtomicStr.isNotEmpty) {
+        if (dispAtomicStr != null && dispAtomicStr.isNotEmpty) {
           try {
-            final _dispMap =
-                Map<String, dynamic>.from(jsonDecode(_dispAtomicStr));
-            _dispMap['online'] = isOnline;
-            if (displayTemp != null) _dispMap['displayTemp'] = displayTemp;
-            if (displayAlert != null) _dispMap['displayAlert'] = displayAlert;
-            _dispMap['ts'] = DateTime.now().millisecondsSinceEpoch;
+            final dispMap =
+                Map<String, dynamic>.from(jsonDecode(dispAtomicStr));
+            dispMap['online'] = isOnline;
+            if (displayTemp != null) dispMap['displayTemp'] = displayTemp;
+            if (displayAlert != null) dispMap['displayAlert'] = displayAlert;
+            dispMap['ts'] = DateTime.now().millisecondsSinceEpoch;
             await HomeWidget.saveWidgetData(
-                'widget_state_$widgetId', jsonEncode(_dispMap));
+                'widget_state_$widgetId', jsonEncode(dispMap));
           } catch (_) {}
         }
 

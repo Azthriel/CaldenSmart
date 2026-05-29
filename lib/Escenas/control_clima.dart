@@ -9,7 +9,10 @@ import 'package:hugeicons/hugeicons.dart';
 
 class ControlClimaWidget extends StatefulWidget {
   final VoidCallback? onBackToMain;
-  const ControlClimaWidget({super.key, this.onBackToMain});
+  final Map<String, dynamic>? eventoExistente;
+
+  const ControlClimaWidget(
+      {super.key, this.onBackToMain, this.eventoExistente});
 
   @override
   ControlClimaWidgetState createState() => ControlClimaWidgetState();
@@ -21,7 +24,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
   List<String> deviceGroup = [];
   Map<String, bool> deviceActions = {};
   String selectedWeatherCondition = '';
-
+  String? nombreOriginal;
   Map<String, bool> _wifiPermissions = {};
   bool _isLoadingPermissions = true;
 
@@ -47,10 +50,33 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
   }
 
   void _initializeData() {
-    deviceGroup.clear();
-    deviceActions.clear();
-    currentStep = 0;
-    selectedWeatherCondition = weatherConditions.first;
+    if (widget.eventoExistente != null) {
+      title.text = widget.eventoExistente!['title'] ?? '';
+      nombreOriginal = title.text;
+
+      selectedWeatherCondition =
+          widget.eventoExistente!['condition'] ?? weatherConditions.first;
+      windDirection = widget.eventoExistente!['wind_direction'];
+
+      deviceGroup =
+          List<String>.from(widget.eventoExistente!['deviceGroup'] ?? []);
+
+      Map<String, bool> savedActions = Map<String, bool>.from(
+          widget.eventoExistente!['deviceActions'] ?? {});
+      deviceActions.clear();
+      savedActions.forEach((key, value) {
+        String originalName = key.split(':').first;
+        deviceActions[originalName] = value;
+      });
+
+      currentStep = 0;
+    } else {
+      deviceGroup.clear();
+      deviceActions.clear();
+      currentStep = 0;
+      selectedWeatherCondition = weatherConditions.first;
+      windDirection = null;
+    }
   }
 
   bool _isValidForClima(String equipo) {
@@ -1133,12 +1159,7 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
   }
 
   void _confirmarClima() {
-    printLog.d("=== CONTROL POR CLIMA CREADO ===");
-    printLog.d("Nombre: ${title.text}");
-    printLog.d("Condición: $selectedWeatherCondition");
-    printLog.d("Dispositivos/Eventos seleccionados: $deviceGroup");
-    printLog.d("Acciones: $deviceActions");
-
+    printLog.d("=== CONTROL POR CLIMA GUARDADO ===");
     String? directionToSave;
     if (windDirection != null && windDirection != 'Todos los origenes') {
       directionToSave = windDirection;
@@ -1146,21 +1167,15 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
 
     Map<String, dynamic> eventoData = {
       'evento': 'clima',
-      'title': title.text,
+      'title': title.text.trim(),
       'condition': selectedWeatherCondition,
       if (directionToSave != null) 'wind_direction': directionToSave,
       'deviceGroup': List<String>.from(deviceGroup),
       'deviceActions': Map<String, bool>.from(deviceActions),
     };
 
-    eventosCreados.add(eventoData);
-
-    putEventos(currentUserEmail, eventosCreados);
-
     Map<String, Map<String, bool>> ejecutores = {};
-
     for (String item in deviceGroup) {
-      // Verificar si es un evento (grupo o cadena)
       final eventoEncontrado = eventosCreados.firstWhere(
         (evento) => evento['title'] == item,
         orElse: () => <String, dynamic>{},
@@ -1168,41 +1183,59 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
 
       String finalKey;
       if (eventoEncontrado.isNotEmpty) {
-        // Es un evento, agregar el tipo
         final eventoType = eventoEncontrado['evento'] as String;
         finalKey = '$item:$eventoType';
       } else {
-        // Es un dispositivo individual, agregar el tipo 'dispositivo'
         finalKey = '$item:dispositivo';
       }
 
       final name = item.contains('_') ? item.split('_')[0] : item;
       final pc = DeviceManager.getProductCode(name);
       final sn = DeviceManager.extractSerialNumber(name);
-
       final map = globalDATA['$pc/$sn'] ?? {};
       String ubi = map['deviceLocation'] ?? '';
-
-      printLog.d('Ubicación del dispositivo $name: $ubi');
 
       ejecutores[ubi] = {finalKey: deviceActions[item] ?? false};
     }
 
-    printLog.d("Ejecutores: $ejecutores");
-
-    putEventoControlPorClima(currentUserEmail, title.text.trim(),
-        selectedWeatherCondition, ejecutores, directionToSave);
-
-    showToast("Control climático creado exitosamente");
-
     setState(() {
-      _initializeData();
-      title.clear();
+      if (widget.eventoExistente != null) {
+        if (nombreOriginal != null && nombreOriginal != title.text) {
+          deleteEventoControlPorClima(currentUserEmail, nombreOriginal!);
+          todosLosDispositivos.removeWhere((e) => e.key == nombreOriginal);
+          savedOrder.removeWhere((e) => e['key'] == nombreOriginal);
+        }
+        eventosCreados.removeWhere(
+            (e) => e['title'] == nombreOriginal && e['evento'] == 'clima');
+      }
+
+      eventosCreados.add(eventoData);
+
+      int indexDisp = todosLosDispositivos
+          .indexWhere((e) => e.key == (nombreOriginal ?? title.text));
+      if (indexDisp != -1) {
+        todosLosDispositivos[indexDisp] =
+            MapEntry(title.text.trim(), deviceGroup.join(','));
+      } else {
+        todosLosDispositivos
+            .add(MapEntry(title.text.trim(), deviceGroup.join(',')));
+      }
+
+      putEventos(currentUserEmail, eventosCreados);
+      putEventoControlPorClima(currentUserEmail, title.text.trim(),
+          selectedWeatherCondition, ejecutores, directionToSave);
+
+      showToast(widget.eventoExistente != null
+          ? "Control climático actualizado"
+          : "Control climático creado");
+
+      if (widget.eventoExistente == null) {
+        _initializeData();
+        title.clear();
+      }
     });
 
     Navigator.pop(context, true);
-
-    // printLog.i(eventosCreados);
   }
 
   @override

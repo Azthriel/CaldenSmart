@@ -76,7 +76,53 @@ class EscenasPageState extends State<EscenasPage> {
       title.clear();
     });
   }
-//*-Reset Config Escenas-*\\
+  //*-Reset Config Escenas-*\\
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final args = ModalRoute.of(context)?.settings.arguments;
+
+    if (args != null && args is Map<String, dynamic>) {
+      if (currentBuilder == buildMainOptions) {
+        setState(() {
+          switch (args['evento']) {
+            case 'grupo':
+              currentBuilder = () => ControlPorGrupoWidget(
+                    eventoExistente: args,
+                    onBackToMain: () => Navigator.pop(context),
+                  );
+              break;
+            case 'cadena':
+              currentBuilder = () => ControlCadenaWidget(
+                    eventoExistente: args,
+                    onBackToMain: () => Navigator.pop(context),
+                  );
+              break;
+            case 'horario':
+              currentBuilder = () => ControlHorarioWidget(
+                    eventoExistente: args,
+                    onBackToMain: () => Navigator.pop(context),
+                  );
+              break;
+            case 'clima':
+              currentBuilder = () => ControlClimaWidget(
+                    eventoExistente: args,
+                    onBackToMain: () => Navigator.pop(context),
+                  );
+              break;
+            case 'disparador':
+              currentBuilder = () => ControlDisparadorWidget(
+                    eventoExistente: args,
+                    onBackToMain: () => Navigator.pop(context),
+                  );
+              break;
+          }
+        });
+      }
+    }
+  }
 
   String formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
