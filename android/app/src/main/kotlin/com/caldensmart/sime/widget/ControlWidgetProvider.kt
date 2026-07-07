@@ -23,7 +23,10 @@ class ControlWidgetProvider : HomeWidgetProvider() {
     companion object {
         private const val TAG = "ControlWidgetProvider"
         private const val PREFS_NAME = "HomeWidgetPreferences"
-        private const val STALE_THRESHOLD_MS = 20L * 60 * 1000
+        // 40 min: WorkManager (15 min nominal) se atrasa bajo Doze/OEM battery
+        // optimizers; con 20 min el margen era de solo 5 min y los widgets
+        // caian en 'stale' de forma masiva con la app cerrada.
+        private const val STALE_THRESHOLD_MS = 40L * 60 * 1000
 
         // ── Tamaños responsivos ────────────────────────────────────────────
         // Breakpoints en dp basados en celdas estándar Android (70dp/celda):

@@ -993,7 +993,9 @@ void addDeviceToCore(String deviceName) {
   try {
     if (deviceName.contains("Termometro") ||
         deviceName.contains("Detector") ||
-        ((deviceName.contains("Domotica") || deviceName.contains("Modulo") || deviceName.contains("Rele")) &&
+        ((deviceName.contains("Domotica") ||
+                deviceName.contains("Modulo") ||
+                deviceName.contains("Rele")) &&
             !deviceName.contains("_"))) {
       return;
     }
@@ -2226,7 +2228,8 @@ void showNotification(String title, String body, String sonido) async {
                 'CaldénSmart_$sonido',
                 'Eventos',
                 icon: '@mipmap/ic_launcher',
-                sound: RawResourceAndroidNotificationSound(sonido.toLowerCase()),
+                sound:
+                    RawResourceAndroidNotificationSound(sonido.toLowerCase()),
                 enableVibration: true,
                 importance: Importance.max,
                 styleInformation: BigTextStyleInformation(
@@ -2660,16 +2663,23 @@ Future<bool> onIosStart(ServiceInstance service) async {
   _mqttReconnectTimer?.cancel();
   _mqttReconnectTimer =
       Timer.periodic(const Duration(minutes: 5), (timer) async {
-    if (mqttAWSFlutterClient == null ||
-        mqttAWSFlutterClient!.connectionStatus?.state !=
-            MqttConnectionState.connected) {
+    bool connected = mqttAWSFlutterClient != null &&
+        mqttAWSFlutterClient!.connectionStatus?.state ==
+            MqttConnectionState.connected;
+
+    if (!connected) {
       printLog.i('Servicio iOS: Reconectando a MQTT...');
       await setWidgetServiceReady(false);
-      final reconnected = await setupMqtt();
-      if (reconnected) {
+      connected = await setupMqtt();
+      if (connected) {
         await subscribeToWidgetTopics();
         await setWidgetServiceReady(true);
       }
+    }
+
+    // Refrescar ts de widgets (mismo criterio que Android: solo con MQTT vivo)
+    if (connected) {
+      await refreshWidgetTimestamps();
     }
   });
 
@@ -2763,17 +2773,28 @@ void onStart(ServiceInstance service) async {
   _mqttReconnectTimerBg?.cancel();
   _mqttReconnectTimerBg =
       Timer.periodic(const Duration(minutes: 5), (timer) async {
-    if (mqttAWSFlutterClient == null ||
-        mqttAWSFlutterClient!.connectionStatus?.state !=
-            MqttConnectionState.connected) {
+    bool connected = mqttAWSFlutterClient != null &&
+        mqttAWSFlutterClient!.connectionStatus?.state ==
+            MqttConnectionState.connected;
+
+    if (!connected) {
       printLog.i('Servicio background: Reconectando a MQTT...');
       await setWidgetServiceReady(false);
-      final reconnected = await setupMqtt();
-      if (reconnected) {
+      connected = await setupMqtt();
+      if (connected) {
         await subscribeToWidgetTopics();
         await setWidgetServiceReady(true);
         printLog.i('Servicio background: MQTT reconectado');
       }
+    }
+
+    // Refrescar el ts de los widgets desde el foreground service (mucho más
+    // resistente a Doze que WorkManager). Sin esto, el ts envejece con la app
+    // cerrada y Kotlin marca los widgets como stale → todos "desconectados".
+    // Solo si MQTT está conectado: si está caído, dejar envejecer el ts es
+    // el comportamiento honesto (los datos realmente pueden estar viejos).
+    if (connected) {
+      await refreshWidgetTimestamps();
     }
   });
 }

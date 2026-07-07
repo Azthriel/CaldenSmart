@@ -3100,7 +3100,7 @@ class RiegoPageState extends ConsumerState<RiegoPage> {
                                 ),
                               );
                             },
-                            onReorder: (oldIndex, newIndex) {
+                            onReorderItem: (oldIndex, newIndex) {
                               setState(() {
                                 if (newIndex > oldIndex) {
                                   newIndex -= 1;

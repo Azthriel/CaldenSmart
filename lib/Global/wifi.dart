@@ -1696,7 +1696,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                     ),
                   );
                 },
-                onReorder: (int oldIndex, int newIndex) async {
+                onReorderItem: (int oldIndex, int newIndex) async {
                   if (newIndex > oldIndex) newIndex -= 1;
 
                   setState(() {
@@ -4467,7 +4467,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              init ? 'Temperatura: $temp °C' : 'Inicializando...',
+                                              init
+                                                  ? 'Temperatura: $temp °C'
+                                                  : 'Inicializando...',
                                               style: GoogleFonts.poppins(
                                                 color: color0,
                                                 fontSize: 15,
@@ -4515,9 +4517,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                             .strokeRoundedAlert02,
                                                         color: color4,
                                                       )
-                                                    : const Icon(
-                                                        HugeIcons
-                                                            .strokeRoundedTemperature,
+                                                    : const ImageIcon(
+                                                        AssetImage(CaldenIcons
+                                                            .termometro),
                                                         color: Colors.green,
                                                       ),
                                               ],
@@ -5343,7 +5345,7 @@ class WifiPageState extends ConsumerState<WifiPage>
           const SizedBox(height: 120),
         ],
       ),
-      onReorder: (int oldIndex, int newIndex) {
+      onReorderItem: (int oldIndex, int newIndex) {
         if (newIndex > oldIndex) newIndex -= 1;
 
         setState(() {

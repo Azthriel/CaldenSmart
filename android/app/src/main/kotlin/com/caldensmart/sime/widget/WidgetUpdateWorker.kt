@@ -21,8 +21,13 @@ import java.util.concurrent.TimeUnit
  *
  * Lo que sí hace:
  *  1. Envía HomeWidgetBackgroundIntent /update → despierta el isolate Dart
- *     para que llame syncWidgetsWithDatabase() con datos reales.
+ *     para que llame refreshWidgetTimestamps() (refresca ts, NO consulta DynamoDB).
  *  2. Broadcast visual → onUpdate() redibuja con los datos recién guardados.
+ *
+ * ⚠️ Este worker es el RESPALDO, no la vía principal: el refresh principal de
+ *    ts lo hace el timer interno del foreground service (master.dart, 5 min),
+ *    que es mucho más resistente a Doze. WorkManager puede atrasarse 30-60+
+ *    min bajo Doze/OEM optimizers; por eso STALE_THRESHOLD_MS es 40 min.
  */
 class WidgetUpdateWorker(
     context: Context,
@@ -38,7 +43,7 @@ class WidgetUpdateWorker(
             // ⚠️ Sin NetworkType.CONNECTED: el callback solo refresca el timestamp
             // en SharedPrefs (no necesita red). Sin esta constraint, el worker
             // se ejecuta aunque no haya internet, evitando que el ts quede stale
-            // >20 min y el widget se congele.
+            // >40 min y el widget se congele.
             val workRequest = PeriodicWorkRequestBuilder<WidgetUpdateWorker>(
                 15, TimeUnit.MINUTES
             )

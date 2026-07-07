@@ -76,24 +76,17 @@ Future<void> setWidgetServiceReady(bool ready) async {
   }
 }
 
-/// Refresca el timestamp de todos los widgets y marca el servicio como ready.
-/// Llamado desde WorkManager vía HomeWidgetBackgroundIntent("/update") cada 15 minutos.
-///
-/// NO hace llamadas a DynamoDB (el isolate de backgroundCallback no tiene
-/// credenciales AWS inicializadas). Su objetivo es:
-///   1. Evitar que el dato quede "stale" (ts > 20 min → effectiveOnline = false).
-///   2. Resetear widget_service_ready = true para quitar "Iniciando...".
-///   3. Limpiar flags de loading/initializing que pudieran haber quedado colgados.
-Future<void> _handleWidgetBackgroundUpdate() async {
+Future<void> refreshWidgetTimestamps({bool markReady = true}) async {
   try {
-    printLog.i('Background update: refrescando timestamps de widgets...');
+    printLog.i('Refresh timestamps: refrescando ts de widgets...');
 
     final widgetIds = await WidgetService.getWidgetIds();
 
     if (widgetIds.isEmpty) {
-      printLog.i('Background update: no hay widgets configurados');
-      // Igual marcar ready para limpiar cualquier "Iniciando..." huérfano
-      await HomeWidget.saveWidgetData('widget_service_ready', true);
+      printLog.i('Refresh timestamps: no hay widgets configurados');
+      if (markReady) {
+        await HomeWidget.saveWidgetData('widget_service_ready', true);
+      }
       await updateAllWidgets();
       return;
     }
@@ -120,20 +113,23 @@ Future<void> _handleWidgetBackgroundUpdate() async {
           refreshed++;
         }
       } catch (e) {
-        printLog.e('Background update: error refrescando widget $widgetId: $e');
+        printLog
+            .e('Refresh timestamps: error refrescando widget $widgetId: $e');
       }
     }
 
     // Marcar servicio como ready: hay datos válidos guardados
-    await HomeWidget.saveWidgetData('widget_service_ready', true);
+    if (markReady) {
+      await HomeWidget.saveWidgetData('widget_service_ready', true);
+    }
 
     // Disparar redibujado visual en el launcher
     await updateAllWidgets();
 
     printLog.i(
-        'Background update: $refreshed/${widgetIds.length} widgets refrescados');
+        'Refresh timestamps: $refreshed/${widgetIds.length} widgets refrescados');
   } catch (e) {
-    printLog.e('Error en _handleWidgetBackgroundUpdate: $e');
+    printLog.e('Error en refreshWidgetTimestamps: $e');
   }
 }
 
@@ -198,7 +194,7 @@ Future<void> backgroundCallback(Uri? uri) async {
     // Refresca el timestamp de los widgets para evitar que queden "stale"
     // y marca widget_service_ready = true para eliminar "Iniciando..."
     printLog.i('Widget callback: background update solicitado por WorkManager');
-    await _handleWidgetBackgroundUpdate();
+    await refreshWidgetTimestamps();
   } else {
     printLog.i(
         'Widget callback: URI no coincide con ninguna acción conocida (path=${uri.path})');
@@ -437,8 +433,7 @@ Future<void> _handleWidgetToggle(int widgetId) async {
         await HomeWidget.getWidgetData<String>('widget_state_$widgetId');
     if (toggleJsonStr != null && toggleJsonStr.isNotEmpty) {
       try {
-        final toggleMap =
-            Map<String, dynamic>.from(jsonDecode(toggleJsonStr));
+        final toggleMap = Map<String, dynamic>.from(jsonDecode(toggleJsonStr));
         toggleMap['status'] = newStatus;
         toggleMap['ts'] = DateTime.now().millisecondsSinceEpoch;
         await HomeWidget.saveWidgetData(
@@ -507,8 +502,7 @@ Future<void> updateWidgetsForDevice(
             await HomeWidget.getWidgetData<String>('widget_state_$widgetId');
         if (atomicStr != null && atomicStr.isNotEmpty) {
           try {
-            final atomicMap =
-                Map<String, dynamic>.from(jsonDecode(atomicStr));
+            final atomicMap = Map<String, dynamic>.from(jsonDecode(atomicStr));
             atomicMap['status'] = isOn;
             atomicMap['online'] = isOnline;
             atomicMap['ts'] = DateTime.now().millisecondsSinceEpoch;
@@ -1143,8 +1137,7 @@ void _handleWidgetMqttMessage(
                 try {
                   final map = Map<String, dynamic>.from(jsonDecode(jsonStr));
                   if (messageMap.containsKey('actual_position')) {
-                    final int pos =
-                        messageMap['actual_position'] as int? ?? -1;
+                    final int pos = messageMap['actual_position'] as int? ?? -1;
                     final int prevPos = map['rollerPosition'] as int? ?? -1;
                     map['rollerPosition'] = pos;
                     map['status'] = pos >= 50;
