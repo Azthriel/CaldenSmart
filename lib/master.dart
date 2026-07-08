@@ -4037,9 +4037,13 @@ String stringifyPrintLog(dynamic message) {
 //*- Logger ble -*\\
 /// Variable global para controlar la suscripción al registerLogger
 StreamSubscription<List<int>>? registerLoggerSubscription;
-
 /// Timestamp de cuando se inició la sesión de captura de logs
 int? sessionTimestamp;
+
+/// Contador de secuencia de logs dentro de la sesión actual, para evitar
+/// colisiones de sort key en device-register-logs entre distintos paquetes
+/// BLE de la misma sesión (varios onValueReceived).
+int _registerLogSeq = 0;
 
 /// Función para decodificar MessagePack
 dynamic decodeMessagePack(List<int> data) {
@@ -4170,6 +4174,7 @@ void getRecordedData(String dvName) async {
 
     // Crear timestamp de sesión (momento de conexión)
     sessionTimestamp = DateTime.now().millisecondsSinceEpoch;
+    _registerLogSeq = 0; // reset del contador al iniciar una sesión nueva
 
     printLog.i(
         'Iniciando suscripción a registerLogger para $pc/$sn con timestamp de sesión: $sessionTimestamp');
@@ -4202,7 +4207,9 @@ void getRecordedData(String dvName) async {
                 sn,
                 sessionTimestamp!,
                 logsToSave,
+                startSeq: _registerLogSeq,
               );
+              _registerLogSeq += logsToSave.length;
               printLog.i(
                   'Se guardaron ${logsToSave.length} registros en DynamoDB para $pc/$sn bajo timestamp $sessionTimestamp');
             }
@@ -4226,22 +4233,6 @@ void getRecordedData(String dvName) async {
   }
 }
 
-/// Detiene la suscripción al registerLogger
-void stopRecordedData() async {
-  try {
-    await registerLoggerSubscription?.cancel();
-    registerLoggerSubscription = null;
-    sessionTimestamp = null;
-
-    if (bluetoothManager.hasLoggerBle) {
-      await bluetoothManager.registerLoggerUuid.setNotifyValue(false);
-    }
-
-    printLog.i('Desuscrito del registerLogger');
-  } catch (e) {
-    printLog.e('Error deteniendo suscripción del registerLogger: $e');
-  }
-}
 //*- Logger ble -*\\
 
 //*- Extraer coordenadas -*\\

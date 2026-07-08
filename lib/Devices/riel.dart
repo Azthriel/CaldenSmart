@@ -54,6 +54,11 @@ class RollerPageState extends ConsumerState<RollerPage> {
     subscribeToWifiStatus();
     subToVars();
     if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
+
+    registerLoggerSubscription != null
+        ? bluetoothManager.device
+            .cancelWhenDisconnected(registerLoggerSubscription!)
+        : null;
   }
 
   @override

@@ -359,6 +359,11 @@ class TermometroPageState extends ConsumerState<TermometroPage> {
 
     if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
 
+    registerLoggerSubscription != null
+        ? bluetoothManager.device
+            .cancelWhenDisconnected(registerLoggerSubscription!)
+        : null;
+
     _loadHistoricTemp();
   }
 

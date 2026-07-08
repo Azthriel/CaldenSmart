@@ -275,6 +275,11 @@ class DetectorPageState extends ConsumerState<DetectorPage> {
 
     if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
 
+    registerLoggerSubscription != null
+        ? bluetoothManager.device
+            .cancelWhenDisconnected(registerLoggerSubscription!)
+        : null;
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       updateWifiValues(toolsValues);
       if (shouldUpdateDevice) {

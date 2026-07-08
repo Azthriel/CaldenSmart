@@ -29,11 +29,9 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
   var parts2 = utf8.decode(varsValues).split(':');
   final String pc = DeviceManager.getProductCode(deviceName);
   final String sn = DeviceManager.extractSerialNumber(deviceName);
-
   int _selectedIndex = 0;
   double result = 0.0;
   double? valueConsuption;
-
   bool showSecondaryAdminFields = false;
   bool showAddAdminField = false;
   bool showSecondaryAdminList = false;
@@ -48,7 +46,6 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
   bool ignite = false;
   late AnimationController _sparkAnimationController;
   late Animation<double> _sparkPulseAnimation;
-
   late String measure;
   late IconData powerIconOn;
   late IconData powerIconOff;
@@ -499,6 +496,11 @@ class CalefactorPageState extends ConsumerState<CalefactorPage>
     subscribeTrueStatus();
 
     if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
+
+    registerLoggerSubscription != null
+        ? bluetoothManager.device
+            .cancelWhenDisconnected(registerLoggerSubscription!)
+        : null;
 
     addDeviceToCore(deviceName);
   }

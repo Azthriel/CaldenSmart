@@ -2038,81 +2038,80 @@ void savePrintLog(String email, String log) async {
   }
 }
 
-/// Guarda registros de logs del dispositivo en la tabla sime-domotica
-/// Los logs se guardan bajo el atributo 'device_register_ble' como un mapa
-/// donde la clave es el timestamp de sesión y el valor es una lista de logs
+// ───────────────────────────────────────────────────────────────────────────
+// DEVICE REGISTER LOGS — append-only en device-register-logs
+// ───────────────────────────────────────────────────────────────────────────
+
+/// Guarda registros de logs BLE del dispositivo en device-register-logs.
 Future<void> saveDeviceRegisterLog(String pc, String sn, int sessionTimestamp,
-    List<Map<String, dynamic>> logs) async {
+    List<Map<String, dynamic>> logs,
+    {int startSeq = 0}) async {
+  if (logs.isEmpty) return;
+  const int registerLogTtlDays = 30;
   try {
-    // Usar el timestamp de sesión como claveq
-    String sessionKey = sessionTimestamp.toString();
+    final String deviceKey = '$pc#$sn';
+    final int ttl = (DateTime.now().millisecondsSinceEpoch ~/ 1000) +
+        (registerLogTtlDays * 24 * 3600);
 
-    // Obtener los logs existentes
-    final getResponse = await service.getItem(
-      tableName: 'sime-domotica',
-      key: {
-        'product_code': AttributeValue(s: pc),
-        'device_id': AttributeValue(s: sn),
-      },
-    );
+    // Ajusto el timestamp de cada log sumando startSeq (contador de sesión,
+    // manejado por el caller) + su índice dentro de este batch. Esto evita
+    // colisiones de sort key tanto dentro de un mismo call como entre calls
+    // distintos de la misma sesión BLE (varios paquetes onValueReceived).
+    final writeRequests = <WriteRequest>[];
+    for (var i = 0; i < logs.length; i++) {
+      final log = logs[i];
+      final int baseTs = log['timestamp'] is int
+          ? log['timestamp'] as int
+          : int.tryParse(log['timestamp'].toString()) ?? 0;
+      final int adjustedTs = baseTs + startSeq + i;
 
-    Map<String, AttributeValue> existingLogs = {};
-    if (getResponse.item != null &&
-        getResponse.item!['device_register_ble'] != null) {
-      existingLogs = getResponse.item!['device_register_ble']!.m ?? {};
-    }
-
-    // Si ya existe una entrada para este timestamp de sesión, agregar a la lista existente
-    List<AttributeValue> currentSessionLogs = [];
-    if (existingLogs.containsKey(sessionKey) &&
-        existingLogs[sessionKey]!.l != null) {
-      currentSessionLogs = existingLogs[sessionKey]!.l!;
-    }
-
-    // Agregar los nuevos logs a la lista de esta sesión
-    for (var log in logs) {
-      currentSessionLogs.add(
-        AttributeValue(m: {
-          'content': AttributeValue(s: log['content']),
-          'level': AttributeValue(s: log['level']),
-          'timestamp': AttributeValue(n: log['timestamp'].toString()),
-        }),
-      );
-    }
-
-    // Actualizar la entrada de esta sesión
-    existingLogs[sessionKey] = AttributeValue(l: currentSessionLogs);
-
-    // Limitar a las últimas 50 sesiones (mantener solo las más recientes)
-    if (existingLogs.length > 50) {
-      // Ordenar por timestamp de sesión y mantener solo las 50 más recientes
-      var sortedKeys = existingLogs.keys.toList()
-        ..sort((a, b) => int.parse(b).compareTo(int.parse(a)));
-      existingLogs = Map.fromEntries(
-        sortedKeys.take(50).map((key) => MapEntry(key, existingLogs[key]!)),
-      );
-    }
-
-    // Actualizar en DynamoDB
-    await service.updateItem(
-      tableName: 'sime-domotica',
-      key: {
-        'product_code': AttributeValue(s: pc),
-        'device_id': AttributeValue(s: sn),
-      },
-      attributeUpdates: {
-        'device_register_ble': AttributeValueUpdate(
-          value: AttributeValue(m: existingLogs),
+      writeRequests.add(
+        WriteRequest(
+          putRequest: PutRequest(
+            item: {
+              'device_key': AttributeValue(s: deviceKey),
+              'timestamp': AttributeValue(n: adjustedTs.toString()),
+              'session_timestamp':
+                  AttributeValue(n: sessionTimestamp.toString()),
+              'content': AttributeValue(s: log['content'].toString()),
+              'level': AttributeValue(s: log['level'].toString()),
+              'ttl': AttributeValue(n: ttl.toString()),
+            },
+          ),
         ),
-      },
-    );
+      );
+    }
 
-    printLog.i('Registros BLE guardados para $pc/$sn bajo sesión $sessionKey');
+    // BatchWriteItem acepta máximo 25 items por call, así que trocamos.
+    for (var i = 0; i < writeRequests.length; i += 25) {
+      final chunk = writeRequests.sublist(
+        i,
+        i + 25 > writeRequests.length ? writeRequests.length : i + 25,
+      );
+
+      final result = await service.batchWriteItem(
+        requestItems: {'device-register-logs': chunk},
+      );
+
+      // Reintento simple de los items que Dynamo no pudo procesar (throttling).
+      var unprocessed = result.unprocessedItems?['device-register-logs'];
+      var retries = 0;
+      while (unprocessed != null && unprocessed.isNotEmpty && retries < 3) {
+        await Future.delayed(Duration(milliseconds: 200 * (retries + 1)));
+        final retryResult = await service.batchWriteItem(
+          requestItems: {'device-register-logs': unprocessed},
+        );
+        unprocessed = retryResult.unprocessedItems?['device-register-logs'];
+        retries++;
+      }
+    }
+
+    printLog.i(
+        'Registros BLE guardados para $pc/$sn bajo sesión $sessionTimestamp (${logs.length} logs)');
   } catch (e) {
     printLog.e('Error guardando registros BLE: $e');
   }
 }
-
 ///Inhabilita o habilita un evento
 void setEventEnabled(
     String nombreEvento, String email, bool habilitado, String tipoEvento,

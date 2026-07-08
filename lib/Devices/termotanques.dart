@@ -441,6 +441,11 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
     addDeviceToCore(deviceName);
 
     if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
+
+    registerLoggerSubscription != null
+        ? bluetoothManager.device
+            .cancelWhenDisconnected(registerLoggerSubscription!)
+        : null;
   }
 
   @override

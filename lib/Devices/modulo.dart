@@ -342,6 +342,11 @@ class ModuloPageState extends ConsumerState<ModuloPage> {
     notificationMap.putIfAbsent('$pc/$sn', () => List<bool>.filled(4, false));
 
     if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
+
+    registerLoggerSubscription != null
+        ? bluetoothManager.device
+            .cancelWhenDisconnected(registerLoggerSubscription!)
+        : null;
   }
 
   @override

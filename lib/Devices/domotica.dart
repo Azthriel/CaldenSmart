@@ -342,6 +342,11 @@ class DomoticaPageState extends ConsumerState<DomoticaPage> {
     processValues(ioValues);
 
     if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
+
+    registerLoggerSubscription != null
+        ? bluetoothManager.device
+            .cancelWhenDisconnected(registerLoggerSubscription!)
+        : null;
   }
 
   @override

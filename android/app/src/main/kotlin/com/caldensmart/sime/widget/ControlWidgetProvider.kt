@@ -312,10 +312,14 @@ class ControlWidgetProvider : HomeWidgetProvider() {
 
             if (nickname.isNotEmpty()) {
                 views.setTextViewText(R.id.widget_device_name, nickname)
-                views.setImageViewResource(
-                    R.id.widget_connection_icon,
-                    if (effectiveOnline) R.drawable.ic_widget_online else R.drawable.ic_widget_offline
-                )
+                
+                if (effectiveOnline && isServiceReady) {
+                    views.setImageViewResource(R.id.widget_connection_icon, R.drawable.ic_widget_online)
+                    views.setInt(R.id.widget_connection_icon, "setColorFilter", 0) 
+                } else {
+                    views.setImageViewResource(R.id.widget_connection_icon, R.drawable.ic_widget_offline)
+                    views.setInt(R.id.widget_connection_icon, "setColorFilter", 0xFF9E9E9E.toInt())
+                }
 
                 if (productCode == "024011_IOT") {
                     renderRollerWidget(
@@ -362,7 +366,14 @@ class ControlWidgetProvider : HomeWidgetProvider() {
         val canInteract = effectiveOnline && !isLoading && isServiceReady
 
         when {
-            !isServiceReady && effectiveOnline -> {
+            !effectiveOnline -> {
+                views.setInt(R.id.widget_status_icon, "setColorFilter", 0xFF9E9E9E.toInt())
+                views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_offline)
+                val pi = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
+                views.setOnClickPendingIntent(R.id.widget_container, pi)
+            }
+
+            !isServiceReady -> {
                 views.setViewVisibility(R.id.widget_power_indicator, android.view.View.VISIBLE)
                 views.setViewVisibility(R.id.widget_status_icon, android.view.View.GONE)
                 views.setTextViewText(R.id.widget_power_indicator, "Iniciando...")
@@ -493,6 +504,15 @@ class ControlWidgetProvider : HomeWidgetProvider() {
     ) {
         val pi = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
         views.setOnClickPendingIntent(R.id.widget_container, pi)
+
+        if (!effectiveOnline) {
+            views.setViewVisibility(R.id.widget_power_indicator, android.view.View.VISIBLE)
+            views.setViewVisibility(R.id.widget_status_icon, android.view.View.GONE)
+            views.setTextViewText(R.id.widget_power_indicator, "--°C")
+            views.setTextColor(R.id.widget_power_indicator, 0xFF9E9E9E.toInt())
+            views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_offline)
+            return // Frena el renderizado y evita entrar al 'when'
+        }
 
         when {
             productCode == "023430_IOT" -> {

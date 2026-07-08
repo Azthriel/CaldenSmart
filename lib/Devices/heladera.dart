@@ -467,6 +467,11 @@ class HeladeraPageState extends ConsumerState<HeladeraPage> {
 
     if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
 
+    registerLoggerSubscription != null
+        ? bluetoothManager.device
+            .cancelWhenDisconnected(registerLoggerSubscription!)
+        : null;
+
     addDeviceToCore(deviceName);
   }
 

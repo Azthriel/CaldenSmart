@@ -377,6 +377,11 @@ class Rele1i1oPageState extends ConsumerState<Rele1i1oPage> {
     processValues(ioValues);
 
     if (bluetoothManager.hasLoggerBle) getRecordedData(deviceName);
+
+    registerLoggerSubscription != null
+        ? bluetoothManager.device
+            .cancelWhenDisconnected(registerLoggerSubscription!)
+        : null;
   }
 
   @override
