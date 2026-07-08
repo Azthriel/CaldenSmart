@@ -1,21 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent">
 
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@drawable/widget_background_alert"
-        android:padding="10dp">
+    <RelativeLayout android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/widget_background_off" android:padding="10dp">
 
-        <ImageView
-            android:id="@+id/img_dragon"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:layout_centerInParent="true"
-            android:contentDescription="Imagen del dragón"
-            android:src="@drawable/dragon_foreground" />
+        <ImageView android:id="@+id/img_dragon" android:layout_width="60dp" android:layout_height="60dp" android:layout_centerInParent="true" android:contentDescription="Imagen del dragón" android:src="@drawable/dragon_foreground" />
 
     </RelativeLayout>
 

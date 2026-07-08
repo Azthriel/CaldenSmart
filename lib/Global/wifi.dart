@@ -6016,9 +6016,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           final Map<String, dynamic> dData =
                                               globalDATA['$dpc/$dsn'] ?? {};
                                           final bool hasEntry =
-                                              dData['hasEntry'] ?? true;
+                                              dData['hasEntry'] ?? false;
                                           // Si no tiene entrada y es salida 0 → omitir sufijo
-                                          if (idx == '0' && !hasEntry) {
+                                          if (idx == '0' && !hasEntry && dpc == '027313_IOT') {
                                             displayName =
                                                 nicknamesMap[baseName] ??
                                                     baseName;
@@ -6944,9 +6944,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                   String sn = DeviceManager.extractSerialNumber(baseName);
                   Map<String, dynamic> devData = globalDATA['$pc/$sn'] ?? {};
 
-                  bool hasEntry = devData['hasEntry'] ?? true;
+                  bool hasEntry = devData['hasEntry'] ?? false;
 
-                  if (index == '0' && !hasEntry) {
+                  if (index == '0' && !hasEntry && pc == '027313_IOT') {
                     displayName = nicknamesMap[baseName] ?? baseName;
                   } else {
                     displayName = nicknamesMap[equipo.trim()] ??
@@ -7554,9 +7554,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                   Map<String, dynamic> devData = globalDATA['$pc/$sn'] ?? {};
 
                   // 2. Verificamos hasEntry
-                  bool hasEntry = devData['hasEntry'] ?? true;
+                  bool hasEntry = devData['hasEntry'] ?? false;
 
-                  if (index == '0' && !hasEntry) {
+                  if (index == '0' && !hasEntry && pc == '027313_IOT') {
                     displayName = nicknamesMap[baseName] ?? baseName;
                   } else {
                     displayName = nicknamesMap[equipo.trim()] ??
@@ -8409,9 +8409,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                   String sn = DeviceManager.extractSerialNumber(baseName);
                   Map<String, dynamic> devData = globalDATA['$pc/$sn'] ?? {};
 
-                  bool hasEntry = devData['hasEntry'] ?? true;
+                  bool hasEntry = devData['hasEntry'] ?? false;
 
-                  if (index == '0' && !hasEntry) {
+                  if (index == '0' && !hasEntry && pc == '027313_IOT') {
                     displayName = nicknamesMap[baseName] ?? baseName;
                   } else {
                     displayName = nicknamesMap[equipo.trim()] ??
@@ -9034,8 +9034,8 @@ class WifiPageState extends ConsumerState<WifiPage>
               final String gpc = DeviceManager.getProductCode(baseName);
               final String gsn = DeviceManager.extractSerialNumber(baseName);
               final Map<String, dynamic> gData = globalDATA['$gpc/$gsn'] ?? {};
-              final bool hasEntry = gData['hasEntry'] ?? true;
-              if (idx == '0' && !hasEntry) {
+              final bool hasEntry = gData['hasEntry'] ?? false;
+              if (idx == '0' && !hasEntry && gpc == '027313_IOT') {
                 displayName = nicknamesMap[baseName] ?? baseName;
               } else {
                 displayName = nicknamesMap[equipo.trim()] ??

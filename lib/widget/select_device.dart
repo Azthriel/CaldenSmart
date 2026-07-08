@@ -80,8 +80,8 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
           bool ioDevice = false;
 
           // Verificar hasEntry para dispositivos que pueden tener entrada
-          // Por defecto true si no existe (para compatibilidad con equipos viejos)
-          bool hasEntry = deviceDATA['hasEntry'] ?? true;
+          // Por defecto false si no existe (para compatibilidad con equipos viejos)
+          bool hasEntry = deviceDATA['hasEntry'] ?? false;
           bool isRiego = deviceDATA['riegoActive'] == true;
 
           if (isRiego) continue; // Saltar dispositivos de riego
@@ -101,9 +101,12 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
               if (isOutput) {
                 // Salidas siempre se muestran (son de control)
                 devicesToShow.addAll({'${device}_$index': true});
-              } else if (hasEntry) {
+              } else {
                 // Entradas solo si hasEntry es true (son de visualización)
-                devicesToShow.addAll({'${device}_$index': false});
+                if (pc == '027313_IOT' && !hasEntry) {
+                } else {
+                  devicesToShow.addAll({'${device}_$index': false});
+                }
               }
               // Si pinType == 1 y hasEntry == false, no se agrega
             }
@@ -151,8 +154,8 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
         final String bIdx = deviceKey.split('_')[1];
         final String bPc = DeviceManager.getProductCode(bName);
         final String bSn = DeviceManager.extractSerialNumber(bName);
-        final bool bHasEntry = globalDATA['$bPc/$bSn']?['hasEntry'] ?? true;
-        if (bIdx == '0' && !bHasEntry) {
+        final bool bHasEntry = globalDATA['$bPc/$bSn']?['hasEntry'] ?? false;
+        if (bIdx == '0' && !bHasEntry && bPc == '027313_IOT') {
           nickname = nicknamesMap[bName] ?? bName;
         } else {
           nickname = nicknamesMap[deviceKey] ??
@@ -304,8 +307,8 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
                     final String bPc = DeviceManager.getProductCode(bName);
                     final String bSn = DeviceManager.extractSerialNumber(bName);
                     final bool bHasEntry =
-                        globalDATA['$bPc/$bSn']?['hasEntry'] ?? true;
-                    if (bIdx == '0' && !bHasEntry) {
+                        globalDATA['$bPc/$bSn']?['hasEntry'] ?? false;
+                    if (bIdx == '0' && !bHasEntry && bPc == '027313_IOT') {
                       nickname = nicknamesMap[bName] ?? bName;
                     } else {
                       nickname = nicknamesMap[device.key] ??
