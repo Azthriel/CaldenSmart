@@ -200,7 +200,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
   List<Widget> _buildActivadoresSelection() {
     List<Widget> widgets = [];
 
-    for (String equipo in previusConnections) {
+    for (String equipo in getOrderedDeviceList()) {
       if (!_isActivador(equipo)) continue;
 
       final displayName = nicknamesMap[equipo] ?? equipo;
@@ -346,7 +346,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
   }
 
   List<Widget> _buildEjecutoresSelection() {
-    final validDevices = previusConnections.where((equipo) {
+    final validDevices = getOrderedDeviceList().where((equipo) {
       if (!_isEjecutor(equipo)) return false;
       final deviceKey =
           '${DeviceManager.getProductCode(equipo)}/${DeviceManager.extractSerialNumber(equipo)}';

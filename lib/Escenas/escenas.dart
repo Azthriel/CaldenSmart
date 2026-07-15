@@ -1,5 +1,3 @@
-// ignore_for_file: equal_elements_in_set
-
 import 'package:caldensmart/Escenas/control_clima.dart';
 import 'package:caldensmart/Escenas/control_disparadores.dart';
 import 'package:caldensmart/Escenas/control_cadena.dart';
@@ -38,7 +36,7 @@ class EscenasPageState extends State<EscenasPage> {
     };
     title.addListener(_titleListener);
 
-    filterDevices = List.from(previusConnections);
+    filterDevices = List.from(getOrderedDeviceList());
     filterDevices.removeWhere((device) => device.contains('Detector'));
     setState(() {
       showCard = true;

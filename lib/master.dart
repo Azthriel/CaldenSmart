@@ -1927,6 +1927,84 @@ String getWifiErrorSintax(int errorCode) {
 }
 //*-Wifi, menú y scanner-*\\
 
+//*- Orden de equipos según la lista wifi -*\\
+/// Devuelve previusConnections ordenado según el orden que el usuario
+/// configuró en su lista wifi (savedOrder), expandiendo las carpetas
+/// en su orden interno. Los equipos sin orden guardado van al final.
+///
+/// Agregar en master.dart (junto a las demás funciones globales).
+/// Requiere que master.dart importe 'dart:convert' (jsonDecode).
+List<String> getOrderedDeviceList() {
+  try {
+    final List<String> ordered = [];
+    final Set<String> added = {};
+
+    void addDevice(String device) {
+      if (previusConnections.contains(device) && !added.contains(device)) {
+        ordered.add(device);
+        added.add(device);
+      }
+    }
+
+    // Equipos que están dentro de carpetas (en wifi no se listan como 'individual')
+    final Set<String> devicesInFolders = {};
+    folders.forEach((_, devs) => devicesInFolders.addAll(devs));
+
+    final Set<String> processedFolders = {};
+
+    // 1. Respetar el orden guardado por el usuario
+    for (var saved in savedOrder) {
+      String key = saved['key'] ?? '';
+      String value = saved['value'] ?? '';
+
+      if (key == 'folder') {
+        if (value.startsWith('{')) {
+          try {
+            value = jsonDecode(value)['name'];
+          } catch (_) {}
+        }
+        if (folders.containsKey(value)) {
+          processedFolders.add(value);
+          for (var device in folders[value]!) {
+            addDevice(device);
+          }
+        }
+      } else if (key == 'individual') {
+        if (!devicesInFolders.contains(value)) {
+          addDevice(value);
+        }
+      }
+      // Las entradas de eventos (grupo/cadena/etc.) no son equipos: se ignoran
+    }
+
+    // 2. Carpetas nuevas que aún no figuran en savedOrder
+    //    (en wifi.dart se insertan arriba de todo, replicamos eso)
+    final List<String> newFolderDevices = [];
+    for (var folderName in folders.keys) {
+      if (!processedFolders.contains(folderName)) {
+        for (var device in folders[folderName]!) {
+          if (previusConnections.contains(device) && !added.contains(device)) {
+            newFolderDevices.add(device);
+            added.add(device);
+          }
+        }
+      }
+    }
+    ordered.insertAll(0, newFolderDevices);
+
+    // 3. Equipos restantes sin orden guardado, al final
+    for (var device in previusConnections) {
+      addDevice(device);
+    }
+
+    return ordered;
+  } catch (e) {
+    printLog.e('Error ordenando dispositivos según lista wifi: $e');
+    return List.from(previusConnections);
+  }
+}
+//*- Orden de equipos según la lista wifi -*\\
+
 //*-Verifica si hay red inestable basado en discTime-*\\
 /// Verifica si hay 3 o más desconexiones en la última hora
 /// [pc] código del producto
