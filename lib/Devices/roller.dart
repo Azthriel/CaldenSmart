@@ -683,99 +683,144 @@ class RollerPageState extends ConsumerState<RollerPage> {
   }
 
   Widget _calibrationMoveButtons() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: GestureDetector(
-            onLongPressStart: (_) {
-              setState(() => _isPressingUp = true);
-              setDistance(0);
-            },
-            onLongPressEnd: (_) {
-              setState(() {
-                _isPressingUp = false;
-                workingPosition = actualPosition;
-              });
-              setDistance(actualPosition);
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: _isPressingUp ? color4 : color1,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: const [
-                  BoxShadow(
-                      color: Colors.black26,
-                      offset: Offset(0, 4),
-                      blurRadius: 5),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(HugeIcons.strokeRoundedArrowUp02,
-                      color: _isPressingUp ? color1 : color0),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Subir',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: _isPressingUp ? color1 : color0,
-                    ),
-                  ),
-                ],
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Sentido de Rotación',
+                    style: TextStyle(color: color0, fontSize: 15)),
+                Text(
+                  rollerPolarity == '1' ? 'Invertido' : 'Normal',
+                  style: const TextStyle(
+                      color: color3, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  rollerPolarity = rollerPolarity == '0' ? '1' : '0';
+                });
+                setRollerPolarity();
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: rollerPolarity == '1' ? color3 : Colors.transparent,
+                  border: Border.all(
+                      color: rollerPolarity == '1'
+                          ? color3
+                          : color0.withValues(alpha: 0.3)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(HugeIcons.strokeRoundedExchange01,
+                    color: color0, size: 20),
               ),
             ),
-          ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: GestureDetector(
-            onLongPressStart: (_) {
-              setState(() => _isPressingDown = true);
-              setDistance(100);
-            },
-            onLongPressEnd: (_) {
-              setState(() {
-                _isPressingDown = false;
-                workingPosition = actualPosition;
-              });
-              setDistance(actualPosition);
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: _isPressingDown ? color4 : color1,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: const [
-                  BoxShadow(
-                      color: Colors.black26,
-                      offset: Offset(0, 4),
-                      blurRadius: 5),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(HugeIcons.strokeRoundedArrowDown02,
-                      color: _isPressingDown ? color1 : color0),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Bajar',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: _isPressingDown ? color1 : color0,
-                    ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onLongPressStart: (_) {
+                  setState(() => _isPressingUp = true);
+                  setDistance(0);
+                },
+                onLongPressEnd: (_) {
+                  setState(() {
+                    _isPressingUp = false;
+                    workingPosition = actualPosition;
+                  });
+                  setDistance(actualPosition);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: _isPressingUp ? color4 : color1,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: const [
+                      BoxShadow(
+                          color: Colors.black26,
+                          offset: Offset(0, 4),
+                          blurRadius: 5),
+                    ],
                   ),
-                ],
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(HugeIcons.strokeRoundedArrowUp02,
+                          color: _isPressingUp ? color1 : color0),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Subir',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: _isPressingUp ? color1 : color0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: GestureDetector(
+                onLongPressStart: (_) {
+                  setState(() => _isPressingDown = true);
+                  setDistance(100);
+                },
+                onLongPressEnd: (_) {
+                  setState(() {
+                    _isPressingDown = false;
+                    workingPosition = actualPosition;
+                  });
+                  setDistance(actualPosition);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: _isPressingDown ? color4 : color1,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: const [
+                      BoxShadow(
+                          color: Colors.black26,
+                          offset: Offset(0, 4),
+                          blurRadius: 5),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(HugeIcons.strokeRoundedArrowDown02,
+                          color: _isPressingDown ? color1 : color0),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Bajar',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: _isPressingDown ? color1 : color0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        )
       ],
     );
   }
@@ -1862,7 +1907,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
                   ),
             IconButton(
               key: keys['roller:wifi']!,
-              icon: Icon(wifiState.wifiIcon, color: color0),
+              icon: Icon(wifiState.wifiIcon as IconData, color: color0),
               onPressed: () {
                 if (_isTutorialActive) return;
                 wifiText(context);

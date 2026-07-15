@@ -269,6 +269,22 @@ class QRScannerScreenState extends State<QRScannerScreen> {
 
       await putPreviusConnections(currentUserEmail, previusConnections);
 
+      if (productCode != '015773_IOT' && productCode != '023430_IOT') {
+        if (productCode == '027313_IOT') {
+          addDeviceToCore('${deviceName}_0');
+        } else if (productCode == '020020_IOT') {
+          addDeviceToCore('${deviceName}_0');
+          addDeviceToCore('${deviceName}_1');
+        } else if (productCode == '020010_IOT') {
+          addDeviceToCore('${deviceName}_0');
+          addDeviceToCore('${deviceName}_1');
+          addDeviceToCore('${deviceName}_2');
+          addDeviceToCore('${deviceName}_3');
+        } else {
+          addDeviceToCore(deviceName);
+        }
+      }
+
       _showSuccessDialog(deviceName, sharedBy);
     } catch (e) {
       printLog.e('Error agregando dispositivo: $e');

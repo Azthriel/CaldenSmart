@@ -131,6 +131,5 @@ echo  ╚═══════════════════════�
 echo.
 
 :: Sonido de notificación
-echo 
-
+echo
 pause

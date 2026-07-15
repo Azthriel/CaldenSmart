@@ -1151,19 +1151,28 @@ void wifiText(BuildContext context) async {
   }
 
   if (context.mounted && !isRestrictedAdmin) {
-    showDialog(
-      barrierDismissible: true,
+    showGeneralDialog(
       context: context,
-      builder: (BuildContext context) {
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (BuildContext context, Animation<double> animation,
+          Animation<double> secondaryAnimation) {
         return Consumer(
-            builder: (BuildContext context, WidgetRef ref, Widget? child) {
-          final wifiState = ref.watch(wifiProvider);
-          final wifiNotifier = ref.read(wifiProvider.notifier);
-          return StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              // Función para construir la vista principal
-              Widget buildMainView() {
-                if (!_scanInProgress && _wifiNetworksList.isEmpty && android) {
+          builder: (BuildContext context, WidgetRef ref, Widget? child) {
+            final wifiState = ref.watch(wifiProvider);
+            final wifiNotifier = ref.read(wifiProvider.notifier);
+            return StatefulBuilder(
+              builder: (BuildContext context, StateSetter setState) {
+                final double keyboardHeight =
+                    MediaQuery.of(context).viewInsets.bottom;
+                double screenWidth = MediaQuery.of(context).size.width;
+
+                if (!_scanInProgress &&
+                    _wifiNetworksList.isEmpty &&
+                    android &&
+                    !isWifiConnected) {
                   _fetchWiFiNetworks().then((wifiNetworks) {
                     setState(() {
                       _wifiNetworksList = wifiNetworks;
@@ -1171,26 +1180,22 @@ void wifiText(BuildContext context) async {
                   });
                 }
 
-                return AlertDialog(
-                  backgroundColor: color1,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20.0),
-                    side: const BorderSide(color: color4, width: 2.0),
-                  ),
-                  title: Column(
+                Widget titleWidget;
+                Widget contentWidget;
+                List<Widget> actionsWidgets = [];
+
+                if (!isAddingNetwork) {
+                  titleWidget = Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text.rich(
-                        TextSpan(
-                          text: 'Estado de conexión: ',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: color0,
-                          ),
-                        ),
+                      const Text(
+                        'Estado de conexión: ',
+                        style: TextStyle(fontSize: 14, color: color0),
+                        textScaler: TextScaler.noScaling,
                       ),
                       Text(
                         wifiState.status,
+                        textScaler: TextScaler.noScaling,
                         style: TextStyle(
                           color: wifiState.statusColor,
                           fontSize: 16,
@@ -1198,600 +1203,595 @@ void wifiText(BuildContext context) async {
                         ),
                       ),
                     ],
-                  ),
-                  content: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (werror) ...[
-                          Text.rich(
-                            TextSpan(
-                              text: 'Error: $errorMessage',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: color0,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          const Text.rich(
-                            TextSpan(
-                              text: 'Sintax:',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: color0,
-                              ),
-                            ),
-                          ),
-                          Text.rich(
-                            TextSpan(
-                              text: errorSintax,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: color0,
-                              ),
-                            ),
-                          ),
-                        ],
+                  );
+
+                  contentWidget = Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (werror) ...[
+                        Text(
+                          'Error: $errorMessage',
+                          style: const TextStyle(fontSize: 10, color: color0),
+                        ),
                         const SizedBox(height: 10),
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text.rich(
-                              TextSpan(
-                                text: 'Red actual:',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  color: color0,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                        const Text(
+                          'Sintax:',
+                          style: TextStyle(fontSize: 10, color: color0),
+                        ),
+                        Text(
+                          errorSintax,
+                          style: const TextStyle(fontSize: 10, color: color0),
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Red actual:',
+                            style: TextStyle(
+                              fontSize: 20,
+                              color: color0,
+                              fontWeight: FontWeight.bold,
                             ),
-                            Text(
-                              nameOfWifi,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                color: color0,
+                          ),
+                          Text(
+                            nameOfWifi,
+                            style: const TextStyle(fontSize: 20, color: color0),
+                          ),
+                          if (isWifiConnected && redInestable) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(8),
+                                border:
+                                    Border.all(color: Colors.orange, width: 1),
                               ),
-                            ),
-                            if (isWifiConnected && redInestable) ...[
-                              const SizedBox(height: 10),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.orange,
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      HugeIcons.strokeRoundedAlert02,
-                                      color: Colors.orange,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Red Inestable',
-                                      style: GoogleFonts.poppins(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(HugeIcons.strokeRoundedAlert02,
+                                      color: Colors.orange, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Red Inestable',
+                                    style: GoogleFonts.poppins(
                                         color: Colors.orange,
                                         fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ],
-                        ),
-                        if (isWifiConnected) ...[
-                          const SizedBox(height: 10),
-                          TextButton(
-                            onPressed: () {
-                              sendWifitoBle('DSC', 'DSC');
-                              wifiNotifier.updateStatus(
-                                'DESCONECTANDO...',
-                                Colors.orange,
-                                HugeIcons.strokeRoundedSearch02,
-                              );
-                            },
-                            style: const ButtonStyle(
-                              foregroundColor: WidgetStatePropertyAll(
-                                color0,
-                              ),
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                Icon(HugeIcons.strokeRoundedWifiOff02),
-                                Text('Desconectar Red Actual')
-                              ],
-                            ),
-                          ),
                         ],
+                      ),
+                      if (isWifiConnected) ...[
                         const SizedBox(height: 10),
-                        if (android) ...[
-                          _wifiNetworksList.isEmpty && _scanInProgress
-                              ? const Center(
-                                  child:
-                                      CircularProgressIndicator(color: color0),
-                                )
-                              : SizedBox(
-                                  width: double.maxFinite,
-                                  height: 200.0,
-                                  child: ListView.builder(
-                                    itemCount: _wifiNetworksList.length,
-                                    itemBuilder: (context, index) {
-                                      final network = _wifiNetworksList[index];
-                                      int nivel = network.level;
-                                      // printLog.i('${network.ssid}: $nivel dBm ');
-                                      return nivel >= -80
-                                          ? SizedBox(
-                                              child: ExpansionTile(
-                                                initiallyExpanded:
-                                                    _expandedIndex == index,
-                                                onExpansionChanged:
-                                                    (bool open) {
-                                                  if (open) {
-                                                    wifiPassNode.requestFocus();
-                                                    setState(() {
-                                                      _expandedIndex = index;
-                                                    });
-                                                  } else {
-                                                    setState(() {
-                                                      _expandedIndex = null;
-                                                    });
-                                                  }
-                                                },
-                                                leading: wifiPower(nivel)
-                                                        is String
-                                                    ? ImageIcon(
-                                                        AssetImage(
-                                                            wifiPower(nivel)),
-                                                        color: Colors.white,
-                                                      )
-                                                    : Icon(
-                                                        wifiPower(nivel),
-                                                        color: Colors.white,
-                                                      ),
-                                                title: Text(
-                                                  network.ssid,
-                                                  style: const TextStyle(
-                                                      color: color0),
-                                                ),
-                                                backgroundColor: color1,
-                                                collapsedBackgroundColor:
-                                                    color1,
-                                                textColor: color0,
-                                                iconColor: color0,
-                                                children: [
-                                                  Padding(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
+                        TextButton(
+                          onPressed: () {
+                            sendWifitoBle('DSC', 'DSC');
+                            wifiNotifier.updateStatus(
+                              'DESCONECTANDO...',
+                              Colors.orange,
+                              HugeIcons.strokeRoundedSearch02,
+                            );
+                          },
+                          style: const ButtonStyle(
+                              foregroundColor: WidgetStatePropertyAll(color0)),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Icon(HugeIcons.strokeRoundedWifiOff02),
+                              Text('Desconectar Red Actual')
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                      if (android && !isWifiConnected) ...[
+                        _wifiNetworksList.isEmpty && _scanInProgress
+                            ? const Center(
+                                child: CircularProgressIndicator(color: color0))
+                            : SizedBox(
+                                width: double.maxFinite,
+                                height: 200.0,
+                                child: ListView.builder(
+                                  itemCount: _wifiNetworksList.length,
+                                  itemBuilder: (context, index) {
+                                    final network = _wifiNetworksList[index];
+                                    int nivel = network.level;
+                                    return nivel >= -80
+                                        ? ExpansionTile(
+                                            initiallyExpanded:
+                                                _expandedIndex == index,
+                                            onExpansionChanged: (bool open) {
+                                              if (open) {
+                                                wifiPassNode.requestFocus();
+                                                setState(() {
+                                                  _expandedIndex = index;
+                                                });
+                                              } else {
+                                                setState(() {
+                                                  _expandedIndex = null;
+                                                });
+                                              }
+                                            },
+                                            leading: wifiPower(nivel) is String
+                                                ? ImageIcon(
+                                                    AssetImage(
+                                                        wifiPower(nivel)),
+                                                    color: Colors.white)
+                                                : Icon(wifiPower(nivel),
+                                                    color: Colors.white),
+                                            title: Text(network.ssid,
+                                                style: const TextStyle(
+                                                    color: color0)),
+                                            backgroundColor: color1,
+                                            collapsedBackgroundColor: color1,
+                                            textColor: color0,
+                                            iconColor: color0,
+                                            children: [
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
                                                         horizontal: 16.0,
                                                         vertical: 8.0),
-                                                    child: Row(
-                                                      children: [
-                                                        const Icon(
-                                                          HugeIcons
-                                                              .strokeRoundedSquareLock01,
-                                                          color: color0,
-                                                          size: 20,
-                                                        ),
-                                                        const SizedBox(
-                                                            width: 8.0),
-                                                        Expanded(
-                                                          child: TextField(
-                                                            focusNode:
-                                                                wifiPassNode,
-                                                            style:
-                                                                const TextStyle(
-                                                              color: color0,
-                                                            ),
-                                                            decoration:
-                                                                InputDecoration(
-                                                              hintText:
-                                                                  'Escribir contraseña',
-                                                              hintStyle:
-                                                                  const TextStyle(
-                                                                color:
-                                                                    Colors.grey,
-                                                              ),
-                                                              enabledBorder:
-                                                                  const UnderlineInputBorder(
-                                                                borderSide:
-                                                                    BorderSide(
-                                                                        color:
-                                                                            color0),
-                                                              ),
-                                                              focusedBorder:
-                                                                  const UnderlineInputBorder(
-                                                                borderSide: BorderSide(
-                                                                    color: Colors
-                                                                        .blue),
-                                                              ),
-                                                              border:
-                                                                  const UnderlineInputBorder(
-                                                                borderSide: BorderSide(
-                                                                    color: Colors
-                                                                        .white),
-                                                              ),
-                                                              suffixIcon:
-                                                                  IconButton(
-                                                                icon: Icon(
-                                                                  obscureText
-                                                                      ? Icons
-                                                                          .visibility
-                                                                      : Icons
-                                                                          .visibility_off,
-                                                                  color: color0,
-                                                                ),
-                                                                onPressed: () {
-                                                                  setState(() {
-                                                                    obscureText =
-                                                                        !obscureText;
-                                                                  });
-                                                                },
-                                                              ),
-                                                            ),
-                                                            obscureText:
-                                                                obscureText,
-                                                            onChanged: (value) {
+                                                child: Row(
+                                                  children: [
+                                                    const Icon(
+                                                        HugeIcons
+                                                            .strokeRoundedSquareLock01,
+                                                        color: color0,
+                                                        size: 20),
+                                                    const SizedBox(width: 8.0),
+                                                    Expanded(
+                                                      child: TextField(
+                                                        focusNode: wifiPassNode,
+                                                        style: const TextStyle(
+                                                            color: color0),
+                                                        decoration:
+                                                            InputDecoration(
+                                                          hintText:
+                                                              'Escribir contraseña',
+                                                          hintStyle:
+                                                              const TextStyle(
+                                                                  color: Colors
+                                                                      .grey),
+                                                          enabledBorder:
+                                                              const UnderlineInputBorder(
+                                                                  borderSide:
+                                                                      BorderSide(
+                                                                          color:
+                                                                              color0)),
+                                                          focusedBorder:
+                                                              const UnderlineInputBorder(
+                                                                  borderSide:
+                                                                      BorderSide(
+                                                                          color:
+                                                                              Colors.blue)),
+                                                          border: const UnderlineInputBorder(
+                                                              borderSide: BorderSide(
+                                                                  color: Colors
+                                                                      .white)),
+                                                          suffixIcon:
+                                                              IconButton(
+                                                            icon: Icon(
+                                                                obscureText
+                                                                    ? Icons
+                                                                        .visibility
+                                                                    : Icons
+                                                                        .visibility_off,
+                                                                color: color0),
+                                                            onPressed: () {
                                                               setState(() {
-                                                                _currentlySelectedSSID =
-                                                                    network
-                                                                        .ssid;
-                                                                _wifiPasswordsMap[
-                                                                        network
-                                                                            .ssid] =
-                                                                    value;
+                                                                obscureText =
+                                                                    !obscureText;
                                                               });
                                                             },
                                                           ),
                                                         ),
-                                                      ],
+                                                        obscureText:
+                                                            obscureText,
+                                                        onChanged: (value) {
+                                                          setState(() {
+                                                            _currentlySelectedSSID =
+                                                                network.ssid;
+                                                            _wifiPasswordsMap[
+                                                                    network
+                                                                        .ssid] =
+                                                                value;
+                                                          });
+                                                        },
+                                                      ),
                                                     ),
-                                                  ),
-                                                ],
+                                                  ],
+                                                ),
                                               ),
-                                            )
-                                          : const SizedBox.shrink();
+                                            ],
+                                          )
+                                        : const SizedBox.shrink();
+                                  },
+                                ),
+                              ),
+                      ] else if (!android && !isWifiConnected) ...[
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(HugeIcons.strokeRoundedWifi02,
+                                    color: color0),
+                                const SizedBox(width: 8.0),
+                                Expanded(
+                                  child: TextField(
+                                    cursorColor: color0,
+                                    style: const TextStyle(color: color0),
+                                    decoration: const InputDecoration(
+                                      hintText: 'Agregar WiFi',
+                                      hintStyle: TextStyle(color: Colors.grey),
+                                      enabledBorder: UnderlineInputBorder(
+                                          borderSide:
+                                              BorderSide(color: color0)),
+                                      focusedBorder: UnderlineInputBorder(
+                                          borderSide:
+                                              BorderSide(color: color0)),
+                                    ),
+                                    onChanged: (value) {
+                                      manualSSID = value;
                                     },
                                   ),
                                 ),
-                        ] else ...[
-                          SingleChildScrollView(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
                               children: [
-                                // Campo para SSID
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      HugeIcons.strokeRoundedWifi02,
-                                      color: color0,
-                                    ),
-                                    const SizedBox(width: 8.0),
-                                    Expanded(
-                                      child: TextField(
-                                        cursorColor: color0,
-                                        style: const TextStyle(color: color0),
-                                        decoration: const InputDecoration(
-                                          hintText: 'Agregar WiFi',
-                                          hintStyle:
-                                              TextStyle(color: Colors.grey),
-                                          enabledBorder: UnderlineInputBorder(
-                                            borderSide:
-                                                BorderSide(color: color0),
-                                          ),
-                                          focusedBorder: UnderlineInputBorder(
-                                            borderSide:
-                                                BorderSide(color: color0),
-                                          ),
-                                        ),
-                                        onChanged: (value) {
-                                          manualSSID = value;
+                                const Icon(HugeIcons.strokeRoundedSquareLock01,
+                                    color: color0),
+                                const SizedBox(width: 8.0),
+                                Expanded(
+                                  child: TextField(
+                                    cursorColor: color0,
+                                    style: const TextStyle(color: color0),
+                                    decoration: InputDecoration(
+                                      hintText: 'Contraseña',
+                                      hintStyle:
+                                          const TextStyle(color: Colors.grey),
+                                      enabledBorder: const UnderlineInputBorder(
+                                          borderSide:
+                                              BorderSide(color: color0)),
+                                      focusedBorder: const UnderlineInputBorder(
+                                          borderSide:
+                                              BorderSide(color: color0)),
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                            obscureText
+                                                ? HugeIcons.strokeRoundedView
+                                                : HugeIcons
+                                                    .strokeRoundedViewOff,
+                                            color: color0),
+                                        onPressed: () {
+                                          setState(() {
+                                            obscureText = !obscureText;
+                                          });
                                         },
                                       ),
                                     ),
-                                  ],
-                                ),
-                                const SizedBox(height: 20),
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      HugeIcons.strokeRoundedSquareLock01,
-                                      color: color0,
-                                    ),
-                                    const SizedBox(width: 8.0),
-                                    Expanded(
-                                      child: TextField(
-                                        cursorColor: color0,
-                                        style: const TextStyle(color: color0),
-                                        decoration: InputDecoration(
-                                          hintText: 'Contraseña',
-                                          hintStyle: const TextStyle(
-                                              color: Colors.grey),
-                                          enabledBorder:
-                                              const UnderlineInputBorder(
-                                            borderSide:
-                                                BorderSide(color: color0),
-                                          ),
-                                          focusedBorder:
-                                              const UnderlineInputBorder(
-                                            borderSide:
-                                                BorderSide(color: color0),
-                                          ),
-                                          suffixIcon: IconButton(
-                                            icon: Icon(
-                                              obscureText
-                                                  ? HugeIcons.strokeRoundedView
-                                                  : HugeIcons
-                                                      .strokeRoundedViewOff,
-                                              color: color0,
-                                            ),
-                                            onPressed: () {
-                                              setState(() {
-                                                obscureText = !obscureText;
-                                              });
-                                            },
-                                          ),
-                                        ),
-                                        obscureText: obscureText,
-                                        onChanged: (value) {
-                                          manualPassword = value;
-                                        },
-                                      ),
-                                    ),
-                                  ],
+                                    obscureText: obscureText,
+                                    onChanged: (value) {
+                                      manualPassword = value;
+                                    },
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
-                        ]
-                      ],
-                    ),
-                  ),
-                  actions: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        IconButton(
-                          icon: const Icon(
-                            HugeIcons.strokeRoundedQrCode,
-                            color: color0,
-                          ),
-                          iconSize: 30,
-                          onPressed: () async {
-                            PermissionStatus permissionStatusC =
-                                await Permission.camera.request();
-                            if (!permissionStatusC.isGranted) {
-                              await Permission.camera.request();
-                            }
-                            permissionStatusC = await Permission.camera.status;
-                            if (permissionStatusC.isGranted) {
-                              openQRScanner(
-                                  navigatorKey.currentContext ?? context);
-                            }
-                          },
+                          ],
                         ),
-                        android
-                            ? TextButton(
-                                style: const ButtonStyle(),
-                                child: const Text(
-                                  'Agregar\nRed',
-                                  style: TextStyle(
-                                    color: color0,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    isAddingNetwork = true;
-                                  });
-                                },
-                              )
-                            : const SizedBox.shrink(),
-                        TextButton(
-                          style: const ButtonStyle(),
-                          child: const Text(
-                            'Conectar',
-                            style: TextStyle(
-                              color: color0,
-                            ),
-                          ),
-                          onPressed: () {
-                            if (_currentlySelectedSSID != null &&
-                                _wifiPasswordsMap[_currentlySelectedSSID] !=
-                                    null &&
-                                android) {
-                              printLog.i(
-                                  '$_currentlySelectedSSID#${_wifiPasswordsMap[_currentlySelectedSSID]}');
-                              sendWifitoBle(_currentlySelectedSSID!,
-                                  _wifiPasswordsMap[_currentlySelectedSSID]!);
-                              wifiNotifier.updateStatus(
-                                'CONECTANDO...',
-                                Colors.blue,
-                                HugeIcons.strokeRoundedSearch02,
-                              );
-                            } else if (!android &&
-                                manualSSID != '' &&
-                                manualPassword != '') {
-                              printLog.i('$manualSSID#$manualPassword');
-                              sendWifitoBle(manualSSID, manualPassword);
-                              wifiNotifier.updateStatus(
-                                'CONECTANDO...',
-                                Colors.blue,
-                                HugeIcons.strokeRoundedSearch02,
-                              );
-                            } else {
-                              showToast('Por favor, ingrese una red válida.');
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                );
-              }
+                      ]
+                    ],
+                  );
 
-              Widget buildAddNetworkView() {
-                return AlertDialog(
-                  backgroundColor: color1,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20.0),
-                    side: const BorderSide(color: color4, width: 2.0),
-                  ),
-                  title: Row(
+                  actionsWidgets = [
+                    if (!isWifiConnected) ...[
+                      IconButton(
+                        icon: const Icon(HugeIcons.strokeRoundedQrCode,
+                            color: color0),
+                        iconSize: 30,
+                        onPressed: () async {
+                          PermissionStatus permissionStatusC =
+                              await Permission.camera.request();
+                          if (!permissionStatusC.isGranted) {
+                            await Permission.camera.request();
+                          }
+                          permissionStatusC = await Permission.camera.status;
+                          if (permissionStatusC.isGranted) {
+                            openQRScanner(
+                                navigatorKey.currentContext ?? context);
+                          }
+                        },
+                      ),
+                      if (android)
+                        TextButton(
+                          child: const Text('Agregar\nRed',
+                              style: TextStyle(color: color0),
+                              textAlign: TextAlign.center),
+                          onPressed: () {
+                            setState(() {
+                              isAddingNetwork = true;
+                            });
+                          },
+                        ),
+                      TextButton(
+                        child: const Text('Conectar',
+                            style: TextStyle(color: color0)),
+                        onPressed: () {
+                          if (_currentlySelectedSSID != null &&
+                              _wifiPasswordsMap[_currentlySelectedSSID] !=
+                                  null &&
+                              android) {
+                            sendWifitoBle(_currentlySelectedSSID!,
+                                _wifiPasswordsMap[_currentlySelectedSSID]!);
+                            wifiNotifier.updateStatus('CONECTANDO...',
+                                Colors.blue, HugeIcons.strokeRoundedSearch02);
+                          } else if (!android &&
+                              manualSSID != '' &&
+                              manualPassword != '') {
+                            sendWifitoBle(manualSSID, manualPassword);
+                            wifiNotifier.updateStatus('CONECTANDO...',
+                                Colors.blue, HugeIcons.strokeRoundedSearch02);
+                          } else {
+                            showToast('Por favor, ingrese una red válida.');
+                          }
+                        },
+                      ),
+                    ]
+                  ];
+                } else {
+                  titleWidget = Row(
                     children: [
                       IconButton(
-                        icon: const Icon(
-                          HugeIcons.strokeRoundedArrowLeft02,
-                          color: color0,
-                        ),
+                        icon: const Icon(HugeIcons.strokeRoundedArrowLeft02,
+                            color: color0),
                         onPressed: () {
                           setState(() {
                             isAddingNetwork = false;
                           });
                         },
                       ),
-                      const Text(
+                      Text(
                         'Agregar red\nmanualmente',
-                        style: TextStyle(
-                          color: color0,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: GoogleFonts.poppins(
+                            color: color0,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold),
                       ),
                     ],
-                  ),
-                  content: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Campo para SSID
-                        Row(
-                          children: [
-                            const Icon(
-                              HugeIcons.strokeRoundedWifi02,
-                              color: color0,
-                            ),
-                            const SizedBox(width: 8.0),
-                            Expanded(
-                              child: TextField(
-                                cursorColor: color0,
-                                style: const TextStyle(color: color0),
-                                decoration: const InputDecoration(
-                                  hintText: 'Agregar WiFi',
-                                  hintStyle: TextStyle(color: Colors.grey),
-                                  enabledBorder: UnderlineInputBorder(
-                                    borderSide: BorderSide(color: color0),
-                                  ),
-                                  focusedBorder: UnderlineInputBorder(
-                                    borderSide: BorderSide(color: color0),
-                                  ),
-                                ),
-                                onChanged: (value) {
-                                  manualSSID = value;
-                                },
+                  );
+
+                  contentWidget = Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(HugeIcons.strokeRoundedWifi02,
+                              color: color0),
+                          const SizedBox(width: 8.0),
+                          Expanded(
+                            child: TextField(
+                              cursorColor: color0,
+                              style: const TextStyle(color: color0),
+                              decoration: const InputDecoration(
+                                hintText: 'Agregar WiFi',
+                                hintStyle: TextStyle(color: Colors.grey),
+                                enabledBorder: UnderlineInputBorder(
+                                    borderSide: BorderSide(color: color0)),
+                                focusedBorder: UnderlineInputBorder(
+                                    borderSide: BorderSide(color: color0)),
                               ),
+                              onChanged: (value) {
+                                manualSSID = value;
+                              },
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            const Icon(
-                              HugeIcons.strokeRoundedSquareLock01,
-                              color: color0,
-                            ),
-                            const SizedBox(width: 8.0),
-                            Expanded(
-                              child: TextField(
-                                cursorColor: color0,
-                                style: const TextStyle(color: color0),
-                                decoration: InputDecoration(
-                                  hintText: 'Contraseña',
-                                  hintStyle:
-                                      const TextStyle(color: Colors.grey),
-                                  enabledBorder: const UnderlineInputBorder(
-                                    borderSide: BorderSide(color: color0),
-                                  ),
-                                  focusedBorder: const UnderlineInputBorder(
-                                    borderSide: BorderSide(color: color0),
-                                  ),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          const Icon(HugeIcons.strokeRoundedSquareLock01,
+                              color: color0),
+                          const SizedBox(width: 8.0),
+                          Expanded(
+                            child: TextField(
+                              cursorColor: color0,
+                              style: const TextStyle(color: color0),
+                              decoration: InputDecoration(
+                                hintText: 'Contraseña',
+                                hintStyle: const TextStyle(color: Colors.grey),
+                                enabledBorder: const UnderlineInputBorder(
+                                    borderSide: BorderSide(color: color0)),
+                                focusedBorder: const UnderlineInputBorder(
+                                    borderSide: BorderSide(color: color0)),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
                                       obscureText
                                           ? HugeIcons.strokeRoundedView
                                           : HugeIcons.strokeRoundedViewOff,
-                                      color: color0,
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        obscureText = !obscureText;
-                                      });
-                                    },
-                                  ),
+                                      color: color0),
+                                  onPressed: () {
+                                    setState(() {
+                                      obscureText = !obscureText;
+                                    });
+                                  },
                                 ),
-                                obscureText: obscureText,
-                                onChanged: (value) {
-                                  manualPassword = value;
-                                },
                               ),
+                              obscureText: obscureText,
+                              onChanged: (value) {
+                                manualPassword = value;
+                              },
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  actions: [
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+
+                  actionsWidgets = [
                     TextButton(
                       onPressed: () {
                         if (manualSSID.isNotEmpty &&
                             manualPassword.isNotEmpty) {
-                          printLog.i('$manualSSID#$manualPassword');
-
                           sendWifitoBle(manualSSID, manualPassword);
-                          wifiNotifier.updateStatus(
-                            'CONECTANDO...',
-                            Colors.blue,
-                            HugeIcons.strokeRoundedSearch02,
-                          );
+                          wifiNotifier.updateStatus('CONECTANDO...',
+                              Colors.blue, HugeIcons.strokeRoundedSearch02);
                           Navigator.of(context).pop();
-                        } else {}
+                        }
                       },
                       style: ButtonStyle(
-                        backgroundColor: WidgetStateProperty.all<Color>(
-                          color1,
+                          backgroundColor:
+                              WidgetStateProperty.all<Color>(color1)),
+                      child: const Text('Agregar',
+                          style: TextStyle(color: color0)),
+                    ),
+                  ];
+                }
+
+                return Padding(
+                  padding: EdgeInsets.only(bottom: keyboardHeight),
+                  child: Center(
+                    child: SingleChildScrollView(
+                      physics: const ClampingScrollPhysics(),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                            minWidth: 300.0, maxWidth: screenWidth - 20),
+                        child: IntrinsicWidth(
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            alignment: Alignment.topCenter,
+                            children: [
+                              Container(
+                                margin: const EdgeInsets.only(top: 50),
+                                decoration: BoxDecoration(
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.5),
+                                      spreadRadius: 1,
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Card(
+                                  color: color1,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30.0),
+                                    side: const BorderSide(
+                                        color: color2, width: 1.0),
+                                  ),
+                                  elevation: 24,
+                                  child: Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                        20, 70, 20, 20),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Center(
+                                          child: DefaultTextStyle(
+                                            style: GoogleFonts.poppins(
+                                                color: color0,
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.w600),
+                                            child: titleWidget,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 20),
+                                        Center(
+                                          child: DefaultTextStyle(
+                                            style: GoogleFonts.poppins(
+                                                color: color0, fontSize: 16),
+                                            child: contentWidget,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 30),
+                                        if (actionsWidgets.isNotEmpty)
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children:
+                                                actionsWidgets.map((widget) {
+                                              if (widget is TextButton) {
+                                                return Padding(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 5.0),
+                                                  child: TextButton(
+                                                    style: TextButton.styleFrom(
+                                                      foregroundColor: color0,
+                                                      backgroundColor: color1,
+                                                    ),
+                                                    onPressed: widget.onPressed,
+                                                    child: widget.child!,
+                                                  ),
+                                                );
+                                              } else {
+                                                return widget;
+                                              }
+                                            }).toList(),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 0,
+                                child: Material(
+                                  elevation: 10,
+                                  color: color1,
+                                  shape: const CircleBorder(
+                                      side: BorderSide(
+                                          color: color2, width: 1.0)),
+                                  shadowColor:
+                                      Colors.black.withValues(alpha: 0.4),
+                                  child: CircleAvatar(
+                                    radius: 50,
+                                    backgroundColor: color1,
+                                    child: Image.asset(
+                                      'assets/branch/dragon.png',
+                                      width: 60,
+                                      height: 60,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      child: const Text(
-                        'Agregar',
-                        style: TextStyle(color: color0),
-                      ),
                     ),
-                  ],
+                  ),
                 );
-              }
-
-              return isAddingNetwork ? buildAddNetworkView() : buildMainView();
-            },
-          );
-        });
+              },
+            );
+          },
+        );
       },
-    ).then((_) {
-      _scanInProgress = false;
-      _expandedIndex = null;
-    });
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+          child: ScaleTransition(
+              scale:
+                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+              child: child),
+        );
+      },
+    );
   }
 }
 
@@ -4037,6 +4037,7 @@ String stringifyPrintLog(dynamic message) {
 //*- Logger ble -*\\
 /// Variable global para controlar la suscripción al registerLogger
 StreamSubscription<List<int>>? registerLoggerSubscription;
+
 /// Timestamp de cuando se inició la sesión de captura de logs
 int? sessionTimestamp;
 
