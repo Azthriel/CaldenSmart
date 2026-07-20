@@ -23,9 +23,6 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
 
   int? _widgetId;
   bool _isLoading = true;
-  String currentUserEmail = '';
-  List<String> previusConnections = []; // Lista de IDs de dispositivos
-  Map<String, String> nicknamesMap = {}; // Mapa ID -> Apodo
   Map<String, bool> devicesToShow = {}; // Mapa ID -> esControl
 
   @override
@@ -61,8 +58,11 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
 
       currentUserEmail = await loadEmail();
       previusConnections = await getPreviusConnections(currentUserEmail);
+      printLog.d('Previus connections: $previusConnections');
+      List<String> orderedConnections = List.from(getOrderedDeviceList());
+      printLog.d('Ordered connections: $orderedConnections');
       nicknamesMap = await getNicknames(currentUserEmail);
-      for (String device in previusConnections) {
+      for (String device in orderedConnections) {
         final pc = DeviceManager.getProductCode(device);
         final sn = DeviceManager.extractSerialNumber(device);
         await queryItems(pc, sn);
