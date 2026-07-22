@@ -10,14 +10,6 @@ import io.flutter.embedding.engine.dart.DartExecutor
  * Application custom que PRE-CALIENTA un FlutterEngine dedicado a la pantalla de
  * configuración del widget (SelectDeviceScreen) y lo deja cacheado.
  *
- * Por qué: WidgetConfigActivity, al lanzarse desde el launcher, creaba un engine
- * Flutter NUEVO que tenía que arrancar en frío y correr main() compitiendo con
- * los otros engines vivos (app principal, background service, home_widget). Ese
- * cold-start era intermitente y a veces no terminaba de renderizar la ruta →
- * pantalla negra. Pre-calentando el engine acá (una vez, al arrancar el proceso),
- * cuando el usuario toca "crear widget" la activity se attachea a un engine YA
- * caliente y renderizado → aparece al instante, sin carrera.
- *
  * El engine corre el entrypoint default (main) con initialRoute
  * "/widget_config_selection", así main() toma el branch liviano (isWidgetConfig)
  * y muestra SelectDeviceScreen sin bootear toda la app.
