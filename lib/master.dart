@@ -2184,6 +2184,22 @@ Future<void> handleNotifications(RemoteMessage message) async {
         }
         break;
       case 'Disconnect':
+        try {
+          final widgetTopics = await getWidgetTopics();
+          if (widgetTopics.contains('devices_tx/$product/$number')) {
+            await queryItems(product, number);
+            final devData = globalDATA['$product/$number'];
+            final bool realOnline = devData?['cstate'] ?? false;
+            final bool realStatus = devData?['w_status'] ?? false;
+            await updateWidgetsForDevice(
+                product, number, realStatus, realOnline);
+            printLog.i(
+                'Widget actualizado por notif Disconnect: $product/$number → online=$realOnline');
+          }
+        } catch (e) {
+          printLog.e('Error actualizando widget en notif Disconnect: $e');
+        }
+
         configNotiDsc = await loadconfigNotiDsc();
         if (configNotiDsc.keys.toList().contains(device)) {
           final now = DateTime.now();

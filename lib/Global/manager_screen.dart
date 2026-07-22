@@ -1413,7 +1413,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                   .text.isNotEmpty) {
                                                 if (adminDevices.length < 3) {
                                                   addSecondaryAdmin(
-                                                    emailController.text.trim(),
+                                                    emailController.text.trim().toLowerCase(),
                                                   );
                                                 } else {
                                                   printLog
@@ -1423,7 +1423,7 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                         6) {
                                                       addSecondaryAdmin(
                                                         emailController.text
-                                                            .trim(),
+                                                            .trim().toLowerCase(),
                                                       );
                                                     } else {
                                                       showToast(

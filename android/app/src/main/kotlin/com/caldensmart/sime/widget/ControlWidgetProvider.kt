@@ -300,9 +300,16 @@ class ControlWidgetProvider : HomeWidgetProvider() {
 
             val isServiceReady  = widgetData.getBoolean("widget_service_ready", false)
             val isStale         = ts > 0L && (System.currentTimeMillis() - ts) > STALE_THRESHOLD_MS
-            val effectiveOnline = isOnline && !isStale
 
-            if (isStale) Log.w(TAG, "Widget $widgetId: datos obsoletos")
+            // Opción B: el stale ya NO fuerza offline. El widget SIEMPRE refleja
+            // el último estado real guardado (online/offline). Si el equipo se
+            // desconecta de verdad, llega cstate:false por MQTT (service vivo) y
+            // se actualiza; el tap /refresh queda como confirmación manual para
+            // cuando el service estuvo caído. Antes: isOnline && !isStale, que
+            // pintaba gris a los 40 min aunque el equipo siguiera conectado.
+            val effectiveOnline = isOnline
+
+            if (isStale) Log.d(TAG, "Widget $widgetId: datos viejos (ts>40min), muestro último estado conocido")
 
             // Overlay de carga
             views.setViewVisibility(
@@ -369,8 +376,9 @@ class ControlWidgetProvider : HomeWidgetProvider() {
             !effectiveOnline -> {
                 views.setInt(R.id.widget_status_icon, "setColorFilter", 0xFF9E9E9E.toInt())
                 views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_offline)
-                val pi = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
-                views.setOnClickPendingIntent(R.id.widget_container, pi)
+                val refreshPi = HomeWidgetBackgroundIntent.getBroadcast(context,
+                    Uri.parse("caldensmart://widget/refresh?widgetId=$widgetId"))
+                views.setOnClickPendingIntent(R.id.widget_container, refreshPi)
             }
 
             !isServiceReady -> {
@@ -380,8 +388,11 @@ class ControlWidgetProvider : HomeWidgetProvider() {
                 views.setTextColor(R.id.widget_power_indicator, 0xFF9E9E9E.toInt())
                 views.setInt(R.id.widget_container, "setBackgroundResource",
                     R.drawable.widget_background_offline)
-                val pi = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
-                views.setOnClickPendingIntent(R.id.widget_container, pi)
+                // Tap → /refresh: hace la consulta real y marca el servicio listo,
+                // en vez de solo abrir la app y quedarse en "Iniciando...".
+                val refreshPi = HomeWidgetBackgroundIntent.getBroadcast(context,
+                    Uri.parse("caldensmart://widget/refresh?widgetId=$widgetId"))
+                views.setOnClickPendingIntent(R.id.widget_container, refreshPi)
             }
             isOn -> {
                 views.setImageViewResource(R.id.widget_status_icon, R.drawable.ic_switch_on)
@@ -460,7 +471,12 @@ class ControlWidgetProvider : HomeWidgetProvider() {
         val canInteract = effectiveOnline && isServiceReady && isCalibrated && !isLoading
 
         val intent = when {
-            // Sin interacción posible → abre app
+            // Offline/stale → tap hace consulta real (/refresh) en vez de abrir app
+            !effectiveOnline ->
+                HomeWidgetBackgroundIntent.getBroadcast(context,
+                    Uri.parse("caldensmart://widget/refresh?widgetId=$widgetId"))
+
+            // Sin interacción posible por otra razón (sin calibrar / cargando) → abre app
             !canInteract ->
                 HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
 
@@ -502,8 +518,13 @@ class ControlWidgetProvider : HomeWidgetProvider() {
         isDisplayType: Boolean,
         effectiveOnline: Boolean
     ) {
-        val pi = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
-        views.setOnClickPendingIntent(R.id.widget_container, pi)
+        // El display SIEMPRE refresca al tocar (online u offline): no tiene
+        // toggle, su gesto útil es traer la lectura fresca al instante. Nunca
+        // abre la app. La rama offline de abajo re-setea el mismo /refresh (es
+        // idempotente) y además ajusta el visual gris.
+        val refreshPi = HomeWidgetBackgroundIntent.getBroadcast(context,
+            Uri.parse("caldensmart://widget/refresh?widgetId=$widgetId"))
+        views.setOnClickPendingIntent(R.id.widget_container, refreshPi)
 
         if (!effectiveOnline) {
             views.setViewVisibility(R.id.widget_power_indicator, android.view.View.VISIBLE)
@@ -511,6 +532,9 @@ class ControlWidgetProvider : HomeWidgetProvider() {
             views.setTextViewText(R.id.widget_power_indicator, "--°C")
             views.setTextColor(R.id.widget_power_indicator, 0xFF9E9E9E.toInt())
             views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background_offline)
+            val refreshPi = HomeWidgetBackgroundIntent.getBroadcast(context,
+                Uri.parse("caldensmart://widget/refresh?widgetId=$widgetId"))
+            views.setOnClickPendingIntent(R.id.widget_container, refreshPi)
             return // Frena el renderizado y evita entrar al 'when'
         }
 

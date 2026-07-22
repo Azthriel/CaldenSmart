@@ -169,6 +169,9 @@ Future<void> backgroundCallback(Uri? uri) async {
 
       printLog.i('Widget callback: procesando toggle para widget $widgetId');
       await _handleWidgetToggle(widgetId);
+    } else if (uri.path == '/refresh') {
+      final widgetId = int.tryParse(uri.queryParameters['widgetId'] ?? '');
+      if (widgetId != null) await _handleWidgetRefresh(widgetId);
     } else if (uri.path == '/open') {
       // ← NUEVO
       final widgetId = int.tryParse(uri.queryParameters['widgetId'] ?? '');
@@ -190,14 +193,61 @@ Future<void> backgroundCallback(Uri? uri) async {
         'Widget callback: verificando widgets y deteniendo servicio si es necesario');
     await _handleCheckAndStopService();
   } else if (uri.path == '/update') {
-    // Llamado por WorkManager (WidgetUpdateWorker) cada 15 min
-    // Refresca el timestamp de los widgets para evitar que queden "stale"
-    // y marca widget_service_ready = true para eliminar "Iniciando..."
+    // Llamado por WorkManager (WidgetUpdateWorker) cada 15 min.
+    // (a) Consulta REAL a DynamoDB para traer el estado verdadero de cada
+    //     equipo. Antes solo se bumpeaba el ts con el último estado conocido
+    //     (un "latido falso" que no reflejaba desconexiones/reconexiones
+    //     reales), por eso los widgets se quedaban mostrando estados viejos.
+    //     Si no hay internet se cae al refresh de timestamps para NO marcar
+    //     los equipos como desconectados por falta de red del teléfono.
     printLog.i('Widget callback: background update solicitado por WorkManager');
-    await refreshWidgetTimestamps();
+    final hasNet = await checkInternetConnection();
+    if (hasNet) {
+      await syncWidgetsWithDatabase();
+    } else {
+      printLog.i('Widget update: sin internet → solo refresco de timestamps');
+      await refreshWidgetTimestamps();
+    }
   } else {
     printLog.i(
         'Widget callback: URI no coincide con ninguna acción conocida (path=${uri.path})');
+  }
+}
+
+/// Tap sobre un widget offline/stale → consulta REAL a DynamoDB y refresca.
+Future<void> _handleWidgetRefresh(int widgetId) async {
+  try {
+    printLog.i('=== _handleWidgetRefresh widget $widgetId ===');
+
+    // Loading inmediato para feedback visual
+    await HomeWidget.saveWidgetData('widget_loading_$widgetId', true);
+    await updateAllWidgets();
+
+    final widgetConfig = await WidgetService.loadWidgetConfig(widgetId);
+    if (widgetConfig == null) {
+      await _hideWidgetLoading(widgetId);
+      return;
+    }
+
+    // Verdad de fondo: query real (actualiza globalDATA)
+    await queryItems(widgetConfig.productCode, widgetConfig.serialNumber);
+
+    // Extraer estado real y escribir con ts fresco
+    final deviceState = WidgetService.extractDeviceState(
+      widgetConfig.productCode,
+      widgetConfig.serialNumber,
+      widgetConfig.ioIndex,
+    );
+    await WidgetService.updateWidget(widgetConfig, deviceState);
+
+    // Probamos que Dart corre y hay red → marcamos ready (limpia la nube gris)
+    await setWidgetServiceReady(true);
+
+    await _hideWidgetLoading(widgetId);
+    printLog.i('Widget $widgetId refrescado por tap');
+  } catch (e) {
+    printLog.e('Error en _handleWidgetRefresh: $e');
+    await _hideWidgetLoading(widgetId);
   }
 }
 

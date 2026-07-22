@@ -43,6 +43,37 @@ import 'package:hugeicons/hugeicons.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // ── Boot liviano para la WidgetConfigActivity (selector de dispositivo) ────
+  // Si la app se lanzó desde el config del widget, NO booteamos toda la app.
+  // La WidgetConfigActivity levanta un engine Flutter NUEVO que corre main()
+  // entero de vuelta; con Firebase + upgrader + notificaciones + FCM +
+  // Crashlytics eso tardaba segundos y dejaba la pantalla en negro. Para el
+  // selector solo hace falta Amplify (auth para queryItems/DynamoDB). MyApp
+  // detecta el modo config y salta el splash y el MQTT, así SelectDeviceScreen
+  // aparece directo.
+  final bool isWidgetConfig = PlatformDispatcher.instance.defaultRouteName ==
+      '/widget_config_selection';
+
+  if (isWidgetConfig) {
+    android = Platform.isAndroid;
+    appName = nameOfApp(app);
+    try {
+      if (!Amplify.isConfigured) {
+        await Amplify.addPlugin(AmplifyAuthCognito());
+        await Amplify.configure(amplifyconfig);
+      }
+    } catch (e) {
+      printLog.e('Error configurando Amplify (widget config): $e');
+    }
+    printLog.i('Modo widget config: boot liviano (solo Amplify)');
+    runApp(
+      const ProviderScope(
+        child: MyApp(),
+      ),
+    );
+    return;
+  }
+
   try {
     printLog.i("Iniciando Firebase");
     await Firebase.initializeApp(
@@ -123,6 +154,13 @@ class MyAppState extends State<MyApp> {
   bool _hasInternet = true;
   bool _isCheckingInternet = true;
 
+  /// True cuando la app fue lanzada por la WidgetConfigActivity para elegir un
+  /// dispositivo (initialRoute = '/widget_config_selection'). En ese caso NO
+  /// mostramos el splash (que se come la initial route) ni arrancamos MQTT.
+  bool get _isWidgetConfig =>
+      WidgetsBinding.instance.platformDispatcher.defaultRouteName ==
+      '/widget_config_selection';
+
   @override
   void initState() {
     super.initState();
@@ -143,6 +181,21 @@ class MyAppState extends State<MyApp> {
   }
 
   Future<void> _initializeApp() async {
+    // Modo config de widget: la WidgetConfigActivity solo necesita mostrar el
+    // selector de dispositivos. NO arrancamos MQTT/listeners acá porque un
+    // segundo cliente MQTT pelea con el del background service y traba el
+    // arranque (quedaba clavado en el splash). SelectDeviceScreen hace su
+    // propio DeviceManager.init + queryItems, que es lo único que precisa.
+    if (_isWidgetConfig) {
+      printLog.i('Modo widget config: salteando init pesado (sin MQTT)');
+      setState(() {
+        _isCheckingInternet = false;
+        _hasInternet = true;
+        _isInitialized = true;
+      });
+      return;
+    }
+
     // Verificar conexión a internet
     setState(() {
       _isCheckingInternet = true;
@@ -318,8 +371,11 @@ class MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    // Si no hay internet, mostrar pantalla de sin conexión
-    if (!_hasInternet && !_isCheckingInternet) {
+    // Si no hay internet, mostrar pantalla de sin conexión.
+    // En modo config de widget NO cortamos acá: hay que construir el
+    // MaterialApp real desde el primer frame para que la initialRoute
+    // '/widget_config_selection' se aplique (el splash con home: se la come).
+    if (!_isWidgetConfig && !_hasInternet && !_isCheckingInternet) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
@@ -331,8 +387,9 @@ class MyAppState extends State<MyApp> {
       );
     }
 
-    // Si está verificando o cargando, mostrar splash
-    if (_isCheckingInternet || !_isInitialized) {
+    // Si está verificando o cargando, mostrar splash (excepto en modo config,
+    // ver comentario arriba: el splash rompe la initial route del widget).
+    if (!_isWidgetConfig && (_isCheckingInternet || !_isInitialized)) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: ThemeData(

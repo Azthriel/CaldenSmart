@@ -62,10 +62,30 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
       List<String> orderedConnections = List.from(getOrderedDeviceList());
       printLog.d('Ordered connections: $orderedConnections');
       nicknamesMap = await getNicknames(currentUserEmail);
+
+      // ── Fase 1: consultar TODOS los equipos en PARALELO ─────────────────────
+      // Antes se hacía un `await queryItems` secuencial por equipo dentro del
+      // for → con 31 equipos eran 31 consultas a DynamoDB una atrás de otra, y
+      // la pantalla quedaba "clavada" cargando. Son consultas de red e
+      // independientes (no BLE), así que se disparan todas juntas. Cada una
+      // atrapa su propio error para que una falla no aborte el resto.
+      await Future.wait(
+        orderedConnections.map((device) async {
+          final pc = DeviceManager.getProductCode(device);
+          final sn = DeviceManager.extractSerialNumber(device);
+          try {
+            await queryItems(pc, sn);
+          } catch (e) {
+            printLog.e('Error consultando $pc/$sn: $e');
+          }
+        }),
+      );
+
+      // ── Fase 2: procesar los resultados (ya cacheados en globalDATA) ────────
+      // Sin awaits: solo lee globalDATA que la fase 1 dejó poblado.
       for (String device in orderedConnections) {
         final pc = DeviceManager.getProductCode(device);
         final sn = DeviceManager.extractSerialNumber(device);
-        await queryItems(pc, sn);
         Map<String, dynamic> deviceDATA = globalDATA['$pc/$sn'] ?? {};
         List<String> admins =
             List<String>.from(globalDATA['$pc/$sn']?['secondary_admin'] ?? []);
@@ -374,11 +394,14 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(nickname,
-                                            style: GoogleFonts.poppins(
-                                                color: Colors.white,
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.w600)),
+                                        Text(
+                                          nickname,
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.white,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
                                         const SizedBox(height: 12),
                                         Container(
                                           padding: const EdgeInsets.symmetric(
@@ -407,16 +430,17 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
                                               ),
                                               const SizedBox(width: 8),
                                               Text(
-                                                  isOnline
-                                                      ? 'En línea'
-                                                      : 'Desconectado',
-                                                  style: GoogleFonts.poppins(
-                                                      color: isOnline
-                                                          ? Colors.greenAccent
-                                                          : color3,
-                                                      fontSize: 12,
-                                                      fontWeight:
-                                                          FontWeight.w500)),
+                                                isOnline
+                                                    ? 'En línea'
+                                                    : 'Desconectado',
+                                                style: GoogleFonts.poppins(
+                                                  color: isOnline
+                                                      ? Colors.greenAccent
+                                                      : color3,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ),
@@ -424,9 +448,10 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
                                     ),
                                   ),
                                   const Icon(
-                                      HugeIcons.strokeRoundedArrowRight01,
-                                      color: Colors.white,
-                                      size: 16),
+                                    HugeIcons.strokeRoundedArrowRight01,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
                                 ],
                               ),
                             ),
