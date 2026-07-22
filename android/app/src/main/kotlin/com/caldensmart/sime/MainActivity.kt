@@ -23,7 +23,8 @@ class MainActivity : FlutterActivity() {
 
     // Para LocationWatcher
     private var locEventSink: EventChannel.EventSink? = null
-    private lateinit var locReceiver: BroadcastReceiver
+    private var locReceiver: BroadcastReceiver? = null
+    private var locReceiverRegistered = false
 
     // Para audio
     private var mediaPlayer: MediaPlayer? = null
@@ -41,21 +42,12 @@ class MainActivity : FlutterActivity() {
                 locEventSink = events
                 // Estado inicial
                 events.success(isLocationEnabled())
-
-                // Recibe cambios
-                locReceiver = object : BroadcastReceiver() {
-                    override fun onReceive(context: Context?, intent: Intent?) {
-                        locEventSink?.success(isLocationEnabled())
-                    }
-                }
-                val filter = IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION).apply {
-                    addAction(LocationManager.MODE_CHANGED_ACTION)
-                }
-                registerReceiver(locReceiver, filter)
+                // Registro idempotente (no duplica si ya estaba registrado)
+                registerLocReceiver()
             }
 
             override fun onCancel(arguments: Any?) {
-                unregisterReceiver(locReceiver)
+                unregisterLocReceiver()
                 locEventSink = null
             }
         })
@@ -122,6 +114,44 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    /** Registra el receiver de cambios de ubicación de forma idempotente.
+     *  Guarda la referencia y un flag para poder des-registrarlo siempre y no
+     *  duplicarlo (cada duplicado sería un IntentReceiverLeaked). */
+    private fun registerLocReceiver() {
+        if (locReceiverRegistered) return
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                locEventSink?.success(isLocationEnabled())
+            }
+        }
+        val filter = IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION).apply {
+            addAction(LocationManager.MODE_CHANGED_ACTION)
+        }
+        // Android 13+ (API 33) exige declarar si el receiver es exportado.
+        // Solo escuchamos broadcasts del sistema → NOT_EXPORTED.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            registerReceiver(receiver, filter)
+        }
+        locReceiver = receiver
+        locReceiverRegistered = true
+    }
+
+    /** Des-registra el receiver si está registrado. Seguro de llamar múltiples
+     *  veces (onCancel, onDestroy). */
+    private fun unregisterLocReceiver() {
+        if (!locReceiverRegistered) return
+        try {
+            locReceiver?.let { unregisterReceiver(it) }
+        } catch (e: IllegalArgumentException) {
+            Log.w("MainActivity", "locReceiver ya no estaba registrado: ${e.message}")
+        }
+        locReceiver = null
+        locReceiverRegistered = false
+    }
+
     private fun isLocationEnabled(): Boolean {
         val lm = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -146,6 +176,9 @@ class MainActivity : FlutterActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        // Fix del IntentReceiverLeaked: si Dart nunca llamó onCancel, el
+        // receiver seguía registrado al destruir la Activity y se filtraba.
+        unregisterLocReceiver()
         mediaPlayer?.stop(); mediaPlayer?.release(); mediaPlayer = null
         handler.removeCallbacksAndMessages(null)
     }

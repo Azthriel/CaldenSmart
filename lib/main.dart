@@ -55,22 +55,36 @@ Future<void> main() async {
       '/widget_config_selection';
 
   if (isWidgetConfig) {
+    printLog.i('Modo widget config: entrando a main() [pre-runApp]');
     android = Platform.isAndroid;
     appName = nameOfApp(app);
-    try {
-      if (!Amplify.isConfigured) {
-        await Amplify.addPlugin(AmplifyAuthCognito());
-        await Amplify.configure(amplifyconfig);
-      }
-    } catch (e) {
-      printLog.e('Error configurando Amplify (widget config): $e');
-    }
-    printLog.i('Modo widget config: boot liviano (solo Amplify)');
+
+    // runApp PRIMERO: la UI del selector aparece sí o sí. Amplify en un segundo
+    // engine/isolate puede colgarse al re-configurarse (su lado nativo es
+    // singleton de proceso, ya configurado por la app principal) → si lo
+    // dejábamos bloqueante antes de runApp, un deadlock intermitente dejaba la
+    // pantalla en negro para siempre. Ahora nunca bloquea el primer frame.
     runApp(
       const ProviderScope(
         child: MyApp(),
       ),
     );
+
+    // Amplify en segundo plano, con timeout, para que NUNCA cuelgue el boot.
+    // SelectDeviceScreen tolera que aún no esté listo (sus queryItems están en
+    // try/catch); cuando Amplify queda configurado, un refresh trae los datos.
+    if (!Amplify.isConfigured) {
+      () async {
+        try {
+          await Amplify.addPlugin(AmplifyAuthCognito());
+          await Amplify.configure(amplifyconfig)
+              .timeout(const Duration(seconds: 6));
+          printLog.i('Modo widget config: Amplify configurado');
+        } catch (e) {
+          printLog.e('Modo widget config: Amplify no configuró: $e');
+        }
+      }();
+    }
     return;
   }
 

@@ -23,7 +23,7 @@
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
     <uses-feature android:name="android.hardware.location.gps" />
     <uses-feature android:name="android.hardware.location.network" />
-    <application android:label="Caldén Smart" android:name="${applicationName}"
+    <application android:label="Caldén Smart" android:name=".MainApplication"
         android:icon="@mipmap/ic_launcher">
         <meta-data android:name="firebase_crashlytics_collection_enabled" android:value="true" />
         <activity android:name=".MainActivity" android:exported="true"
@@ -62,7 +62,8 @@
             </intent-filter>
         </receiver>
         <activity android:name=".widget.WidgetConfigActivity" android:exported="true"
-            android:hardwareAccelerated="true" android:theme="@style/LaunchTheme">
+            android:hardwareAccelerated="true" android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>

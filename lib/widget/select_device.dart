@@ -17,7 +17,8 @@ class SelectDeviceScreen extends StatefulWidget {
   State<SelectDeviceScreen> createState() => _SelectDeviceScreenState();
 }
 
-class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
+class _SelectDeviceScreenState extends State<SelectDeviceScreen>
+    with WidgetsBindingObserver {
   // Canal para hablar con Android (WidgetConfigActivity.kt)
   static const platform = MethodChannel('com.caldensmart.sime/widget_config');
 
@@ -28,25 +29,47 @@ class _SelectDeviceScreenState extends State<SelectDeviceScreen> {
   @override
   void initState() {
     super.initState();
-    // 1. Primero obtenemos el ID del widget desde Android
+    // Con engine cacheado (pre-calentado por MainApplication), este initState
+    // corre UNA sola vez: al pre-calentar, cuando todavía NO hay una
+    // WidgetConfigActivity attachada ni widgetId. Por eso escuchamos el ciclo
+    // de vida: cuando la activity real se attachea y llega 'resumed',
+    // re-pedimos el id y recién ahí cargamos.
+    WidgetsBinding.instance.addObserver(this);
     _getWidgetId();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // La activity de config se attacheó (o volvió al frente) con un widgetId.
+      _getWidgetId();
+    }
   }
 
   // Pide el ID a la actividad nativa
   Future<void> _getWidgetId() async {
     try {
       final int widgetId = await platform.invokeMethod('getWidgetId');
+      // 0 = INVALID_APPWIDGET_ID → estamos en el pre-calentado, sin activity.
+      // No cargamos datos hasta tener un id real (evita queries al pedo).
+      if (widgetId == 0) return;
+      final bool isNew = widgetId != _widgetId;
       setState(() {
         _widgetId = widgetId;
       });
       printLog.d("Configurando Widget ID: $_widgetId");
-
-      // 2. Cargamos los datos (el widget usará su diseño XML por defecto hasta que se seleccione un dispositivo)
-      _loadInitialData();
-    } on PlatformException catch (e) {
-      printLog.e("Error obteniendo Widget ID: '${e.message}'.");
-      // Si falla, igual cargamos datos para pruebas, pero no podremos guardar
-      _loadInitialData();
+      // Cargamos solo si es un widget nuevo (o el primero válido).
+      if (isNew) _loadInitialData();
+    } catch (e) {
+      // MissingPluginException en el pre-calentado (aún no hay handler nativo)
+      // u otro error: no cargamos, esperamos al 'resumed' de la activity real.
+      printLog.e("getWidgetId aún no disponible: $e");
     }
   }
 
