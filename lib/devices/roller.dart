@@ -50,6 +50,23 @@ class RollerPageState extends ConsumerState<RollerPage> {
   bool _isPressingDown = false;
 
   String? _activeQuickButton; // 'abrir' | 'cerrar' | null
+  DateTime? _quickActionSentAt;
+  bool _quickActionMotionSeen = false;
+
+  bool get _quickActionGraceExpired {
+    if (_quickActionSentAt == null) return true;
+    return DateTime.now().difference(_quickActionSentAt!) >
+        const Duration(seconds: 4);
+  }
+
+  void _onRollerMovingUpdate(bool moving) {
+    if (moving) {
+      _quickActionMotionSeen = true;
+    }
+    if (!moving && (_quickActionMotionSeen || _quickActionGraceExpired)) {
+      _activeQuickButton = null;
+    }
+  }
 
   bool _isCalibrating = false;
 
@@ -595,7 +612,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
         setState(() {
           actualPosition = int.parse(parts[0]);
           rollerMoving = parts[1] == '1';
-          if (!rollerMoving) _activeQuickButton = null;
+          _onRollerMovingUpdate(rollerMoving);
         });
       }
     });
@@ -622,9 +639,7 @@ class RollerPageState extends ConsumerState<RollerPage> {
     actualPosition = int.parse(partes[13]);
     workingPosition = int.parse(partes[14]);
     rollerMoving = partes[15] == '1';
-    if (!rollerMoving) {
-      _activeQuickButton = null;
-    }
+    _onRollerMovingUpdate(rollerMoving);
     // awsInit = partes[16] == '1';
     isCalibrated = partes[17] == '1';
   }
@@ -701,12 +716,17 @@ class RollerPageState extends ConsumerState<RollerPage> {
               ],
             ),
             GestureDetector(
-              onTap: () {
-                setState(() {
-                  rollerPolarity = rollerPolarity == '0' ? '1' : '0';
-                });
-                setRollerPolarity();
-              },
+              onTap: rollerMoving
+                  ? () {
+                      showToast(
+                          'No se puede cambiar mientras la cortina se mueve');
+                    }
+                  : () {
+                      setState(() {
+                        rollerPolarity = rollerPolarity == '0' ? '1' : '0';
+                      });
+                      setRollerPolarity();
+                    },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding:
@@ -719,8 +739,11 @@ class RollerPageState extends ConsumerState<RollerPage> {
                           : color0.withValues(alpha: 0.3)),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(HugeIcons.strokeRoundedExchange01,
-                    color: color0, size: 20),
+                child: Opacity(
+                  opacity: rollerMoving ? 0.35 : 1,
+                  child: const Icon(HugeIcons.strokeRoundedExchange01,
+                      color: color0, size: 20),
+                ),
               ),
             ),
           ],
@@ -735,6 +758,14 @@ class RollerPageState extends ConsumerState<RollerPage> {
                   setDistance(0);
                 },
                 onLongPressEnd: (_) {
+                  setState(() {
+                    _isPressingUp = false;
+                    workingPosition = actualPosition;
+                  });
+                  setDistance(actualPosition);
+                },
+                onLongPressCancel: () {
+                  if (!_isPressingUp) return;
                   setState(() {
                     _isPressingUp = false;
                     workingPosition = actualPosition;
@@ -781,6 +812,14 @@ class RollerPageState extends ConsumerState<RollerPage> {
                   setDistance(100);
                 },
                 onLongPressEnd: (_) {
+                  setState(() {
+                    _isPressingDown = false;
+                    workingPosition = actualPosition;
+                  });
+                  setDistance(actualPosition);
+                },
+                onLongPressCancel: () {
+                  if (!_isPressingDown) return;
                   setState(() {
                     _isPressingDown = false;
                     workingPosition = actualPosition;
@@ -933,6 +972,14 @@ class RollerPageState extends ConsumerState<RollerPage> {
                                             _isPressingUp = false;
                                           });
                                           setDistance(actualPosition);
+                                        }
+                                        ..onLongPressCancel = () {
+                                          if (!_isPressingUp) return;
+                                          setState(() {
+                                            workingPosition = actualPosition;
+                                            _isPressingUp = false;
+                                          });
+                                          setDistance(actualPosition);
                                         };
                                     },
                                   ),
@@ -1009,6 +1056,14 @@ class RollerPageState extends ConsumerState<RollerPage> {
                                             _isPressingDown = false;
                                           });
                                           setDistance(actualPosition);
+                                        }
+                                        ..onLongPressCancel = () {
+                                          if (!_isPressingDown) return;
+                                          setState(() {
+                                            workingPosition = actualPosition;
+                                            _isPressingDown = false;
+                                          });
+                                          setDistance(actualPosition);
                                         };
                                     },
                                   ),
@@ -1070,13 +1125,27 @@ class RollerPageState extends ConsumerState<RollerPage> {
                             child: GestureDetector(
                               onTap: _activeQuickButton == 'cerrar'
                                   ? null // el otro está activo, bloqueado
-                                  : () {
-                                      setState(
-                                          () => _activeQuickButton = 'abrir');
-                                      setDistance(0);
-                                      workingPosition = 0;
-                                      printLog.i("abrir cortina 0%");
-                                    },
+                                  : _activeQuickButton == 'abrir'
+                                      ? () {
+                                          // Ya está abriendo: frenar y liberar la UI
+                                          setState(() {
+                                            _activeQuickButton = null;
+                                            workingPosition = actualPosition;
+                                          });
+                                          setDistance(actualPosition);
+                                          printLog.i(
+                                              "stop cortina en $actualPosition%");
+                                        }
+                                      : () {
+                                          setState(() {
+                                            _activeQuickButton = 'abrir';
+                                            _quickActionSentAt = DateTime.now();
+                                            _quickActionMotionSeen = false;
+                                          });
+                                          setDistance(0);
+                                          workingPosition = 0;
+                                          printLog.i("abrir cortina 0%");
+                                        },
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
                                 decoration: BoxDecoration(
@@ -1098,7 +1167,9 @@ class RollerPageState extends ConsumerState<RollerPage> {
                                     const EdgeInsets.symmetric(vertical: 15.0),
                                 child: Center(
                                   child: Text(
-                                    'Abrir cortina',
+                                    _activeQuickButton == 'abrir'
+                                        ? 'Detener'
+                                        : 'Abrir cortina',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontSize: 16,
@@ -1118,13 +1189,27 @@ class RollerPageState extends ConsumerState<RollerPage> {
                             child: GestureDetector(
                               onTap: _activeQuickButton == 'abrir'
                                   ? null // el otro está activo, bloqueado
-                                  : () {
-                                      setState(
-                                          () => _activeQuickButton = 'cerrar');
-                                      setDistance(100);
-                                      workingPosition = 100;
-                                      printLog.i("cerrar cortina 100%");
-                                    },
+                                  : _activeQuickButton == 'cerrar'
+                                      ? () {
+                                          // Ya está cerrando: frenar y liberar la UI
+                                          setState(() {
+                                            _activeQuickButton = null;
+                                            workingPosition = actualPosition;
+                                          });
+                                          setDistance(actualPosition);
+                                          printLog.i(
+                                              "stop cortina en $actualPosition%");
+                                        }
+                                      : () {
+                                          setState(() {
+                                            _activeQuickButton = 'cerrar';
+                                            _quickActionSentAt = DateTime.now();
+                                            _quickActionMotionSeen = false;
+                                          });
+                                          setDistance(100);
+                                          workingPosition = 100;
+                                          printLog.i("cerrar cortina 100%");
+                                        },
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
                                 decoration: BoxDecoration(
@@ -1146,7 +1231,9 @@ class RollerPageState extends ConsumerState<RollerPage> {
                                     const EdgeInsets.symmetric(vertical: 15.0),
                                 child: Center(
                                   child: Text(
-                                    'Cerrar cortina',
+                                    _activeQuickButton == 'cerrar'
+                                        ? 'Detener'
+                                        : 'Cerrar cortina',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontSize: 16,
@@ -1315,13 +1402,20 @@ class RollerPageState extends ConsumerState<RollerPage> {
                                   ],
                                 ),
                                 GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      rollerPolarity =
-                                          rollerPolarity == '0' ? '1' : '0';
-                                    });
-                                    setRollerPolarity();
-                                  },
+                                  onTap: rollerMoving
+                                      ? () {
+                                          showToast(
+                                              'No se puede cambiar mientras la cortina se mueve');
+                                        }
+                                      : () {
+                                          setState(() {
+                                            rollerPolarity =
+                                                rollerPolarity == '0'
+                                                    ? '1'
+                                                    : '0';
+                                          });
+                                          setRollerPolarity();
+                                        },
                                   child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 200),
                                     padding: const EdgeInsets.symmetric(
@@ -1336,10 +1430,13 @@ class RollerPageState extends ConsumerState<RollerPage> {
                                               : color0.withValues(alpha: 0.3)),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: const Icon(
-                                        HugeIcons.strokeRoundedExchange01,
-                                        color: color0,
-                                        size: 20),
+                                    child: Opacity(
+                                      opacity: rollerMoving ? 0.35 : 1,
+                                      child: const Icon(
+                                          HugeIcons.strokeRoundedExchange01,
+                                          color: color0,
+                                          size: 20),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -1921,7 +2018,10 @@ class RollerPageState extends ConsumerState<RollerPage> {
           children: [
             PageView(
               controller: _pageController,
-              physics: _isAnimating || _isTutorialActive
+              physics: _isAnimating ||
+                      _isTutorialActive ||
+                      _isPressingUp ||
+                      _isPressingDown
                   ? const NeverScrollableScrollPhysics()
                   : const BouncingScrollPhysics(),
               onPageChanged: onItemChanged,
