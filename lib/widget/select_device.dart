@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:caldensmart/Global/stored_data.dart' show loadEmail;
+import 'package:caldensmart/global/stored_data.dart' show loadEmail;
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
 import 'package:caldensmart/logger.dart';
 import 'package:caldensmart/master.dart';

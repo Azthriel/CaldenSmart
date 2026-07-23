@@ -11,7 +11,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:caldensmart/aws/mqtt/mqtt.dart';
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
-import 'package:caldensmart/Global/stored_data.dart';
+import 'package:caldensmart/global/stored_data.dart';
 import 'package:caldensmart/master.dart';
 import 'package:caldensmart/logger.dart';
 import 'package:caldensmart/widget/widget_service.dart';

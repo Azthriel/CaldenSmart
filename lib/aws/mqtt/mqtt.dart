@@ -6,12 +6,12 @@ import 'package:caldensmart/widget/widget_handler.dart';
 import '/master.dart';
 import '/aws/mqtt/mqtt_certificates.dart';
 import '/aws/dynamo/dynamo.dart';
-import '../../Global/stored_data.dart';
+import '../../global/stored_data.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:caldensmart/logger.dart';
-import 'package:caldensmart/Escenas/models/evento_estado.dart';
+import 'package:caldensmart/escenas/models/evento_estado.dart';
 
 MqttServerClient? mqttAWSFlutterClient;
 StreamSubscription<List<MqttReceivedMessage<MqttMessage>>>? _mqttSubscription;

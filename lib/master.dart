@@ -33,7 +33,7 @@ import 'package:wifi_scan/wifi_scan.dart';
 import 'aws/dynamo/dynamo.dart';
 import 'aws/mqtt/mqtt.dart';
 import 'package:mqtt_client/mqtt_client.dart';
-import 'Global/stored_data.dart';
+import 'global/stored_data.dart';
 import 'package:caldensmart/logger.dart';
 
 //! VARIABLES !\\
