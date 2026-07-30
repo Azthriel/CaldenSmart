@@ -22,6 +22,7 @@ class ScanPageState extends State<ScanPage>
     with SingleTickerProviderStateMixin {
   List<BluetoothDevice> devices = [];
   List<BluetoothDevice> sortedDevices = [];
+  List<BluetoothDevice> _pendingNewDevices = [];
   BluetoothDevice? connectedDevice;
   bool isConnecting = false;
   String searchQuery = '';
@@ -153,35 +154,74 @@ class ScanPageState extends State<ScanPage>
     }
   }
 
+  /// Inserta los dispositivos recién descubiertos en `sortedDevices`,
+  /// ubicando a cada uno en la posición que le corresponde según su RSSI
+  /// actual comparado contra los que ya estaban en la lista. Los equipos
+  /// ya insertados NUNCA cambian de posición por esto: la lista solo
+  /// crece, no se reordena sola. El único momento en que se reordena todo
+  /// desde cero es un reescaneo explícito (ver `reescan()`).
+  List<BluetoothDevice> _insertNewDevicesSorted(
+      List<BluetoothDevice> newDevices) {
+    final result = List<BluetoothDevice>.from(sortedDevices);
+
+    // Entre los nuevos de esta tanda, los ordenamos por señal entre sí
+    // antes de insertarlos, para que no queden en orden de descubrimiento.
+    final newSorted = List<BluetoothDevice>.from(newDevices)
+      ..sort((a, b) {
+        final rssiA = deviceRssi[a.remoteId.toString()] ?? -999;
+        final rssiB = deviceRssi[b.remoteId.toString()] ?? -999;
+        return rssiB.compareTo(rssiA);
+      });
+
+    for (final device in newSorted) {
+      final rssi = deviceRssi[device.remoteId.toString()] ?? -999;
+      int insertIndex = result.length;
+      for (int i = 0; i < result.length; i++) {
+        final existingRssi = deviceRssi[result[i].remoteId.toString()] ?? -999;
+        if (rssi > existingRssi) {
+          insertIndex = i;
+          break;
+        }
+      }
+      result.insert(insertIndex, device);
+    }
+    return result;
+  }
+
   void _processScanResults(List<ScanResult> results) {
-    bool hasChanges = false;
+    bool needsRefresh = false;
 
     for (ScanResult result in results) {
-      deviceRssi[result.device.remoteId.toString()] = result.rssi;
+      final deviceId = result.device.remoteId.toString();
+      deviceRssi[deviceId] = result.rssi;
 
       if (!devices.any((device) => device.remoteId == result.device.remoteId)) {
         devices.add(result.device);
-        hasChanges = true;
+        _pendingNewDevices.add(result.device);
+        needsRefresh = true;
       }
 
-      // Si el dispositivo vuelve a aparecer, quitarlo de la lista de perdidos
-      String deviceId = result.device.remoteId.toString();
+      // Si el dispositivo vuelve a aparecer, quitarlo de la lista de
+      // perdidos (solo refresca su ícono, no cambia su posición).
       if (lostDevices.contains(deviceId)) {
         lostDevices.remove(deviceId);
-        hasChanges = true;
+        needsRefresh = true;
       }
 
-      lastSeenDevices[result.device.remoteId.toString()] = result.timeStamp;
+      lastSeenDevices[deviceId] = result.timeStamp;
     }
 
     // Solo actualizar UI si hay cambios y usando debouncing
-    if (hasChanges && !_needsUpdate) {
+    if (needsRefresh && !_needsUpdate) {
       _needsUpdate = true;
       _updateTimer?.cancel();
       _updateTimer = Timer(const Duration(milliseconds: 300), () {
         if (mounted && _needsUpdate) {
           setState(() {
-            sortedDevices = List.from(devices);
+            if (_pendingNewDevices.isNotEmpty) {
+              sortedDevices = _insertNewDevicesSorted(_pendingNewDevices);
+              _pendingNewDevices = [];
+            }
             _needsUpdate = false;
           });
         }
@@ -213,11 +253,13 @@ class ScanPageState extends State<ScanPage>
       }
     }
 
-    //  Solo actualizar si hay dispositivos que marcar como perdidos
-    if (devicesToMarkAsLost.isNotEmpty || lostDevices.isNotEmpty) {
+    // Solo actualiza el set de perdidos, para que se refresque el ícono
+    // de señal (a "sin señal"). NO toca sortedDevices: la posición de
+    // cada equipo queda fija donde se insertó, no se reordena solo por
+    // pasar a estado "perdido".
+    if (devicesToMarkAsLost.isNotEmpty) {
       setState(() {
         lostDevices.addAll(devicesToMarkAsLost);
-        sortedDevices = List.from(devices);
       });
     }
   }
@@ -313,6 +355,9 @@ class ScanPageState extends State<ScanPage>
     context.mounted
         ? setState(() {
             devices.clear();
+            sortedDevices.clear();
+            deviceRssi.clear();
+            _pendingNewDevices.clear();
             lostDevices.clear();
             lastSeenDevices.clear();
             _connectingDeviceId = null;

@@ -5141,89 +5141,43 @@ class WifiPageState extends ConsumerState<WifiPage>
           physics: const NeverScrollableScrollPhysics(),
           children: [
             _buildDeviceList(_listaIndividuales, 'individual'),
-            _buildDeviceList(_listaEventos, 'grupos',
-                footerWidget: _buildConfigButton()),
+            _buildDeviceList(_listaEventos, 'grupos'),
           ],
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: _listaIndividuales.isNotEmpty &&
-              _tabController.index == 0
-          ? Padding(
-              padding: EdgeInsets.only(bottom: 10 + safeAreaBottom),
-              child: FloatingActionButton.extended(
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: 10 + safeAreaBottom),
+        child: _tabController.index == 0
+            ? (_listaIndividuales.isNotEmpty
+                ? FloatingActionButton.extended(
+                    heroTag: 'agruparFab',
+                    backgroundColor: color4,
+                    elevation: 5,
+                    onPressed: _showCreateFolderDialog,
+                    icon: const Icon(HugeIcons.strokeRoundedFolderAdd,
+                        color: color0),
+                    label: Text('Agrupar',
+                        style: GoogleFonts.poppins(
+                            color: color0, fontWeight: FontWeight.bold)),
+                  )
+                : const SizedBox.shrink())
+            : FloatingActionButton.extended(
+                heroTag: 'configurarEventoFab',
                 backgroundColor: color4,
                 elevation: 5,
-                onPressed: _showCreateFolderDialog,
+                onPressed: () async {
+                  final result = await Navigator.pushNamed(context, '/escenas');
+                  if (result == true && mounted) {
+                    _buildDeviceListFromLoadedData();
+                  }
+                },
                 icon:
-                    const Icon(HugeIcons.strokeRoundedFolderAdd, color: color0),
-                label: Text('Agrupar',
+                    const Icon(HugeIcons.strokeRoundedPlusSign, color: color0),
+                label: Text('Crear\nevento',
                     style: GoogleFonts.poppins(
                         color: color0, fontWeight: FontWeight.bold)),
               ),
-            )
-          : null,
-    );
-  }
-
-  Widget _buildConfigButton() {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color1, color1.withValues(alpha: 0.8)],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: color1.withValues(alpha: 0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () async {
-            final result = await Navigator.pushNamed(context, '/escenas');
-            if (result == true && mounted) {
-              _buildDeviceListFromLoadedData();
-            }
-          },
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color0.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    HugeIcons.strokeRoundedPlusSign,
-                    color: color0,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Configurar evento',
-                  style: GoogleFonts.poppins(
-                    color: color0,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -5273,8 +5227,7 @@ class WifiPageState extends ConsumerState<WifiPage>
   }
 
   Widget _buildDeviceList(
-      List<MapEntry<String, String>> deviceList, String tipo,
-      {Widget? footerWidget}) {
+      List<MapEntry<String, String>> deviceList, String tipo) {
     if (deviceList.where((e) => e.value.trim().isNotEmpty).isEmpty) {
       return Center(
         child: Padding(
@@ -5313,10 +5266,6 @@ class WifiPageState extends ConsumerState<WifiPage>
                 ),
               ),
               const SizedBox(height: 20),
-              if (tipo != 'individual') ...[
-                const SizedBox(height: 20),
-                _buildConfigButton(),
-              ],
             ],
           ),
         ),
@@ -5341,15 +5290,7 @@ class WifiPageState extends ConsumerState<WifiPage>
         );
       },
       itemCount: deviceList.length,
-      footer: Column(
-        children: [
-          if (footerWidget != null) ...[
-            const SizedBox(height: 10),
-            footerWidget,
-          ],
-          const SizedBox(height: 120),
-        ],
-      ),
+      footer: const SizedBox(height: 120),
       onReorderItem: (int oldIndex, int newIndex) {
         if (newIndex > oldIndex) newIndex -= 1;
 
