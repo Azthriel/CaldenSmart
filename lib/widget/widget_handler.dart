@@ -15,6 +15,7 @@ import 'package:caldensmart/global/stored_data.dart';
 import 'package:caldensmart/master.dart';
 import 'package:caldensmart/logger.dart';
 import 'package:caldensmart/widget/widget_service.dart';
+import 'package:caldensmart/widget/event_widget_handler.dart';
 
 /// Constantes para widgets iOS
 const String iOSWidgetName = 'ControlWidget';
@@ -79,6 +80,8 @@ Future<void> setWidgetServiceReady(bool ready) async {
 Future<void> refreshWidgetTimestamps({bool markReady = true}) async {
   try {
     printLog.i('Refresh timestamps: refrescando ts de widgets...');
+
+    await refreshEventWidgetTimestamps();
 
     final widgetIds = await WidgetService.getWidgetIds();
 
@@ -187,26 +190,35 @@ Future<void> backgroundCallback(Uri? uri) async {
       if (widgetId != null && pos != null) {
         await _handleRollerCommand(widgetId, pos);
       }
+    } else if (uri.path == '/event') {
+      // caldensmart://widget/event?widgetId=N&action=start|pause|resume|cancel|group[&on=true]
+      final widgetId = int.tryParse(uri.queryParameters['widgetId'] ?? '');
+      final action = uri.queryParameters['action'];
+      if (widgetId == null || action == null) {
+        printLog.e('Widget evento: widgetId o action inválidos');
+        return;
+      }
+      final onParam = uri.queryParameters['on'];
+      await handleEventWidgetAction(
+        widgetId,
+        action,
+        on: onParam == null ? null : onParam == 'true',
+      );
     }
   } else if (uri.path == '/checkAndStop') {
     printLog.i(
         'Widget callback: verificando widgets y deteniendo servicio si es necesario');
     await _handleCheckAndStopService();
   } else if (uri.path == '/update') {
-    // Llamado por WorkManager (WidgetUpdateWorker) cada 15 min.
-    // (a) Consulta REAL a DynamoDB para traer el estado verdadero de cada
-    //     equipo. Antes solo se bumpeaba el ts con el último estado conocido
-    //     (un "latido falso" que no reflejaba desconexiones/reconexiones
-    //     reales), por eso los widgets se quedaban mostrando estados viejos.
-    //     Si no hay internet se cae al refresh de timestamps para NO marcar
-    //     los equipos como desconectados por falta de red del teléfono.
     printLog.i('Widget callback: background update solicitado por WorkManager');
     final hasNet = await checkInternetConnection();
     if (hasNet) {
       await syncWidgetsWithDatabase();
+      await syncEventWidgetsWithDatabase();
     } else {
       printLog.i('Widget update: sin internet → solo refresco de timestamps');
       await refreshWidgetTimestamps();
+      await refreshEventWidgetTimestamps();
     }
   } else {
     printLog.i(
@@ -611,7 +623,7 @@ Future<void> unregisterWidgetId(int widgetId) async {
         .i('Widget $widgetId eliminado. Total widgets: ${widgetIds.length}');
 
     // Si no quedan widgets, detener el servicio
-    if (widgetIds.isEmpty) {
+    if (!await hasActiveWidgets()) {
       await stopWidgetService();
     }
   } catch (e) {
@@ -622,6 +634,8 @@ Future<void> unregisterWidgetId(int widgetId) async {
 /// Verifica si hay widgets activos
 Future<bool> hasActiveWidgets() async {
   try {
+    if (await hasActiveEventWidgets()) return true;
+
     final widgetIdsJson =
         await HomeWidget.getWidgetData<String>('active_widget_ids');
     if (widgetIdsJson == null || widgetIdsJson.isEmpty) return false;
@@ -944,6 +958,7 @@ void onWidgetServiceStart(ServiceInstance service) async {
 
   // Sincronizar widgets con el estado real desde la base de datos
   await syncWidgetsWithDatabase();
+  await syncEventWidgetsWithDatabase();
 
   // Marcar servicio como LISTO
   await setWidgetServiceReady(true);
@@ -971,6 +986,7 @@ void onWidgetServiceStart(ServiceInstance service) async {
     _isWidgetListenerActive = false; // nuevo widget → forzar re-suscripción
     await subscribeToWidgetTopics();
     await syncWidgetsWithDatabase();
+    await syncEventWidgetsWithDatabase();
     await setWidgetServiceReady(true);
   });
 
@@ -1005,6 +1021,7 @@ void onWidgetServiceStart(ServiceInstance service) async {
           _isWidgetListenerActive = false;
           await subscribeToWidgetTopics();
           await syncWidgetsWithDatabase();
+          await syncEventWidgetsWithDatabase();
           await setWidgetServiceReady(true);
           printLog.i('Widget service: Reconexión exitosa');
         } else {
@@ -1015,6 +1032,7 @@ void onWidgetServiceStart(ServiceInstance service) async {
             _isWidgetListenerActive = false;
             await subscribeToWidgetTopics();
             await syncWidgetsWithDatabase();
+            await syncEventWidgetsWithDatabase();
             await setWidgetServiceReady(true);
           }
         }
@@ -1067,6 +1085,7 @@ Future<void> subscribeToWidgetTopics() async {
 
   try {
     final topics = await getWidgetTopics();
+    topics.addAll(await getEventWidgetTopics());
     if (topics.isEmpty) return;
 
     // Asegurar conexión MQTT
@@ -1109,13 +1128,23 @@ void _handleWidgetMqttMessage(
     final String topic = messages[0].topic;
     final parts = topic.split('/');
 
+    final List<int> messageBytes = recMess.payload.message;
+    final String messageString = utf8.decode(messageBytes);
+
+    if (topic.startsWith('eventos/')) {
+      try {
+        final Map<String, dynamic> eventMap = json.decode(messageString) ?? {};
+        await handleEventWidgetMqttMessage(topic, eventMap);
+      } catch (e) {
+        printLog.e('Error decodificando mensaje de evento: $e');
+      }
+      return;
+    }
+
     if (parts.length < 3) return;
 
     final String pc = parts[1];
     final String sn = parts[2];
-
-    final List<int> messageBytes = recMess.payload.message;
-    final String messageString = utf8.decode(messageBytes);
 
     try {
       final Map<String, dynamic> messageMap = json.decode(messageString) ?? {};
@@ -1317,6 +1346,7 @@ void disposeWidgetListener() {
   _widgetMqttSubscription?.cancel();
   _widgetMqttSubscription = null;
   _isWidgetListenerActive = false;
+  disposeEventWidgetTimers();
 }
 
 /// Verifica si se puede detener el servicio de background

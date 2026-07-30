@@ -10,7 +10,25 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineCache
 import io.flutter.plugin.common.MethodChannel
 
+/**
+ * Activity de configuración del widget.
+ *
+ * Hay UN solo provider (ControlWidgetProvider) y por lo tanto una sola entrada
+ * en el selector del launcher. SelectDeviceScreen muestra eventos y equipos en
+ * la misma pantalla, así que esta activity no necesita saber qué se va a
+ * configurar: eso lo decide el usuario del lado de Dart.
+ *
+ * Nota sobre el engine: viene PRE-CALENTADO desde MainApplication con
+ * initialRoute "/widget_config_selection". Con engine cacheado,
+ * getInitialRoute() se IGNORA (el entrypoint de Dart ya corrió con su ruta);
+ * se mantiene abajo solo para el caso de fallback en que el cache esté vacío
+ * y FlutterActivity tenga que crear un engine propio.
+ */
 class WidgetConfigActivity : FlutterActivity() {
+    companion object {
+        private const val CHANNEL = "com.caldensmart.sime/widget_config"
+    }
+
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
 
     // Nos attachamos al engine PRE-CALENTADO por MainApplication en vez de crear
@@ -53,28 +71,32 @@ class WidgetConfigActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        // Creamos un canal para hablar con Flutter
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.caldensmart.sime/widget_config")
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call, result ->
-                if (call.method == "getWidgetId") {
-                    // Flutter nos pide el ID del widget actual
-                    result.success(appWidgetId)
-                } else if (call.method == "finishConfig") {
-                    // Confirmamos a Android que la configuración fue exitosa
-                    val resultValue = Intent()
-                    resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-                    setResult(RESULT_OK, resultValue)
+                when (call.method) {
+                    "getWidgetId" -> {
+                        // Flutter nos pide el ID del widget actual
+                        result.success(appWidgetId)
+                    }
 
-                    // Cerramos esta pantalla para volver al launcher
-                    finish()
-                    result.success(true)
-                } else {
-                    result.notImplemented()
+                    "finishConfig" -> {
+                        // Confirmamos a Android que la configuración fue exitosa
+                        val resultValue = Intent()
+                        resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                        setResult(RESULT_OK, resultValue)
+
+                        // Cerramos esta pantalla para volver al launcher
+                        finish()
+                        result.success(true)
+                    }
+
+                    else -> {
+                        result.notImplemented()
+                    }
                 }
             }
     }
 
-    // 5. Opcional: Definir una ruta inicial específica para esta pantalla
-    // Esto hace que al abrirse, vaya directo a tu pantalla de selección
+    // 5. Ruta inicial para el caso de fallback (engine no cacheado).
     override fun getInitialRoute(): String = "/widget_config_selection"
 }

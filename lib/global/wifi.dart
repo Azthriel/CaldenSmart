@@ -516,43 +516,48 @@ class WifiPageState extends ConsumerState<WifiPage>
 
   //*-Determina si el grupo está on-*\\
   bool isGroupOn(String devicesInGroup) {
-    // 1. Convertir el string a lista
     List<String> deviceList = devicesInGroup
         .replaceAll('[', '')
         .replaceAll(']', '')
         .split(',')
         .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
         .toList();
 
+    int considerados = 0;
+
     for (String deviceName in deviceList) {
-      if (deviceName.contains('_')) {
-        final list = deviceName.split('_');
-        String equipo = DeviceManager.getProductCode(list[0]);
-        String serial = DeviceManager.extractSerialNumber(list[0]);
+      final bool esPin = deviceName.contains('_');
+      final String base = esPin ? deviceName.split('_')[0] : deviceName;
 
-        Map<String, dynamic> deviceDATA =
-            jsonDecode(globalDATA['$equipo/$serial']?['io${list[1]}']) ?? {};
+      final String equipo = DeviceManager.getProductCode(base);
+      final String serial = DeviceManager.extractSerialNumber(base);
+      final Map<String, dynamic> equipoDATA =
+          globalDATA['$equipo/$serial'] ?? {};
 
-        bool turnOn = deviceDATA['w_status'] ?? false;
+      // Desconectado → no opina. Ojo: `cstate` vive en el equipo, no dentro
+      // del mapa del pin.
+      if (equipoDATA['cstate'] != true) continue;
 
-        if (!turnOn) {
-          return false;
-        }
+      final bool turnOn;
+      if (esPin) {
+        final raw = equipoDATA['io${deviceName.split('_')[1]}'];
+        // jsonDecode(null) tira una excepción dentro del build. El `?? {}` del
+        // código anterior se aplicaba DESPUÉS del decode y no protegía nada.
+        if (raw == null) continue;
+        final Map<String, dynamic> ioData = raw is String
+            ? Map<String, dynamic>.from(jsonDecode(raw))
+            : Map<String, dynamic>.from(raw as Map);
+        turnOn = ioData['w_status'] ?? false;
       } else {
-        String equipo = DeviceManager.getProductCode(deviceName);
-        String serial = DeviceManager.extractSerialNumber(deviceName);
-
-        Map<String, dynamic> deviceDATA = globalDATA['$equipo/$serial'] ?? {};
-
-        bool turnOn = deviceDATA['w_status'] ?? false;
-
-        if (!turnOn) {
-          return false;
-        }
+        turnOn = equipoDATA['w_status'] ?? false;
       }
+
+      considerados++;
+      if (!turnOn) return false;
     }
 
-    return true;
+    return considerados > 0;
   }
   //*-Determina si el grupo está on-*\\
 
@@ -5549,15 +5554,19 @@ class WifiPageState extends ConsumerState<WifiPage>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Advertencia, NO impedimento: la cadena se
+                              // puede activar igual y ejecuta los pasos que
+                              // puede. De ahí el naranja en vez del rojo.
                               if (!cadenaOnline) ...[
                                 Container(
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: Colors.red.withValues(alpha: 0.1),
+                                    color: Colors.orange.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: Colors.red.withValues(alpha: 0.3),
+                                      color:
+                                          Colors.orange.withValues(alpha: 0.3),
                                       width: 1,
                                     ),
                                   ),
@@ -5565,15 +5574,15 @@ class WifiPageState extends ConsumerState<WifiPage>
                                     children: [
                                       const Icon(
                                         HugeIcons.strokeRoundedWifiOff02,
-                                        color: Colors.red,
+                                        color: Colors.orange,
                                         size: 16,
                                       ),
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
-                                          'Todos los equipos deben estar conectados para activar la cadena',
+                                          'Hay equipos desconectados: los pasos que los involucren no se van a ejecutar',
                                           style: GoogleFonts.poppins(
-                                            color: Colors.red,
+                                            color: Colors.orange,
                                             fontSize: 12,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -5793,10 +5802,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                     children: [
                                       Center(
                                         child: ElevatedButton.icon(
-                                          onPressed:
-                                              (cadenaOnline && !isExecuting)
-                                                  ? () => controlarCadena(grupo)
-                                                  : null,
+                                          onPressed: isExecuting
+                                              ? null
+                                              : () => controlarCadena(grupo),
                                           icon: isExecuting
                                               ? const SizedBox(
                                                   width: 20,
@@ -5809,11 +5817,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                             Color>(color0),
                                                   ),
                                                 )
-                                              : Icon(
+                                              : const Icon(
                                                   HugeIcons.strokeRoundedPlay,
-                                                  color: cadenaOnline
-                                                      ? color0
-                                                      : Colors.grey,
+                                                  color: color0,
                                                   size: 20,
                                                 ),
                                           label: Text(
@@ -5821,20 +5827,13 @@ class WifiPageState extends ConsumerState<WifiPage>
                                                 ? 'Ejecutando Cadena...'
                                                 : 'Activar Cadena',
                                             style: GoogleFonts.poppins(
-                                              color:
-                                                  (cadenaOnline || isExecuting)
-                                                      ? color0
-                                                      : Colors.grey,
+                                              color: color0,
                                               fontWeight: FontWeight.bold,
                                               fontSize: 14,
                                             ),
                                           ),
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor:
-                                                (cadenaOnline || isExecuting)
-                                                    ? color4
-                                                    : Colors.grey
-                                                        .withValues(alpha: 0.3),
+                                            backgroundColor: color4,
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 24,
                                               vertical: 12,
@@ -5843,10 +5842,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                               borderRadius:
                                                   BorderRadius.circular(20),
                                             ),
-                                            elevation:
-                                                (cadenaOnline || isExecuting)
-                                                    ? 3
-                                                    : 0,
+                                            elevation: 3,
                                           ),
                                         ),
                                       ),
@@ -6018,7 +6014,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           final bool hasEntry =
                                               dData['hasEntry'] ?? false;
                                           // Si no tiene entrada y es salida 0 → omitir sufijo
-                                          if (idx == '0' && !hasEntry && dpc == '027313_IOT') {
+                                          if (idx == '0' &&
+                                              !hasEntry &&
+                                              dpc == '027313_IOT') {
                                             displayName =
                                                 nicknamesMap[baseName] ??
                                                     baseName;
@@ -9141,15 +9139,20 @@ class WifiPageState extends ConsumerState<WifiPage>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Advertencia, NO impedimento: el switch se
+                            // muestra igual y los equipos conectados
+                            // responden. Antes el `else` reemplazaba el
+                            // control por el cartel y no se podía accionar
+                            // nada con un solo equipo desenchufado.
                             if (!online) ...[
                               Container(
                                 width: double.infinity,
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.red.withValues(alpha: 0.1),
+                                  color: Colors.orange.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: Colors.red.withValues(alpha: 0.3),
+                                    color: Colors.orange.withValues(alpha: 0.3),
                                     width: 1,
                                   ),
                                 ),
@@ -9157,15 +9160,15 @@ class WifiPageState extends ConsumerState<WifiPage>
                                   children: [
                                     const Icon(
                                       HugeIcons.strokeRoundedWifiOff02,
-                                      color: Colors.red,
+                                      color: Colors.orange,
                                       size: 16,
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        'Todos los equipos deben estar conectados para su uso',
+                                        'Hay equipos desconectados: no van a responder al comando',
                                         style: GoogleFonts.poppins(
-                                          color: Colors.red,
+                                          color: Colors.orange,
                                           fontSize: 12,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -9175,76 +9178,73 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 ),
                               ),
                               const SizedBox(height: 12),
+                            ],
+                            // Control del grupo, esté online o no
+                            if (isRestricted) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16.0),
+                                child: _buildNotOwnerWarning(),
+                              )
                             ] else ...[
-                              // Control del grupo cuando está online
-                              if (isRestricted) ...[
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 16.0),
-                                  child: _buildNotOwnerWarning(),
-                                )
-                              ] else ...[
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: estado
-                                        ? color0.withValues(alpha: 0.1)
-                                        : color0.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: color0,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        estado
-                                            ? HugeIcons.strokeRoundedPlug01
-                                            : HugeIcons.strokeRoundedPlugSocket,
-                                        color:
-                                            estado ? Colors.green : Colors.red,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          estado
-                                              ? 'Grupo encendido'
-                                              : 'Grupo apagado',
-                                          style: GoogleFonts.poppins(
-                                            color:
-                                                estado ? Colors.green : color4,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                      if (owner)
-                                        Switch(
-                                          activeThumbColor: Colors.green,
-                                          activeTrackColor: Colors.green
-                                              .withValues(alpha: 0.3),
-                                          inactiveThumbColor: color4,
-                                          inactiveTrackColor:
-                                              color4.withValues(alpha: 0.3),
-                                          value: estado,
-                                          onChanged: (newValue) {
-                                            controlGroup(
-                                              currentUserEmail,
-                                              newValue,
-                                              grupo,
-                                            );
-                                          },
-                                        ),
-                                    ],
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: estado
+                                      ? color0.withValues(alpha: 0.1)
+                                      : color0.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: color0,
+                                    width: 1,
                                   ),
                                 ),
-                              ],
-
-                              const SizedBox(height: 16),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      estado
+                                          ? HugeIcons.strokeRoundedPlug01
+                                          : HugeIcons.strokeRoundedPlugSocket,
+                                      color: estado ? Colors.green : Colors.red,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        estado
+                                            ? 'Grupo encendido'
+                                            : 'Grupo apagado',
+                                        style: GoogleFonts.poppins(
+                                          color: estado ? Colors.green : color4,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    if (owner)
+                                      Switch(
+                                        activeThumbColor: Colors.green,
+                                        activeTrackColor:
+                                            Colors.green.withValues(alpha: 0.3),
+                                        inactiveThumbColor: color4,
+                                        inactiveTrackColor:
+                                            color4.withValues(alpha: 0.3),
+                                        value: estado,
+                                        onChanged: (newValue) {
+                                          controlGroup(
+                                            currentUserEmail,
+                                            newValue,
+                                            grupo,
+                                          );
+                                        },
+                                      ),
+                                  ],
+                                ),
+                              ),
                             ],
+
+                            const SizedBox(height: 16),
                             Text(
                               'Dispositivos en el grupo:',
                               style: GoogleFonts.poppins(

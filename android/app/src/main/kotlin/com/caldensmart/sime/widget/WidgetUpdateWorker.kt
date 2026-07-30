@@ -1,10 +1,10 @@
 package com.caldensmart.sime.widget
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.util.Log
 import androidx.work.*
 import es.antonborri.home_widget.HomeWidgetBackgroundIntent
@@ -31,9 +31,8 @@ import java.util.concurrent.TimeUnit
  */
 class WidgetUpdateWorker(
     context: Context,
-    workerParams: WorkerParameters
+    workerParams: WorkerParameters,
 ) : Worker(context, workerParams) {
-
     companion object {
         private const val TAG = "WidgetUpdateWorker"
         private const val WORK_NAME = "widget_periodic_update"
@@ -44,38 +43,39 @@ class WidgetUpdateWorker(
             // en SharedPrefs (no necesita red). Sin esta constraint, el worker
             // se ejecuta aunque no haya internet, evitando que el ts quede stale
             // >40 min y el widget se congele.
-            val workRequest = PeriodicWorkRequestBuilder<WidgetUpdateWorker>(
-                15, TimeUnit.MINUTES
-            )
-                .setBackoffCriteria(
+            val workRequest =
+                PeriodicWorkRequestBuilder<WidgetUpdateWorker>(
+                    15,
+                    TimeUnit.MINUTES,
+                ).setBackoffCriteria(
                     BackoffPolicy.LINEAR,
                     WorkRequest.MIN_BACKOFF_MILLIS,
-                    TimeUnit.MILLISECONDS
-                )
-                .build()
+                    TimeUnit.MILLISECONDS,
+                ).build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
                 ExistingPeriodicWorkPolicy.KEEP,
-                workRequest
+                workRequest,
             )
             Log.d(TAG, "WorkManager periódico programado (15 min, sin req. de red)")
         }
 
         fun scheduleOneTime(context: Context) {
-            val workRequest = OneTimeWorkRequestBuilder<WidgetUpdateWorker>()
-                .setConstraints(
-                    Constraints.Builder()
-                        .setRequiredNetworkType(NetworkType.CONNECTED)
-                        .build()
-                )
-                .setInitialDelay(5, TimeUnit.SECONDS)
-                .build()
+            val workRequest =
+                OneTimeWorkRequestBuilder<WidgetUpdateWorker>()
+                    .setConstraints(
+                        Constraints
+                            .Builder()
+                            .setRequiredNetworkType(NetworkType.CONNECTED)
+                            .build(),
+                    ).setInitialDelay(5, TimeUnit.SECONDS)
+                    .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(
                 ONE_TIME_WORK_NAME,
                 ExistingWorkPolicy.REPLACE,
-                workRequest
+                workRequest,
             )
             Log.d(TAG, "WorkManager one-time programado")
         }
@@ -91,9 +91,14 @@ class WidgetUpdateWorker(
 
         return try {
             val appWidgetManager = AppWidgetManager.getInstance(applicationContext)
-            val widgetIds = appWidgetManager.getAppWidgetIds(
-                ComponentName(applicationContext, ControlWidgetProvider::class.java)
-            )
+
+            // Un solo provider: los widgets de equipo y los de evento
+            // comparten ControlWidgetProvider. El /update de Dart sincroniza
+            // los dos tipos (syncWidgetsWithDatabase + syncEventWidgetsWithDatabase).
+            val widgetIds =
+                appWidgetManager.getAppWidgetIds(
+                    ComponentName(applicationContext, ControlWidgetProvider::class.java),
+                )
 
             if (widgetIds.isEmpty()) {
                 Log.d(TAG, "doWork: no hay widgets activos")
@@ -102,31 +107,29 @@ class WidgetUpdateWorker(
 
             Log.d(TAG, "doWork: ${widgetIds.size} widgets → ${widgetIds.joinToString()}")
 
-            // Paso 1: despertar el isolate Dart para sincronizar datos reales
-            // backgroundCallback en widget_handler.dart maneja caldensmart://widget/update
+            // Paso 1: despertar el isolate Dart (igual que antes)
             try {
-                val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(
-                    applicationContext,
-                    Uri.parse("caldensmart://widget/update")
-                )
-                backgroundIntent.send()
-                Log.d(TAG, "doWork: HomeWidgetBackgroundIntent /update enviado")
+                HomeWidgetBackgroundIntent
+                    .getBroadcast(
+                        applicationContext,
+                        Uri.parse("caldensmart://widget/update"),
+                    ).send()
             } catch (e: Exception) {
                 Log.e(TAG, "doWork: error enviando background intent: ${e.message}")
-                // No es fatal, seguimos con el refresh visual
             }
 
-            // Paso 2: refresh visual con los datos que ya están en SharedPrefs
-            // (el isolate Dart del paso 1 los actualizará async)
-            val intent = Intent(applicationContext, ControlWidgetProvider::class.java).apply {
-                action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, widgetIds)
-            }
-            applicationContext.sendBroadcast(intent)
+            // Paso 2: refresh visual con los datos que ya estan en SharedPrefs
+            // (el isolate Dart del paso 1 los actualiza async)
+            applicationContext.sendBroadcast(
+                Intent(applicationContext, ControlWidgetProvider::class.java).apply {
+                    action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, widgetIds)
+                },
+            )
 
             Log.d(TAG, "doWork: completado")
-            Result.success()
 
+            Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "doWork: error — ${e.message}", e)
             Result.retry()

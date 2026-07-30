@@ -1,28 +1,170 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Layout ÚNICO para widgets de equipo y de evento.
+
+    Cambios respecto del original:
+      • widget_container pasó de horizontal a VERTICAL
+      • la fila de siempre quedó envuelta en widget_main_row
+      • widget_device_name está ahora dentro de una columna junto a
+        widget_event_subtitle (que nace GONE)
+      • se agregaron widget_event_subtitle, widget_event_progress y los dos
+        botones de acción, todos GONE por defecto
+
+    Para un equipo el resultado es idéntico al de antes: todo lo nuevo arranca
+    GONE y con gravity="center_vertical" la fila queda centrada igual.
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
-    <LinearLayout android:id="@+id/widget_container" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/widget_background_off" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="10dp" android:paddingEnd="10dp" android:paddingTop="6dp" android:paddingBottom="6dp">
+    <LinearLayout
+        android:id="@+id/widget_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_background_off"
+        android:orientation="vertical"
+        android:gravity="center_vertical"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp">
 
-        <ImageView android:id="@+id/widget_logo_icon" android:layout_width="20dp" android:layout_height="20dp" android:layout_marginEnd="6dp" android:src="@drawable/dragon_foreground" android:contentDescription="Logo" />
+        <LinearLayout
+            android:id="@+id/widget_main_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-        <TextView android:id="@+id/widget_device_name" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="" tools:text="Calefactor principal" android:textColor="#FFFFFF" android:textSize="13sp" android:textStyle="bold" android:ellipsize="end" android:maxLines="1" />
+            <ImageView
+                android:id="@+id/widget_logo_icon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginEnd="6dp"
+                android:src="@drawable/dragon_foreground"
+                android:contentDescription="Logo" />
 
-        <TextView android:id="@+id/widget_power_indicator" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:text="" android:textColor="#FF0000" android:textSize="12sp" android:textStyle="bold" tools:text="22°C" />
+            <!-- Columna nombre + subtítulo -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-        <ImageView android:id="@+id/widget_status_icon" android:layout_width="18dp" android:layout_height="18dp" android:layout_marginStart="4dp" android:src="@drawable/ic_widget_alert" android:visibility="gone" />
+                <TextView
+                    android:id="@+id/widget_device_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    tools:text="Calefactor principal"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:ellipsize="end"
+                    android:maxLines="1" />
 
-        <!-- widget_roller_buttons eliminado — roller es display-only -->
+                <!-- Solo para eventos: "Evento grupo" / "Paso 3 de 7" -->
+                <TextView
+                    android:id="@+id/widget_event_subtitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    tools:text="Paso 3 de 7"
+                    android:textColor="#9E9E9E"
+                    android:textSize="10sp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:visibility="gone" />
 
-        <ImageView android:id="@+id/widget_connection_icon" android:layout_width="16dp" android:layout_height="16dp" android:layout_marginStart="6dp" android:src="@drawable/ic_widget_online" android:contentDescription="Conexión" />
+            </LinearLayout>
 
-        <TextView android:id="@+id/widget_pin_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:visibility="gone" />
+            <TextView
+                android:id="@+id/widget_power_indicator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text=""
+                android:textColor="#FF0000"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                tools:text="22°C" />
+
+            <ImageView
+                android:id="@+id/widget_status_icon"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_marginStart="4dp"
+                android:src="@drawable/ic_widget_alert"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/widget_connection_icon"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginStart="6dp"
+                android:src="@drawable/ic_widget_online"
+                android:contentDescription="Conexión" />
+
+            <!-- Botones de evento. 24dp: con 20dp el toque se escapaba al
+                 contenedor y terminaba abriendo la app. -->
+            <ImageView
+                android:id="@+id/widget_event_btn_primary"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="6dp"
+                android:src="@drawable/ic_event_play"
+                android:contentDescription="Acción"
+                android:visibility="gone" />
+
+            <!-- Cancelar: mas grande que el resto porque es la accion
+                 destructiva y tiene que ganarle al tap del contenedor. -->
+            <ImageView
+                android:id="@+id/widget_event_btn_secondary"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_marginStart="6dp"
+                android:padding="3dp"
+                android:src="@drawable/ic_event_stop"
+                android:contentDescription="Cancelar"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/widget_pin_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- Progreso: solo mientras la cadena o el riego están corriendo -->
+        <ProgressBar
+            android:id="@+id/widget_event_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:layout_marginTop="5dp"
+            android:max="100"
+            android:progress="0"
+            android:progressDrawable="@drawable/widget_event_progress_bar"
+            android:visibility="gone" />
 
     </LinearLayout>
 
-    <FrameLayout android:id="@+id/widget_loading_background" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/widget_loading_background" android:visibility="gone">
+    <FrameLayout
+        android:id="@+id/widget_loading_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_loading_background"
+        android:visibility="gone">
 
-        <ProgressBar android:id="@+id/widget_progress_bar" android:layout_width="18dp" android:layout_height="18dp" android:layout_gravity="center" android:indeterminateTint="#FFFFFF" />
+        <ProgressBar
+            android:id="@+id/widget_progress_bar"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_gravity="center"
+            android:indeterminateTint="#FFFFFF" />
 
     </FrameLayout>
 
