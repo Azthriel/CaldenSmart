@@ -41,7 +41,7 @@ android {
 
     packagingOptions {
         jniLibs {
-            useLegacyPackaging = true
+            useLegacyPackaging = false
         }
     }
 
@@ -71,7 +71,7 @@ android {
     defaultConfig {
         applicationId = "com.caldensmart.sime"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = flutterVersionCode.toInt()
         versionName = flutterVersionName
 
