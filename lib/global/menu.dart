@@ -27,7 +27,6 @@ class MenuPageState extends State<MenuPage> {
   static bool hasInitialized = false;
   final InAppReview _inAppReview = InAppReview.instance;
 
-
   @override
   void initState() {
     super.initState();
@@ -193,8 +192,7 @@ class MenuPageState extends State<MenuPage> {
     saveLastPage(index);
   }
 
-    Future<void> _requestReview() => _inAppReview.requestReview();
-
+  Future<void> _requestReview() => _inAppReview.requestReview();
 
   @override
   Widget build(BuildContext context) {
