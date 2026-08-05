@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:caldensmart/secret.dart';
+import 'package:caldensmart/siri/siri_credentials.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -1413,7 +1415,9 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                   .text.isNotEmpty) {
                                                 if (adminDevices.length < 3) {
                                                   addSecondaryAdmin(
-                                                    emailController.text.trim().toLowerCase(),
+                                                    emailController.text
+                                                        .trim()
+                                                        .toLowerCase(),
                                                   );
                                                 } else {
                                                   printLog
@@ -1423,7 +1427,8 @@ class ManagerScreenState extends State<ManagerScreen> {
                                                         6) {
                                                       addSecondaryAdmin(
                                                         emailController.text
-                                                            .trim().toLowerCase(),
+                                                            .trim()
+                                                            .toLowerCase(),
                                                       );
                                                     } else {
                                                       showToast(
@@ -2714,7 +2719,8 @@ class ManagerScreenState extends State<ManagerScreen> {
                       );
                     } else {
                       // Verificar si la red es inestable antes de permitir activar la notificación
-                      bool networkIsUnstable = await isWifiNetworkUnstable(pc, sn);
+                      bool networkIsUnstable =
+                          await isWifiNetworkUnstable(pc, sn);
 
                       if (networkIsUnstable && context.mounted) {
                         showAlertDialog(
@@ -3280,6 +3286,44 @@ class ManagerScreenState extends State<ManagerScreen> {
                   ),
                 ),
               ),
+                if (Platform.isIOS)
+                FutureBuilder<bool>(
+                  future: SiriCredentials.isAvailable(),
+                  builder: (context, snapshot) {
+                    if (snapshot.data != true) return const SizedBox.shrink();
+
+                    return Column(
+                      children: [
+                        const SizedBox(height: 10),
+                        GestureDetector(
+                          onTap: () => SiriCredentials.openSetup(),
+                          child: Container(
+                            width: MediaQuery.of(context).size.width * 1.5,
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 10, horizontal: 20),
+                            decoration: BoxDecoration(
+                              color: color1,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              'Configurar Siri',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.poppins(
+                                textStyle: const TextStyle(
+                                  color: color0,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+
+
               const SizedBox(height: 10),
               GestureDetector(
                 onTap: () => launchWebURL(linksOfProducts(widget.deviceName)),

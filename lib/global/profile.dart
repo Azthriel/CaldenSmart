@@ -3,6 +3,8 @@ import 'package:caldensmart/global/menu.dart';
 import 'package:caldensmart/global/stored_data.dart';
 import 'package:caldensmart/global/qr_scanner_screen.dart';
 import 'package:caldensmart/login/welcome.dart';
+import 'package:caldensmart/siri/siri_credentials.dart';
+import 'package:caldensmart/siri/siri_service.dart';
 import 'package:flutter/material.dart';
 import 'package:caldensmart/master.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -924,6 +926,9 @@ class ProfilePageState extends State<ProfilePage> {
 
                     topicsToSub.clear();
                     backTimerDS?.cancel();
+
+                    await SiriCredentials.clear();
+                    await SiriService.clearDevices();
 
                     await Amplify.Auth.signOut();
                     await Future.delayed(const Duration(seconds: 2));

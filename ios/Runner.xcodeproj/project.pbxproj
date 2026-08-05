@@ -3,31 +3,55 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0BCEE0C9E599C6561CDB7279 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E82B6677EC46D31523C8785 /* Pods_Runner.framework */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
-		2266A05C2CD922E00042724C /* firebase.json in Resources */ = {isa = PBXBuildFile; fileRef = 2266A05B2CD922E00042724C /* firebase.json */; };
-		2266A05F2CD9230F0042724C /* cli.json in Resources */ = {isa = PBXBuildFile; fileRef = 2266A05D2CD9230F0042724C /* cli.json */; };
-		2266A0602CD9230F0042724C /* team-provider-info.json in Resources */ = {isa = PBXBuildFile; fileRef = 2266A05E2CD9230F0042724C /* team-provider-info.json */; };
-		2266A0622CD923290042724C /* backend-config.json in Resources */ = {isa = PBXBuildFile; fileRef = 2266A0612CD923290042724C /* backend-config.json */; };
-		2266A0642CD923430042724C /* amplify-meta.json in Resources */ = {isa = PBXBuildFile; fileRef = 2266A0632CD923430042724C /* amplify-meta.json */; };
-		2266A0662CD9319C0042724C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 2266A0652CD9319C0042724C /* GoogleService-Info.plist */; };
-		2266A06C2CDBD59D0042724C /* alarm3.wav in Resources */ = {isa = PBXBuildFile; fileRef = 2266A0672CDBD59C0042724C /* alarm3.wav */; };
-		2266A06D2CDBD59D0042724C /* alarm2.wav in Resources */ = {isa = PBXBuildFile; fileRef = 2266A0682CDBD59D0042724C /* alarm2.wav */; };
-		2266A06E2CDBD59D0042724C /* alarm5.wav in Resources */ = {isa = PBXBuildFile; fileRef = 2266A0692CDBD59D0042724C /* alarm5.wav */; };
-		2266A06F2CDBD59D0042724C /* alarm4.wav in Resources */ = {isa = PBXBuildFile; fileRef = 2266A06A2CDBD59D0042724C /* alarm4.wav */; };
-		2266A0702CDBD59D0042724C /* alarm1.wav in Resources */ = {isa = PBXBuildFile; fileRef = 2266A06B2CDBD59D0042724C /* alarm1.wav */; };
-		2266A0722CDBD5A80042724C /* noti.wav in Resources */ = {isa = PBXBuildFile; fileRef = 2266A0712CDBD5A80042724C /* noti.wav */; };
+		1AA4FCFAF57094B3F0407560 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C3A32BE87389D1C2EE8D931A /* Pods_Runner.framework */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
+		37F33985D06385CDC2154602 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55DE4CC6BDD9137689D7D6FB /* Pods_RunnerTests.framework */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
-		8A7654A6D3811F4B1A0138D8 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EC4C3B4978F335B72ED3B85D /* Pods_RunnerTests.framework */; };
+		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		EAADD0782D67655D009A325E /* firebase.json in Resources */ = {isa = PBXBuildFile; fileRef = EAADD0772D67655D009A325E /* firebase.json */; };
+		EAADD07A2D6765A0009A325E /* backend-config.json in Resources */ = {isa = PBXBuildFile; fileRef = EAADD0792D67659F009A325E /* backend-config.json */; };
+		EAADD0802D6765B1009A325E /* alarm4.wav in Resources */ = {isa = PBXBuildFile; fileRef = EAADD07B2D6765B1009A325E /* alarm4.wav */; };
+		EAADD0812D6765B1009A325E /* alarm2.wav in Resources */ = {isa = PBXBuildFile; fileRef = EAADD07C2D6765B1009A325E /* alarm2.wav */; };
+		EAADD0822D6765B1009A325E /* alarm5.wav in Resources */ = {isa = PBXBuildFile; fileRef = EAADD07D2D6765B1009A325E /* alarm5.wav */; };
+		EAADD0832D6765B1009A325E /* alarm1.wav in Resources */ = {isa = PBXBuildFile; fileRef = EAADD07E2D6765B1009A325E /* alarm1.wav */; };
+		EAADD0842D6765B1009A325E /* alarm3.wav in Resources */ = {isa = PBXBuildFile; fileRef = EAADD07F2D6765B1009A325E /* alarm3.wav */; };
+		EAADD0862D6765C5009A325E /* noti.wav in Resources */ = {isa = PBXBuildFile; fileRef = EAADD0852D6765C5009A325E /* noti.wav */; };
+		EAADD0882D6765E1009A325E /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = EAADD0872D6765E1009A325E /* GoogleService-Info.plist */; };
+		EAADD08B2D6765FF009A325E /* team-provider-info.json in Resources */ = {isa = PBXBuildFile; fileRef = EAADD0892D6765FF009A325E /* team-provider-info.json */; };
+		EAADD08C2D6765FF009A325E /* cli.json in Resources */ = {isa = PBXBuildFile; fileRef = EAADD08A2D6765FF009A325E /* cli.json */; };
+		EAADD08E2D67663B009A325E /* amplify-meta.json in Resources */ = {isa = PBXBuildFile; fileRef = EAADD08D2D67663B009A325E /* amplify-meta.json */; };
+		F219CC8F30211743008F86B5 /* CaldenIntents.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = F219CC8630211743008F86B5 /* CaldenIntents.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F28A613D30237AA000D6366A /* SiriCredentialsBridge.swift in Resources */ = {isa = PBXBuildFile; fileRef = F28A613530237A9F00D6366A /* SiriCredentialsBridge.swift */; };
+		F28A613E30237AA000D6366A /* CognitoRefresher.swift in Resources */ = {isa = PBXBuildFile; fileRef = F28A613630237AA000D6366A /* CognitoRefresher.swift */; };
+		F28A613F30237AA000D6366A /* CaldenShortcuts.swift in Resources */ = {isa = PBXBuildFile; fileRef = F28A613730237AA000D6366A /* CaldenShortcuts.swift */; };
+		F28A614030237AA000D6366A /* KeychainStore.swift in Resources */ = {isa = PBXBuildFile; fileRef = F28A613830237AA000D6366A /* KeychainStore.swift */; };
+		F28A614130237AA000D6366A /* SiriSetupView.swift in Resources */ = {isa = PBXBuildFile; fileRef = F28A613930237AA000D6366A /* SiriSetupView.swift */; };
+		F28A614230237AA000D6366A /* CaldenIntents.swift in Resources */ = {isa = PBXBuildFile; fileRef = F28A613A30237AA000D6366A /* CaldenIntents.swift */; };
+		F28A614330237AA000D6366A /* CaldenAPI.swift in Resources */ = {isa = PBXBuildFile; fileRef = F28A613B30237AA000D6366A /* CaldenAPI.swift */; };
+		F28A614430237AA000D6366A /* SiriDeviceEntity.swift in Resources */ = {isa = PBXBuildFile; fileRef = F28A613C30237AA000D6366A /* SiriDeviceEntity.swift */; };
+		F28A614A30237BB700D6366A /* CaldenIntentsExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28A614630237AF100D6366A /* CaldenIntentsExtension.swift */; };
+		F28A614B30237BC500D6366A /* CaldenAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28A613B30237AA000D6366A /* CaldenAPI.swift */; };
+		F28A614C30237C8200D6366A /* CaldenIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28A613A30237AA000D6366A /* CaldenIntents.swift */; };
+		F28A614D30237C9000D6366A /* CognitoRefresher.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28A613630237AA000D6366A /* CognitoRefresher.swift */; };
+		F28A614E30237C9700D6366A /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28A613830237AA000D6366A /* KeychainStore.swift */; };
+		F28A614F30237CA800D6366A /* SiriDeviceEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28A613C30237AA000D6366A /* SiriDeviceEntity.swift */; };
+		F28A615030237D7300D6366A /* CaldenAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28A613B30237AA000D6366A /* CaldenAPI.swift */; };
+		F28A615130237D7300D6366A /* CaldenIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28A613A30237AA000D6366A /* CaldenIntents.swift */; };
+		F28A615230237D7300D6366A /* CaldenShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28A613730237AA000D6366A /* CaldenShortcuts.swift */; };
+		F28A615330237D7700D6366A /* CognitoRefresher.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28A613630237AA000D6366A /* CognitoRefresher.swift */; };
+		F28A615430237D7700D6366A /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28A613830237AA000D6366A /* KeychainStore.swift */; };
+		F28A615530237D7E00D6366A /* SiriCredentialsBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28A613530237A9F00D6366A /* SiriCredentialsBridge.swift */; };
+		F28A615630237D7E00D6366A /* SiriDeviceEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28A613C30237AA000D6366A /* SiriDeviceEntity.swift */; };
+		F28A615730237D7E00D6366A /* SiriSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28A613930237AA000D6366A /* SiriSetupView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -38,9 +62,26 @@
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
 		};
+		F219CC8D30211743008F86B5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F219CC8530211743008F86B5;
+			remoteInfo = CaldenIntents;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		200684E32F5F018D0060218C /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9705A1C41CF9048500538489 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -51,32 +92,34 @@
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F219CC9030211743008F86B5 /* Embed ExtensionKit Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(EXTENSIONS_FOLDER_PATH)";
+			dstSubfolderSpec = 16;
+			files = (
+				F219CC8F30211743008F86B5 /* CaldenIntents.appex in Embed ExtensionKit Extensions */,
+			);
+			name = "Embed ExtensionKit Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		142538EF0507EF59E2BAC52F /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
-		2266A05A2CD91B9C0042724C /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
-		2266A05B2CD922E00042724C /* firebase.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = firebase.json; path = ../firebase.json; sourceTree = "<group>"; };
-		2266A05D2CD9230F0042724C /* cli.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = cli.json; path = ../amplify/cli.json; sourceTree = "<group>"; };
-		2266A05E2CD9230F0042724C /* team-provider-info.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = "team-provider-info.json"; path = "../amplify/team-provider-info.json"; sourceTree = "<group>"; };
-		2266A0612CD923290042724C /* backend-config.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = "backend-config.json"; path = "../amplify/backend/backend-config.json"; sourceTree = "<group>"; };
-		2266A0632CD923430042724C /* amplify-meta.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = "amplify-meta.json"; path = "../amplify/backend/amplify-meta.json"; sourceTree = "<group>"; };
-		2266A0652CD9319C0042724C /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Runner/GoogleService-Info.plist"; sourceTree = "<group>"; };
-		2266A0672CDBD59C0042724C /* alarm3.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = alarm3.wav; path = Runner/alarm3.wav; sourceTree = "<group>"; };
-		2266A0682CDBD59D0042724C /* alarm2.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = alarm2.wav; path = Runner/alarm2.wav; sourceTree = "<group>"; };
-		2266A0692CDBD59D0042724C /* alarm5.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = alarm5.wav; path = Runner/alarm5.wav; sourceTree = "<group>"; };
-		2266A06A2CDBD59D0042724C /* alarm4.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = alarm4.wav; path = Runner/alarm4.wav; sourceTree = "<group>"; };
-		2266A06B2CDBD59D0042724C /* alarm1.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = alarm1.wav; path = Runner/alarm1.wav; sourceTree = "<group>"; };
-		2266A0712CDBD5A80042724C /* noti.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = noti.wav; path = Runner/noti.wav; sourceTree = "<group>"; };
-		23EFA72BA0DF80348B04FB7D /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
+		200684D42F5F018A0060218C /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		200684D62F5F018A0060218C /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		2078D8AC2F62F1AB00CF33FB /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
-		3E82B6677EC46D31523C8785 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		3F357923786E2E1410E4D8AA /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
+		55DE4CC6BDD9137689D7D6FB /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		789F1298486EF0773A7024DB /* Pods-ControlWidgetExtension.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ControlWidgetExtension.release.xcconfig"; path = "Target Support Files/Pods-ControlWidgetExtension/Pods-ControlWidgetExtension.release.xcconfig"; sourceTree = "<group>"; };
+		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
@@ -85,27 +128,76 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A8173F2CE8F414B2481851CC /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
-		A97685F8240C64A6AD4E9930 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
-		BDE2867C4C36FB1ACB2BDC09 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
-		EC4C3B4978F335B72ED3B85D /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		F7B4A8C20A227E87E7A03CD8 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
+		9D05A5B9B86A9B67691F5923 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
+		A6ABB24B73D9DE6D2F4066BD /* Pods_ControlWidgetExtension.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ControlWidgetExtension.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		AC516415B96116787D235685 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
+		B7199989426837DF64017FBC /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
+		C3A32BE87389D1C2EE8D931A /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		E7A22B71EBCF6BAFCDBB585F /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
+		EAADD0772D67655D009A325E /* firebase.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = firebase.json; path = ../firebase.json; sourceTree = "<group>"; };
+		EAADD0792D67659F009A325E /* backend-config.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = "backend-config.json"; path = "../amplify/backend/backend-config.json"; sourceTree = "<group>"; };
+		EAADD07B2D6765B1009A325E /* alarm4.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = alarm4.wav; path = Runner/alarm4.wav; sourceTree = "<group>"; };
+		EAADD07C2D6765B1009A325E /* alarm2.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = alarm2.wav; path = Runner/alarm2.wav; sourceTree = "<group>"; };
+		EAADD07D2D6765B1009A325E /* alarm5.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = alarm5.wav; path = Runner/alarm5.wav; sourceTree = "<group>"; };
+		EAADD07E2D6765B1009A325E /* alarm1.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = alarm1.wav; path = Runner/alarm1.wav; sourceTree = "<group>"; };
+		EAADD07F2D6765B1009A325E /* alarm3.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = alarm3.wav; path = Runner/alarm3.wav; sourceTree = "<group>"; };
+		EAADD0852D6765C5009A325E /* noti.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = noti.wav; path = Runner/noti.wav; sourceTree = "<group>"; };
+		EAADD0872D6765E1009A325E /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Runner/GoogleService-Info.plist"; sourceTree = "<group>"; };
+		EAADD0892D6765FF009A325E /* team-provider-info.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = "team-provider-info.json"; path = "../amplify/team-provider-info.json"; sourceTree = "<group>"; };
+		EAADD08A2D6765FF009A325E /* cli.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = cli.json; path = ../amplify/cli.json; sourceTree = "<group>"; };
+		EAADD08D2D67663B009A325E /* amplify-meta.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = "amplify-meta.json"; path = "../amplify/backend/amplify-meta.json"; sourceTree = "<group>"; };
+		EAADD08F2D6766DB009A325E /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
+		F0A889A54CE7DDEAC6F5B5EB /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
+		F13645DDA6923093464AD0D3 /* Pods-ControlWidgetExtension.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ControlWidgetExtension.debug.xcconfig"; path = "Target Support Files/Pods-ControlWidgetExtension/Pods-ControlWidgetExtension.debug.xcconfig"; sourceTree = "<group>"; };
+		F219CC8630211743008F86B5 /* CaldenIntents.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.extensionkit-extension"; includeInIndex = 0; path = CaldenIntents.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		F28A613530237A9F00D6366A /* SiriCredentialsBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SiriCredentialsBridge.swift; path = Runner/SiriCredentialsBridge.swift; sourceTree = "<group>"; };
+		F28A613630237AA000D6366A /* CognitoRefresher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CognitoRefresher.swift; path = Runner/CognitoRefresher.swift; sourceTree = "<group>"; };
+		F28A613730237AA000D6366A /* CaldenShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CaldenShortcuts.swift; path = Runner/CaldenShortcuts.swift; sourceTree = "<group>"; };
+		F28A613830237AA000D6366A /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = KeychainStore.swift; path = Runner/KeychainStore.swift; sourceTree = "<group>"; };
+		F28A613930237AA000D6366A /* SiriSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SiriSetupView.swift; path = Runner/SiriSetupView.swift; sourceTree = "<group>"; };
+		F28A613A30237AA000D6366A /* CaldenIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CaldenIntents.swift; path = Runner/CaldenIntents.swift; sourceTree = "<group>"; };
+		F28A613B30237AA000D6366A /* CaldenAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CaldenAPI.swift; path = Runner/CaldenAPI.swift; sourceTree = "<group>"; };
+		F28A613C30237AA000D6366A /* SiriDeviceEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SiriDeviceEntity.swift; path = Runner/SiriDeviceEntity.swift; sourceTree = "<group>"; };
+		F28A614630237AF100D6366A /* CaldenIntentsExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CaldenIntentsExtension.swift; path = CaldenIntents/CaldenIntentsExtension.swift; sourceTree = "<group>"; };
+		FC45E470798A0EDC88C3659D /* Pods-ControlWidgetExtension.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ControlWidgetExtension.profile.xcconfig"; path = "Target Support Files/Pods-ControlWidgetExtension/Pods-ControlWidgetExtension.profile.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		F219CC9530211743008F86B5 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = F219CC8530211743008F86B5 /* CaldenIntents */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		F219CC8730211743008F86B5 /* CaldenIntents */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (F219CC9530211743008F86B5 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = CaldenIntents; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		97C146EB1CF9000F007C117D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0BCEE0C9E599C6561CDB7279 /* Pods_Runner.framework in Frameworks */,
+				78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */,
+				1AA4FCFAF57094B3F0407560 /* Pods_Runner.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		CB923505E9A824785E065C6E /* Frameworks */ = {
+		DB9B2D2D9EE9FC8A6B1C54EC /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8A7654A6D3811F4B1A0138D8 /* Pods_RunnerTests.framework in Frameworks */,
+				37F33985D06385CDC2154602 /* Pods_RunnerTests.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F219CC8330211743008F86B5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -120,9 +212,23 @@
 			path = RunnerTests;
 			sourceTree = "<group>";
 		};
+		3A2AB8D56F31BF99B4CBA483 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				200684D42F5F018A0060218C /* WidgetKit.framework */,
+				200684D62F5F018A0060218C /* SwiftUI.framework */,
+				2078D8AC2F62F1AB00CF33FB /* Intents.framework */,
+				A6ABB24B73D9DE6D2F4066BD /* Pods_ControlWidgetExtension.framework */,
+				C3A32BE87389D1C2EE8D931A /* Pods_Runner.framework */,
+				55DE4CC6BDD9137689D7D6FB /* Pods_RunnerTests.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
 			isa = PBXGroup;
 			children = (
+				78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */,
 				3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */,
 				9740EEB21CF90195004384FC /* Debug.xcconfig */,
 				7AFA3C8E1D35360C0083082E /* Release.xcconfig */,
@@ -134,24 +240,34 @@
 		97C146E51CF9000F007C117D = {
 			isa = PBXGroup;
 			children = (
-				2266A0712CDBD5A80042724C /* noti.wav */,
-				2266A06B2CDBD59D0042724C /* alarm1.wav */,
-				2266A0682CDBD59D0042724C /* alarm2.wav */,
-				2266A0672CDBD59C0042724C /* alarm3.wav */,
-				2266A06A2CDBD59D0042724C /* alarm4.wav */,
-				2266A0692CDBD59D0042724C /* alarm5.wav */,
-				2266A0652CD9319C0042724C /* GoogleService-Info.plist */,
-				2266A0632CD923430042724C /* amplify-meta.json */,
-				2266A0612CD923290042724C /* backend-config.json */,
-				2266A05D2CD9230F0042724C /* cli.json */,
-				2266A05E2CD9230F0042724C /* team-provider-info.json */,
-				2266A05B2CD922E00042724C /* firebase.json */,
+				F28A614630237AF100D6366A /* CaldenIntentsExtension.swift */,
+				F28A613B30237AA000D6366A /* CaldenAPI.swift */,
+				F28A613A30237AA000D6366A /* CaldenIntents.swift */,
+				F28A613730237AA000D6366A /* CaldenShortcuts.swift */,
+				F28A613630237AA000D6366A /* CognitoRefresher.swift */,
+				F28A613830237AA000D6366A /* KeychainStore.swift */,
+				F28A613530237A9F00D6366A /* SiriCredentialsBridge.swift */,
+				F28A613C30237AA000D6366A /* SiriDeviceEntity.swift */,
+				F28A613930237AA000D6366A /* SiriSetupView.swift */,
+				EAADD08D2D67663B009A325E /* amplify-meta.json */,
+				EAADD08A2D6765FF009A325E /* cli.json */,
+				EAADD0892D6765FF009A325E /* team-provider-info.json */,
+				EAADD0872D6765E1009A325E /* GoogleService-Info.plist */,
+				EAADD0852D6765C5009A325E /* noti.wav */,
+				EAADD07E2D6765B1009A325E /* alarm1.wav */,
+				EAADD07C2D6765B1009A325E /* alarm2.wav */,
+				EAADD07F2D6765B1009A325E /* alarm3.wav */,
+				EAADD07B2D6765B1009A325E /* alarm4.wav */,
+				EAADD07D2D6765B1009A325E /* alarm5.wav */,
+				EAADD0792D67659F009A325E /* backend-config.json */,
+				EAADD0772D67655D009A325E /* firebase.json */,
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
+				F219CC8730211743008F86B5 /* CaldenIntents */,
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
-				CF440748FEEB99A880095102 /* Pods */,
-				999800EE4B1152D7C1606A13 /* Frameworks */,
+				D422AACFF94E09D75216460F /* Pods */,
+				3A2AB8D56F31BF99B4CBA483 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -160,6 +276,7 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
+				F219CC8630211743008F86B5 /* CaldenIntents.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -167,7 +284,7 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
-				2266A05A2CD91B9C0042724C /* Runner.entitlements */,
+				EAADD08F2D6766DB009A325E /* Runner.entitlements */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
 				97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */,
@@ -180,24 +297,18 @@
 			path = Runner;
 			sourceTree = "<group>";
 		};
-		999800EE4B1152D7C1606A13 /* Frameworks */ = {
+		D422AACFF94E09D75216460F /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				3E82B6677EC46D31523C8785 /* Pods_Runner.framework */,
-				EC4C3B4978F335B72ED3B85D /* Pods_RunnerTests.framework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		CF440748FEEB99A880095102 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				3F357923786E2E1410E4D8AA /* Pods-Runner.debug.xcconfig */,
-				F7B4A8C20A227E87E7A03CD8 /* Pods-Runner.release.xcconfig */,
-				23EFA72BA0DF80348B04FB7D /* Pods-Runner.profile.xcconfig */,
-				BDE2867C4C36FB1ACB2BDC09 /* Pods-RunnerTests.debug.xcconfig */,
-				A8173F2CE8F414B2481851CC /* Pods-RunnerTests.release.xcconfig */,
-				A97685F8240C64A6AD4E9930 /* Pods-RunnerTests.profile.xcconfig */,
+				F13645DDA6923093464AD0D3 /* Pods-ControlWidgetExtension.debug.xcconfig */,
+				789F1298486EF0773A7024DB /* Pods-ControlWidgetExtension.release.xcconfig */,
+				FC45E470798A0EDC88C3659D /* Pods-ControlWidgetExtension.profile.xcconfig */,
+				142538EF0507EF59E2BAC52F /* Pods-Runner.debug.xcconfig */,
+				F0A889A54CE7DDEAC6F5B5EB /* Pods-Runner.release.xcconfig */,
+				E7A22B71EBCF6BAFCDBB585F /* Pods-Runner.profile.xcconfig */,
+				AC516415B96116787D235685 /* Pods-RunnerTests.debug.xcconfig */,
+				9D05A5B9B86A9B67691F5923 /* Pods-RunnerTests.release.xcconfig */,
+				B7199989426837DF64017FBC /* Pods-RunnerTests.profile.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -209,10 +320,10 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */;
 			buildPhases = (
-				41436A79116B62B47CC03ECA /* [CP] Check Pods Manifest.lock */,
+				E70CAC7F9D9D1CD4D7B24F3A /* [CP] Check Pods Manifest.lock */,
 				331C807D294A63A400263BE5 /* Sources */,
 				331C807F294A63A400263BE5 /* Resources */,
-				CB923505E9A824785E065C6E /* Frameworks */,
+				DB9B2D2D9EE9FC8A6B1C54EC /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -228,24 +339,50 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
 			buildPhases = (
-				63BFC9D9493802503DC75D5C /* [CP] Check Pods Manifest.lock */,
+				38FC50FFC330CE590BE508FC /* [CP] Check Pods Manifest.lock */,
 				9740EEB61CF901F6004384FC /* Run Script */,
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
+				200684E32F5F018D0060218C /* Embed Foundation Extensions */,
+				F219CC9030211743008F86B5 /* Embed ExtensionKit Extensions */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
-				61211C4724D4AFA47475FB37 /* [CP] Embed Pods Frameworks */,
-				1F0A48B1EF3A461BEACEF8CB /* [CP] Copy Pods Resources */,
+				89E1F44E28EC6B1851DAFDEA /* [CP] Embed Pods Frameworks */,
+				236F93D6ED953E52C97757C2 /* [CP] Copy Pods Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F219CC8E30211743008F86B5 /* PBXTargetDependency */,
+			);
+			name = Runner;
+			packageProductDependencies = (
+				78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */,
+			);
+			productName = Runner;
+			productReference = 97C146EE1CF9000F007C117D /* Runner.app */;
+			productType = "com.apple.product-type.application";
+		};
+		F219CC8530211743008F86B5 /* CaldenIntents */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F219CC9430211743008F86B5 /* Build configuration list for PBXNativeTarget "CaldenIntents" */;
+			buildPhases = (
+				F219CC8230211743008F86B5 /* Sources */,
+				F219CC8330211743008F86B5 /* Frameworks */,
+				F219CC8430211743008F86B5 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = Runner;
-			productName = Runner;
-			productReference = 97C146EE1CF9000F007C117D /* Runner.app */;
-			productType = "com.apple.product-type.application";
+			fileSystemSynchronizedGroups = (
+				F219CC8730211743008F86B5 /* CaldenIntents */,
+			);
+			name = CaldenIntents;
+			productName = CaldenIntents;
+			productReference = F219CC8630211743008F86B5 /* CaldenIntents.appex */;
+			productType = "com.apple.product-type.extensionkit-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -254,6 +391,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
+				LastSwiftUpdateCheck = 2650;
 				LastUpgradeCheck = 1510;
 				ORGANIZATIONNAME = "";
 				TargetAttributes = {
@@ -265,10 +403,13 @@
 						CreatedOnToolsVersion = 7.3.1;
 						LastSwiftMigration = 1100;
 					};
+					F219CC8530211743008F86B5 = {
+						CreatedOnToolsVersion = 26.5;
+					};
 				};
 			};
 			buildConfigurationList = 97C146E91CF9000F007C117D /* Build configuration list for PBXProject "Runner" */;
-			compatibilityVersion = "Xcode 9.3";
+			compatibilityVersion = "Xcode 15.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -276,12 +417,16 @@
 				Base,
 			);
 			mainGroup = 97C146E51CF9000F007C117D;
+			packageReferences = (
+				781AD8BC2B33823900A9FFBB /* XCLocalSwiftPackageReference "Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage" */,
+			);
 			productRefGroup = 97C146EF1CF9000F007C117D /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
+				F219CC8530211743008F86B5 /* CaldenIntents */,
 			);
 		};
 /* End PBXProject section */
@@ -298,18 +443,26 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2266A0722CDBD5A80042724C /* noti.wav in Resources */,
-				2266A06C2CDBD59D0042724C /* alarm3.wav in Resources */,
-				2266A06D2CDBD59D0042724C /* alarm2.wav in Resources */,
-				2266A06E2CDBD59D0042724C /* alarm5.wav in Resources */,
-				2266A06F2CDBD59D0042724C /* alarm4.wav in Resources */,
-				2266A0702CDBD59D0042724C /* alarm1.wav in Resources */,
-				2266A0662CD9319C0042724C /* GoogleService-Info.plist in Resources */,
-				2266A0642CD923430042724C /* amplify-meta.json in Resources */,
-				2266A0622CD923290042724C /* backend-config.json in Resources */,
-				2266A05F2CD9230F0042724C /* cli.json in Resources */,
-				2266A0602CD9230F0042724C /* team-provider-info.json in Resources */,
-				2266A05C2CD922E00042724C /* firebase.json in Resources */,
+				F28A613D30237AA000D6366A /* SiriCredentialsBridge.swift in Resources */,
+				F28A613E30237AA000D6366A /* CognitoRefresher.swift in Resources */,
+				F28A613F30237AA000D6366A /* CaldenShortcuts.swift in Resources */,
+				F28A614030237AA000D6366A /* KeychainStore.swift in Resources */,
+				F28A614130237AA000D6366A /* SiriSetupView.swift in Resources */,
+				F28A614230237AA000D6366A /* CaldenIntents.swift in Resources */,
+				F28A614330237AA000D6366A /* CaldenAPI.swift in Resources */,
+				F28A614430237AA000D6366A /* SiriDeviceEntity.swift in Resources */,
+				EAADD08E2D67663B009A325E /* amplify-meta.json in Resources */,
+				EAADD08B2D6765FF009A325E /* team-provider-info.json in Resources */,
+				EAADD08C2D6765FF009A325E /* cli.json in Resources */,
+				EAADD0882D6765E1009A325E /* GoogleService-Info.plist in Resources */,
+				EAADD0862D6765C5009A325E /* noti.wav in Resources */,
+				EAADD0802D6765B1009A325E /* alarm4.wav in Resources */,
+				EAADD0812D6765B1009A325E /* alarm2.wav in Resources */,
+				EAADD0822D6765B1009A325E /* alarm5.wav in Resources */,
+				EAADD0832D6765B1009A325E /* alarm1.wav in Resources */,
+				EAADD0842D6765B1009A325E /* alarm3.wav in Resources */,
+				EAADD07A2D6765A0009A325E /* backend-config.json in Resources */,
+				EAADD0782D67655D009A325E /* firebase.json in Resources */,
 				97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */,
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
@@ -317,10 +470,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F219CC8430211743008F86B5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		1F0A48B1EF3A461BEACEF8CB /* [CP] Copy Pods Resources */ = {
+		236F93D6ED953E52C97757C2 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -328,71 +488,20 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		3B06AD1E1E4923F5004D2608 /* Thin Binary */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}",
-			);
-			name = "Thin Binary";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
-		};
-		41436A79116B62B47CC03ECA /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-RunnerTests-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		61211C4724D4AFA47475FB37 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		63BFC9D9493802503DC75D5C /* [CP] Check Pods Manifest.lock */ = {
+		38FC50FFC330CE590BE508FC /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -414,6 +523,43 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		3B06AD1E1E4923F5004D2608 /* Thin Binary */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}",
+			);
+			name = "Thin Binary";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin\n";
+		};
+		89E1F44E28EC6B1851DAFDEA /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 		9740EEB61CF901F6004384FC /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -428,6 +574,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
+		};
+		E70CAC7F9D9D1CD4D7B24F3A /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-RunnerTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -444,8 +612,29 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F28A615530237D7E00D6366A /* SiriCredentialsBridge.swift in Sources */,
+				F28A615630237D7E00D6366A /* SiriDeviceEntity.swift in Sources */,
+				F28A615730237D7E00D6366A /* SiriSetupView.swift in Sources */,
+				F28A615330237D7700D6366A /* CognitoRefresher.swift in Sources */,
+				F28A615430237D7700D6366A /* KeychainStore.swift in Sources */,
+				F28A615030237D7300D6366A /* CaldenAPI.swift in Sources */,
+				F28A615130237D7300D6366A /* CaldenIntents.swift in Sources */,
+				F28A615230237D7300D6366A /* CaldenShortcuts.swift in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F219CC8230211743008F86B5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F28A614B30237BC500D6366A /* CaldenAPI.swift in Sources */,
+				F28A614A30237BB700D6366A /* CaldenIntentsExtension.swift in Sources */,
+				F28A614C30237C8200D6366A /* CaldenIntents.swift in Sources */,
+				F28A614E30237C9700D6366A /* KeychainStore.swift in Sources */,
+				F28A614F30237CA800D6366A /* SiriDeviceEntity.swift in Sources */,
+				F28A614D30237C9000D6366A /* CognitoRefresher.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -456,6 +645,11 @@
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
+		};
+		F219CC8E30211743008F86B5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F219CC8530211743008F86B5 /* CaldenIntents */;
+			targetProxy = F219CC8D30211743008F86B5 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -522,8 +716,9 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
+				RESOURCES_TARGETED_DEVICE_FAMILY = "";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -536,20 +731,22 @@
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
-				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				CURRENT_PROJECT_VERSION = 105;
 				DEVELOPMENT_TEAM = 9CSTNT3W2D;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0.88;
 				PRODUCT_BUNDLE_IDENTIFIER = com.caldensmart.sime;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				RESOURCES_TARGETED_DEVICE_FAMILY = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -563,14 +760,15 @@
 		};
 		331C8088294A63A400263BE5 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = BDE2867C4C36FB1ACB2BDC09 /* Pods-RunnerTests.debug.xcconfig */;
+			baseConfigurationReference = AC516415B96116787D235685 /* Pods-RunnerTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9CSTNT3W2D;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.caldensmart.sime.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.calden.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -581,14 +779,15 @@
 		};
 		331C8089294A63A400263BE5 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A8173F2CE8F414B2481851CC /* Pods-RunnerTests.release.xcconfig */;
+			baseConfigurationReference = 9D05A5B9B86A9B67691F5923 /* Pods-RunnerTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9CSTNT3W2D;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.caldensmart.sime.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.calden.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
@@ -597,14 +796,15 @@
 		};
 		331C808A294A63A400263BE5 /* Profile */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A97685F8240C64A6AD4E9930 /* Pods-RunnerTests.profile.xcconfig */;
+			baseConfigurationReference = B7199989426837DF64017FBC /* Pods-RunnerTests.profile.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9CSTNT3W2D;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.caldensmart.sime.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.calden.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
@@ -660,9 +860,10 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				RESOURCES_TARGETED_DEVICE_FAMILY = "";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -711,8 +912,9 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
+				RESOURCES_TARGETED_DEVICE_FAMILY = "";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -727,20 +929,22 @@
 			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
-				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				CURRENT_PROJECT_VERSION = 105;
 				DEVELOPMENT_TEAM = 9CSTNT3W2D;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0.88;
 				PRODUCT_BUNDLE_IDENTIFIER = com.caldensmart.sime;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				RESOURCES_TARGETED_DEVICE_FAMILY = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -758,20 +962,22 @@
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
-				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				CURRENT_PROJECT_VERSION = 105;
 				DEVELOPMENT_TEAM = 9CSTNT3W2D;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0.88;
 				PRODUCT_BUNDLE_IDENTIFIER = com.caldensmart.sime;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				RESOURCES_TARGETED_DEVICE_FAMILY = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -782,6 +988,141 @@
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
+		};
+		F219CC9130211743008F86B5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = CaldenIntents/CaldenIntents.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9CSTNT3W2D;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CaldenIntents/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = CaldenIntents;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.caldensmart.sime.CaldenIntents;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F219CC9230211743008F86B5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = CaldenIntents/CaldenIntents.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9CSTNT3W2D;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CaldenIntents/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = CaldenIntents;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.caldensmart.sime.CaldenIntents;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		F219CC9330211743008F86B5 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = CaldenIntents/CaldenIntents.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9CSTNT3W2D;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CaldenIntents/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = CaldenIntents;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.caldensmart.sime.CaldenIntents;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Profile;
 		};
 /* End XCBuildConfiguration section */
 
@@ -816,7 +1157,31 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		F219CC9430211743008F86B5 /* Build configuration list for PBXNativeTarget "CaldenIntents" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F219CC9130211743008F86B5 /* Debug */,
+				F219CC9230211743008F86B5 /* Release */,
+				F219CC9330211743008F86B5 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		781AD8BC2B33823900A9FFBB /* XCLocalSwiftPackageReference "Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FlutterGeneratedPluginSwiftPackage;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 97C146E61CF9000F007C117D /* Project object */;
 }

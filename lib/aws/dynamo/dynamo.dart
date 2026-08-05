@@ -3,6 +3,7 @@ import 'package:caldensmart/aws/dynamo/dynamo_certificates.dart';
 import 'package:caldensmart/logger.dart';
 import 'package:aws_dynamodb_api/dynamodb-2012-08-10.dart';
 import 'package:caldensmart/aws/mqtt/mqtt.dart';
+import 'package:caldensmart/siri/siri_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '/master.dart';
 
@@ -639,6 +640,7 @@ Future<void> putPreviusConnections(String email, List<String> data,
     printLog.e('Error actualizando la lista de dispositivos: $e');
     rethrow;
   }
+  SiriService.scheduleSync();
 }
 
 ///*-Guardar equipos en dynamo-*\\\
@@ -730,6 +732,7 @@ Future<void> putNicknames(String email, Map<String, String> data) async {
   } catch (e) {
     printLog.e('Error guardando alexa item: $e');
   }
+  SiriService.scheduleSync();
 }
 
 Future<Map<String, String>> getNicknames(String email) async {
@@ -2043,8 +2046,8 @@ void savePrintLog(String email, String log) async {
 // ───────────────────────────────────────────────────────────────────────────
 
 /// Guarda registros de logs BLE del dispositivo en device-register-logs.
-Future<void> saveDeviceRegisterLog(String pc, String sn, int sessionTimestamp,
-    List<Map<String, dynamic>> logs,
+Future<void> saveDeviceRegisterLog(
+    String pc, String sn, int sessionTimestamp, List<Map<String, dynamic>> logs,
     {int startSeq = 0}) async {
   if (logs.isEmpty) return;
   const int registerLogTtlDays = 30;
@@ -2112,6 +2115,7 @@ Future<void> saveDeviceRegisterLog(String pc, String sn, int sessionTimestamp,
     printLog.e('Error guardando registros BLE: $e');
   }
 }
+
 ///Inhabilita o habilita un evento
 void setEventEnabled(
     String nombreEvento, String email, bool habilitado, String tipoEvento,

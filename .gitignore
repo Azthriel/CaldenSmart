@@ -94,5 +94,5 @@ amplifytools.xcconfig
 .secret-*
 **.sample
 #amplify-do-not-edit-end
-
+ios/Runner/GoogleService-Info.plist
 .vscode/

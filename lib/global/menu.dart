@@ -2,6 +2,8 @@ import 'package:caldensmart/global/stored_data.dart';
 import 'package:caldensmart/global/watchers.dart';
 import 'package:caldensmart/aws/dynamo/dynamo.dart';
 import 'package:caldensmart/logger.dart';
+import 'package:caldensmart/siri/siri_credentials.dart';
+import 'package:caldensmart/siri/siri_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -107,6 +109,7 @@ class MenuPageState extends State<MenuPage> {
       }
 
       currentUserEmail = await getUserMail();
+      await SiriCredentials.sync();
 
       _setupTokenManagement();
 
@@ -116,6 +119,8 @@ class MenuPageState extends State<MenuPage> {
         eventosCreados = await getEventos(currentUserEmail);
         nicknamesMap = await getNicknames(currentUserEmail);
         savedOrder = await loadWifiOrderDevices(currentUserEmail);
+
+        SiriService.scheduleSync();
 
         printLog.i(
             'Datos iniciales cargados - Dispositivos: ${previusConnections.length}');
