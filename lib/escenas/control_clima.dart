@@ -30,6 +30,16 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
 
   String? windDirection;
 
+  /// Offset en minutos para eventos solares (Amanecer / Atardecer).
+  /// Negativo = antes del evento, positivo = después.
+  int sunOffsetMinutes = 0;
+
+  /// enabled del evento que se está editando. Hay que preservarlo porque
+  /// putEventoControlPorClima pisa el item entero en Dynamo.
+  bool eventoEnabled = true;
+
+  bool get isSunCondition => sunConditions.contains(selectedWeatherCondition);
+
   final List<String> windDirectionsList = [
     'Todos los origenes',
     'Norte',
@@ -58,6 +68,12 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
           widget.eventoExistente!['condition'] ?? weatherConditions.first;
       windDirection = widget.eventoExistente!['wind_direction'];
 
+      // Puede venir como int o num según de dónde se haya leído el evento
+      final offsetGuardado = widget.eventoExistente!['offset_minutos'];
+      sunOffsetMinutes = offsetGuardado is num ? offsetGuardado.toInt() : 0;
+
+      eventoEnabled = widget.eventoExistente!['enabled'] ?? true;
+
       deviceGroup =
           List<String>.from(widget.eventoExistente!['deviceGroup'] ?? []);
 
@@ -76,6 +92,8 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
       currentStep = 0;
       selectedWeatherCondition = weatherConditions.first;
       windDirection = null;
+      sunOffsetMinutes = 0;
+      eventoEnabled = true;
     }
   }
 
@@ -363,7 +381,9 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
       children: [
         Center(
           child: Text(
-            'Selecciona la condición climática',
+            isSunCondition
+                ? 'Selecciona el momento del día'
+                : 'Selecciona la condición climática',
             style: GoogleFonts.poppins(color: color0, fontSize: 16),
             textAlign: TextAlign.center,
           ),
@@ -412,6 +432,14 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
                           value.toLowerCase().contains('sin')) {
                         windDirection = null;
                       }
+
+                      // Amanecer/Atardecer no tienen dirección de viento,
+                      // y el offset solo tiene sentido para ellos.
+                      if (sunConditions.contains(value)) {
+                        windDirection = null;
+                      } else {
+                        sunOffsetMinutes = 0;
+                      }
                     });
                   },
                   items: weatherConditions
@@ -435,6 +463,129 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
             ),
           ),
         ),
+        if (isSunCondition) ...[
+          const SizedBox(height: 24),
+          Center(
+            child: Text(
+              'Ajustá el momento de ejecución',
+              style: GoogleFonts.poppins(color: color0, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: MediaQuery.of(context).size.width * 0.75,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: color0.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: color0, width: 2),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      selectedWeatherCondition == 'Amanecer'
+                          ? HugeIcons.strokeRoundedSunrise
+                          : HugeIcons.strokeRoundedSunset,
+                      color: color4,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          sunOffsetLabel(
+                              selectedWeatherCondition, sunOffsetMinutes),
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            color: color0,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    activeTrackColor: color4,
+                    inactiveTrackColor: color0.withValues(alpha: 0.25),
+                    thumbColor: color4,
+                    overlayColor: color4.withValues(alpha: 0.2),
+                    valueIndicatorColor: color4,
+                  ),
+                  child: Slider(
+                    value: sunOffsetMinutes.toDouble().clamp(
+                        -maxSunOffsetMinutes.toDouble(),
+                        maxSunOffsetMinutes.toDouble()),
+                    min: -maxSunOffsetMinutes.toDouble(),
+                    max: maxSunOffsetMinutes.toDouble(),
+                    // Pasos de 15 minutos
+                    divisions: (maxSunOffsetMinutes * 2) ~/ 15,
+                    label: sunOffsetLabel(
+                        selectedWeatherCondition, sunOffsetMinutes),
+                    onChanged: (double value) {
+                      setState(() {
+                        sunOffsetMinutes = value.round();
+                      });
+                    },
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '-2 h',
+                      style: GoogleFonts.poppins(
+                        color: color0.withValues(alpha: 0.6),
+                        fontSize: 11,
+                      ),
+                    ),
+                    if (sunOffsetMinutes != 0)
+                      GestureDetector(
+                        onTap: () => setState(() => sunOffsetMinutes = 0),
+                        child: Text(
+                          'Reiniciar',
+                          style: GoogleFonts.poppins(
+                            color: color4,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    Text(
+                      '+2 h',
+                      style: GoogleFonts.poppins(
+                        color: color0.withValues(alpha: 0.6),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                'El horario se calcula todos los días según la ubicación de tus equipos.',
+                style: GoogleFonts.poppins(
+                  color: color0.withValues(alpha: 0.6),
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ],
         if (isWindCondition) ...[
           const SizedBox(height: 20),
           Center(
@@ -1169,11 +1320,19 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
       directionToSave = windDirection;
     }
 
+    // El offset solo aplica a Amanecer/Atardecer
+    int? offsetToSave =
+        (isSunCondition && sunOffsetMinutes != 0) ? sunOffsetMinutes : null;
+
     Map<String, dynamic> eventoData = {
       'evento': 'clima',
       'title': title.text.trim(),
       'condition': selectedWeatherCondition,
       if (directionToSave != null) 'wind_direction': directionToSave,
+      if (offsetToSave != null) 'offset_minutos': offsetToSave,
+      // Se preserva el estado habilitado/deshabilitado al editar: si no,
+      // un evento apagado se prendía solo al guardarlo.
+      'enabled': eventoEnabled,
       'deviceGroup': List<String>.from(deviceGroup),
       'deviceActions': Map<String, bool>.from(deviceActions),
     };
@@ -1227,7 +1386,8 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
 
       putEventos(currentUserEmail, eventosCreados);
       putEventoControlPorClima(currentUserEmail, title.text.trim(),
-          selectedWeatherCondition, ejecutores, directionToSave);
+          selectedWeatherCondition, ejecutores, directionToSave,
+          offsetMinutos: offsetToSave, enabled: eventoEnabled);
 
       showToast(widget.eventoExistente != null
           ? "Control climático actualizado"

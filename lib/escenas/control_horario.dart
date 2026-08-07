@@ -29,6 +29,11 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
   Map<String, bool> _wifiPermissions = {};
   bool _isLoadingPermissions = true;
 
+  /// enabled del evento que se está editando. Hay que preservarlo porque
+  /// putEventoControlPorHorarios pisa el item entero en Dynamo, y porque
+  /// eventoData se reconstruye desde cero para eventosCreados.
+  bool eventoEnabled = true;
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +47,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
       title.text = widget.eventoExistente!['title'] ?? '';
       nombreOriginal = title.text;
       horaOriginal = widget.eventoExistente!['selectedTime'];
+      eventoEnabled = widget.eventoExistente!['enabled'] ?? true;
 
       selectedDevices =
           List<String>.from(widget.eventoExistente!['deviceGroup'] ?? []);
@@ -71,6 +77,7 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
       selectedTime = null;
       deviceActions.clear();
       currentStep = 0;
+      eventoEnabled = true;
     }
   }
 
@@ -1098,6 +1105,8 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
         'selectedTime': horario,
         'deviceActions': Map<String, bool>.from(finalDeviceActions),
         'deviceGroup': List<String>.from(selectedDevices),
+        // Se preserva el estado habilitado/deshabilitado al editar
+        'enabled': eventoEnabled,
       };
 
       eventosCreados.add(eventoData);
@@ -1116,7 +1125,8 @@ class ControlHorarioWidgetState extends State<ControlHorarioWidget> {
 
       if (selectedDevices.isNotEmpty) {
         putEventoControlPorHorarios(horario, currentUserEmail, title.text,
-            finalDeviceActions, daysAsNumbers, timezoneOffset, timezoneName);
+            finalDeviceActions, daysAsNumbers, timezoneOffset, timezoneName,
+            enabled: eventoEnabled);
       }
 
       showToast(widget.eventoExistente != null

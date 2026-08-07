@@ -30,6 +30,11 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
   bool _isLoadingPermissions = true;
   String? nombreOriginal;
   String? activadorOriginal;
+
+  /// enabled del evento que se está editando. Hay que preservarlo porque
+  /// putEventoControlPorDisparadores pisa el item entero en Dynamo, y porque
+  /// eventoData se reconstruye desde cero para eventosCreados.
+  bool eventoEnabled = true;
   @override
   void initState() {
     super.initState();
@@ -41,6 +46,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
     if (widget.eventoExistente != null) {
       title.text = widget.eventoExistente!['title'] ?? '';
       nombreOriginal = title.text;
+      eventoEnabled = widget.eventoExistente!['enabled'] ?? true;
 
       activadores =
           List<String>.from(widget.eventoExistente!['activadores'] ?? []);
@@ -69,6 +75,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
       currentStep = 0;
       estadoAlerta = "1";
       estadoTermometro = "1";
+      eventoEnabled = true;
     }
   }
 
@@ -1311,6 +1318,8 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
       'deviceActions': Map<String, bool>.from(finalDeviceActions),
       'estadoAlerta': estadoAlerta,
       'estadoTermometro': estadoTermometro,
+      // Se preserva el estado habilitado/deshabilitado al editar
+      'enabled': eventoEnabled,
     };
 
     Map<String, bool> ejecutoresMap = {};
@@ -1382,6 +1391,7 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
           title.text.trim(),
           ejecutoresMap,
           tipoAlerta: tipoAlerta,
+          enabled: eventoEnabled,
         );
       }
 

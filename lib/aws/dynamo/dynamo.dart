@@ -1271,12 +1271,16 @@ Future<Map<String, dynamic>> getGeneralData() async {
 /// [tipoAlerta] especifica el tipo de alerta:
 ///   - Para alertas simples: 'ejecutoresAlert_true' o 'ejecutoresAlert_false'
 ///   - Para termómetros: 'ejecutoresMAX_true', 'ejecutoresMAX_false', 'ejecutoresMIN_true', 'ejecutoresMIN_false'
+/// OJO: usa putItem, así que reemplaza el item entero. Hay que mandarle el
+/// [enabled] actual cuando se edita un evento existente, o un evento
+/// deshabilitado se re-habilita solo al guardarlo.
 Future<void> putEventoControlPorDisparadores(
   String activador,
   String email,
   String nombreEvento,
   Map<String, bool> nuevosEjecutores, {
   String tipoAlerta = 'ejecutoresAlert_true',
+  bool? enabled,
 }) async {
   try {
     String sortKey = '$email:$nombreEvento';
@@ -1286,6 +1290,7 @@ Future<void> putEventoControlPorDisparadores(
       item: {
         'deviceName': AttributeValue(s: activador),
         'email:nombreEvento': AttributeValue(s: sortKey),
+        'enabled': AttributeValue(boolValue: enabled ?? true),
         tipoAlerta: AttributeValue(
           m: {
             for (final entry in nuevosEjecutores.entries)
@@ -1333,6 +1338,9 @@ void deleteEventoControlPorDisparadores(
 /// [days] lista de días como números (0=Domingo, 1=Lunes, etc.)
 /// [timezoneOffset] offset del timezone en horas desde UTC
 /// [timezoneName] nombre del timezone (ej: "GMT-03:00")
+/// [enabled] estado habilitado/deshabilitado del evento. Como esto usa putItem
+/// y reemplaza el item entero, hay que remandarlo al editar: si no, un evento
+/// deshabilitado se re-habilita solo al guardarlo.
 Future<void> putEventoControlPorHorarios(
     String horario,
     String email,
@@ -1340,7 +1348,8 @@ Future<void> putEventoControlPorHorarios(
     Map<String, bool> ejecutores,
     List<int> days,
     int timezoneOffset,
-    String timezoneName) async {
+    String timezoneName,
+    {bool? enabled}) async {
   try {
     String sortKey = '$email:$nombreEvento';
 
@@ -1349,6 +1358,7 @@ Future<void> putEventoControlPorHorarios(
       item: {
         'horario': AttributeValue(s: horario),
         'email:nombreEvento': AttributeValue(s: sortKey),
+        'enabled': AttributeValue(boolValue: enabled ?? true),
         'ejecutores': AttributeValue(
           m: {
             for (final entry in ejecutores.entries)
@@ -1653,8 +1663,21 @@ void deleteEventoControlPorGrupos(String email, String nombreEvento) async {
 //*- Guarda evento: Control por grupos -*\\
 
 //*- Guarda evento: Control por clima -*\\
+/// Guarda (o pisa) un evento de control por clima.
+///
+/// OJO: usa putItem, así que reemplaza el item entero. Por eso hay que
+/// mandarle explícitamente el [enabled] actual del evento cuando se está
+/// editando: si no, un evento deshabilitado se re-habilita solo al editarlo.
+///
+/// El atributo `ultimas_ejecuciones` que escribe la Lambda para los eventos
+/// solares también se borra acá, y eso está bien: si el usuario cambió el
+/// offset o la condición, queremos que pueda volver a dispararse hoy mismo.
+///
+/// [offsetMinutos] solo aplica a eventos solares (Amanecer / Atardecer):
+/// negativo = antes del evento, positivo = después.
 void putEventoControlPorClima(String email, String nombreEvento, String clima,
-    Map<String, Map<String, bool>> ejecutores, String? windDirection) async {
+    Map<String, Map<String, bool>> ejecutores, String? windDirection,
+    {int? offsetMinutos, bool? enabled}) async {
   try {
     await service.putItem(
       tableName: 'Eventos_ControlPorClima',
@@ -1662,6 +1685,7 @@ void putEventoControlPorClima(String email, String nombreEvento, String clima,
         'email': AttributeValue(s: email),
         'nombreEvento': AttributeValue(s: nombreEvento),
         'clima': AttributeValue(s: clima),
+        'enabled': AttributeValue(boolValue: enabled ?? true),
         'ejecutores': AttributeValue(
           m: {
             for (final entry in ejecutores.entries) ...{
@@ -1675,6 +1699,9 @@ void putEventoControlPorClima(String email, String nombreEvento, String clima,
         ),
         if (windDirection != null) ...{
           'wind_direction': AttributeValue(s: windDirection),
+        },
+        if (offsetMinutos != null && offsetMinutos != 0) ...{
+          'offset_minutos': AttributeValue(n: offsetMinutos.toString()),
         },
       },
     );
@@ -2125,6 +2152,10 @@ void setEventEnabled(
     Map<String, AttributeValue> key = {};
 
     switch (tipoEvento) {
+      // wifi.dart manda evento['evento'], que vale 'disparador' (singular).
+      // El case decía solo 'disparadores' y caía en el default, así que el
+      // toggle nunca llegaba a escribir en Dynamo.
+      case 'disparador':
       case 'disparadores':
         tableName = 'Eventos_ControlPorDisparadores';
         key = {

@@ -6897,18 +6897,32 @@ class WifiPageState extends ConsumerState<WifiPage>
                 climaNicksList.add(displayName);
               }
 
+              bool isSunEvent = sunConditions.contains(condition);
+              int sunOffset = (eventoClima['offset_minutos'] is num)
+                  ? (eventoClima['offset_minutos'] as num).toInt()
+                  : 0;
+
               IconData climaIcon;
               switch (condition) {
+                case 'Amanecer':
+                  climaIcon = HugeIcons.strokeRoundedSunrise;
+                  break;
+                case 'Atardecer':
+                  climaIcon = HugeIcons.strokeRoundedSunset;
+                  break;
                 case 'Lluvia':
                   climaIcon = HugeIcons.strokeRoundedCloudAngledRain;
                   break;
-                case 'Nublado':
+                case 'Neblina':
                   climaIcon = HugeIcons.strokeRoundedSunCloud02;
                   break;
-                case 'Viento Fuerte':
+                case 'Viento fuerte':
+                case 'Viento moderado':
+                case 'Viento suave':
                   climaIcon = HugeIcons.strokeRoundedFastWind;
                   break;
-                case 'Soleado':
+                case 'Sol':
+                case 'Calor extremo':
                   climaIcon = HugeIcons.strokeRoundedSun03;
                   break;
                 default:
@@ -6942,7 +6956,10 @@ class WifiPageState extends ConsumerState<WifiPage>
                                 color: Colors.grey),
                           ),
                           const SizedBox(width: 8),
-                          Icon(HugeIcons.strokeRoundedCloudAngledRainZap,
+                          Icon(
+                              isSunEvent
+                                  ? climaIcon
+                                  : HugeIcons.strokeRoundedCloudAngledRainZap,
                               color: isEnabled ? color4 : Colors.grey),
                           const SizedBox(width: 8),
                           Expanded(
@@ -6971,7 +6988,9 @@ class WifiPageState extends ConsumerState<WifiPage>
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              isEnabled ? 'CLIMA' : 'INACTIVO',
+                              isEnabled
+                                  ? 'CLIMA'
+                                  : 'INACTIVO',
                               style: GoogleFonts.poppins(
                                 color: isEnabled ? color0 : Colors.grey,
                                 fontSize: 10,
@@ -6999,7 +7018,7 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Condición',
+                                          isSunEvent ? 'Momento' : 'Condición',
                                           style: GoogleFonts.poppins(
                                             color:
                                                 color0.withValues(alpha: 0.7),
@@ -7008,10 +7027,13 @@ class WifiPageState extends ConsumerState<WifiPage>
                                           ),
                                         ),
                                         Text(
-                                          (windDirection != null &&
-                                                  windDirection.isNotEmpty)
-                                              ? '$condition con origen $windDirection'
-                                              : condition,
+                                          isSunEvent
+                                              ? sunOffsetLabel(
+                                                  condition, sunOffset)
+                                              : (windDirection != null &&
+                                                      windDirection.isNotEmpty)
+                                                  ? '$condition con origen $windDirection'
+                                                  : condition,
                                           style: GoogleFonts.poppins(
                                             color: isEnabled
                                                 ? color0

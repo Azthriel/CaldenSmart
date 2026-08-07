@@ -255,6 +255,8 @@ Map<String, Duration> deviceDelays = {};
 final List<String> weatherConditions = [
   'Lluvia',
   'Sol',
+  'Amanecer',
+  'Atardecer',
   'Viento fuerte',
   'Viento moderado',
   'Viento suave',
@@ -264,6 +266,40 @@ final List<String> weatherConditions = [
   'Calor extremo',
   'Frío extremo',
 ];
+
+/// Condiciones que NO son estados persistentes sino instantes del día.
+/// La Lambda las evalúa distinto: ventana de disparo + marca de idempotencia
+/// diaria, en vez de comparar contra el clima actual.
+const Set<String> sunConditions = {'Amanecer', 'Atardecer'};
+
+/// Offset máximo (en minutos) que se puede adelantar o atrasar un evento solar.
+/// Tiene que coincidir con SUN_MAX_OFFSET_MIN de la Lambda ControlPorClima.
+const int maxSunOffsetMinutes = 120;
+
+/// Texto legible del momento de disparo de un evento solar.
+/// Ej: 'Justo al atardecer', '30 min antes del amanecer', '1 h después del atardecer'.
+String sunOffsetLabel(String condition, int offsetMinutes) {
+  final momento = condition == 'Amanecer' ? 'amanecer' : 'atardecer';
+
+  if (offsetMinutes == 0) {
+    return 'Justo al $momento';
+  }
+
+  final abs = offsetMinutes.abs();
+  final horas = abs ~/ 60;
+  final minutos = abs % 60;
+
+  String texto;
+  if (horas > 0) {
+    texto = minutos > 0 ? '$horas h $minutos min' : '$horas h';
+  } else {
+    texto = '$minutos min';
+  }
+
+  return offsetMinutes < 0
+      ? '$texto antes del $momento'
+      : '$texto después del $momento';
+}
 
 final selectWeekDaysKey = GlobalKey<SelectWeekDaysState>();
 //*-Escenas-*\\
@@ -2252,10 +2288,30 @@ Future<void> handleNotifications(RemoteMessage message) async {
         String climaDetectado =
             message.data['clima_detectado'] ?? 'Desconocido';
         String nombreEvento = message.data['name'] ?? 'Evento Climático';
+        // La Lambda manda sun_event = 'true' para Amanecer/Atardecer.
+        // Ojo: los valores del mapa data de FCM son strings, no bool.
+        bool esSolar = message.data['sun_event'] == 'true';
         final now = DateTime.now();
-        String displayTitle = '🌤️ Control por Clima Activado';
-        String displayMessage =
-            "Se detectó '$climaDetectado' y se ejecutaron las acciones programadas para el evento '$nombreEvento'.\nA las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}";
+        String horaTexto =
+            "A las ${now.hour >= 10 ? now.hour : '0${now.hour}'}:${now.minute >= 10 ? now.minute : '0${now.minute}'} del ${now.day}/${now.month}/${now.year}";
+
+        String displayTitle;
+        String displayMessage;
+
+        if (esSolar) {
+          String detalle = message.data['sun_detalle'] ?? '';
+          displayTitle = climaDetectado == 'Amanecer'
+              ? '🌅 Evento de amanecer ejecutado'
+              : '🌇 Evento de atardecer ejecutado';
+          displayMessage = detalle.isEmpty
+              ? "Se ejecutaron las acciones programadas para el evento '$nombreEvento'.\n$horaTexto"
+              : "Se ejecutaron las acciones de '$nombreEvento' ($detalle).\n$horaTexto";
+        } else {
+          displayTitle = '🌤️ Control por Clima Activado';
+          displayMessage =
+              "Se detectó '$climaDetectado' y se ejecutaron las acciones programadas para el evento '$nombreEvento'.\n$horaTexto";
+        }
+
         showNotification(displayTitle, displayMessage, 'noti');
         break;
       case 'riego':
