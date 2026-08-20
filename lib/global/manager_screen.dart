@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:caldensmart/escenas/escenas.dart';
 import 'package:caldensmart/secret.dart';
 import 'package:caldensmart/siri/siri_credentials.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../aws/dynamo/dynamo.dart';
 import '../master.dart';
@@ -1063,6 +1066,78 @@ class ManagerScreenState extends State<ManagerScreen> {
         ),
       ],
     );
+  }
+
+  Future<File> _certificadoFile(String sn) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final certDir = Directory('${dir.path}/certificados');
+    if (!await certDir.exists()) {
+      await certDir.create(recursive: true);
+    }
+    return File('${certDir.path}/certificado_$sn.pdf');
+  }
+
+  Future<void> _handleCertificado(BuildContext context, String sn) async {
+    final file = await _certificadoFile(sn);
+
+    // Ya está en caché -> abrir directo, sin llamar a la lambda
+    if (await file.exists()) {
+      await OpenFilex.open(file.path);
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    bool dialogOpen = true;
+    showAlertDialog(
+      context,
+      false,
+      const Text(
+        'Descargando certificado',
+        style: TextStyle(color: color0),
+        textAlign: TextAlign.center,
+      ),
+      const Row(
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(width: 20),
+          Expanded(
+              child: Text(
+                  'Descargando certificado, puede tardar unos segundos...')),
+        ],
+      ),
+      null,
+    );
+
+    try {
+      final url = Uri.parse(
+        'https://fzigs3n3f74lovddfr66mslw2m0avfid.lambda-url.us-east-2.on.aws/?serie=$sn',
+      );
+      final response = await http.get(url).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        throw Exception('Status ${response.statusCode}');
+      }
+
+      await file.writeAsBytes(response.bodyBytes);
+
+      if (context.mounted && dialogOpen) {
+        Navigator.of(context, rootNavigator: true).pop();
+        dialogOpen = false;
+      }
+
+      await OpenFilex.open(file.path);
+    } catch (e) {
+      if (context.mounted && dialogOpen) {
+        Navigator.of(context, rootNavigator: true).pop();
+        dialogOpen = false;
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo obtener el certificado: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -3286,7 +3361,43 @@ class ManagerScreenState extends State<ManagerScreen> {
                   ),
                 ),
               ),
-                if (Platform.isIOS)
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const EscenasPage(),
+                      settings: RouteSettings(
+                        arguments: {
+                          'preseleccionarDispositivo': widget.deviceName,
+                        },
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 1.5,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: color1,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'Crear evento',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      textStyle: const TextStyle(
+                        color: color0,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              if (Platform.isIOS)
                 FutureBuilder<bool>(
                   future: SiriCredentials.isAvailable(),
                   builder: (context, snapshot) {
@@ -3323,7 +3434,6 @@ class ManagerScreenState extends State<ManagerScreen> {
                   },
                 ),
 
-
               const SizedBox(height: 10),
               GestureDetector(
                 onTap: () => launchWebURL(linksOfProducts(widget.deviceName)),
@@ -3348,6 +3458,32 @@ class ManagerScreenState extends State<ManagerScreen> {
                   ),
                 ),
               ),
+              if (pc == '023430_IOT') ...[
+                const SizedBox(height: 10),
+                GestureDetector(
+                  onTap: () => _handleCertificado(context, sn),
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 1.5,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: color1,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Visualizar certificado',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        textStyle: const TextStyle(
+                          color: color0,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               if (specialUser) ...[
                 const SizedBox(height: 10),
                 GestureDetector(

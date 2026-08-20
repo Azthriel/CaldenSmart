@@ -1,7 +1,7 @@
 name: caldensmart
 description: "Caldén Smart"
 publish_to: "none"
-version: 1.0.87+104
+version: 1.0.90+666
 
 environment:
   sdk: ^3.5.1
@@ -11,7 +11,7 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   permission_handler: ^11.3.1
-  path_provider: ^2.1.5
+  path_provider: ^2.1.6
   flutter_blue_plus: ^1.35.1
   easy_refresh: ^3.4.0
   geolocator: ^13.0.2
@@ -41,6 +41,7 @@ dependencies:
   fl_chart: ^0.69.0
   msgpack_dart: ^1.0.1
   in_app_review: ^2.0.12
+  open_filex: ^4.7.0
 
 dev_dependencies:
   flutter_test:

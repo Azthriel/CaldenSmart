@@ -761,7 +761,11 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
                             isHeating: trueStatus,
                             icon: powerIconOn,
                           )
-                        : const ImageIcon(AssetImage(CaldenIcons.waterOff)),
+                        : const ImageIcon(
+                            AssetImage(CaldenIcons.waterOff),
+                            size: 85,
+                            color: Colors.white,
+                          ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -828,18 +832,16 @@ class TermotanquePageState extends ConsumerState<TermotanquePage> {
                             (tempValue - 15) / 55,
                           ),
                         ),
-                        if (specialUser) ...[
-                          Text(
-                            'Temperatura actual:\n$actualTemp °C',
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: color1,
-                            ),
-                            textAlign: TextAlign.center,
+                        Text(
+                          'Temperatura actual:\n$actualTemp °C',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: color1,
                           ),
-                          const SizedBox(height: 20),
-                        ],
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 20),
                       ],
                     ),
                     const SizedBox(width: 20),

@@ -13,8 +13,17 @@ import 'package:hugeicons/hugeicons.dart';
 class ControlCadenaWidget extends StatefulWidget {
   final VoidCallback? onBackToMain;
   final Map<String, dynamic>? eventoExistente;
+
+  /// Equipo a preseleccionar cuando se crea un evento nuevo (por ejemplo,
+  /// al entrar desde el botón "Crear evento" de la pantalla de un equipo).
+  /// Se ignora si eventoExistente no es null.
+  final String? preselectedDevice;
+
   const ControlCadenaWidget(
-      {super.key, this.onBackToMain, this.eventoExistente});
+      {super.key,
+      this.onBackToMain,
+      this.eventoExistente,
+      this.preselectedDevice});
 
   @override
   ControlCadenaWidgetState createState() => ControlCadenaWidgetState();
@@ -76,12 +85,50 @@ class ControlCadenaWidgetState extends State<ControlCadenaWidget> {
       deviceUnits.clear();
       pasosCadena.clear();
       tempDeviceGroup.clear();
+      if (widget.preselectedDevice != null) {
+        tempDeviceGroup
+            .addAll(_resolvePreselectedDevices(widget.preselectedDevice!));
+      }
       tempDeviceActions.clear();
       tempStepDelay = Duration.zero;
       tempStepDelayUnit = 'seg';
       currentStep = 0;
       currentStepIndex = 0;
     }
+  }
+
+  /// Resuelve el/los identificador(es) de selección correctos para el
+  /// equipo preseleccionado. Los equipos multi-pin (Domotica/Modulo/Rele)
+  /// con salidas expuestas no se seleccionan por su nombre base: cada
+  /// salida (pinType == 0) tiene su propio id '${equipo}_indice'. Si se
+  /// agrega el nombre base tal cual, el contenedor del equipo se resalta
+  /// (esa condición sí matchea) pero ningún checkbox de salida queda
+  /// tildado, porque esos comparan contra el id de salida.
+  List<String> _resolvePreselectedDevices(String device) {
+    final bool isMultiPinFamily = device.contains('Domotica') ||
+        device.contains('Modulo') ||
+        device.contains('Rele');
+    if (!isMultiPinFamily) return [device];
+
+    final String pc = DeviceManager.getProductCode(device);
+    final String sn = DeviceManager.extractSerialNumber(device);
+    final Map deviceDATA = globalDATA['$pc/$sn'] ?? {};
+
+    final bool hasPinsIO = deviceDATA.keys.any((k) => k.startsWith('io'));
+    if (!hasPinsIO) return [device];
+
+    final List<String> salidas = [];
+    for (final key in deviceDATA.keys.where((k) => k.startsWith('io'))) {
+      final rawData = deviceDATA[key];
+      final data = rawData is String ? jsonDecode(rawData) : rawData;
+      final pinType = int.tryParse(data['pinType'].toString()) ?? -1;
+      if (pinType != 0) continue;
+      salidas.add('${device}_${key.replaceAll("io", "")}');
+    }
+
+    // Si no se detectó ninguna salida válida, no hay nada seleccionable:
+    // mejor no preseleccionar nada que dejar un id que nunca se tilda.
+    return salidas;
   }
 
   bool _isValidForCascada(String equipo) {

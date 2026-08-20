@@ -11,8 +11,16 @@ class ControlClimaWidget extends StatefulWidget {
   final VoidCallback? onBackToMain;
   final Map<String, dynamic>? eventoExistente;
 
+  /// Equipo a preseleccionar cuando se crea un evento nuevo (por ejemplo,
+  /// al entrar desde el botón "Crear evento" de la pantalla de un equipo).
+  /// Se ignora si eventoExistente no es null.
+  final String? preselectedDevice;
+
   const ControlClimaWidget(
-      {super.key, this.onBackToMain, this.eventoExistente});
+      {super.key,
+      this.onBackToMain,
+      this.eventoExistente,
+      this.preselectedDevice});
 
   @override
   ControlClimaWidgetState createState() => ControlClimaWidgetState();
@@ -88,6 +96,10 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
       currentStep = 0;
     } else {
       deviceGroup.clear();
+      if (widget.preselectedDevice != null) {
+        deviceGroup
+            .addAll(_resolvePreselectedDevices(widget.preselectedDevice!));
+      }
       deviceActions.clear();
       currentStep = 0;
       selectedWeatherCondition = weatherConditions.first;
@@ -95,6 +107,40 @@ class ControlClimaWidgetState extends State<ControlClimaWidget> {
       sunOffsetMinutes = 0;
       eventoEnabled = true;
     }
+  }
+
+  /// Resuelve el/los identificador(es) de selección correctos para el
+  /// equipo preseleccionado. Los equipos multi-pin (Domotica/Modulo/Rele)
+  /// con salidas expuestas no se seleccionan por su nombre base: cada
+  /// salida (pinType == 0) tiene su propio id '${equipo}_indice'. Si se
+  /// agrega el nombre base tal cual, el contenedor del equipo se resalta
+  /// (esa condición sí matchea) pero ningún checkbox de salida queda
+  /// tildado, porque esos comparan contra el id de salida.
+  List<String> _resolvePreselectedDevices(String device) {
+    final bool isMultiPinFamily = device.contains('Domotica') ||
+        device.contains('Modulo') ||
+        device.contains('Rele');
+    if (!isMultiPinFamily) return [device];
+
+    final String pc = DeviceManager.getProductCode(device);
+    final String sn = DeviceManager.extractSerialNumber(device);
+    final Map deviceDATA = globalDATA['$pc/$sn'] ?? {};
+
+    final bool hasPinsIO = deviceDATA.keys.any((k) => k.startsWith('io'));
+    if (!hasPinsIO) return [device];
+
+    final List<String> salidas = [];
+    for (final key in deviceDATA.keys.where((k) => k.startsWith('io'))) {
+      final rawData = deviceDATA[key];
+      final data = rawData is String ? jsonDecode(rawData) : rawData;
+      final pinType = int.tryParse(data['pinType'].toString()) ?? -1;
+      if (pinType != 0) continue;
+      salidas.add('${device}_${key.replaceAll("io", "")}');
+    }
+
+    // Si no se detectó ninguna salida válida, no hay nada seleccionable:
+    // mejor no preseleccionar nada que dejar un id que nunca se tilda.
+    return salidas;
   }
 
   bool _isValidForClima(String equipo) {

@@ -11,8 +11,18 @@ class ControlDisparadorWidget extends StatefulWidget {
   final VoidCallback? onBackToMain;
   final Map<String, dynamic>? eventoExistente;
 
+  /// Equipo a preseleccionar cuando se crea un evento nuevo (por ejemplo,
+  /// al entrar desde el botón "Crear evento" de la pantalla de un equipo).
+  /// Se ignora si eventoExistente no es null. Según el tipo de equipo y
+  /// sus pines, se reparte automáticamente como activador, ejecutor, o
+  /// ambos (ver _seedPreselectedRoles).
+  final String? preselectedDevice;
+
   const ControlDisparadorWidget(
-      {super.key, this.onBackToMain, this.eventoExistente});
+      {super.key,
+      this.onBackToMain,
+      this.eventoExistente,
+      this.preselectedDevice});
 
   @override
   ControlDisparadorWidgetState createState() => ControlDisparadorWidgetState();
@@ -76,6 +86,68 @@ class ControlDisparadorWidgetState extends State<ControlDisparadorWidget> {
       estadoAlerta = "1";
       estadoTermometro = "1";
       eventoEnabled = true;
+
+      if (widget.preselectedDevice != null) {
+        _seedPreselectedRoles(widget.preselectedDevice!);
+      }
+    }
+  }
+
+  /// Reparte el equipo preseleccionado entre activadores y ejecutores
+  /// según el mismo criterio que ya usan _isActivador / _isEjecutor:
+  /// - Detector/Termometro/Patito: solo pueden ser activador.
+  /// - Equipos multipin (Domotica/Modulo/Rele): las entradas (pinType != 0)
+  ///   van como activador y las salidas (pinType == 0) van como ejecutor.
+  ///   El paso de activadores es de selección única (radio button), así
+  ///   que solo se toma la primera entrada disponible (ordenada por pin);
+  ///   todas las salidas sí se agregan como ejecutores.
+  /// - Cualquier otro equipo (sin pines, no sensor): solo puede ser
+  ///   ejecutor.
+  void _seedPreselectedRoles(String device) {
+    final bool isSensorType = device.contains('Detector') ||
+        device.contains('Termometro') ||
+        device.contains('Patito');
+    if (isSensorType) {
+      activadores.add(device);
+      return;
+    }
+
+    final bool isMultiPinFamily = device.contains('Domotica') ||
+        device.contains('Modulo') ||
+        device.contains('Rele');
+    if (!isMultiPinFamily) {
+      ejecutores.add(device);
+      return;
+    }
+
+    final String pc = DeviceManager.getProductCode(device);
+    final String sn = DeviceManager.extractSerialNumber(device);
+    final deviceDATA = globalDATA['$pc/$sn'] ?? {};
+
+    final ioKeys = deviceDATA.keys.where((k) => k.startsWith('io')).toList()
+      ..sort((a, b) {
+        final numA = int.tryParse(a.substring(2)) ?? 0;
+        final numB = int.tryParse(b.substring(2)) ?? 0;
+        return numA.compareTo(numB);
+      });
+
+    if (ioKeys.isEmpty) {
+      // Sin pines expuestos todavía: se comporta como ejecutor simple.
+      ejecutores.add(device);
+      return;
+    }
+
+    for (final key in ioKeys) {
+      final rawData = deviceDATA[key];
+      final data = rawData is String ? jsonDecode(rawData) : rawData;
+      final pinType = int.tryParse(data['pinType'].toString()) ?? -1;
+      final index = key.replaceAll('io', '');
+
+      if (pinType == 0) {
+        ejecutores.add('${device}_$index');
+      } else if (activadores.isEmpty) {
+        activadores.add('${device}_$index');
+      }
     }
   }
 

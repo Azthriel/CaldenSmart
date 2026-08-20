@@ -25,6 +25,11 @@ class EscenasPageState extends State<EscenasPage> {
   TextEditingController title = TextEditingController();
   bool isEditing = false;
 
+  /// Equipo recibido por argumentos de ruta (por ejemplo desde el botón
+  /// "Crear evento" de la pantalla de un equipo) para preseleccionarlo
+  /// al momento de elegir el tipo de evento a crear.
+  String? preseleccionarDispositivo;
+
   @override
   void initState() {
     super.initState();
@@ -83,42 +88,51 @@ class EscenasPageState extends State<EscenasPage> {
     final args = ModalRoute.of(context)?.settings.arguments;
 
     if (args != null && args is Map<String, dynamic>) {
-      isEditing = true;
-      if (currentBuilder == buildMainOptions) {
-        setState(() {
-          switch (args['evento']) {
-            case 'grupo':
-              currentBuilder = () => ControlPorGrupoWidget(
-                    eventoExistente: args,
-                    onBackToMain: () => Navigator.pop(context),
-                  );
-              break;
-            case 'cadena':
-              currentBuilder = () => ControlCadenaWidget(
-                    eventoExistente: args,
-                    onBackToMain: () => Navigator.pop(context),
-                  );
-              break;
-            case 'horario':
-              currentBuilder = () => ControlHorarioWidget(
-                    eventoExistente: args,
-                    onBackToMain: () => Navigator.pop(context),
-                  );
-              break;
-            case 'clima':
-              currentBuilder = () => ControlClimaWidget(
-                    eventoExistente: args,
-                    onBackToMain: () => Navigator.pop(context),
-                  );
-              break;
-            case 'disparador':
-              currentBuilder = () => ControlDisparadorWidget(
-                    eventoExistente: args,
-                    onBackToMain: () => Navigator.pop(context),
-                  );
-              break;
-          }
-        });
+      if (args.containsKey('evento')) {
+        // Flujo de edición de un evento existente.
+        isEditing = true;
+        if (currentBuilder == buildMainOptions) {
+          setState(() {
+            switch (args['evento']) {
+              case 'grupo':
+                currentBuilder = () => ControlPorGrupoWidget(
+                      eventoExistente: args,
+                      onBackToMain: () => Navigator.pop(context),
+                    );
+                break;
+              case 'cadena':
+                currentBuilder = () => ControlCadenaWidget(
+                      eventoExistente: args,
+                      onBackToMain: () => Navigator.pop(context),
+                    );
+                break;
+              case 'horario':
+                currentBuilder = () => ControlHorarioWidget(
+                      eventoExistente: args,
+                      onBackToMain: () => Navigator.pop(context),
+                    );
+                break;
+              case 'clima':
+                currentBuilder = () => ControlClimaWidget(
+                      eventoExistente: args,
+                      onBackToMain: () => Navigator.pop(context),
+                    );
+                break;
+              case 'disparador':
+                currentBuilder = () => ControlDisparadorWidget(
+                      eventoExistente: args,
+                      onBackToMain: () => Navigator.pop(context),
+                    );
+                break;
+            }
+          });
+        }
+      } else if (args.containsKey('preseleccionarDispositivo')) {
+        // Flujo de creación rápida desde la pantalla de un equipo:
+        // se queda en buildMainOptions para que el usuario elija el tipo
+        // de evento, pero ese equipo va premarcado en la selección.
+        preseleccionarDispositivo =
+            args['preseleccionarDispositivo'] as String?;
       }
     }
   }
@@ -212,6 +226,7 @@ class EscenasPageState extends State<EscenasPage> {
                   currentBuilder = () => ControlHorarioWidget(
                         onBackToMain: () =>
                             setState(() => currentBuilder = buildMainOptions),
+                        preselectedDevice: preseleccionarDispositivo,
                       );
                   deviceGroup.clear();
                 });
@@ -240,6 +255,7 @@ class EscenasPageState extends State<EscenasPage> {
                   currentBuilder = () => ControlCadenaWidget(
                         onBackToMain: () =>
                             setState(() => currentBuilder = buildMainOptions),
+                        preselectedDevice: preseleccionarDispositivo,
                       );
                   deviceGroup.clear();
                 });
@@ -267,6 +283,7 @@ class EscenasPageState extends State<EscenasPage> {
                   currentBuilder = () => ControlPorGrupoWidget(
                         onBackToMain: () =>
                             setState(() => currentBuilder = buildMainOptions),
+                        preselectedDevice: preseleccionarDispositivo,
                       );
                   deviceGroup.clear();
                   selectedTime = null;
@@ -296,6 +313,7 @@ class EscenasPageState extends State<EscenasPage> {
                   currentBuilder = () => ControlClimaWidget(
                         onBackToMain: () =>
                             setState(() => currentBuilder = buildMainOptions),
+                        preselectedDevice: preseleccionarDispositivo,
                       );
                   deviceGroup.clear();
                 });
@@ -323,6 +341,7 @@ class EscenasPageState extends State<EscenasPage> {
                   currentBuilder = () => ControlDisparadorWidget(
                         onBackToMain: () =>
                             setState(() => currentBuilder = buildMainOptions),
+                        preselectedDevice: preseleccionarDispositivo,
                       );
                   deviceGroup.clear();
                 });
